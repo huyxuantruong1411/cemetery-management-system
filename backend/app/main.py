@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 from app.core.config import settings
 from app.db.session import check_database_readiness
+from app.modules.auth.router import router as auth_router
 from app.storage.minio_adapter import storage_adapter
 
 app = FastAPI(
@@ -25,6 +26,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Domain Routers
+app.include_router(auth_router, prefix=settings.API_V1_PREFIX)
 
 
 class HealthResponse(BaseModel):

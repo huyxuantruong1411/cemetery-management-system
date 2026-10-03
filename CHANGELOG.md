@@ -4,6 +4,40 @@ Tất cả những thay đổi quan trọng trong hệ thống Quản lý Nghĩa
 
 ---
 
+## [0.3.0-auth] - 2026-10-03 (M02)
+
+### Added
+- **CSDL & Alembic Migration:**
+  - Tạo bản sao lưu CSDL vật lý an toàn tại `backend/runtime/backups/sql/QL_NghiaTrang_M02_baseline.bak`.
+  - Dựng CSDL kiểm thử độc lập `QL_NghiaTrang_Test`.
+  - Khởi tạo cấu hình Alembic trong `backend/alembic/`.
+  - Migration `0001_baseline_37_tables.py` làm mốc baseline 37 bảng.
+  - Migration `0002_g01_auth_sessions_and_version.py` bổ sung bảng `auth_sessions` và cột `users.auth_version` giải quyết lỗ hổng G01.
+  - Ánh xạ 100% trung thực 37 bảng vào SQLAlchemy 2.0 ORM models trong 9 module nghiệp vụ (`backend/app/modules/*/models.py`).
+  - Xử lý tương thích triệt để với trigger SQL Server bằng `__table_args__ = {"implicit_returning": False}` trên các bảng `plots` và `payments`.
+- **Backend Xác Thực & Phân Quyền (RBAC):**
+  - Băm mật khẩu Argon2id an toàn bằng thư viện `pwdlib[argon2]`.
+  - Cấp phát và xác thực JWT Bearer tokens (access token thời hạn 15 phút).
+  - Quản lý phiên đa thiết bị theo họ phiên (`family_id`) và xoay vòng refresh token an toàn theo chuẩn RFC 6819.
+  - Cơ chế thu hồi quyền tức thì (G01 Immediate Revocation) qua `users.auth_version`.
+  - Dependency phân quyền `require_permission(resource, action)` và `require_role(role_name)`.
+  - Các endpoint xác thực và quản trị tài khoản tại `/api/v1/auth/`: `/login`, `/refresh`, `/logout`, `/me`, `/change-password`, `/revoke-all`, `/users`, `/roles`.
+  - Script seed idempotent `backend/scripts/seed_rbac.py` khởi tạo 4 vai trò chuẩn (`ADMIN`, `MARKETING`, `ACCOUNTANT`, `CARETAKER`), 21 quyền hạn và 4 tài khoản demo.
+  - Bộ test tự động `tests/test_auth.py` (6 tests) và `tests/test_trigger_mapping.py` (2 tests) vượt qua 100%.
+- **Web Frontend (React + TypeScript):**
+  - Khởi tạo `authApi`, `AuthContext`, `useAuth` hook hỗ trợ lưu trữ phiên và tự động khôi phục.
+  - Modal đăng nhập `LoginModal` với tính năng chọn nhanh 4 vai trò demo.
+  - Thanh menu điều hướng động hiển thị các phân hệ theo quyền hạn người dùng.
+  - Thẻ hiển thị danh sách quyền hạn thực tế (Active Permissions) trong giao diện.
+  - Kiểm thử E2E tự động qua browser subagent đạt 100%.
+- **Mobile App (Flutter Android):**
+  - Mô hình `UserModel`, `AuthState`, và `AuthNotifier` tích hợp Riverpod 3.x.
+  - Hộp thoại đăng nhập nhanh hỗ trợ chọn vai trò (đặc biệt là Quản trang `CARETAKER`).
+  - AppBar và thẻ trạng thái hiển thị tên người dùng và huy hiệu vai trò.
+  - Vượt qua `flutter analyze` 0 issues và widget tests.
+
+---
+
 ## [0.2.0-foundation] - 2026-10-03 (M01)
 
 ### Added
