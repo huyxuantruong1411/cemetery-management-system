@@ -307,6 +307,242 @@ class PlotModel {
   }
 }
 
+// Profiles & Memorial Models (M06)
+class CustomerRelationModel {
+  final int relationId;
+  final int deceasedId;
+  final String deceasedCode;
+  final String deceasedFullName;
+  final String relationshipType;
+  final bool isPrimaryContact;
+
+  CustomerRelationModel({
+    required this.relationId,
+    required this.deceasedId,
+    required this.deceasedCode,
+    required this.deceasedFullName,
+    required this.relationshipType,
+    required this.isPrimaryContact,
+  });
+
+  factory CustomerRelationModel.fromJson(Map<String, dynamic> json) {
+    return CustomerRelationModel(
+      relationId: json['relation_id'] as int? ?? 0,
+      deceasedId: json['deceased_id'] as int? ?? 0,
+      deceasedCode: json['deceased_code'] as String? ?? '',
+      deceasedFullName: json['deceased_full_name'] as String? ?? '',
+      relationshipType: json['relationship_type'] as String? ?? '',
+      isPrimaryContact: json['is_primary_contact'] as bool? ?? false,
+    );
+  }
+}
+
+class CustomerModel {
+  final int customerId;
+  final String customerCode;
+  final String fullName;
+  final String citizenId;
+  final String phoneNumber;
+  final String? email;
+  final String address;
+  final String? dateOfBirth;
+  final List<CustomerRelationModel> relations;
+
+  CustomerModel({
+    required this.customerId,
+    required this.customerCode,
+    required this.fullName,
+    required this.citizenId,
+    required this.phoneNumber,
+    this.email,
+    required this.address,
+    this.dateOfBirth,
+    required this.relations,
+  });
+
+  factory CustomerModel.fromJson(Map<String, dynamic> json) {
+    final rawRels = json['relations'] as List<dynamic>? ?? [];
+    return CustomerModel(
+      customerId: json['customer_id'] as int? ?? 0,
+      customerCode: json['customer_code'] as String? ?? '',
+      fullName: json['full_name'] as String? ?? '',
+      citizenId: json['citizen_id'] as String? ?? '',
+      phoneNumber: json['phone_number'] as String? ?? '',
+      email: json['email'] as String?,
+      address: json['address'] as String? ?? '',
+      dateOfBirth: json['date_of_birth'] as String?,
+      relations: rawRels
+          .map((r) => CustomerRelationModel.fromJson(r as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
+class DeathCertificateModel {
+  final int certId;
+  final String certificateNumber;
+  final String issuingAuthority;
+  final String issueDate;
+  final bool isVerified;
+  final String? verifiedAt;
+  final String? verifierName;
+  final String? rejectionReason;
+
+  DeathCertificateModel({
+    required this.certId,
+    required this.certificateNumber,
+    required this.issuingAuthority,
+    required this.issueDate,
+    required this.isVerified,
+    this.verifiedAt,
+    this.verifierName,
+    this.rejectionReason,
+  });
+
+  factory DeathCertificateModel.fromJson(Map<String, dynamic> json) {
+    return DeathCertificateModel(
+      certId: json['cert_id'] as int? ?? 0,
+      certificateNumber: json['certificate_number'] as String? ?? '',
+      issuingAuthority: json['issuing_authority'] as String? ?? '',
+      issueDate: json['issue_date'] as String? ?? '',
+      isVerified: json['is_verified'] as bool? ?? false,
+      verifiedAt: json['verified_at'] as String?,
+      verifierName: json['verifier_name'] as String?,
+      rejectionReason: json['rejection_reason'] as String?,
+    );
+  }
+}
+
+class BurialSlotBriefModel {
+  final int slotId;
+  final int plotId;
+  final int slotNumber;
+  final String plotCode;
+  final String zoneName;
+  final String rowCode;
+  final String status;
+  final bool isKimTinh;
+
+  BurialSlotBriefModel({
+    required this.slotId,
+    required this.plotId,
+    required this.slotNumber,
+    required this.plotCode,
+    required this.zoneName,
+    required this.rowCode,
+    required this.status,
+    required this.isKimTinh,
+  });
+
+  factory BurialSlotBriefModel.fromJson(Map<String, dynamic> json) {
+    return BurialSlotBriefModel(
+      slotId: json['slot_id'] as int? ?? 0,
+      plotId: json['plot_id'] as int? ?? 0,
+      slotNumber: json['slot_number'] as int? ?? 1,
+      plotCode: json['plot_code'] as String? ?? '',
+      zoneName: json['zone_name'] as String? ?? '',
+      rowCode: json['row_code'] as String? ?? '',
+      status: json['status'] as String? ?? '',
+      isKimTinh: json['is_kim_tinh'] as bool? ?? false,
+    );
+  }
+}
+
+class DeceasedProfileModel {
+  final int deceasedId;
+  final String deceasedCode;
+  final String fullName;
+  final String gender;
+  final String? dateOfBirth;
+  final String dateOfDeath;
+  final int? birthYear;
+  final String birthDatePrecision;
+  final String? hometown;
+  final String? religion;
+  final bool hasDeathCertificate;
+  final DeathCertificateModel? deathCertificate;
+  final BurialSlotBriefModel? burialSlot;
+
+  DeceasedProfileModel({
+    required this.deceasedId,
+    required this.deceasedCode,
+    required this.fullName,
+    required this.gender,
+    this.dateOfBirth,
+    required this.dateOfDeath,
+    this.birthYear,
+    required this.birthDatePrecision,
+    this.hometown,
+    this.religion,
+    required this.hasDeathCertificate,
+    this.deathCertificate,
+    this.burialSlot,
+  });
+
+  factory DeceasedProfileModel.fromJson(Map<String, dynamic> json) {
+    return DeceasedProfileModel(
+      deceasedId: json['deceased_id'] as int? ?? 0,
+      deceasedCode: json['deceased_code'] as String? ?? '',
+      fullName: json['full_name'] as String? ?? '',
+      gender: json['gender'] as String? ?? 'UNKNOWN',
+      dateOfBirth: json['date_of_birth'] as String?,
+      dateOfDeath: json['date_of_death'] as String? ?? '',
+      birthYear: json['birth_year'] as int?,
+      birthDatePrecision: json['birth_date_precision'] as String? ?? 'EXACT',
+      hometown: json['hometown'] as String?,
+      religion: json['religion'] as String?,
+      hasDeathCertificate: json['has_death_certificate'] as bool? ?? false,
+      deathCertificate: json['death_certificate'] != null
+          ? DeathCertificateModel.fromJson(json['death_certificate'] as Map<String, dynamic>)
+          : null,
+      burialSlot: json['burial_slot'] != null
+          ? BurialSlotBriefModel.fromJson(json['burial_slot'] as Map<String, dynamic>)
+          : null,
+    );
+  }
+}
+
+class MemorialLookupModel {
+  final String deceasedCode;
+  final String fullName;
+  final int? yearOfBirth;
+  final String dateOfDeath;
+  final String? hometown;
+  final String? zoneName;
+  final String? rowCode;
+  final String? plotCode;
+  final int? slotNumber;
+  final bool isKimTinh;
+
+  MemorialLookupModel({
+    required this.deceasedCode,
+    required this.fullName,
+    this.yearOfBirth,
+    required this.dateOfDeath,
+    this.hometown,
+    this.zoneName,
+    this.rowCode,
+    this.plotCode,
+    this.slotNumber,
+    required this.isKimTinh,
+  });
+
+  factory MemorialLookupModel.fromJson(Map<String, dynamic> json) {
+    return MemorialLookupModel(
+      deceasedCode: json['deceased_code'] as String? ?? '',
+      fullName: json['full_name'] as String? ?? '',
+      yearOfBirth: json['year_of_birth'] as int?,
+      dateOfDeath: json['date_of_death'] as String? ?? '',
+      hometown: json['hometown'] as String?,
+      zoneName: json['zone_name'] as String?,
+      rowCode: json['row_code'] as String?,
+      plotCode: json['plot_code'] as String?,
+      slotNumber: json['slot_number'] as int?,
+      isKimTinh: json['is_kim_tinh'] as bool? ?? false,
+    );
+  }
+}
+
 // =============================================================================
 // Providers
 // =============================================================================
@@ -433,6 +669,62 @@ final plotsProvider = FutureProvider.autoDispose<List<PlotModel>>((ref) async {
   return list.map((item) => PlotModel.fromJson(item as Map<String, dynamic>)).toList();
 });
 
+// Profiles Providers (M06)
+final customersProvider = FutureProvider.autoDispose<List<CustomerModel>>((ref) async {
+  final authState = ref.watch(authProvider);
+  if (!authState.isAuthenticated) {
+    return [];
+  }
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get(
+    '/profiles/customers',
+    options: Options(headers: {'Authorization': 'Bearer ${authState.accessToken}'}),
+  );
+  final list = res.data as List<dynamic>;
+  return list.map((item) => CustomerModel.fromJson(item as Map<String, dynamic>)).toList();
+});
+
+final deceasedProfilesProvider = FutureProvider.autoDispose<List<DeceasedProfileModel>>((ref) async {
+  final authState = ref.watch(authProvider);
+  if (!authState.isAuthenticated) {
+    return [];
+  }
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get(
+    '/profiles/deceased',
+    options: Options(headers: {'Authorization': 'Bearer ${authState.accessToken}'}),
+  );
+  final list = res.data as List<dynamic>;
+  return list.map((item) => DeceasedProfileModel.fromJson(item as Map<String, dynamic>)).toList();
+});
+
+class MemorialSearchNotifier extends Notifier<String> {
+  @override
+  String build() => 'Nguyễn';
+
+  void setQuery(String q) {
+    state = q;
+  }
+}
+
+final memorialSearchQueryProvider = NotifierProvider<MemorialSearchNotifier, String>(() {
+  return MemorialSearchNotifier();
+});
+
+final memorialSearchResultsProvider = FutureProvider.autoDispose<List<MemorialLookupModel>>((ref) async {
+  final query = ref.watch(memorialSearchQueryProvider);
+  if (query.trim().length < 2) {
+    return [];
+  }
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get(
+    '/profiles/public/memorials',
+    queryParameters: {'q': query.trim()},
+  );
+  final list = res.data as List<dynamic>;
+  return list.map((item) => MemorialLookupModel.fromJson(item as Map<String, dynamic>)).toList();
+});
+
 // =============================================================================
 // App & Dashboard
 // =============================================================================
@@ -481,6 +773,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int _currentTabIndex = 0;
   String _selectedZoneFilter = 'ALL';
   String _plotSearchQuery = '';
+  late final TextEditingController _memorialSearchController;
+  String _customerSearchQuery = '';
+  String _deceasedSearchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _memorialSearchController = TextEditingController(text: 'Nguyễn');
+  }
+
+  @override
+  void dispose() {
+    _memorialSearchController.dispose();
+    super.dispose();
+  }
 
   void _showLoginDialog(BuildContext context) {
     final usernameController = TextEditingController();
@@ -763,7 +1070,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ref.invalidate(plotsProvider);
                 ref.invalidate(priceListsProvider);
                 ref.invalidate(carePackagesProvider);
+                ref.invalidate(customersProvider);
+                ref.invalidate(deceasedProfilesProvider);
               }
+              ref.invalidate(memorialSearchResultsProvider);
             },
           ),
         ],
@@ -774,9 +1084,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           _buildHomeTab(context, readinessAsync, versionAsync, authState),
           _buildPlotsTab(context, authState),
           _buildCatalogTab(context, authState),
+          _buildProfilesTab(context, authState),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         currentIndex: _currentTabIndex,
         selectedItemColor: const Color(0xFF24594D),
         unselectedItemColor: Colors.black45,
@@ -800,6 +1112,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             icon: Icon(Icons.price_change_outlined),
             activeIcon: Icon(Icons.price_change),
             label: 'Bảng Giá & Gói CS',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.people_alt_outlined),
+            activeIcon: Icon(Icons.people_alt),
+            label: 'Hồ Sơ & Tra Cứu',
           ),
         ],
       ),
@@ -1696,6 +2013,885 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  // ===========================================================================
+  // M06: Profiles & Public Memorial Tab Implementation
+  // ===========================================================================
+  Widget _buildProfilesTab(BuildContext context, AuthState authState) {
+    return DefaultTabController(
+      length: 3,
+      child: Column(
+        children: [
+          Container(
+            color: Colors.white,
+            child: const TabBar(
+              labelColor: Color(0xFF24594D),
+              unselectedLabelColor: Colors.black54,
+              indicatorColor: Color(0xFF24594D),
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              tabs: [
+                Tab(icon: Icon(Icons.search, size: 18), text: 'Tra Cứu Tưởng Niệm'),
+                Tab(icon: Icon(Icons.people, size: 18), text: 'Thân Nhân (KH)'),
+                Tab(icon: Icon(Icons.verified_user, size: 18), text: 'Quá Cố & Giấy Báo Tử'),
+              ],
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                _buildPublicMemorialView(),
+                _buildCustomersView(context, authState),
+                _buildDeceasedProfilesView(context, authState),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 1. Public Memorial Lookup View (Zero PII - Open for families & visitors)
+  Widget _buildPublicMemorialView() {
+    final memorialResultsAsync = ref.watch(memorialSearchResultsProvider);
+    final currentQuery = ref.watch(memorialSearchQueryProvider);
+
+    return Column(
+      children: [
+        // Search header bar
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          color: Colors.white,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: _memorialSearchController,
+                decoration: InputDecoration(
+                  hintText: 'Nhập họ tên người quá cố (tối thiểu 2 ký tự)...',
+                  prefixIcon: const Icon(Icons.search, color: Color(0xFF24594D)),
+                  suffixIcon: _memorialSearchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 18),
+                          onPressed: () {
+                            _memorialSearchController.clear();
+                            ref.read(memorialSearchQueryProvider.notifier).setQuery('');
+                          },
+                        )
+                      : null,
+                  isDense: true,
+                  filled: true,
+                  fillColor: const Color(0xFFF3F4F6),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                onSubmitted: (val) {
+                  ref.read(memorialSearchQueryProvider.notifier).setQuery(val.trim());
+                },
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Text('Gợi ý tìm kiếm:', style: TextStyle(fontSize: 11, color: Colors.black54)),
+                  const SizedBox(width: 8),
+                  Wrap(
+                    spacing: 6,
+                    children: ['Nguyễn', 'Trần', 'Lê', 'A1'].map((tag) {
+                      return InkWell(
+                        onTap: () {
+                          _memorialSearchController.text = tag;
+                          ref.read(memorialSearchQueryProvider.notifier).setQuery(tag);
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: currentQuery == tag ? const Color(0xFF24594D) : const Color(0xFFE2E8F0),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            tag,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w500,
+                              color: currentQuery == tag ? Colors.white : const Color(0xFF334155),
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+
+        // Privacy assurance banner
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          color: const Color(0xFFEFF6FF),
+          child: const Row(
+            children: [
+              Icon(Icons.shield_outlined, size: 14, color: Color(0xFF1D4ED8)),
+              SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  'Cổng tra cứu công khai: Bảo mật tuyệt đối danh tính thân nhân & số CCCD/SĐT (Zero PII).',
+                  style: TextStyle(fontSize: 10.5, color: Color(0xFF1E40AF)),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Results view
+        Expanded(
+          child: memorialResultsAsync.when(
+            data: (results) {
+              if (results.isEmpty) {
+                return Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.person_search, size: 48, color: Colors.grey),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Không tìm thấy hồ sơ tưởng niệm phù hợp',
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.black87),
+                        ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          'Vui lòng thử lại với từ khóa khác hoặc nhập ít nhất 2 ký tự họ tên.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.black54, fontSize: 12),
+                        ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            _memorialSearchController.text = 'Nguyễn';
+                            ref.read(memorialSearchQueryProvider.notifier).setQuery('Nguyễn');
+                          },
+                          child: const Text('Xem danh sách mẫu'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: () async {
+                  ref.invalidate(memorialSearchResultsProvider);
+                  await ref.read(memorialSearchResultsProvider.future);
+                },
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: results.length,
+                  itemBuilder: (context, index) {
+                    final item = results[index];
+                    return Card(
+                      elevation: 0,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(14.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(6),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF24594D).withValues(alpha: 0.1),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: const Icon(Icons.local_florist, color: Color(0xFF24594D), size: 18),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.fullName,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                      ),
+                                      Text(
+                                        'Mã quá cố: ${item.deceasedCode}',
+                                        style: const TextStyle(fontSize: 11, color: Colors.black45),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (item.isKimTinh)
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFFEF3C7),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(color: const Color(0xFFFCD34D)),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.shield, color: Color(0xFFD97706), size: 12),
+                                        SizedBox(width: 3),
+                                        Text(
+                                          'Kim Tĩnh',
+                                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF92400E)),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            const Divider(height: 18),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Sinh - Mất: ${item.yearOfBirth ?? "---"} - ${item.dateOfDeath}',
+                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                                      ),
+                                      if (item.hometown != null)
+                                        Text(
+                                          'Quê quán: ${item.hometown}',
+                                          style: const TextStyle(fontSize: 11, color: Colors.black54),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF0FDF4),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: const Color(0xFFBBF7D0)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.place, size: 16, color: Color(0xFF15803D)),
+                                  const SizedBox(width: 6),
+                                  Expanded(
+                                    child: Text(
+                                      item.plotCode != null
+                                          ? 'Nơi an táng: ${item.zoneName ?? ""} · Lô ${item.plotCode} · Hàng ${item.rowCode ?? ""} (Huyệt ${item.slotNumber ?? 1})'
+                                          : 'Nơi an táng: Chưa phân bổ huyệt mộ chính thức',
+                                      style: const TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Color(0xFF166534),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+            loading: () => const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Color(0xFF24594D)),
+                  SizedBox(height: 12),
+                  Text('Đang tra cứu dữ liệu tưởng niệm công khai...'),
+                ],
+              ),
+            ),
+            error: (err, _) => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 40, color: Colors.red),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Lỗi kết nối tra cứu tưởng niệm: $err',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.red, fontSize: 13),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () => ref.invalidate(memorialSearchResultsProvider),
+                      icon: const Icon(Icons.refresh, size: 16),
+                      label: const Text('Thử lại'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 2. Customers / Relatives View (Requires Authentication)
+  Widget _buildCustomersView(BuildContext context, AuthState authState) {
+    if (!authState.isAuthenticated) {
+      return Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: Color(0xFFE5E7EB)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.lock_outline, size: 40, color: Color(0xFF24594D)),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Yêu Cầu Xác Thực Nhân Viên',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Dữ liệu thân nhân và thông tin liên hệ được bảo vệ theo chuẩn an toàn thông tin. Vui lòng đăng nhập để tiếp tục.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.black54, fontSize: 13),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF24594D),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    ),
+                    onPressed: () => _showLoginDialog(context),
+                    icon: const Icon(Icons.login, size: 18),
+                    label: const Text('Đăng nhập ngay'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final customersAsync = ref.watch(customersProvider);
+
+    return Column(
+      children: [
+        // Search bar
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          color: Colors.white,
+          child: TextField(
+            decoration: InputDecoration(
+              hintText: 'Tìm theo tên, CCCD, SĐT thân nhân...',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              isDense: true,
+              filled: true,
+              fillColor: const Color(0xFFF3F4F6),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            onChanged: (val) {
+              setState(() {
+                _customerSearchQuery = val.trim().toLowerCase();
+              });
+            },
+          ),
+        ),
+
+        Expanded(
+          child: customersAsync.when(
+            data: (customers) {
+              final filtered = customers.where((c) {
+                if (_customerSearchQuery.isEmpty) return true;
+                return c.fullName.toLowerCase().contains(_customerSearchQuery) ||
+                    c.citizenId.toLowerCase().contains(_customerSearchQuery) ||
+                    c.phoneNumber.contains(_customerSearchQuery) ||
+                    c.customerCode.toLowerCase().contains(_customerSearchQuery);
+              }).toList();
+
+              if (filtered.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.group_off, size: 48, color: Colors.grey),
+                      const SizedBox(height: 12),
+                      const Text('Không tìm thấy thân nhân phù hợp', style: TextStyle(color: Colors.black54)),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () => ref.invalidate(customersProvider),
+                        child: const Text('Làm mới danh sách'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: () async {
+                  ref.invalidate(customersProvider);
+                  await ref.read(customersProvider.future);
+                },
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final customer = filtered[index];
+                    return Card(
+                      elevation: 0,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: const BorderSide(color: Color(0xFFE5E7EB)),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(14.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: 18,
+                                  backgroundColor: const Color(0xFF24594D).withValues(alpha: 0.1),
+                                  child: const Icon(Icons.person, color: Color(0xFF24594D), size: 20),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        customer.fullName,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                      ),
+                                      Text(
+                                        'Mã KH: ${customer.customerCode} · CCCD: ${customer.citizenId}',
+                                        style: const TextStyle(fontSize: 11, color: Colors.black54),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'SĐT: ${customer.phoneNumber} ${customer.email != null ? "· Email: ${customer.email!}" : ""}',
+                              style: const TextStyle(fontSize: 12, color: Colors.black87),
+                            ),
+                            Text(
+                              'Địa chỉ: ${customer.address}',
+                              style: const TextStyle(fontSize: 11, color: Colors.black54),
+                            ),
+                            if (customer.relations.isNotEmpty) ...[
+                              const SizedBox(height: 10),
+                              const Text(
+                                'Quan hệ với người quá cố:',
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.black54),
+                              ),
+                              const SizedBox(height: 4),
+                              Wrap(
+                                spacing: 6,
+                                runSpacing: 4,
+                                children: customer.relations.map((rel) {
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    decoration: BoxDecoration(
+                                      color: rel.isPrimaryContact ? const Color(0xFFFEF3C7) : const Color(0xFFF1F5F9),
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: rel.isPrimaryContact ? const Color(0xFFFCD34D) : const Color(0xFFCBD5E1),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      '${rel.deceasedFullName} (${rel.relationshipType})${rel.isPrimaryContact ? " ★ Đại diện" : ""}',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: rel.isPrimaryContact ? FontWeight.bold : FontWeight.normal,
+                                        color: rel.isPrimaryContact ? const Color(0xFF92400E) : const Color(0xFF334155),
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+            loading: () => const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Color(0xFF24594D)),
+                  SizedBox(height: 12),
+                  Text('Đang tải danh sách thân nhân...'),
+                ],
+              ),
+            ),
+            error: (err, _) => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 40, color: Colors.red),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Lỗi tải thân nhân: $err',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.red, fontSize: 13),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () => ref.invalidate(customersProvider),
+                      icon: const Icon(Icons.refresh, size: 16),
+                      label: const Text('Thử lại'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 3. Deceased Profiles & Death Certificate View (Requires Authentication)
+  Widget _buildDeceasedProfilesView(BuildContext context, AuthState authState) {
+    if (!authState.isAuthenticated) {
+      return Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: Color(0xFFE5E7EB)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.verified_user_outlined, size: 40, color: Color(0xFF24594D)),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Xác Thực Hồ Sơ An Táng',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Xem trạng thái phê duyệt Giấy báo tử và kiểm soát an táng yêu cầu đăng nhập nghiệp vụ.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.black54, fontSize: 13),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF24594D),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    ),
+                    onPressed: () => _showLoginDialog(context),
+                    icon: const Icon(Icons.login, size: 18),
+                    label: const Text('Đăng nhập ngay'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final deceasedAsync = ref.watch(deceasedProfilesProvider);
+
+    return Column(
+      children: [
+        // Search bar
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          color: Colors.white,
+          child: TextField(
+            decoration: InputDecoration(
+              hintText: 'Tìm theo tên, mã người quá cố...',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              isDense: true,
+              filled: true,
+              fillColor: const Color(0xFFF3F4F6),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(10),
+                borderSide: BorderSide.none,
+              ),
+            ),
+            onChanged: (val) {
+              setState(() {
+                _deceasedSearchQuery = val.trim().toLowerCase();
+              });
+            },
+          ),
+        ),
+
+        Expanded(
+          child: deceasedAsync.when(
+            data: (deceasedList) {
+              final filtered = deceasedList.where((d) {
+                if (_deceasedSearchQuery.isEmpty) return true;
+                return d.fullName.toLowerCase().contains(_deceasedSearchQuery) ||
+                    d.deceasedCode.toLowerCase().contains(_deceasedSearchQuery);
+              }).toList();
+
+              if (filtered.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.sentiment_dissatisfied, size: 48, color: Colors.grey),
+                      const SizedBox(height: 12),
+                      const Text('Không tìm thấy hồ sơ người quá cố', style: TextStyle(color: Colors.black54)),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () => ref.invalidate(deceasedProfilesProvider),
+                        child: const Text('Làm mới danh sách'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: () async {
+                  ref.invalidate(deceasedProfilesProvider);
+                  await ref.read(deceasedProfilesProvider.future);
+                },
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final d = filtered[index];
+                    final cert = d.deathCertificate;
+
+                    return Card(
+                      elevation: 0,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: const BorderSide(color: Color(0xFFE5E7EB)),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.all(14.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        d.fullName,
+                                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                      ),
+                                      Text(
+                                        'Mã: ${d.deceasedCode} · Giới tính: ${d.gender == "MALE" ? "Nam" : d.gender == "FEMALE" ? "Nữ" : "Khác"}',
+                                        style: const TextStyle(fontSize: 11, color: Colors.black54),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                // G07 Precision tag
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: d.birthDatePrecision == 'YEAR_ONLY'
+                                        ? const Color(0xFFFEF3C7)
+                                        : const Color(0xFFF1F5F9),
+                                    borderRadius: BorderRadius.circular(6),
+                                  ),
+                                  child: Text(
+                                    d.birthDatePrecision == 'YEAR_ONLY'
+                                        ? 'Năm sinh: ${d.birthYear}'
+                                        : 'Sinh: ${d.dateOfBirth ?? "---"}',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w600,
+                                      color: d.birthDatePrecision == 'YEAR_ONLY'
+                                          ? const Color(0xFF92400E)
+                                          : const Color(0xFF334155),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Mất ngày: ${d.dateOfDeath} ${d.hometown != null ? "· Quê: ${d.hometown!}" : ""}',
+                              style: const TextStyle(fontSize: 12, color: Colors.black87),
+                            ),
+                            if (d.burialSlot != null) ...[
+                              const SizedBox(height: 6),
+                              Row(
+                                children: [
+                                  const Icon(Icons.place, size: 14, color: Color(0xFF24594D)),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    '${d.burialSlot!.zoneName} · Ô ${d.burialSlot!.plotCode} (Huyệt ${d.burialSlot!.slotNumber})',
+                                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF24594D)),
+                                  ),
+                                  if (d.burialSlot!.isKimTinh) ...[
+                                    const SizedBox(width: 6),
+                                    const Text('· [Kim Tĩnh]', style: TextStyle(fontSize: 11, color: Color(0xFFD97706), fontWeight: FontWeight.bold)),
+                                  ],
+                                ],
+                              ),
+                            ],
+                            const SizedBox(height: 10),
+                            // G08 Death Certificate Verification Status
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: cert == null
+                                    ? const Color(0xFFF3F4F6)
+                                    : cert.isVerified
+                                        ? const Color(0xFFF0FDF4)
+                                        : (cert.rejectionReason != null
+                                            ? const Color(0xFFFEF2F2)
+                                            : const Color(0xFFFFFBEB)),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: cert == null
+                                      ? const Color(0xFFE5E7EB)
+                                      : cert.isVerified
+                                          ? const Color(0xFFBBF7D0)
+                                          : (cert.rejectionReason != null
+                                              ? const Color(0xFFFECACA)
+                                              : const Color(0xFFFDE68A)),
+                                ),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    cert == null
+                                        ? Icons.info_outline
+                                        : cert.isVerified
+                                            ? Icons.check_circle
+                                            : (cert.rejectionReason != null ? Icons.cancel : Icons.pending),
+                                    size: 16,
+                                    color: cert == null
+                                        ? Colors.grey
+                                        : cert.isVerified
+                                            ? const Color(0xFF16A34A)
+                                            : (cert.rejectionReason != null ? Colors.red : const Color(0xFFD97706)),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      cert == null
+                                          ? 'Chưa nộp giấy báo tử (Yêu cầu bổ sung trước khi an táng)'
+                                          : cert.isVerified
+                                              ? 'Giấy báo tử ĐÃ XÁC THỰC: Số ${cert.certificateNumber} (${cert.issuingAuthority})'
+                                              : (cert.rejectionReason != null
+                                                  ? 'Giấy báo tử BỊ TỪ CHỐI: ${cert.rejectionReason}'
+                                                  : 'Giấy báo tử CHỜ DUYỆT: Số ${cert.certificateNumber}'),
+                                      style: TextStyle(
+                                        fontSize: 11.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: cert == null
+                                            ? Colors.black54
+                                            : cert.isVerified
+                                                ? const Color(0xFF15803D)
+                                                : (cert.rejectionReason != null ? Colors.red : const Color(0xFFB45309)),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+            loading: () => const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Color(0xFF24594D)),
+                  SizedBox(height: 12),
+                  Text('Đang tải hồ sơ an táng & giấy báo tử...'),
+                ],
+              ),
+            ),
+            error: (err, _) => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 40, color: Colors.red),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Lỗi tải hồ sơ an táng: $err',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.red, fontSize: 13),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () => ref.invalidate(deceasedProfilesProvider),
+                      icon: const Icon(Icons.refresh, size: 16),
+                      label: const Text('Thử lại'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

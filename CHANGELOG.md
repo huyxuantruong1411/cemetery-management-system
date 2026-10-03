@@ -4,6 +4,38 @@ Tất cả những thay đổi quan trọng trong hệ thống Quản lý Nghĩa
 
 ---
 
+## [0.7.0-profiles] - 2026-10-03 (M06)
+
+### Added
+- **CSDL & Alembic Migration (G07, G08):**
+  - Migration `0006_g07_g08_profiles_certificates.py`:
+    - Thêm `customers.date_of_birth` (DATE).
+    - Thêm `deceased_profiles.birth_year` (INTEGER) và `deceased_profiles.birth_date_precision` ('EXACT', 'YEAR_ONLY', 'UNKNOWN'). Đảm bảo tính trung thực dữ liệu, không bịa đặt ngày tháng khi chỉ biết năm sinh (G07).
+    - Mở rộng `death_certificates`: chuyển mặc định `is_verified` về 0, cho phép `verified_at` NULL, thêm `verified_by` (FK đến `users`), `rejection_reason` (NVARCHAR(255)), `file_id` (VARCHAR(64), FK đến `file_objects`), `notes` (NVARCHAR(MAX)).
+  - Cập nhật SQLAlchemy ORM models tại `backend/app/modules/profiles/models.py`, chuẩn hóa `Unicode` và `UnicodeText` chống lỗi tiếng Việt.
+- **Nghiệp Vụ Backend & Ràng Buộc Miền (ProfileService):**
+  - Chống trùng lặp số CCCD/CMND khi tạo khách hàng (`409 Conflict`).
+  - Xác thực độ chính xác ngày sinh và ràng buộc thời gian sống: `date_of_birth <= date_of_death` và `birth_year <= date_of_death.year`.
+  - Quy trình phê duyệt Giấy báo tử (G08 Pre-Burial Verification): `verify_certificate` ghi nhận kiểm tra hồ sơ trước an táng, `check_death_certificate_verified` làm chốt chặn bảo mật domain invariant.
+  - Cổng tra cứu công khai tuyệt đối không lộ PII (G19 & ADR-001): `/api/v1/profiles/public/memorials?q=` chỉ trả về thông tin tưởng niệm và vị trí ô mộ, tuyệt đối không lộ CCCD, SĐT, hay giấy tờ cá nhân.
+  - Script seed dữ liệu mẫu: `backend/scripts/seed_profiles.py` nạp 3 khách hàng, 3 người quá cố, 3 giấy báo tử và liên kết huyệt mộ.
+- **Web Frontend (React 19 + TypeScript):**
+  - Phân hệ **"Hồ Sơ & Tưởng Niệm"** (`ProfileModule.tsx`):
+    - Sub-view Thân Nhân: Tra cứu, thêm mới, xem liên kết người quá cố và huy hiệu đại diện gia đình.
+    - Sub-view Quá Cố & Giấy Báo Tử: Thẻ người mất với nhãn độ chính xác năm sinh, banner trạng thái giấy báo tử 4 màu, duyệt/từ chối giấy báo tử nhanh.
+    - Sub-view Tra Cứu Tưởng Niệm Công Khai: Thiết kế tôn nghiêm, tông xanh ngọc - vàng cát, tag tìm kiếm mẫu, thẻ an táng kèm huy hiệu Kim Tĩnh.
+- **Mobile App (Flutter Android):**
+  - Tích hợp tab **"Hồ Sơ & Tra Cứu"** trên BottomNavigationBar với 3 sub-tab: Tra Cứu Tưởng Niệm (không cần đăng nhập), Thân Nhân (KH), Quá Cố & Giấy Báo Tử.
+  - Chống tràn giao diện với `SingleChildScrollView` trên các card xác thực và trạng thái rỗng.
+  - 2 widget tests chuyên biệt cho M06.
+- **Kiểm Thử & Đảm Bảo Chất Lượng:**
+  - 39 backend tests (`uv run pytest`) passed 100%. `uv run ruff check .` clean.
+  - Web `pnpm lint` 0 errors, `pnpm build` passed trong 241ms.
+  - Mobile `flutter analyze` 0 issues, `flutter test` (7/7 passed).
+  - Tiêu chuẩn Quality Gate `scripts/quality-gate.ps1` ĐẠT 100%.
+
+---
+
 ## [0.6.0-plots] - 2026-10-03 (M05)
 
 ### Added
