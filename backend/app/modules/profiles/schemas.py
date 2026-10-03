@@ -224,6 +224,10 @@ class DeceasedPublicLookupResponse(BaseModel):
     plot_code: str | None = None
     slot_number: int | None = None
     is_kim_tinh: bool = False
+    latitude: float | None = None
+    longitude: float | None = None
+    navigation_guidance: str | None = None
+    maps_url: str | None = None
 
 
 # ==============================================================================

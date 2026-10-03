@@ -5,7 +5,16 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Font, PatternFill
 
 
+def sanitize_excel_cell(val: Any) -> Any:
+    """Prevent CSV/Excel Formula Injection by prepending single quote to formula trigger characters."""
+    if isinstance(val, str) and val and val[0] in ("=", "+", "-", "@", "\t", "\r"):
+        return f"'{val}"
+    return val
+
+
 class ExcelService:
+    sanitize_excel_cell = staticmethod(sanitize_excel_cell)
+
     @classmethod
     def generate_report_xlsx(
         cls,
@@ -13,7 +22,7 @@ class ExcelService:
         headers: list[str],
         rows: list[list[Any]],
     ) -> bytes:
-        """Generate an Excel workbook with styled headers and data rows."""
+        """Generate an Excel workbook with styled headers, data rows, and formula injection protection."""
         wb = Workbook()
         ws = wb.active
         ws.title = sheet_title[:31]
@@ -33,7 +42,8 @@ class ExcelService:
         # Data rows
         data_font = Font(name="Arial", size=10)
         for row_data in rows:
-            ws.append(row_data)
+            sanitized_row = [cls.sanitize_excel_cell(c) for c in row_data]
+            ws.append(sanitized_row)
             current_row = ws.max_row
             for col_idx in range(1, len(row_data) + 1):
                 cell = ws.cell(row=current_row, column=col_idx)

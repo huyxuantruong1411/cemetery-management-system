@@ -513,6 +513,10 @@ class MemorialLookupModel {
   final String? plotCode;
   final int? slotNumber;
   final bool isKimTinh;
+  final double? latitude;
+  final double? longitude;
+  final String? navigationGuidance;
+  final String? mapsUrl;
 
   MemorialLookupModel({
     required this.deceasedCode,
@@ -525,6 +529,10 @@ class MemorialLookupModel {
     this.plotCode,
     this.slotNumber,
     required this.isKimTinh,
+    this.latitude,
+    this.longitude,
+    this.navigationGuidance,
+    this.mapsUrl,
   });
 
   factory MemorialLookupModel.fromJson(Map<String, dynamic> json) {
@@ -539,6 +547,10 @@ class MemorialLookupModel {
       plotCode: json['plot_code'] as String?,
       slotNumber: json['slot_number'] as int?,
       isKimTinh: json['is_kim_tinh'] as bool? ?? false,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
+      navigationGuidance: json['navigation_guidance'] as String?,
+      mapsUrl: json['maps_url'] as String?,
     );
   }
 }
@@ -2797,22 +2809,43 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                                 borderRadius: BorderRadius.circular(6),
                                 border: Border.all(color: const Color(0xFFBBF7D0)),
                               ),
-                              child: Row(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Icon(Icons.place, size: 16, color: Color(0xFF15803D)),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      item.plotCode != null
-                                          ? 'Nơi an táng: ${item.zoneName ?? ""} · Lô ${item.plotCode} · Hàng ${item.rowCode ?? ""} (Huyệt ${item.slotNumber ?? 1})'
-                                          : 'Nơi an táng: Chưa phân bổ huyệt mộ chính thức',
-                                      style: const TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xFF166534),
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.place, size: 16, color: Color(0xFF15803D)),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Text(
+                                          item.navigationGuidance ??
+                                              (item.plotCode != null
+                                                  ? 'Nơi an táng: ${item.zoneName ?? ""} · Lô ${item.plotCode} · Hàng ${item.rowCode ?? ""} (Huyệt ${item.slotNumber ?? 1})'
+                                                  : 'Nơi an táng: Chưa phân bổ huyệt mộ chính thức'),
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600,
+                                            color: Color(0xFF166534),
+                                          ),
+                                        ),
                                       ),
-                                    ),
+                                    ],
                                   ),
+                                  if (item.latitude != null && item.longitude != null) ...[
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.near_me, size: 14, color: Color(0xFF15803D)),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            'Tọa độ GPS: ${item.latitude!.toStringAsFixed(6)}, ${item.longitude!.toStringAsFixed(6)}',
+                                            style: const TextStyle(fontSize: 11, color: Color(0xFF166534)),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),

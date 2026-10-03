@@ -2,6 +2,46 @@
 
 Tất cả những thay đổi quan trọng trong hệ thống Quản lý Nghĩa trang Tư nhân được ghi nhận tại đây theo định dạng [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.13.0-feature-complete] - 2026-10-04 (M12)
+
+### Added
+- **CSDL & Alembic Migration (G17):**
+  - Migration `0012_g17_report_exports.py`:
+    - Tạo Database Sequence `seq_report_export_number` bắt đầu từ 1001 phục vụ sinh mã tệp xuất `EXP-YYYYMM-NNNN`.
+    - Tạo bảng `report_exports` quản lý trạng thái xuất báo cáo (`PENDING`, `PROCESSING`, `COMPLETED`, `FAILED`), định dạng (`PDF`, `XLSX`), snapshot bộ lọc JSON, liên kết tệp `file_id` (MinIO) và phân quyền requester.
+- **Nghiệp Vụ Backend & Ràng Buộc Miền (Reports, Public Lookup & Audit Service):**
+  - **4 Báo cáo nghiệp vụ chuyên sâu:**
+    - Báo cáo Doanh thu Thực tế (`Realized Revenue` - UC-7.1) từ bảng `payments`, phân tích theo phương thức và nguồn thu.
+    - Báo cáo Lấp đầy & Mộ phần (`Occupancy` - UC-7.2) với cơ chế bảo vệ an toàn cho khu chưa có mộ (`empty zone protection`).
+    - Báo cáo Hợp đồng & Phụ lục (`Contracts & Annexes` - UC-7.3) tách bạch cấu trúc, chống tính trùng doanh số (double-counting).
+    - Báo cáo Vận hành Hiện trường (`Operations` - UC-7.4) theo dõi tiến độ thi công, ca chăm sóc định kỳ và cảnh báo quá hạn SLA.
+  - **Phòng chống Excel Formula Injection:**
+    - Hàm khử trùng ô `sanitize_excel_cell` loại bỏ nguy cơ thực thi mã độc từ các ký tự khởi đầu công thức (`=`, `+`, `-`, `@`, `\t`, `\r`).
+  - **Xuất tệp báo cáo PDF/XLSX bền vững lên MinIO (UC-7.5):**
+    - Sinh PDF ReportLab bảng dữ liệu chuẩn Unicode tiếng Việt UTF-8 font Arial kèm thẻ tóm tắt KPI.
+    - Sinh tệp Excel openpyxl định dạng chuẩn kế toán.
+    - Kiểm soát phân quyền truy cập và băm mã SHA-256 toàn vẹn tệp.
+  - **Nhật ký kiểm toán hệ thống an toàn (Audit Log Viewer - UC-8.7):**
+    - Endpoint chỉ đọc (Read-only, không hỗ trợ chỉnh sửa/xóa log), thống kê KPI kiểm toán.
+    - Hàm đệ quy làm mờ thông tin bí mật (`redact_sensitive_json`) thay thế mật khẩu, access token, secret bằng `***REDACTED***`.
+  - **Cổng tra cứu công khai & Dẫn đường GPS (Zero PII - UC-1.4, UC-1.5):**
+    - Tra cứu mộ phần công cộng không cần đăng nhập, hoàn toàn bảo vệ dữ liệu cá nhân.
+    - Cung cấp tọa độ GPS, chỉ dẫn điều hướng vị trí và đường dẫn Google Maps trực tiếp.
+- **Web Frontend (React 19 + TypeScript):**
+  - Module `ReportsModule.tsx`: 4 sub-tabs báo cáo, 4 KPI cards cao cấp, bộ lọc ngày tháng và modal xuất tệp PDF/XLSX với tải blob trực tiếp.
+  - Module `AuditModule.tsx`: Bảng nhật ký kiểm toán, KPI cards, bộ lọc và modal xem diff dữ liệu an toàn.
+  - Nâng cấp `ProfileModule.tsx`: Bổ sung huy hiệu tọa độ GPS, chỉ dẫn điều hướng và liên kết Google Maps trong thẻ tra cứu mộ phần công khai.
+  - Tích hợp 2 tab mới trên thanh điều hướng chính trong `App.tsx`, đảm bảo 4 trạng thái giao diện (`Loading`, `Normal`, `Empty Data`, `Error`).
+- **Mobile App (Flutter Android):**
+  - Cập nhật `MemorialLookupModel` và giao diện Memorial Card hiển thị tọa độ GPS, chỉ dẫn vị trí và đường dẫn bản đồ vệ tinh.
+  - Mở rộng bộ kiểm thử widget trong `mobile/test/widget_test.dart` đạt 14/14 tests passed 100%.
+- **Kiểm Thử & Đảm Bảo Chất Lượng:**
+  - 82 backend tests (`uv run pytest`) passed 100% (9 test cases mới trong `test_reports_audit.py`).
+  - `uv run ruff check .` và `uv run ruff format --check .` All checks passed!
+  - Web `pnpm lint` 0 errors, `pnpm build` passed trong 265ms.
+  - Mobile `flutter analyze` 0 issues, `flutter test` (14/14 passed).
+  - Tiêu chuẩn Quality Gate `scripts/quality-gate.ps1` ĐẠT 100%.
+
 ---
 
 ## [0.12.0-finance] - 2026-10-04 (M11)

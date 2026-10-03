@@ -726,11 +726,11 @@ Không gán thời hạn chắc chắn khi chưa có repo code và DB live. Mỗ
 
 ### M12 — Báo cáo, public search và hoàn thiện quản trị
 
-- [ ] Đủ 4 báo cáo D2, filter/aggregation/drill-down; khu không có ô, hỏa táng không có khu và nhiều phụ lục không nhân tiền.
-- [ ] Export PDF/XLSX bền vững, cùng filter/snapshot, ACL khi tải; Excel loại nguy cơ formula injection từ text input.
-- [ ] Public search người mất/mã ô, tên trùng, hiển thị đã duyệt, dẫn đường có fallback, rate limit.
-- [ ] Hoàn thiện audit viewer, user/role, template/price history; không có endpoint sửa audit.
-- [ ] Đối chiếu từng hàng trong ma trận 39 UC ở mục 11, cập nhật trạng thái có bằng chứng.
+- [x] Đủ 4 báo cáo D2, filter/aggregation/drill-down; khu không có ô, hỏa táng không có khu và nhiều phụ lục không nhân tiền.
+- [x] Export PDF/XLSX bền vững, cùng filter/snapshot, ACL khi tải; Excel loại nguy cơ formula injection từ text input.
+- [x] Public search người mất/mã ô, tên trùng, hiển thị đã duyệt, dẫn đường có fallback, rate limit.
+- [x] Hoàn thiện audit viewer, user/role, template/price history; không có endpoint sửa audit.
+- [x] Đối chiếu từng hàng trong ma trận 39 UC ở mục 11, cập nhật trạng thái có bằng chứng.
 
 **Gate:** báo cáo đối soát payment fixture; tất cả query không lộ trường nội bộ; export quyền khác bị 403/404; tra cứu công khai hoạt động không cần tài khoản.  
 **Git:** `feat: complete reports public lookup and administration` → `v0.13.0-feature-complete`.

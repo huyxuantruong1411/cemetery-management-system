@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { ExternalLink, MapPin, Shield } from 'lucide-react';
 import type {
   Customer,
   CustomerCreate,
@@ -1085,9 +1086,13 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                             padding: '3px 8px',
                             borderRadius: '6px',
                             border: '1px solid #FCD34D',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
                           }}
                         >
-                          🛡️ Mộ Kim Tĩnh
+                          <Shield size={12} />
+                          <span>Mộ Kim Tĩnh</span>
                         </span>
                       )}
                     </div>
@@ -1113,13 +1118,53 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                         border: '1px solid #E5E7EB',
                       }}
                     >
-                      <div style={{ fontSize: '12px', fontWeight: 600, color: '#24594D', marginBottom: '4px' }}>
-                        📍 VỊ TRÍ AN TÁNG TẠI NGHĨA TRANG:
+                      <div
+                        style={{
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          color: '#24594D',
+                          marginBottom: '6px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <MapPin size={14} />
+                        <span>VỊ TRÍ AN TÁNG TẠI NGHĨA TRANG:</span>
                       </div>
-                      {item.plot_code ? (
-                        <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#111827' }}>
-                          {item.zone_name} · Hàng {item.row_code} · Ô mộ {item.plot_code}{' '}
-                          {item.slot_number ? `(Slot ${item.slot_number})` : ''}
+                      {item.navigation_guidance ? (
+                        <div>
+                          <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#111827', marginBottom: '6px' }}>
+                            {item.navigation_guidance}
+                          </div>
+                          {item.latitude && item.longitude && (
+                            <div style={{ fontSize: '12px', color: '#64748B', marginBottom: '8px' }}>
+                              Tọa độ GPS: {item.latitude.toFixed(6)}, {item.longitude.toFixed(6)}
+                            </div>
+                          )}
+                          {item.maps_url && (
+                            <a
+                              href={item.maps_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                color: 'var(--brand-primary)',
+                                textDecoration: 'none',
+                                padding: '4px 8px',
+                                backgroundColor: '#E6F4EA',
+                                borderRadius: '4px',
+                                border: '1px solid #A7F3D0',
+                              }}
+                            >
+                              <ExternalLink size={13} />
+                              <span>Mở bản đồ Google Maps chỉ đường</span>
+                            </a>
+                          )}
                         </div>
                       ) : (
                         <div style={{ fontSize: '13px', color: '#9CA3AF' }}>Chưa ghi nhận vị trí an táng thực địa</div>

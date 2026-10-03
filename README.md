@@ -281,7 +281,7 @@ sequenceDiagram
 ```
 cemetery-management-system/
 ├── backend/                       # Nền tảng FastAPI backend (Python 3.12, uv)
-│   ├── alembic/                   # Kịch bản di trú schema CSDL tăng dần (0001 -> 0011)
+│   ├── alembic/                   # Kịch bản di trú schema CSDL tăng dần (0001 -> 0012)
 │   ├── app/
 │   │   ├── core/                  # Cấu hình môi trường, bảo mật JWT, DB session, MinIO
 │   │   ├── modules/               # Các phân hệ nghiệp vụ độc lập:
@@ -293,15 +293,17 @@ cemetery-management-system/
 │   │   │   ├── construction/      # Quản lý thi công, checklist, bằng chứng ảnh (M09)
 │   │   │   ├── care/              # Chăm sóc định kỳ, nghiệm thu đóng ca G12 (M10)
 │   │   │   ├── finance/           # Công nợ XOR, thanh toán idempotent, chiết khấu, biên lai (M11)
+│   │   │   ├── reports/           # 4 báo cáo thống kê, phòng chống formula injection, MinIO (M12)
+│   │   │   ├── audit/             # Nhật ký kiểm toán chỉ đọc, redact sensitive secrets (M12)
 │   │   │   ├── documents/         # Quản lý tệp MinIO, PDF tiếng Việt, báo cáo Excel (M03)
 │   │   │   └── system/            # Health check, version, outbox, audit logs
 │   │   ├── services/              # Dịch vụ hạ tầng: PDF ReportLab, Excel, Outbox
 │   │   └── main.py                # Cấu hình FastAPI entry point & CORS
 │   ├── runtime/                   # Dữ liệu cục bộ (MinIO data, logs, backups ngoài ổ C)
-│   └── tests/                     # Bộ kiểm thử tự động toàn diện (73 test cases)
+│   └── tests/                     # Bộ kiểm thử tự động toàn diện (82 test cases)
 ├── web/                           # Ứng dụng điều hành Web (React 19, TypeScript, pnpm)
 │   ├── src/
-│   │   ├── components/            # Giao diện nghiệp vụ: GIS Map, Hợp đồng, Thi công, Chăm sóc, Tài chính
+│   │   ├── components/            # Giao diện nghiệp vụ: GIS Map, Hợp đồng, Thi công, Chăm sóc, Tài chính, Báo cáo, Kiểm toán
 │   │   ├── context/               # Quản lý phiên xác thực AuthContext
 │   │   ├── services/              # API Client tương tác với FastAPI
 │   │   └── types/                 # TypeScript interfaces chuẩn hóa
@@ -323,7 +325,7 @@ cemetery-management-system/
 |---|---|---|---|
 | **Backend API** | Python 3.12, FastAPI, SQLAlchemy 2.x, Pydantic v2 | `uv` | Bất đồng bộ, MSSQL dialect, trigger bypass `implicit_returning=False`. |
 | **Cơ sở dữ liệu** | Microsoft SQL Server 2022 | Native ODBC 18 | Phân định CSDL chính (`QL_NghiaTrang`) và kiểm thử (`QL_NghiaTrang_Test`). |
-| **Di trú CSDL** | Alembic (0001 -> 0011) | `uv run alembic` | Quản lý schema tăng dần, tuyệt đối bảo tồn dữ liệu gốc, không DROP DATABASE. |
+| **Di trú CSDL** | Alembic (0001 -> 0012) | `uv run alembic` | Quản lý schema tăng dần, tuyệt đối bảo tồn dữ liệu gốc, không DROP DATABASE. |
 | **Lưu trữ đối tượng** | MinIO (S3 compatible) | Docker container | Bind mount trực tiếp vào `backend/runtime/minio/data` trên ổ D. |
 | **Tài liệu PDF** | ReportLab với Font Arial Unicode | Python built-in | Xuất hợp đồng và biên lai thu tiền tiếng Việt UTF-8 chuẩn xác. |
 | **Web Frontend** | React 19, TypeScript, Vite, Leaflet GIS | `pnpm` | Giao diện điều hành 4 trạng thái, bản đồ số ô mộ, xuất Excel/PDF. |
@@ -419,8 +421,8 @@ powershell -ExecutionPolicy Bypass -File scripts/quality-gate.ps1
 ```
 
 Kết quả nghiệm thu tự động:
-- **Backend:** `uv run ruff check .` và `uv run ruff format --check .` (0 lỗi cảnh báo), `uv run pytest` (**73/73 bài kiểm thử đạt 100%**).
-- **Web Frontend:** `pnpm lint` (0 lỗi) và `pnpm build` (biên dịch TypeScript và đóng gói Vite sạch sẽ trong 305ms).
+- **Backend:** `uv run ruff check .` và `uv run ruff format --check .` (0 lỗi cảnh báo), `uv run pytest` (**82/82 bài kiểm thử đạt 100%**).
+- **Web Frontend:** `pnpm lint` (0 lỗi) và `pnpm build` (biên dịch TypeScript và đóng gói Vite sạch sẽ trong 265ms).
 - **Mobile App:** `flutter analyze` (0 lỗi cảnh báo) và `flutter test` (**14/14 bài kiểm thử đạt 100%**).
 
 ---
@@ -441,7 +443,7 @@ Kết quả nghiệm thu tự động:
 | **M09** | Quản lý thi công thực địa, checklist nhiệm vụ, bằng chứng ảnh MinIO | `v0.10.0-construction` | Hoàn thành |
 | **M10** | Chăm sóc định kỳ mộ phần, đóng ca quản trang, hàng đợi offline | `v0.11.0-care` | Hoàn thành |
 | **M11** | Kế toán công nợ XOR, thu tiền idempotent, chiết khấu, biên lai PDF | `v0.12.0-finance` | Hoàn thành |
-| **M12** | Báo cáo quản trị, cổng tra cứu thông tin công khai Zero PII | `v0.13.0-feature-complete` | Đang triển khai |
+| **M12** | Báo cáo quản trị, cổng tra cứu thông tin công khai Zero PII | `v0.13.0-feature-complete` | Hoàn thành |
 | **M13** | Kiểm thử tải, bảo mật, đối soát phục hồi CSDL và S3 | `v1.0.0-rc.1` | Kế hoạch |
 | **M14** | Đóng gói bản phát hành chính thức, tài liệu bàn giao vận hành | `v1.0.0` | Kế hoạch |
 

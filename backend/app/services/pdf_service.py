@@ -391,3 +391,147 @@ class PDFService:
 
         doc.build(elements)
         return buffer.getvalue()
+
+    @classmethod
+    def generate_report_pdf(
+        cls,
+        report_title: str,
+        subtitle: str,
+        kpi_cards: list[tuple[str, str]],
+        headers: list[str],
+        rows: list[list[str]],
+        generated_by: str,
+    ) -> bytes:
+        """Generate a clean, standardized executive summary and tabular report PDF."""
+        regular_font, bold_font = _setup_fonts()
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=A4,
+            rightMargin=36,
+            leftMargin=36,
+            topMargin=36,
+            bottomMargin=36,
+        )
+
+        elements = []
+        styles = getSampleStyleSheet()
+
+        title_style = ParagraphStyle(
+            "ReportTitle",
+            parent=styles["Normal"],
+            fontName=bold_font,
+            fontSize=16,
+            leading=20,
+            alignment=1,
+            textColor=colors.HexColor("#24594D"),
+        )
+        subtitle_style = ParagraphStyle(
+            "ReportSubtitle",
+            parent=styles["Normal"],
+            fontName=regular_font,
+            fontSize=10,
+            leading=13,
+            alignment=1,
+            textColor=colors.HexColor("#475569"),
+        )
+        kpi_val_style = ParagraphStyle(
+            "ReportKpiVal",
+            parent=styles["Normal"],
+            fontName=bold_font,
+            fontSize=12,
+            leading=15,
+            alignment=1,
+            textColor=colors.HexColor("#24594D"),
+        )
+        kpi_lbl_style = ParagraphStyle(
+            "ReportKpiLbl",
+            parent=styles["Normal"],
+            fontName=regular_font,
+            fontSize=9,
+            leading=11,
+            alignment=1,
+            textColor=colors.HexColor("#64748B"),
+        )
+        tbl_hdr_style = ParagraphStyle(
+            "ReportTblHdr",
+            parent=styles["Normal"],
+            fontName=bold_font,
+            fontSize=9,
+            leading=11,
+            alignment=1,
+            textColor=colors.white,
+        )
+        tbl_cell_style = ParagraphStyle(
+            "ReportTblCell",
+            parent=styles["Normal"],
+            fontName=regular_font,
+            fontSize=8,
+            leading=10,
+            alignment=0,
+            textColor=colors.black,
+        )
+
+        # Header banner
+        elements.append(Paragraph("HỆ THỐNG QUẢN LÝ NGHĨA TRANG TƯ NHÂN", subtitle_style))
+        elements.append(Paragraph(f"<b>{report_title.upper()}</b>", title_style))
+        elements.append(Paragraph(subtitle, subtitle_style))
+        elements.append(Spacer(1, 14))
+
+        # KPI Summary cards
+        if kpi_cards:
+            kpi_data = [
+                [Paragraph(f"<b>{val}</b>", kpi_val_style) for _, val in kpi_cards],
+                [Paragraph(lbl, kpi_lbl_style) for lbl, _ in kpi_cards],
+            ]
+            col_w = 520 / max(len(kpi_cards), 1)
+            t_kpi = Table(kpi_data, colWidths=[col_w] * len(kpi_cards))
+            t_kpi.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, -1), colors.HexColor("#F8FAFC")),
+                        ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#CBD5E1")),
+                        ("INNERGRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#E2E8F0")),
+                        ("TOPPADDING", (0, 0), (-1, -1), 6),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                    ]
+                )
+            )
+            elements.append(t_kpi)
+            elements.append(Spacer(1, 14))
+
+        # Main Data Table
+        if headers and rows:
+            table_data = [[Paragraph(f"<b>{h}</b>", tbl_hdr_style) for h in headers]]
+            for r in rows:
+                table_data.append([Paragraph(str(c), tbl_cell_style) for c in r])
+
+            col_w = 520 / len(headers)
+            t_data = Table(table_data, colWidths=[col_w] * len(headers))
+            t_data.setStyle(
+                TableStyle(
+                    [
+                        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#24594D")),
+                        ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                        ("TOPPADDING", (0, 0), (-1, -1), 4),
+                        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+                        (
+                            "ROWBACKGROUNDS",
+                            (0, 1),
+                            (-1, -1),
+                            [colors.white, colors.HexColor("#F8FAFC")],
+                        ),
+                        ("GRID", (0, 0), (-1, -1), 0.5, colors.HexColor("#CBD5E1")),
+                    ]
+                )
+            )
+            elements.append(t_data)
+            elements.append(Spacer(1, 16))
+
+        # Footer
+        now = datetime.now()
+        footer_text = f"Báo cáo xuất lúc {now.strftime('%d/%m/%Y %H:%M')} · Người xuất: {generated_by} · Trích xuất từ Cơ sở dữ liệu QL Nghĩa Trang"
+        elements.append(Paragraph(footer_text, subtitle_style))
+
+        doc.build(elements)
+        return buffer.getvalue()

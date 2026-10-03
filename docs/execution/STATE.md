@@ -1,28 +1,28 @@
 # Nhật Ký Thực Thi Dự Án (Project Execution State)
 
 **Dự án:** Hệ thống Quản lý Nghĩa trang Tư nhân  
-**Ngày cập nhật:** 03/10/2026  
+**Ngày cập nhật:** 04/10/2026  
 **Kế hoạch thực thi:** [`docs/EXECUTION_PLAN.md`](../EXECUTION_PLAN.md)
 
 ---
 
 ## 1. Trạng thái tổng quan
 
-- **Milestone hiện tại:** Hoàn tất **M11** (Công nợ XOR, thu tiền idempotent, chiết khấu hóa đơn, biên lai PDF) -> Sẵn sàng khởi động **M12** (Báo cáo quản trị, cổng tra cứu thông tin công khai Zero PII & audit logs).
+- **Milestone hiện tại:** Hoàn tất **M12** (Báo cáo quản trị, cổng tra cứu thông tin công khai Zero PII & audit logs) -> Sẵn sàng khởi động **M13** (Kiểm thử hệ thống, UX toàn diện & khôi phục CSDL/S3).
 - **Trạng thái CSDL:**
   - Máy chủ: `DESKTOP-HKIPI1M`
   - CSDL chính: `QL_NghiaTrang`
   - CSDL kiểm thử: `QL_NghiaTrang_Test` (bảo vệ tuyệt đối CSDL chính)
   - Đã backup an toàn: `backend/runtime/backups/sql/QL_NghiaTrang_M02_baseline.bak`
-  - Alembic Head: `0011_g14_g15_g16_finance` (đã áp dụng trên cả DB chính và DB test).
-  - 37 bảng nghiệp vụ + 11 bảng mở rộng: `auth_sessions` (G01), `file_objects` (G02), `document_versions` (G02), `background_jobs` (G17), `outbox_events` (G17), `contract_templates` (G03), `plot_reservations` (G04), `plot_ownerships` (G05), `construction_task_evidences` (G11), `staff_unavailability` (G13), `idempotency_requests` (G15) + Mở rộng G12 trên `care_schedules` + Mở rộng G14/G16 trên `receivables`, `discount_records`, `invoices` + Sequence `seq_contract_number` (G09) + Sequence `seq_annex_number` (G10/G18/G20) + Sequence `seq_payment_number` (G15).
+  - Alembic Head: `0012_g17_report_exports` (đã áp dụng trên cả DB chính và DB test).
+  - 37 bảng nghiệp vụ + 12 bảng mở rộng: `auth_sessions` (G01), `file_objects` (G02), `document_versions` (G02), `background_jobs` (G17), `outbox_events` (G17), `contract_templates` (G03), `plot_reservations` (G04), `plot_ownerships` (G05), `construction_task_evidences` (G11), `staff_unavailability` (G13), `idempotency_requests` (G15), `report_exports` (G17) + Mở rộng G12 trên `care_schedules` + Mở rộng G14/G16 trên `receivables`, `discount_records`, `invoices` + Sequence `seq_contract_number` (G09) + Sequence `seq_annex_number` (G10/G18/G20) + Sequence `seq_payment_number` (G15) + Sequence `seq_report_export_number` (G17).
   - Kết nối native qua pyodbc và `ODBC Driver 18 for SQL Server` hoạt động 100%.
 - **Hạ tầng lưu trữ:**
   - MinIO Docker Container (`elestio/minio:latest`) đang chạy trên máy.
   - Bind mount trực tiếp vào `D:\work\TH-PTTK\QL-NghiaTrang\backend\runtime\minio\data` trên ổ D.
 - **Bộ công cụ & Chất lượng mã nguồn:**
-  - Backend: Python 3.12 (`uv`). 73 tests passed (7 finance + 7 care + 7 construction + 7 lifecycle + 6 contracts + 7 profiles + 6 plots + 6 auth + 6 catalog + 6 documents + 2 jobs + 2 triggers + 4 health/storage), ruff check/format clean.
-  - Web: React 19 + TypeScript + Vite (`pnpm`). Build thành công trong 305ms, 0 lint errors.
+  - Backend: Python 3.12 (`uv`). 82 tests passed (9 reports/audit + 7 finance + 7 care + 7 construction + 7 lifecycle + 6 contracts + 7 profiles + 6 plots + 6 auth + 6 catalog + 6 documents + 2 jobs + 2 triggers + 4 health/storage), ruff check/format clean.
+  - Web: React 19 + TypeScript + Vite (`pnpm`). Build thành công trong 265ms, 0 lint errors.
   - Mobile: Flutter 3.41.6 / Dart 3.11.4 Android. Analyze 0 issues, 14/14 tests passed.
   - Tiêu chuẩn Quality Gate (`scripts/quality-gate.ps1`) đạt 100% trên cả 3 phân hệ.
 
@@ -44,7 +44,7 @@
 | **M09** | Quản lý thi công thực địa | **ĐẠT (Done)** | `v0.10.0-construction` | G11/G13, checklist công trình, bằng chứng ảnh MinIO READY, phân công thợ kiểm tra xung đột lịch nghỉ, nghiệm thu an toàn không đổi trạng thái an táng. |
 | **M10** | Chăm sóc định kỳ & mobile offline | **ĐẠT (Done)** | `v0.11.0-care` | G12, sinh lịch định kỳ idempotent, neo ngày cuối tháng, Quản trang checklist, minh chứng ảnh MinIO, đóng ca G12 gate. |
 | **M11** | Công nợ, thu tiền, chiết khấu, biên lai | **ĐẠT (Done)** | `v0.12.0-finance` | G14-G16, ràng buộc XOR nguồn thu, Idempotency payment chống trùng, chiết khấu chuẩn hóa, xuất biên lai PDF tiếng Việt UTF-8 MinIO. |
-| **M12** | Báo cáo, tra cứu công khai & audit | Chưa bắt đầu | `v0.13.0-feature-complete` | 4 báo cáo thống kê, cổng tra cứu không lộ PII, audit log viewer. |
+| **M12** | Báo cáo, tra cứu công khai & audit | **ĐẠT (Done)** | `v0.13.0-feature-complete` | 4 báo cáo thống kê chuyên sâu (Doanh thu, Lấp đầy, Hợp đồng, Vận hành), phòng chống Excel Formula Injection, xuất PDF/XLSX MinIO, audit log viewer & redact sensitive secrets, tra cứu người mất công khai kèm dẫn đường Google Maps. |
 | **M13** | Kiểm thử hệ thống, UX & khôi phục | Chưa bắt đầu | `v1.0.0-rc.1` | Regression toàn diện, test tải, backup/restore CSDL + S3 đối soát. |
 | **M14** | Bàn giao và phát hành | Chưa bắt đầu | `v1.0.0` | Scripts vận hành, tài liệu bàn giao, APK thử nghiệm, release manifest. |
 
@@ -544,6 +544,80 @@
 - **Web:** `pnpm lint` 0 errors, `pnpm build` hoàn tất sạch sẽ trong 305ms.
 - **Mobile:** `flutter analyze` 0 issues, `flutter test` đạt **14/14 tests passed**.
 - Tiêu chuẩn Quality Gate `scripts/quality-gate.ps1` ĐẠT 100%.
+
+---
+
+## 13. Bằng chứng nghiệm thu Milestone M12 (Báo Cáo Quản Trị, Tra Cứu Công Khai & Hoàn Thiện Audit)
+
+### 13.1. CSDL & Migration (G17)
+- Migration: `0012_g17_report_exports.py`
+  - Đã apply thành công trên cả 2 CSDL: `QL_NghiaTrang` và `QL_NghiaTrang_Test`.
+  - Tạo Sequence `seq_report_export_number` bắt đầu từ 1001 phục vụ sinh mã số tệp xuất khẩu `EXP-YYYYMM-NNNN`.
+  - Tạo bảng `report_exports` lưu trữ siêu dữ liệu phiên xuất báo cáo bền vững:
+    - Cột khóa: `export_id`, `export_code`, `report_type`, `export_format` (PDF/XLSX), `status` (PENDING, PROCESSING, COMPLETED, FAILED), `requester_id`, `filter_snapshot_json`, `file_id`, `record_count`, `error_message`, `expires_at`, `created_at`, `completed_at`.
+    - Ràng buộc toàn vẹn: Khóa ngoại `file_id` tham chiếu `file_objects(file_id)`, `requester_id` tham chiếu `users(user_id)`.
+    - Chỉ mục tra cứu: `ix_report_exports_requester`, `ix_report_exports_status`.
+
+### 13.2. Báo Cáo Nghiệp Vụ & Server-side Invariants
+- **Báo cáo Doanh thu Thực tế (Realized Revenue Report - UC-7.1):**
+  - Tính toán dựa trên dòng tiền thực thu từ bảng `payments` (`paid_amount`, `paid_at`), loại trừ hoàn toàn các khoản nợ tiềm năng chưa thu.
+  - Phân tích đa chiều: theo phương thức thanh toán (`CASH`, `BANK_TRANSFER`, `CARD`), theo loại nguồn (Hợp đồng đất `LAND_PURCHASE` / Phụ lục `BURIAL`, `CONSTRUCTION`, `CARE`).
+- **Báo cáo Lấp đầy & Mộ phần (Occupancy Report - UC-7.2):**
+  - Thống kê tỷ lệ lấp đầy chính xác: tính toán dựa trên tổng số mộ và slot huyệt, xử lý ngoại lệ an toàn cho các khu chưa có mộ (`empty zone protection`), phân định rõ ràng các trạng thái `AVAILABLE`, `RESERVED`, `OCCUPIED` (Kim Tĩnh / thường).
+- **Báo cáo Hợp đồng & Phụ lục (Contracts & Annexes Report - UC-7.3):**
+  - Tách bạch cấu trúc Hợp đồng và Phụ lục, xử lý bài toán chống nhân đôi doanh số (double-counting) khi join dữ liệu quan hệ 1-N.
+  - Thống kê số lượng theo loại hợp đồng, trạng thái hiệu lực (`ACTIVE`, `PENDING_SCAN`, `EXPIRED`, `CANCELLED`).
+- **Báo cáo Vận hành Hiện trường (Operations Report - UC-7.4):**
+  - Giám sát tiến độ thi công công trình và các ca chăm sóc mộ phần định kỳ, đo lường tỷ lệ đúng hạn (SLA) và phát hiện các đơn quá hạn (`overdue`).
+- **Phòng chống tấn công Excel Formula Injection:**
+  - Áp dụng hàm khử trùng ô dữ liệu `sanitize_excel_cell` trên toàn bộ văn bản đầu vào trước khi ghi file `.xlsx`.
+  - Trung hòa tất cả các ký tự khởi đầu công thức nguy hiểm (`=`, `+`, `-`, `@`, `\t`, `\r`) bằng dấu nháy đơn (`'`).
+- **Xuất file Bền vững MinIO (PDF / XLSX - UC-7.5):**
+  - Tích hợp động cơ sinh báo cáo PDF tiếng Việt UTF-8 font Arial (`ReportLab`) kèm KPI summary cards và bảng dữ liệu chuyên nghiệp.
+  - Tích hợp động cơ sinh Excel (`openpyxl`) định dạng bảng tính kế toán chuẩn.
+  - Tải file trực tiếp lên MinIO bucket `ql-nghiatrang-documents`, băm mã SHA-256 toàn vẹn, phân quyền tải về nghiêm ngặt (chỉ tài khoản yêu cầu hoặc ADMIN mới có quyền tải file xuất).
+
+### 13.3. Hoàn Thiện Nhật Ký Kiểm Toán (Audit Log Viewer - UC-8.7)
+- Cơ chế truy vấn nhật ký kiểm toán hệ thống `audit_logs` chỉ đọc (Read-only, không cung cấp endpoint chỉnh sửa hay xóa log).
+- Thống kê KPI kiểm toán thời gian thực: Tổng sự kiện ghi nhận, phân bổ theo hành động (`CREATE`, `UPDATE`, `DELETE`, `LOGIN`, `REVOKE`), tỷ lệ thành công/thất bại.
+- Cơ chế đệ quy làm mờ dữ liệu nhạy cảm (`redact_sensitive_json`): tự động phát hiện và thay thế các trường bí mật (`password`, `access_token`, `refresh_token`, `secret`, `hash`) bằng chuỗi `***REDACTED***`.
+
+### 13.4. Tra Cứu Công Khai & Dẫn Đường Tọa Độ (Public Memorial - UC-1.4, UC-1.5)
+- Cổng tra cứu người quá cố công cộng không yêu cầu đăng nhập, bảo vệ thông tin cá nhân (Zero PII - không trả CCCD, thân nhân, số điện thoại, hợp đồng).
+- Trả về thông tin họ tên, năm sinh, năm mất, tên khu/dãy/mã ô mộ đã được phê duyệt an táng.
+- Bổ sung thông tin dẫn đường vị trí:
+  - Tọa độ GPS đã duyệt (`latitude`, `longitude`).
+  - Hướng dẫn điều hướng trực quan (`navigation_guidance`).
+  - Đường dẫn Google Maps vệ tinh trực tiếp (`maps_url` dạng `https://www.google.com/maps?q={lat},{lng}`) kèm cơ chế dự phòng an toàn khi ô mộ chưa cập nhật tọa độ GPS.
+
+### 13.5. Giao Diện Web (React 19 + TypeScript)
+- **Module Báo Cáo Thống Kê (`ReportsModule.tsx`):**
+  - 4 tiểu phân hệ chuyển đổi mượt mà: Doanh thu, Lấp đầy & Mộ phần, Hợp đồng & Phụ lục, Vận hành.
+  - 4 thẻ KPI thống kê cao cấp với tỷ lệ tăng trưởng và phân bổ.
+  - Bộ lọc khoảng ngày động, nút Xuất báo cáo (Export Modal) tùy chọn định dạng PDF hoặc Excel.
+  - Tự động tải blob an toàn về máy tính người dùng.
+- **Module Nhật Ký Kiểm Toán (`AuditModule.tsx`):**
+  - Thanh tìm kiếm và bộ lọc hành động, đối tượng tác động, mã định danh.
+  - 4 thẻ KPI kiểm toán trực quan.
+  - Bảng dữ liệu nhật ký phân trang với huy hiệu màu theo hành động.
+  - Drawer chi tiết sự kiện hiển thị diff dữ liệu Before / After đã được khử dữ liệu bí mật (`***REDACTED***`).
+- **Nâng cấp Phân hệ Hồ sơ (`ProfileModule.tsx`):**
+  - Tích hợp huy hiệu tọa độ GPS, chỉ dẫn đường đi và nút mở Google Maps trực tiếp trong thẻ kết quả tra cứu công khai.
+- **Điều Hướng Ứng Dụng (`App.tsx`):**
+  - Bổ sung tab "Báo Cáo Thống Kê" (quyền `reports:read`) và "Nhật Ký Kiểm Toán" (quyền `audit:read`).
+  - Xử lý trọn vẹn 4 trạng thái giao diện: `Loading`, `Normal`, `Empty Data`, `Error`.
+
+### 13.6. Ứng Dụng Di Động (Flutter Android)
+- Cập nhật model `MemorialLookupModel` trong `mobile/lib/main.dart` tiếp nhận `latitude`, `longitude`, `navigationGuidance`, `mapsUrl`.
+- Nâng cấp giao diện Memorial Card hiển thị huy hiệu GPS, chỉ dẫn đường đi tới ô mộ và URL bản đồ.
+- Bổ sung kiểm thử trong `mobile/test/widget_test.dart` xác minh hiển thị dẫn đường và GPS không cần đăng nhập.
+
+### 13.7. Kiểm Thử & Tiêu Chuẩn Quality Gate
+- **Backend:** `uv run pytest` đạt **82/82 bài kiểm thử** (100% passed, bao gồm 9 test cases chuyên sâu trong `test_reports_audit.py`). `uv run ruff check .` và `uv run ruff format --check .` All checks passed!
+- **Web:** `pnpm lint` 0 errors, `pnpm build` hoàn tất sạch sẽ trong 265ms.
+- **Mobile:** `flutter analyze` 0 issues, `flutter test` đạt **14/14 tests passed 100%**.
+- Kịch bản kiểm định chất lượng tự động `scripts/quality-gate.ps1` ĐẠT 100% cả 3 phân hệ.
+
 
 
 

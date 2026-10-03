@@ -284,6 +284,10 @@ void main() {
         plotCode: 'A1-01',
         slotNumber: 1,
         isKimTinh: true,
+        latitude: 10.776889,
+        longitude: 106.700806,
+        navigationGuidance: 'Khu Khu A - Dãy A1 - Lô A1-01 (Slot 1)',
+        mapsUrl: 'https://www.google.com/maps/search/?api=1&query=10.776889,106.700806',
       ),
     ];
 
@@ -319,6 +323,7 @@ void main() {
     expect(find.text('Mã quá cố: QC-2026-0001'), findsOneWidget);
     expect(find.textContaining('A1-01'), findsWidgets);
     expect(find.text('Kim Tĩnh'), findsWidgets);
+    expect(find.textContaining('10.776889'), findsWidgets);
   });
 
   testWidgets('CemeteryMobileApp profiles tab authenticated displays customers and deceased with G07/G08 test', (WidgetTester tester) async {

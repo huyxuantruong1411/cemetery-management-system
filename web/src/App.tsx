@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   Activity,
   AlertCircle,
+  BarChart3,
   Coins,
   Database,
   FileCheck,
@@ -14,11 +15,13 @@ import {
   MapPin,
   RefreshCw,
   Server,
+  Shield,
   ShieldCheck,
   Tag,
   Users,
   Wrench,
 } from 'lucide-react'
+import { AuditModule } from './components/audit/AuditModule'
 import { LoginModal } from './components/auth/LoginModal'
 import { CatalogModule } from './components/catalog/CatalogModule'
 import { CareModule } from './components/care/CareModule'
@@ -28,6 +31,7 @@ import { DocumentManager } from './components/documents/DocumentManager'
 import { FinanceModule } from './components/finance/FinanceModule'
 import { PlotMapModule } from './components/plots/PlotMapModule'
 import { ProfileModule } from './components/profiles/ProfileModule'
+import { ReportsModule } from './components/reports/ReportsModule'
 import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './context/useAuth'
 
@@ -420,6 +424,50 @@ function MainApp() {
               <span>Quản Trị Người Dùng & RBAC</span>
             </button>
           )}
+
+          {user && (
+            <button
+              onClick={() => setActiveTab('reports')}
+              style={{
+                padding: '12px 16px',
+                border: 'none',
+                borderBottom: activeTab === 'reports' ? '2px solid var(--brand-primary)' : '2px solid transparent',
+                backgroundColor: 'transparent',
+                color: activeTab === 'reports' ? 'var(--brand-primary)' : '#64748B',
+                fontWeight: activeTab === 'reports' ? 600 : 500,
+                fontSize: '13px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <BarChart3 size={16} />
+              <span>Báo Cáo Thống Kê</span>
+            </button>
+          )}
+
+          {hasPermission('users:read') && (
+            <button
+              onClick={() => setActiveTab('audit')}
+              style={{
+                padding: '12px 16px',
+                border: 'none',
+                borderBottom: activeTab === 'audit' ? '2px solid var(--brand-primary)' : '2px solid transparent',
+                backgroundColor: 'transparent',
+                color: activeTab === 'audit' ? 'var(--brand-primary)' : '#64748B',
+                fontWeight: activeTab === 'audit' ? 600 : 500,
+                fontSize: '13px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <Shield size={16} />
+              <span>Nhật Ký Kiểm Toán</span>
+            </button>
+          )}
         </div>
       )}
 
@@ -769,6 +817,12 @@ function MainApp() {
             </div>
           </div>
         )}
+
+        {/* Tab 7: Reports M12 */}
+        {activeTab === 'reports' && <ReportsModule />}
+
+        {/* Tab 8: Audit Logs M12 */}
+        {activeTab === 'audit' && <AuditModule />}
       </main>
 
       {/* Login Modal */}

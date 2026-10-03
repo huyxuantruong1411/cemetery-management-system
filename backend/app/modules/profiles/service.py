@@ -534,6 +534,38 @@ class ProfileService:
             yob = p.birth_year or (p.date_of_birth.year if p.date_of_birth else None)
             slot = slots_map.get(p.deceased_id)
 
+            zone_name = (
+                slot.plot.row.zone.zone_name
+                if slot and slot.plot and slot.plot.row and slot.plot.row.zone
+                else None
+            )
+            row_code = slot.plot.row.row_code if slot and slot.plot and slot.plot.row else None
+            plot_code = slot.plot.plot_code if slot and slot.plot else None
+            slot_num = slot.slot_number if slot else None
+
+            lat = (
+                float(slot.plot.latitude)
+                if slot and slot.plot and slot.plot.latitude is not None
+                else None
+            )
+            lng = (
+                float(slot.plot.longitude)
+                if slot and slot.plot and slot.plot.longitude is not None
+                else None
+            )
+
+            navigation_guidance = None
+            if slot and slot.plot:
+                z = zone_name or "Chưa phân khu"
+                r = row_code or "-"
+                navigation_guidance = f"Khu {z} - Dãy {r} - Lô {plot_code} (Slot {slot_num})"
+
+            maps_url = (
+                f"https://www.google.com/maps/search/?api=1&query={lat},{lng}"
+                if lat is not None and lng is not None
+                else None
+            )
+
             results.append(
                 DeceasedPublicLookupResponse(
                     deceased_code=p.deceased_code,
@@ -541,15 +573,15 @@ class ProfileService:
                     year_of_birth=yob,
                     date_of_death=p.date_of_death,
                     hometown=p.hometown,
-                    zone_name=slot.plot.row.zone.zone_name
-                    if slot and slot.plot and slot.plot.row and slot.plot.row.zone
-                    else None,
-                    row_code=slot.plot.row.row_code
-                    if slot and slot.plot and slot.plot.row
-                    else None,
-                    plot_code=slot.plot.plot_code if slot and slot.plot else None,
-                    slot_number=slot.slot_number if slot else None,
+                    zone_name=zone_name,
+                    row_code=row_code,
+                    plot_code=plot_code,
+                    slot_number=slot_num,
                     is_kim_tinh=slot.plot.is_kim_tinh if slot and slot.plot else False,
+                    latitude=lat,
+                    longitude=lng,
+                    navigation_guidance=navigation_guidance,
+                    maps_url=maps_url,
                 )
             )
         return results

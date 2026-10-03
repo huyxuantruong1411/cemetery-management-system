@@ -10,4 +10,5 @@ import app.modules.finance.models  # noqa: F401
 import app.modules.jobs.models  # noqa: F401
 import app.modules.plots.models  # noqa: F401
 import app.modules.profiles.models  # noqa: F401
+import app.modules.reports.models  # noqa: F401
 from app.db.session import Base  # noqa: F401

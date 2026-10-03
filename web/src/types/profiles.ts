@@ -131,4 +131,8 @@ export interface DeceasedPublicLookupResponse {
   plot_code: string | null;
   slot_number: number | null;
   is_kim_tinh: boolean;
+  latitude: number | null;
+  longitude: number | null;
+  navigation_guidance: string | null;
+  maps_url: string | null;
 }
