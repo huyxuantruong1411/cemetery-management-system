@@ -55,14 +55,14 @@ graph TB
         MinIOStorage[("MinIO Object Storage (S3 API)<br/>Lưu trữ tệp ngoài ổ C (Ổ D)<br/>Kiểm tra Magic Bytes & SHA-256")]
     end
 
-    WebAdmin -->|HTTPS / JSON / JWT| APIGateway
-    MobileApp -->|HTTPS / JSON / JWT| APIGateway
+    WebAdmin -->|"HTTPS / JSON / JWT"| APIGateway
+    MobileApp -->|"HTTPS / JSON / JWT"| APIGateway
     APIGateway --> AuthModule
     AuthModule --> DomainServices
     DomainServices --> OutboxWorker
-    DomainServices -->|SQLAlchemy 2.x Session (ACID)| MSSQL
-    DomainServices -->|Băm SHA-256 / Stream Binary| MinIOStorage
-    OutboxWorker -->|Ghi nhận sự kiện Outbox| MSSQL
+    DomainServices -->|"SQLAlchemy 2.x Session (ACID)"| MSSQL
+    DomainServices -->|"Băm SHA-256 / Stream Binary"| MinIOStorage
+    OutboxWorker -->|"Ghi nhận sự kiện Outbox"| MSSQL
 ```
 
 ### 2.2. Mô hình quan hệ thực thể nghiệp vụ (Domain ERD)
