@@ -22,6 +22,7 @@ import { LoginModal } from './components/auth/LoginModal'
 import { CatalogModule } from './components/catalog/CatalogModule'
 import { DocumentManager } from './components/documents/DocumentManager'
 import { PlotMapModule } from './components/plots/PlotMapModule'
+import { ProfileModule } from './components/profiles/ProfileModule'
 import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './context/useAuth'
 
@@ -240,6 +241,26 @@ function MainApp() {
               <span>Sơ Đồ Ô Mộ</span>
             </button>
           )}
+
+          <button
+            onClick={() => setActiveTab('profiles')}
+            style={{
+              padding: '12px 16px',
+              border: 'none',
+              borderBottom: activeTab === 'profiles' ? '2px solid var(--brand-primary)' : '2px solid transparent',
+              backgroundColor: 'transparent',
+              color: activeTab === 'profiles' ? 'var(--brand-primary)' : '#64748B',
+              fontWeight: activeTab === 'profiles' ? 600 : 500,
+              fontSize: '13px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <Users size={16} />
+            <span>Thân Nhân & Người Mất</span>
+          </button>
 
           {hasPermission('contracts:read') && (
             <button
@@ -667,6 +688,14 @@ function MainApp() {
           <PlotMapModule
             token={accessToken}
             onRequireLogin={() => setIsLoginOpen(true)}
+          />
+        )}
+
+        {/* Tab Profiles: Customers, Deceased & Memorials (M06) */}
+        {activeTab === 'profiles' && (
+          <ProfileModule
+            token={accessToken}
+            currentUserRoles={user?.roles ? user.roles.map((r) => r.role_name) : []}
           />
         )}
 

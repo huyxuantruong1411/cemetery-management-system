@@ -270,6 +270,171 @@ void main() {
     expect(find.text('Đông Nam'), findsOneWidget);
     expect(find.text('10.823100, 106.629700'), findsOneWidget);
   });
+
+  testWidgets('CemeteryMobileApp public memorial lookup renders without auth and displays results test', (WidgetTester tester) async {
+    final fakeMemorials = [
+      MemorialLookupModel(
+        deceasedCode: 'QC-2026-0001',
+        fullName: 'Nguyễn Văn Tiên',
+        yearOfBirth: 1940,
+        dateOfDeath: '2025-11-20',
+        hometown: 'Hà Nội',
+        zoneName: 'Khu A',
+        rowCode: 'A1',
+        plotCode: 'A1-01',
+        slotNumber: 1,
+        isKimTinh: true,
+      ),
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          readinessProvider.overrideWith((ref) async => SystemReadiness(
+                status: 'ready',
+                database: 'Database connected',
+                storage: 'Storage connected',
+                timestamp: '2026-10-03T12:00:00Z',
+              )),
+          versionProvider.overrideWith((ref) async => SystemVersion(
+                appName: 'Hệ thống Quản lý Nghĩa trang',
+                version: '0.2.0',
+                environment: 'test',
+              )),
+          memorialSearchResultsProvider.overrideWith((ref) async => fakeMemorials),
+        ],
+        child: const CemeteryMobileApp(),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Switch to Profiles & Memorial tab
+    await tester.tap(find.text('Hồ Sơ & Tra Cứu'));
+    await tester.pumpAndSettle();
+
+    // Verify Public Memorial Tab is shown without needing login
+    expect(find.text('Tra Cứu Tưởng Niệm'), findsOneWidget);
+    expect(find.text('Nguyễn Văn Tiên'), findsOneWidget);
+    expect(find.text('Mã quá cố: QC-2026-0001'), findsOneWidget);
+    expect(find.textContaining('A1-01'), findsWidgets);
+    expect(find.text('Kim Tĩnh'), findsWidgets);
+  });
+
+  testWidgets('CemeteryMobileApp profiles tab authenticated displays customers and deceased with G07/G08 test', (WidgetTester tester) async {
+    final fakeUser = UserModel(
+      userId: 1,
+      username: 'quan_trang',
+      fullName: 'Trần Văn Quản Trang',
+      email: 'quantrang@nghiatrang.vn',
+      roles: ['QUAN_TRANG'],
+      permissions: ['profiles:read', 'profiles:write'],
+    );
+
+    final fakeCustomers = [
+      CustomerModel(
+        customerId: 1,
+        customerCode: 'KH-2026-0001',
+        fullName: 'Nguyễn Văn An',
+        citizenId: '001085001234',
+        phoneNumber: '0901234567',
+        email: 'an.nguyen@example.com',
+        address: 'Hà Nội',
+        dateOfBirth: '1975-05-15',
+        relations: [
+          CustomerRelationModel(
+            relationId: 1,
+            deceasedId: 1,
+            deceasedCode: 'QC-2026-0001',
+            deceasedFullName: 'Nguyễn Văn Tiên',
+            relationshipType: 'Con trai',
+            isPrimaryContact: true,
+          ),
+        ],
+      ),
+    ];
+
+    final fakeDeceased = [
+      DeceasedProfileModel(
+        deceasedId: 1,
+        deceasedCode: 'QC-2026-0001',
+        fullName: 'Nguyễn Văn Tiên',
+        gender: 'MALE',
+        dateOfBirth: null,
+        dateOfDeath: '2025-11-20',
+        birthYear: 1940,
+        birthDatePrecision: 'YEAR_ONLY',
+        hometown: 'Hà Nội',
+        religion: 'Không',
+        hasDeathCertificate: true,
+        deathCertificate: DeathCertificateModel(
+          certId: 1,
+          certificateNumber: 'GBC-2025-001',
+          issuingAuthority: 'UBND Phường Kim Mã',
+          issueDate: '2025-11-21',
+          isVerified: true,
+          verifierName: 'Trần Văn Quản Trang',
+        ),
+        burialSlot: BurialSlotBriefModel(
+          slotId: 1,
+          plotId: 101,
+          slotNumber: 1,
+          plotCode: 'A1-01',
+          zoneName: 'Khu A',
+          rowCode: 'A1',
+          status: 'BURIAL',
+          isKimTinh: true,
+        ),
+      ),
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          readinessProvider.overrideWith((ref) async => SystemReadiness(
+                status: 'ready',
+                database: 'Database connected',
+                storage: 'Storage connected',
+                timestamp: '2026-10-03T12:00:00Z',
+              )),
+          versionProvider.overrideWith((ref) async => SystemVersion(
+                appName: 'Hệ thống Quản lý Nghĩa trang',
+                version: '0.2.0',
+                environment: 'test',
+              )),
+          authProvider.overrideWith(() => _FakeAuthNotifier(fakeUser)),
+          customersProvider.overrideWith((ref) async => fakeCustomers),
+          deceasedProfilesProvider.overrideWith((ref) async => fakeDeceased),
+          memorialSearchResultsProvider.overrideWith((ref) async => []),
+        ],
+        child: const CemeteryMobileApp(),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Switch to Profiles tab
+    await tester.tap(find.text('Hồ Sơ & Tra Cứu'));
+    await tester.pumpAndSettle();
+
+    // Switch to Customers sub-tab
+    await tester.tap(find.text('Thân Nhân (KH)'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nguyễn Văn An'), findsOneWidget);
+    expect(find.textContaining('001085001234'), findsOneWidget);
+    expect(find.textContaining('Con trai'), findsOneWidget);
+
+    // Switch to Deceased sub-tab
+    await tester.tap(find.text('Quá Cố & Giấy Báo Tử'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nguyễn Văn Tiên'), findsOneWidget);
+    // G07 precision check
+    expect(find.text('Năm sinh: 1940'), findsOneWidget);
+    // G08 verified certificate check
+    expect(find.textContaining('ĐÃ XÁC THỰC'), findsOneWidget);
+  });
 }
 
 class _FakeAuthNotifier extends AuthNotifier {

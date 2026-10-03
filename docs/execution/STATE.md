@@ -8,22 +8,22 @@
 
 ## 1. Trạng thái tổng quan
 
-- **Milestone hiện tại:** Hoàn tất **M05** (Không gian, ô mộ, slot và bản đồ) -> Sẵn sàng khởi động **M06** (Hồ sơ khách hàng, người mất, giấy báo tử).
+- **Milestone hiện tại:** Hoàn tất **M06** (Hồ sơ khách hàng, người mất, giấy báo tử) -> Sẵn sàng khởi động **M07** (Luồng mua đất -> ký ngoài -> kích hoạt).
 - **Trạng thái CSDL:**
   - Máy chủ: `DESKTOP-HKIPI1M`
   - CSDL chính: `QL_NghiaTrang`
   - CSDL kiểm thử: `QL_NghiaTrang_Test` (bảo vệ tuyệt đối CSDL chính)
   - Đã backup an toàn: `backend/runtime/backups/sql/QL_NghiaTrang_M02_baseline.bak`
-  - Alembic Head: `0005_g04_g05_g06_plots_reservations` (đã áp dụng trên cả DB chính và DB test).
-  - 37 bảng nghiệp vụ + 8 bảng mở rộng mới: `auth_sessions` (G01), `file_objects` (G02), `document_versions` (G02), `background_jobs` (G17), `outbox_events` (G17), `contract_templates` (G03), `plot_reservations` (G04), `plot_ownerships` (G05).
+  - Alembic Head: `0006_g07_g08_profiles_certificates` (đã áp dụng trên cả DB chính và DB test).
+  - 37 bảng nghiệp vụ + 8 bảng mở rộng: `auth_sessions` (G01), `file_objects` (G02), `document_versions` (G02), `background_jobs` (G17), `outbox_events` (G17), `contract_templates` (G03), `plot_reservations` (G04), `plot_ownerships` (G05).
   - Kết nối native qua pyodbc và `ODBC Driver 18 for SQL Server` hoạt động 100%.
 - **Hạ tầng lưu trữ:**
   - MinIO Docker Container (`elestio/minio:latest`) đang chạy trên máy.
   - Bind mount trực tiếp vào `D:\work\TH-PTTK\QL-NghiaTrang\backend\runtime\minio\data` trên ổ D.
 - **Bộ công cụ & Chất lượng mã nguồn:**
-  - Backend: Python 3.12 (`uv`). 32 tests passed (6 plots + 6 auth + 6 catalog + 6 documents + 2 jobs + 2 triggers + 4 health/storage), ruff clean.
-  - Web: React 19 + TypeScript + Vite (`pnpm`). Build thành công trong 234ms, 0 lint errors.
-  - Mobile: Flutter 3.41.6 / Dart 3.11.4 Android. Analyze 0 issues, 5/5 tests passed.
+  - Backend: Python 3.12 (`uv`). 39 tests passed (7 profiles + 6 plots + 6 auth + 6 catalog + 6 documents + 2 jobs + 2 triggers + 4 health/storage), ruff clean.
+  - Web: React 19 + TypeScript + Vite (`pnpm`). Build thành công trong 241ms, 0 lint errors.
+  - Mobile: Flutter 3.41.6 / Dart 3.11.4 Android. Analyze 0 issues, 7/7 tests passed.
   - Tiêu chuẩn Quality Gate (`scripts/quality-gate.ps1`) đạt 100% trên cả 3 phân hệ.
 
 ---
@@ -38,8 +38,8 @@
 | **M03** | Tệp, job/outbox & chứng từ nền | **ĐẠT (Done)** | `v0.4.0-documents` | Migration G02/G17, stream MinIO, kiểm tra Magic Bytes & SHA-256, ReportLab xuất PDF tiếng Việt UTF-8 (Arial), openpyxl Excel, Background Worker lease lock. |
 | **M04** | Design system & cấu hình nền | **ĐẠT (Done)** | `v0.5.0-design-catalog` | Migration G03 (`contract_templates`, scope `price_items`), CatalogService chống trùng khoảng thời gian, Web 5 views, Flutter Catalog tab, Quality Gate 100%. |
 | **M05** | Không gian, ô mộ, slot và bản đồ | **ĐẠT (Done)** | `v0.6.0-plots` | G04/G05/G06 migration, PlotService khóa Kim Tĩnh bất biến, sinh slot ACID, khóa giữ chỗ chống xung đột row-level, Web Leaflet GIS Map & Drawer, Flutter Sơ Đồ Ô Mộ tab, 32 backend tests, 5 flutter tests, Quality Gate 100%. |
-| **M06** | Khách hàng, người mất & giấy báo tử | Sẵn sàng bắt đầu | `v0.7.0-profiles` | G07/G08, quản lý hồ sơ thân nhân, xác minh giấy báo tử trước an táng, chống lộ thông tin PII. |
-| **M07** | Luồng mua đất -> ký ngoài -> kích hoạt | Chưa bắt đầu | `v0.8.0-land-contracts` | G09, HĐ mua đất, giữ chỗ transaction-safe, scan và kích hoạt, sinh nợ. |
+| **M06** | Khách hàng, người mất & giấy báo tử | **ĐẠT (Done)** | `v0.7.0-profiles` | G07/G08, quản lý hồ sơ thân nhân, kiểm tra trùng CCCD (409), độ chính xác năm sinh EXACT/YEAR_ONLY, quy trình xác minh giấy báo tử kèm file MinIO, cổng tra cứu công khai Zero PII. |
+| **M07** | Luồng mua đất -> ký ngoài -> kích hoạt | Sẵn sàng bắt đầu | `v0.8.0-land-contracts` | G09, HĐ mua đất, giữ chỗ transaction-safe, scan và kích hoạt, sinh nợ. |
 | **M08** | An táng, Kim Tĩnh, cải táng, chuyển nhượng | Chưa bắt đầu | `v0.9.0-domain-lifecycle` | G10/G18/G20, khóa Kim Tĩnh bất biến, chuyển nhượng, an táng, cải táng. |
 | **M09** | Quản lý thi công thực địa | Chưa bắt đầu | `v0.10.0-construction` | G11/G13, checklist công trình, bằng chứng ảnh, phân công thợ. |
 | **M10** | Chăm sóc định kỳ & mobile offline | Chưa bắt đầu | `v0.11.0-care` | G12, sinh lịch định kỳ, Quản trang đóng ca, offline queue retry. |
@@ -207,6 +207,56 @@
 - **Web:** `pnpm lint` 0 errors, `pnpm build` đạt chuẩn hoàn tất trong 234ms.
 - **Mobile:** `flutter analyze` 0 issues, `flutter test` đạt 5/5 tests passed.
 - Bộ kiểm định chất lượng toàn diện `scripts/quality-gate.ps1` ĐẠT 100%.
+
+---
+
+## 7. Bằng chứng nghiệm thu Milestone M06 (Hồ Sơ Khách Hàng, Người Mất & Giấy Báo Tử)
+
+### 7.1. CSDL & Alembic Migration (G07, G08)
+- **Revision:** `0006_g07_g08_profiles_certificates.py`
+  - Đã nâng cấp thành công trên cả `QL_NghiaTrang_Test` và `QL_NghiaTrang` trên `DESKTOP-HKIPI1M`.
+  - Mở rộng bảng `customers`: Thêm cột `date_of_birth` (DATE, nullable).
+  - Mở rộng bảng `deceased_profiles`: Thêm `birth_year` (INTEGER, nullable) và `birth_date_precision` (VARCHAR(10), giá trị: 'EXACT', 'YEAR_ONLY', 'UNKNOWN'). Đảm bảo không bịa đặt ngày tháng "01/01" khi chỉ biết năm sinh (G07).
+  - Cải tiến bảng `death_certificates` (G08):
+    - Đổi giá trị mặc định của `is_verified` từ 1 thành 0 (chưa xác minh).
+    - Cột `verified_at` cho phép `NULL`.
+    - Thêm `verified_by` (FK đến `users(user_id)`).
+    - Thêm `rejection_reason` (NVARCHAR(255)) để ghi nhận lý do từ chối giấy báo tử không hợp lệ.
+    - Thêm `file_id` (VARCHAR(64), FK đến `file_objects(file_id)`) liên kết trực tiếp với MinIO S3 object storage.
+    - Thêm `notes` (NVARCHAR(MAX)).
+
+### 7.2. Nghiệp Vụ Backend & Ràng Buộc Miền (ProfileService)
+- **Kiểm soát trùng lặp CCCD/CMND:** Khi tạo khách hàng mới, kiểm tra tính duy nhất của số CCCD trên hệ thống. Nếu trùng, ném lỗi chuẩn `409 Conflict: Số CCCD/CMND đã tồn tại`.
+- **Ràng buộc thời gian sống (G07 Invariant):** Pydantic model validator kiểm tra nghiêm ngặt `date_of_birth <= date_of_death` và `birth_year <= date_of_death.year`.
+- **Quy trình Phê duyệt Giấy báo tử (G08 Pre-Burial Verification):**
+  - Cung cấp hàm nghiệp vụ `verify_certificate(cert_id, is_verified, verifier_user_id, rejection_reason)` cập nhật thời điểm và người duyệt.
+  - Cung cấp hàm tiền điều kiện an táng `check_death_certificate_verified(deceased_id)` làm chốt chặn bảo mật (Server Invariant) trước khi an táng ô mộ.
+- **Cổng Tra cứu Công Khai Tuyệt Đối Bảo Mật PII (G19 & ADR-001):**
+  - Endpoint `/api/v1/profiles/public/memorials?q=` cho phép thân nhân và khách viếng tra cứu vị trí ô mộ, hàng, khu vực, năm sinh/năm mất và thông điệp tưởng niệm.
+  - Tuyệt đối KHÔNG trả về số CCCD, số điện thoại, địa chỉ thân nhân hay bản scan giấy báo tử trên cổng công khai.
+- **Bộ dữ liệu mẫu Synthetic Seed:** Script `backend/scripts/seed_profiles.py` nạp 3 khách hàng, 3 người quá cố (với cả 2 độ chính xác EXACT và YEAR_ONLY), 3 giấy báo tử (đã duyệt, chờ duyệt, từ chối) và phân bổ huyệt mộ mẫu.
+
+### 7.3. Giao Diện Web (React 19 + TypeScript)
+- Phân hệ **"Hồ Sơ & Tưởng Niệm"** (`ProfileModule.tsx`) với 3 chế độ xem:
+  - **Quản lý Thân Nhân (Khách Hàng):** Danh sách khách hàng, tìm kiếm đa tiêu chí (tên, CCCD, SĐT), modal thêm mới khách hàng có kiểm tra CCCD, hiển thị các tag người quá cố có quan hệ thân nhân kèm huy hiệu "★ Đại diện".
+  - **Hồ Sơ Người Quá Cố & Giấy Báo Tử:** Hiển thị thẻ người mất với độ chính xác năm sinh (G07), banner trạng thái giấy báo tử 4 màu (Đã duyệt / Chờ duyệt / Bị từ chối / Chưa nộp). Nút duyệt nhanh hoặc từ chối kèm nhập lý do từ chối.
+  - **Cổng Tra Cứu Tưởng Niệm Công Khai:** Giao diện trang trọng, tông màu xanh ngọc - vàng cát tôn nghiêm, thanh tìm kiếm nhanh kèm các tag gợi ý (Nguyễn, Trần, Lê, A1), thẻ tưởng niệm hiển thị vị trí an táng chuẩn xác kèm huy hiệu Kim Tĩnh mạ vàng.
+- Xử lý trọn vẹn 4 trạng thái giao diện: Loading spinner, Normal list, Empty data với CTA "Thử từ khóa khác" / "Làm mới", và Error state với nút thử lại.
+
+### 7.4. Ứng Dụng Di Động (Flutter Android)
+- Tích hợp tab **"Hồ Sơ & Tra Cứu"** trên BottomNavigationBar (`mobile/lib/main.dart`):
+  - Sub-tab 1: **Tra Cứu Tưởng Niệm** (Công khai không cần đăng nhập). Hỗ trợ tìm kiếm nhanh họ tên hoặc mã mộ, hiển thị thông tin an táng, năm sinh/mất, vị trí hàng/lô/khu vực ngoài trời, cam kết bảo mật Zero PII.
+  - Sub-tab 2: **Thân Nhân (KH)** (Yêu cầu đăng nhập nghiệp vụ). Hiển thị danh sách khách hàng, số CCCD, liên kết thân nhân và người đại diện gia đình.
+  - Sub-tab 3: **Quá Cố & Giấy Báo Tử** (Yêu cầu đăng nhập nghiệp vụ). Hiển thị độ chính xác ngày sinh (EXACT vs YEAR_ONLY - G07), vị trí slot an táng và trạng thái phê duyệt giấy báo tử (G08).
+- Áp dụng `SingleChildScrollView` trên các card xác thực và trạng thái rỗng, đảm bảo không bao giờ bị lỗi tràn viền (RenderFlex overflow) trên mọi kích thước màn hình.
+- Bổ sung 2 widget tests chuyên biệt cho M06 trong `mobile/test/widget_test.dart`.
+
+### 7.5. Kiểm Thử & Tiêu Chuẩn Quality Gate
+- **Backend:** `uv run pytest` đạt 39/39 bài kiểm thử (100% passed, bao gồm 7 test cases mới cho M06). `uv run ruff check .` All checks passed!
+- **Web:** `pnpm lint` 0 errors, `pnpm build` hoàn tất trong 241ms.
+- **Mobile:** `flutter analyze` 0 issues, `flutter test` đạt 7/7 tests passed.
+- Bộ kiểm định chất lượng toàn diện `scripts/quality-gate.ps1` ĐẠT 100%.
+
 
 
 

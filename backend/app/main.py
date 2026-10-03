@@ -12,6 +12,7 @@ from app.modules.catalog.router import router as catalog_router
 from app.modules.documents.router import router as documents_router
 from app.modules.jobs.router import router as jobs_router
 from app.modules.plots.router import router as plots_router
+from app.modules.profiles.router import router as profiles_router
 from app.storage.minio_adapter import storage_adapter
 
 app = FastAPI(
@@ -36,6 +37,7 @@ app.add_middleware(
 app.include_router(auth_router, prefix=settings.API_V1_PREFIX)
 app.include_router(catalog_router, prefix=settings.API_V1_PREFIX)
 app.include_router(plots_router, prefix=settings.API_V1_PREFIX)
+app.include_router(profiles_router, prefix=settings.API_V1_PREFIX)
 app.include_router(documents_router, prefix=settings.API_V1_PREFIX)
 app.include_router(jobs_router, prefix=settings.API_V1_PREFIX)
 
