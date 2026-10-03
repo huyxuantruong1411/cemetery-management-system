@@ -4,6 +4,38 @@ Tất cả những thay đổi quan trọng trong hệ thống Quản lý Nghĩa
 
 ---
 
+## [0.2.0-foundation] - 2026-10-03 (M01)
+
+### Added
+- **Backend FastAPI:**
+  - Khởi tạo cấu trúc Modular Monolith quản lý bằng `uv` với `pyproject.toml` và `uv.lock`.
+  - Cấu hình settings với `pydantic-settings`, nạp `.env` và dựng chuỗi kết nối MSSQL chuẩn pyodbc ODBC Driver 18.
+  - Tích hợp SQLAlchemy 2.x sessionmaker và engine có `pool_pre_ping=True`, `hide_parameters=True`.
+  - Endpoint `/api/v1/health/live`, `/api/v1/health/ready` (kiểm tra đồng thời MSSQL và MinIO), `/api/v1/version`.
+  - Tích hợp adapter MinIO (`boto3`) tự động tạo bucket private `nghiatrang-private`.
+  - Bộ test tự động `tests/test_health.py` và `tests/test_storage.py` (kiểm thử chu kỳ upload/get/stat/sha256).
+- **Lưu trữ MinIO cục bộ (Docker Compose):**
+  - Cấu hình `backend/compose.yaml` sử dụng image `elestio/minio:latest`.
+  - Ràng buộc bind mount chặt chẽ toàn bộ dữ liệu vào `backend/runtime/minio/data` trên ổ D, tiết kiệm dung lượng ổ C.
+  - Kiểm chứng tính toàn vẹn dữ liệu qua bài test restart container và đối soát SHA-256.
+- **Web Frontend (React + Vite + TypeScript):**
+  - Khởi tạo dự án bằng `pnpm` và template `react-ts`.
+  - Cấu hình Vite proxy chuyển tiếp các request `/api` sang backend `http://127.0.0.1:8000`.
+  - Thiết lập bảng mã màu trang nghiêm (`#24594D`, `#F7F8F5`, `#1F2933`) và typography trong `index.css`.
+  - Giao diện `App.tsx` xử lý trọn vẹn 4 trạng thái (`Loading`, `Normal`, `Empty`, `Error` kèm nút Thử lại) và giám sát hạ tầng.
+- **Mobile App (Flutter Android):**
+  - Khởi tạo ứng dụng Flutter Android trong `mobile/`.
+  - Bổ sung `dio`, `flutter_riverpod`, `go_router`.
+  - Thiết lập theme tôn nghiêm, client Dio kết nối tới backend qua `--dart-define=API_BASE_URL`.
+  - Màn hình `DashboardShellScreen` xử lý trọn vẹn 4 trạng thái, các nút bấm thao tác một tay >= 48px.
+  - Widget test tự động kiểm thử trạng thái giao diện với Riverpod overrides.
+- **Bộ Scripts Tự Động Hóa:**
+  - `scripts/doctor.ps1`: Chẩn đoán toàn diện dung lượng ổ đĩa, công cụ CLI, driver ODBC, CSDL MSSQL và MinIO.
+  - `scripts/dev.ps1`: Hướng dẫn và khởi chạy đồng thời các dịch vụ dev.
+  - `scripts/quality-gate.ps1`: Chạy kiểm tra chất lượng tự động 3 tầng (Backend ruff/pytest, Web oxlint/build, Mobile analyze/test).
+
+---
+
 ## [0.1.0-baseline] - 2026-10-03 (M00)
 
 ### Added

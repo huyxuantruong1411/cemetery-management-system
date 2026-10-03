@@ -8,28 +8,31 @@
 
 ## 1. Trạng thái tổng quan
 
-- **Milestone hiện tại:** Hoàn tất **M00** (Khảo sát, công cụ và quyết định kiến trúc) -> Chuyển sang **M01** (Scaffold, runtime và storage).
+- **Milestone hiện tại:** Hoàn tất **M01** (Scaffold, runtime và storage) -> Chuẩn bị **M02** (Baseline migration, auth và phân quyền).
 - **Trạng thái CSDL:**
   - Máy chủ: `DESKTOP-HKIPI1M`
   - CSDL: `QL_NghiaTrang`
   - 37 bảng nghiệp vụ + 2 triggers đã được đối chiếu chi tiết trong [`docs/db-baseline.json`](../db-baseline.json).
-  - Không chạy lại script phá hủy CSDL `docs/source/lab4-sql.sql`.
+  - Kết nối native qua pyodbc và `ODBC Driver 18 for SQL Server` hoạt động 100%.
 - **Hạ tầng lưu trữ:**
-  - Toàn bộ dữ liệu MinIO cục bộ sẽ lưu tại `backend/runtime/minio/data` trên ổ D (còn >87GB trống).
-- **Bộ công cụ cốt lõi:**
-  - Backend: Quản lý bằng `uv`, Python 3.12, SQLAlchemy 2.x + pyodbc + ODBC Driver 18.
-  - Web: Quản lý bằng `pnpm`, React + TypeScript + Vite + Tailwind CSS + shadcn/ui.
-  - Mobile: Flutter 3.41.6 (Dart 3.11.4) Android.
+  - MinIO Docker Container (`elestio/minio:latest`) đang chạy trên máy.
+  - Bind mount trực tiếp vào `D:\work\TH-PTTK\QL-NghiaTrang\backend\runtime\minio\data` trên ổ D.
+  - Đã kiểm chứng tính bền vững dữ liệu: Upload -> Restart MinIO container -> Tải lại -> Kiểm tra SHA-256 khớp 100%.
+- **Bộ công cụ & Chất lượng mã nguồn:**
+  - Backend: Python 3.12, quản lý bằng `uv` (`pyproject.toml`, `uv.lock`). 4 tests passed, ruff clean.
+  - Web: React 19 + TypeScript + Vite, quản lý bằng `pnpm` (`pnpm-lock.yaml`). Build thành công trong 549ms, 0 lint errors.
+  - Mobile: Flutter 3.41.6 / Dart 3.11.4 Android, Riverpod, Dio, GoRouter. Analyze 0 issues, test passed.
+  - Tiêu chuẩn Quality Gate (`scripts/quality-gate.ps1`) đạt 100% trên cả 3 phân hệ.
 
 ---
 
 ## 2. Bảng theo dõi tiến độ Milestones (M00 - M14)
 
-| Milestone | Tên Milestone | Trạng thái | Tag Git dự kiến | Ghi chú & Bằng chứng |
+| Milestone | Tên Milestone | Trạng thái | Tag Git | Ghi chú & Bằng chứng |
 |---|---|---|---|---|
 | **M00** | Khảo sát, công cụ & quyết định kiến trúc | **ĐẠT (Done)** | `v0.1.0-baseline` | Đã kiểm tra preflight, cài đặt ODBC 18, introspect CSDL (37 bảng), rà soát repo Manga, lập ADR-001, Gap Register, Toolchain Lock, AGENTS.md, Rules & Skills. |
-| **M01** | Scaffold, runtime và storage | **Sắp thực hiện** | `v0.2.0-foundation` | Khởi tạo cấu trúc monorepo (`backend`, `web`, `mobile`), dựng FastAPI readiness/liveness, MinIO bind mount trên ổ D, shell web & flutter. |
-| **M02** | Baseline migration, auth & phân quyền | Chưa bắt đầu | `v0.3.0-auth` | Baseline Alembic, session revoke G01, RBAC 4 vai trò, test bypass trigger. |
+| **M01** | Scaffold, runtime và storage | **ĐẠT (Done)** | `v0.2.0-foundation` | Monorepo hoàn chỉnh (`backend`, `web`, `mobile`, `scripts`). FastAPI readiness/liveness kiểm tra SQL + MinIO; MinIO bind mount ổ D bền vững; Web & Flutter shell 4 trạng thái; Quality gate 3 tier đạt. |
+| **M02** | Baseline migration, auth & phân quyền | **Sắp thực hiện** | `v0.3.0-auth` | Baseline Alembic, session revoke G01, RBAC 4 vai trò, test bypass trigger. |
 | **M03** | Tệp, job/outbox & chứng từ nền | Chưa bắt đầu | `v0.4.0-documents` | G02/G17, upload stream MinIO, PDF rendering tiếng Việt, outbox worker. |
 | **M04** | Design system & cấu hình nền | Chưa bắt đầu | `v0.5.0-design-catalog` | Bảng giá G03, gói chăm sóc, template hợp đồng, UI components. |
 | **M05** | Không gian, ô mộ, slot và bản đồ | Chưa bắt đầu | `v0.6.0-plots` | G04/G06, bản đồ Leaflet, quản lý khu/hàng/ô/slot, chống trùng giữ chỗ. |
@@ -45,9 +48,16 @@
 
 ---
 
-## 3. Các quyết định kỹ thuật đã chốt tại M00
+## 3. Bằng chứng nghiệm thu Milestone M01
 
-1. **CSDL MSSQL:** Giữ nguyên 37 bảng hiện có trên `DESKTOP-HKIPI1M`. Không tái tạo bằng `lab4-sql.sql`.
-2. **ODBC Driver 18:** Đã cài đặt qua winget bản `18.6.2.1` x64/32-bit; kết nối kiểm thử bằng `uv run --with pyodbc python` trả về kết quả 38 bảng hoàn toàn chuẩn xác.
-3. **Ổ đĩa lưu trữ:** Lưu trữ toàn bộ file runtime của MinIO tại `backend/runtime/minio/data` trên ổ D để tiết kiệm dung lượng ổ C.
-4. **Package Managers:** Bắt buộc tuân thủ dùng `uv` cho backend Python và `pnpm` cho web React.
+- **Liveness & Readiness Endpoint:**
+  - `GET /api/v1/health/live` -> 200 OK (`{"status":"live"}`)
+  - `GET /api/v1/health/ready` -> 200 OK (`{"status":"ready","database":"Database connected","storage":"Storage connected"}`)
+  - `GET /api/v1/version` -> 200 OK (`{"app_name":"Hệ thống Quản lý Nghĩa trang Tư nhân","version":"0.2.0","environment":"development"}`)
+- **MinIO Storage Bind-Mount & Data Integrity:**
+  - Container: `ql_nghiatrang_minio`
+  - Mount Source: `D:\work\TH-PTTK\QL-NghiaTrang\backend\runtime\minio\data`
+  - Mount Destination: `/data`
+  - Persistence Check: Upload -> Restart MinIO container -> Download -> SHA-256 `1454bf8b1f5fefe4b7aecb496fac63a5bc1b2a976fafc5849883532d5b05c441` khớp hoàn hảo.
+- **Tiêu chuẩn UI 4 trạng thái:**
+  - Web và Flutter đều xử lý đầy đủ 4 trạng thái: Loading (shimmer/spinner), Normal (thẻ trạng thái API, MSSQL, MinIO), Empty Data, Error (kèm nút Thử lại).

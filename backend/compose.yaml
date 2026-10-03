@@ -1,0 +1,23 @@
+services:
+  minio:
+    image: ${MINIO_IMAGE:-elestio/minio:latest}
+    container_name: ql_nghiatrang_minio
+    command: ["server", "/data", "--console-address", ":9001"]
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin_local}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-NghiaTrangSecret2026!}
+    volumes:
+      - type: bind
+        source: ./runtime/minio/data
+        target: /data
+        bind:
+          create_host_path: false
+    restart: unless-stopped
+    logging:
+      driver: local
+      options:
+        max-size: "10m"
+        max-file: "3"
