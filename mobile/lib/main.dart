@@ -596,6 +596,113 @@ class ContractBriefModel {
   }
 }
 
+// Construction Models (M09)
+class ConstructionTaskBriefModel {
+  final int taskId;
+  final int orderId;
+  final String taskName;
+  final String status;
+  final bool isRequired;
+  final int sortOrder;
+  final String? startDate;
+  final String? dueDate;
+  final int evidenceCount;
+  final String? notes;
+
+  ConstructionTaskBriefModel({
+    required this.taskId,
+    required this.orderId,
+    required this.taskName,
+    required this.status,
+    required this.isRequired,
+    required this.sortOrder,
+    this.startDate,
+    this.dueDate,
+    required this.evidenceCount,
+    this.notes,
+  });
+
+  factory ConstructionTaskBriefModel.fromJson(Map<String, dynamic> json) {
+    return ConstructionTaskBriefModel(
+      taskId: json['task_id'] as int? ?? 0,
+      orderId: json['order_id'] as int? ?? 0,
+      taskName: json['task_name'] as String? ?? '',
+      status: json['status'] as String? ?? 'TODO',
+      isRequired: json['is_required'] as bool? ?? false,
+      sortOrder: json['sort_order'] as int? ?? 0,
+      startDate: json['start_date'] as String?,
+      dueDate: json['due_date'] as String?,
+      evidenceCount: json['evidence_count'] as int? ?? 0,
+      notes: json['notes'] as String?,
+    );
+  }
+}
+
+class ConstructionOrderModel {
+  final int orderId;
+  final String orderCode;
+  final int annexId;
+  final int plotId;
+  final String? plotCode;
+  final String? zoneName;
+  final int? supervisorId;
+  final String? supervisorName;
+  final String? startDate;
+  final String? expectedEndDate;
+  final String? actualEndDate;
+  final String status;
+  final String? notes;
+  final int tasksCount;
+  final int completedTasksCount;
+  final int progressPercent;
+  final List<ConstructionTaskBriefModel> tasks;
+
+  ConstructionOrderModel({
+    required this.orderId,
+    required this.orderCode,
+    required this.annexId,
+    required this.plotId,
+    this.plotCode,
+    this.zoneName,
+    this.supervisorId,
+    this.supervisorName,
+    this.startDate,
+    this.expectedEndDate,
+    this.actualEndDate,
+    required this.status,
+    this.notes,
+    required this.tasksCount,
+    required this.completedTasksCount,
+    required this.progressPercent,
+    required this.tasks,
+  });
+
+  factory ConstructionOrderModel.fromJson(Map<String, dynamic> json) {
+    final rawTasks = json['tasks'] as List<dynamic>? ?? [];
+    return ConstructionOrderModel(
+      orderId: json['order_id'] as int? ?? 0,
+      orderCode: json['order_code'] as String? ?? '',
+      annexId: json['annex_id'] as int? ?? 0,
+      plotId: json['plot_id'] as int? ?? 0,
+      plotCode: json['plot_code'] as String?,
+      zoneName: json['zone_name'] as String?,
+      supervisorId: json['supervisor_id'] as int?,
+      supervisorName: json['supervisor_name'] as String?,
+      startDate: json['start_date'] as String?,
+      expectedEndDate: json['expected_end_date'] as String?,
+      actualEndDate: json['actual_end_date'] as String?,
+      status: json['status'] as String? ?? 'PENDING',
+      notes: json['notes'] as String?,
+      tasksCount: json['tasks_count'] as int? ?? 0,
+      completedTasksCount: json['completed_tasks_count'] as int? ?? 0,
+      progressPercent: json['progress_percent'] as int? ?? 0,
+      tasks: rawTasks
+          .map((t) => ConstructionTaskBriefModel.fromJson(t as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
 // =============================================================================
 // Providers
 // =============================================================================
@@ -793,6 +900,21 @@ final contractsProvider = FutureProvider.autoDispose<List<ContractBriefModel>>((
   return list.map((item) => ContractBriefModel.fromJson(item as Map<String, dynamic>)).toList();
 });
 
+// Construction Provider (M09)
+final constructionOrdersProvider = FutureProvider.autoDispose<List<ConstructionOrderModel>>((ref) async {
+  final authState = ref.watch(authProvider);
+  if (!authState.isAuthenticated) {
+    return [];
+  }
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get(
+    '/construction/orders',
+    options: Options(headers: {'Authorization': 'Bearer ${authState.accessToken}'}),
+  );
+  final list = res.data as List<dynamic>;
+  return list.map((item) => ConstructionOrderModel.fromJson(item as Map<String, dynamic>)).toList();
+});
+
 // =============================================================================
 // App & Dashboard
 // =============================================================================
@@ -846,6 +968,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   String _deceasedSearchQuery = '';
   String _contractSearchQuery = '';
   String _contractStatusFilter = 'ALL';
+  String _constructionStatusFilter = 'ALL';
+  String _constructionSearchQuery = '';
 
   @override
   void initState() {
@@ -1143,6 +1267,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ref.invalidate(customersProvider);
                 ref.invalidate(deceasedProfilesProvider);
                 ref.invalidate(contractsProvider);
+                ref.invalidate(constructionOrdersProvider);
               }
               ref.invalidate(memorialSearchResultsProvider);
             },
@@ -1157,6 +1282,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           _buildCatalogTab(context, authState),
           _buildProfilesTab(context, authState),
           _buildContractsTab(context, authState),
+          _buildConstructionTab(context, authState),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -1194,6 +1320,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             icon: Icon(Icons.description_outlined),
             activeIcon: Icon(Icons.description),
             label: 'Hợp Đồng',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.handyman_outlined),
+            activeIcon: Icon(Icons.handyman),
+            label: 'Thi Công',
           ),
         ],
       ),
@@ -3350,6 +3481,533 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               const SizedBox(height: 20),
             ],
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildConstructionTab(BuildContext context, AuthState authState) {
+    if (!authState.isAuthenticated) {
+      return Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.handyman_outlined, size: 56, color: Color(0xFF24594D)),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Yêu Cầu Đăng Nhập Quản Trang',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Vui lòng đăng nhập với tài khoản Quản trang hoặc Admin để kiểm tra hiện trường, tiến độ thi công và minh chứng hình ảnh.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.black54, fontSize: 13),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF24594D),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    onPressed: () => _showLoginDialog(context),
+                    icon: const Icon(Icons.login),
+                    label: const Text('Đăng nhập ngay'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final ordersAsync = ref.watch(constructionOrdersProvider);
+
+    return ordersAsync.when(
+      loading: () => const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: Color(0xFF24594D)),
+            SizedBox(height: 12),
+            Text('Đang tải danh sách lệnh thi công...', style: TextStyle(color: Colors.black54)),
+          ],
+        ),
+      ),
+      error: (err, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 12),
+              Text(
+                'Lỗi tải lệnh thi công: ${err.toString()}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.black87),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () => ref.invalidate(constructionOrdersProvider),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Thử lại'),
+              ),
+            ],
+          ),
+        ),
+      ),
+      data: (orders) {
+        final filtered = orders.where((o) {
+          if (_constructionStatusFilter != 'ALL' && o.status != _constructionStatusFilter) {
+            return false;
+          }
+          if (_constructionSearchQuery.isNotEmpty) {
+            final q = _constructionSearchQuery.toLowerCase();
+            final matchesCode = o.orderCode.toLowerCase().contains(q);
+            final matchesPlot = (o.plotCode ?? '').toLowerCase().contains(q);
+            final matchesNotes = (o.notes ?? '').toLowerCase().contains(q);
+            return matchesCode || matchesPlot || matchesNotes;
+          }
+          return true;
+        }).toList();
+
+        final totalCount = orders.length;
+        final inProgressCount = orders.where((o) => o.status == 'IN_PROGRESS').length;
+        final pendingCount = orders.where((o) => o.status == 'PENDING').length;
+        final completedCount = orders.where((o) => o.status == 'COMPLETED').length;
+
+        return RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(constructionOrdersProvider);
+            await ref.read(constructionOrdersProvider.future);
+          },
+          child: ListView(
+            padding: const EdgeInsets.all(16.0),
+            children: [
+              // Summary KPIs
+              Row(
+                children: [
+                  Expanded(child: _buildConstructionKpiCard('Tổng số lệnh', '$totalCount', Icons.assignment, const Color(0xFF1E293B))),
+                  const SizedBox(width: 6),
+                  Expanded(child: _buildConstructionKpiCard('Đang làm', '$inProgressCount', Icons.handyman, const Color(0xFF0284C7))),
+                  const SizedBox(width: 6),
+                  Expanded(child: _buildConstructionKpiCard('Chờ thi công', '$pendingCount', Icons.schedule, const Color(0xFFD97706))),
+                  const SizedBox(width: 6),
+                  Expanded(child: _buildConstructionKpiCard('Hoàn tất', '$completedCount', Icons.check_circle, const Color(0xFF16A34A))),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Search field
+              TextField(
+                decoration: InputDecoration(
+                  hintText: 'Tìm theo mã lệnh, mã ô mộ...',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  isDense: true,
+                ),
+                onChanged: (val) {
+                  setState(() {
+                    _constructionSearchQuery = val.trim();
+                  });
+                },
+              ),
+              const SizedBox(height: 10),
+
+              // Filter chips
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildConstructionFilterChip('Tất cả', 'ALL'),
+                    const SizedBox(width: 6),
+                    _buildConstructionFilterChip('Chờ thi công', 'PENDING'),
+                    const SizedBox(width: 6),
+                    _buildConstructionFilterChip('Đang thi công', 'IN_PROGRESS'),
+                    const SizedBox(width: 6),
+                    _buildConstructionFilterChip('Đã hoàn tất', 'COMPLETED'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              if (filtered.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.handyman_outlined, size: 48, color: Colors.black26),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Không có lệnh thi công nào phù hợp',
+                          style: TextStyle(color: Colors.black54, fontSize: 14),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton.icon(
+                          onPressed: () {
+                            setState(() {
+                              _constructionStatusFilter = 'ALL';
+                              _constructionSearchQuery = '';
+                            });
+                          },
+                          icon: const Icon(Icons.clear, size: 16),
+                          label: const Text('Xóa bộ lọc'),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                ...filtered.map((order) => _buildConstructionOrderCard(context, order)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildConstructionKpiCard(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(8.0),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(label, style: const TextStyle(fontSize: 10, color: Colors.black54)),
+              Icon(icon, size: 14, color: color),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildConstructionFilterChip(String label, String statusKey) {
+    final isSelected = _constructionStatusFilter == statusKey;
+    return ChoiceChip(
+      label: Text(label, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : Colors.black87)),
+      selected: isSelected,
+      selectedColor: const Color(0xFF24594D),
+      backgroundColor: Colors.white,
+      onSelected: (val) {
+        setState(() {
+          _constructionStatusFilter = val ? statusKey : 'ALL';
+        });
+      },
+    );
+  }
+
+  Widget _buildConstructionOrderCard(BuildContext context, ConstructionOrderModel order) {
+    Color statusColor;
+    String statusText;
+    switch (order.status) {
+      case 'IN_PROGRESS':
+        statusColor = const Color(0xFF0284C7);
+        statusText = 'Đang thi công';
+        break;
+      case 'COMPLETED':
+        statusColor = const Color(0xFF16A34A);
+        statusText = 'Hoàn tất';
+        break;
+      case 'OVERDUE':
+        statusColor = const Color(0xFFDC2626);
+        statusText = 'Quá hạn';
+        break;
+      case 'PENDING':
+      default:
+        statusColor = const Color(0xFFD97706);
+        statusText = 'Chờ thi công';
+        break;
+    }
+
+    final hasUncompletedRequired = order.tasks.any((t) => t.isRequired && t.status != 'DONE');
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 1,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _showConstructionOrderDetailSheet(context, order),
+        child: Padding(
+          padding: const EdgeInsets.all(14.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    order.orderCode,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF24594D)),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                    ),
+                    child: Text(
+                      statusText,
+                      style: TextStyle(color: statusColor, fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  const Icon(Icons.place_outlined, size: 15, color: Colors.black54),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Ô mộ: ${order.plotCode ?? "Chưa gán"}${order.zoneName != null ? " (${order.zoneName})" : ""}',
+                    style: const TextStyle(fontSize: 13, color: Colors.black87),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Tiến độ: ${order.progressPercent}% (${order.completedTasksCount}/${order.tasksCount} việc)',
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                  ),
+                  if (hasUncompletedRequired && order.status != 'COMPLETED')
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF3C7),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(color: const Color(0xFFFDE68A)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.shield_outlined, size: 11, color: Color(0xFFB45309)),
+                          SizedBox(width: 3),
+                          Text('G11 Minh chứng', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFFB45309))),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: order.tasksCount > 0 ? (order.completedTasksCount / order.tasksCount) : 0,
+                  backgroundColor: const Color(0xFFE2E8F0),
+                  color: order.progressPercent == 100 ? const Color(0xFF16A34A) : const Color(0xFF24594D),
+                  minHeight: 6,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    order.supervisorName != null ? 'GS: ${order.supervisorName}' : 'Chưa chỉ định GS',
+                    style: const TextStyle(fontSize: 11, color: Colors.black54),
+                  ),
+                  if (order.expectedEndDate != null)
+                    Text('Hạn: ${order.expectedEndDate}', style: const TextStyle(fontSize: 11, color: Colors.black54)),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showConstructionOrderDetailSheet(BuildContext context, ConstructionOrderModel order) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.4,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (_, scrollController) {
+            return Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: ListView(
+                controller: scrollController,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        order.orderCode,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF24594D)),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  const Divider(),
+                  _buildDetailRow('Mã ô mộ', order.plotCode ?? 'Chưa gán'),
+                  if (order.zoneName != null) _buildDetailRow('Khu mộ', order.zoneName!),
+                  _buildDetailRow('Trạng thái', order.status),
+                  _buildDetailRow('Tiến độ', '${order.progressPercent}% (${order.completedTasksCount}/${order.tasksCount} hoàn tất)'),
+                  if (order.supervisorName != null) _buildDetailRow('Giám sát viên', order.supervisorName!),
+                  if (order.startDate != null) _buildDetailRow('Ngày bắt đầu', order.startDate!),
+                  if (order.expectedEndDate != null) _buildDetailRow('Dự kiến hoàn tất', order.expectedEndDate!),
+                  if (order.actualEndDate != null) _buildDetailRow('Thực tế hoàn tất', order.actualEndDate!),
+                  if (order.notes != null) _buildDetailRow('Ghi chú', order.notes!),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Hạng Mục Công Việc & Minh Chứng (G11)',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A)),
+                  ),
+                  const SizedBox(height: 8),
+                  if (order.tasks.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12.0),
+                      child: Text('Chưa có hạng mục công việc nào', style: TextStyle(color: Colors.black54, fontSize: 13)),
+                    )
+                  else
+                    ...order.tasks.map((task) {
+                      Color taskStatusColor;
+                      String taskStatusText;
+                      switch (task.status) {
+                        case 'DONE':
+                          taskStatusColor = const Color(0xFF16A34A);
+                          taskStatusText = 'Hoàn tất';
+                          break;
+                        case 'DOING':
+                          taskStatusColor = const Color(0xFF0284C7);
+                          taskStatusText = 'Đang làm';
+                          break;
+                        case 'TODO':
+                        default:
+                          taskStatusColor = const Color(0xFF64748B);
+                          taskStatusText = 'Chưa làm';
+                          break;
+                      }
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: 24,
+                              height: 24,
+                              alignment: Alignment.center,
+                              decoration: BoxDecoration(
+                                color: task.status == 'DONE' ? const Color(0xFFDCFCE7) : const Color(0xFFE2E8F0),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                '${task.sortOrder}',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: task.status == 'DONE' ? const Color(0xFF16A34A) : const Color(0xFF475569),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          task.taskName,
+                                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                                        ),
+                                      ),
+                                      if (task.isRequired)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                          margin: const EdgeInsets.only(left: 4),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFFEE2E2),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: const Text('Bắt buộc', style: TextStyle(fontSize: 10, color: Color(0xFFDC2626), fontWeight: FontWeight.bold)),
+                                        ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                        decoration: BoxDecoration(
+                                          color: taskStatusColor.withValues(alpha: 0.1),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          taskStatusText,
+                                          style: TextStyle(fontSize: 10, color: taskStatusColor, fontWeight: FontWeight.bold),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Row(
+                                        children: [
+                                          const Icon(Icons.photo_camera_outlined, size: 13, color: Colors.black54),
+                                          const SizedBox(width: 3),
+                                          Text(
+                                            '${task.evidenceCount} ảnh',
+                                            style: const TextStyle(fontSize: 11, color: Colors.black54),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            );
+          },
         );
       },
     );

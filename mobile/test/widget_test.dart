@@ -505,6 +505,139 @@ void main() {
     expect(find.text('Mua Bán Quyền Sử Dụng Đất'), findsOneWidget);
     expect(find.text('0901234567'), findsWidgets);
   });
+
+  testWidgets('CemeteryMobileApp construction tab unauthenticated prompt test', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          readinessProvider.overrideWith((ref) async => SystemReadiness(
+                status: 'ready',
+                database: 'Database connected',
+                storage: 'Storage connected',
+                timestamp: '2026-10-03T12:00:00Z',
+              )),
+          versionProvider.overrideWith((ref) async => SystemVersion(
+                appName: 'Hệ thống Quản lý Nghĩa trang',
+                version: '0.10.0',
+                environment: 'test',
+              )),
+        ],
+        child: const CemeteryMobileApp(),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Tap the Thi Công tab
+    await tester.tap(find.text('Thi Công'));
+    await tester.pumpAndSettle();
+
+    // Verify unauthenticated card is shown
+    expect(find.text('Yêu Cầu Đăng Nhập Quản Trang'), findsOneWidget);
+    expect(find.text('Đăng nhập ngay'), findsOneWidget);
+  });
+
+  testWidgets('CemeteryMobileApp construction tab authenticated displays orders and opens checklist sheet test', (WidgetTester tester) async {
+    final fakeUser = UserModel(
+      userId: 1,
+      username: 'quan_trang',
+      fullName: 'Trần Văn Quản Trang',
+      email: 'quantrang@nghiatrang.vn',
+      roles: ['QUAN_TRANG'],
+      permissions: ['construction:read', 'construction:execute'],
+    );
+
+    final fakeOrders = [
+      ConstructionOrderModel(
+        orderId: 1,
+        orderCode: 'CT-202610-0001',
+        annexId: 1,
+        plotId: 10,
+        plotCode: 'A1-01',
+        zoneName: 'Khu A',
+        supervisorId: 1,
+        supervisorName: 'Trần Văn Quản Trang',
+        startDate: '2026-10-01',
+        expectedEndDate: '2026-10-15',
+        actualEndDate: null,
+        status: 'IN_PROGRESS',
+        notes: 'Thi công kim tĩnh chuẩn',
+        tasksCount: 2,
+        completedTasksCount: 1,
+        progressPercent: 50,
+        tasks: [
+          ConstructionTaskBriefModel(
+            taskId: 1,
+            orderId: 1,
+            taskName: 'Đào móng kim tĩnh',
+            status: 'DONE',
+            isRequired: true,
+            sortOrder: 1,
+            evidenceCount: 2,
+            notes: 'Đã chụp ảnh đáy móng',
+          ),
+          ConstructionTaskBriefModel(
+            taskId: 2,
+            orderId: 1,
+            taskName: 'Đổ bê tông thành mộ',
+            status: 'TODO',
+            isRequired: true,
+            sortOrder: 2,
+            evidenceCount: 0,
+            notes: null,
+          ),
+        ],
+      ),
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          readinessProvider.overrideWith((ref) async => SystemReadiness(
+                status: 'ready',
+                database: 'Database connected',
+                storage: 'Storage connected',
+                timestamp: '2026-10-03T12:00:00Z',
+              )),
+          versionProvider.overrideWith((ref) async => SystemVersion(
+                appName: 'Hệ thống Quản lý Nghĩa trang',
+                version: '0.10.0',
+                environment: 'test',
+              )),
+          authProvider.overrideWith(() => _FakeAuthNotifier(fakeUser)),
+          constructionOrdersProvider.overrideWith((ref) async => fakeOrders),
+        ],
+        child: const CemeteryMobileApp(),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Tap the Thi Công tab
+    await tester.tap(find.text('Thi Công'));
+    await tester.pumpAndSettle();
+
+    // Verify order is rendered
+    expect(find.text('CT-202610-0001'), findsOneWidget);
+    expect(find.text('Đang thi công'), findsWidgets);
+    expect(find.text('G11 Minh chứng'), findsOneWidget);
+    expect(find.textContaining('Tiến độ: 50%'), findsOneWidget);
+
+    // Tap order card to open details sheet
+    await tester.tap(find.text('CT-202610-0001'));
+    await tester.pumpAndSettle();
+
+    // Verify task checklist items
+    expect(find.text('Hạng Mục Công Việc & Minh Chứng (G11)'), findsOneWidget);
+    expect(find.text('Đào móng kim tĩnh'), findsOneWidget);
+    expect(find.text('2 ảnh'), findsOneWidget);
+    expect(find.text('Bắt buộc'), findsWidgets);
+
+    // Scroll to see remaining tasks
+    await tester.drag(find.text('Đào móng kim tĩnh'), const Offset(0, -200));
+    await tester.pumpAndSettle();
+    expect(find.text('Đổ bê tông thành mộ'), findsOneWidget);
+  });
 }
 
 class _FakeAuthNotifier extends AuthNotifier {
