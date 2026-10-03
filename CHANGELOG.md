@@ -4,6 +4,50 @@ Tất cả những thay đổi quan trọng trong hệ thống Quản lý Nghĩa
 
 ---
 
+## [0.6.0-plots] - 2026-10-03 (M05)
+
+### Added
+- **CSDL & Alembic Migration (G04, G05, G06):**
+  - Migration `0005_g04_g05_g06_plots_reservations.py`:
+    - Thêm cột `orientation` (NVARCHAR(50)) và `notes` (NVARCHAR(MAX)) vào bảng `plots`.
+    - Tạo bảng `plot_reservations` (G04) quản lý vòng đời giữ chỗ kèm chỉ mục lọc duy nhất: `UQ_plot_reservations_active ON plot_reservations(plot_id) WHERE state = 'ACTIVE'`.
+    - Tạo bảng `plot_ownerships` (G05) theo dõi chuỗi lịch sử quyền sở hữu qua các giao dịch chuyển nhượng.
+    - Tạo chỉ mục lọc duy nhất trên `plot_slots(current_deceased_id) WHERE current_deceased_id IS NOT NULL` (G06).
+  - Cập nhật SQLAlchemy ORM models tại `backend/app/modules/plots/models.py`, bảo tồn `implicit_returning=False` trên `Plot` để tương thích trigger bảo toàn Kim Tĩnh của CSDL.
+- **Nghiệp Vụ Backend & Ràng Buộc Miền (PlotService):**
+  - Ràng buộc Kim Tĩnh bất biến: Chặn tuyệt đối việc gỡ bỏ cờ Kim Tĩnh hoặc chỉnh sửa ô mộ đã bị khóa Kim Tĩnh.
+  - Tự động sinh slot huyệt trong 1 transaction ACID: Khi tạo ô mộ với `default_slots = N`, tự động sinh 1..N `PlotSlot` (`slot_number` 1..N, trạng thái ban đầu `EMPTY`).
+  - Khóa hàng chống trùng giữ chỗ (G04 Anti-Double Booking Guard): Sử dụng `with_for_update()` trên MSSQL, kiểm tra trạng thái ô và từ chối tranh chấp với mã lỗi `409 Conflict`.
+  - Quản lý hủy & hết hạn giữ chỗ: Tự động hoàn trả trạng thái ô mộ về `EMPTY_UNSOLD`, xử lý tương thích múi giờ offset-naive và offset-aware.
+  - Script seed idempotent: `backend/scripts/seed_plots.py` nạp 3 khu vực (Khu A, Khu B, Khu VIP), 6 hàng mộ, 3 loại mộ và 11 ô mộ thực tế kèm tọa độ GPS và slot tự động.
+- **API Endpoints:**
+  - Tra cứu danh sách ô mộ đa tiêu chí: `/api/v1/plots?zone_id=&status=&is_kim_tinh=&search=`
+  - Chi tiết ô mộ kèm slot: `/api/v1/plots/{plot_id}`
+  - Tạo mới ô mộ (tự động sinh slot): `POST /api/v1/plots`
+  - Đặt giữ chỗ ô mộ (anti-double booking): `POST /api/v1/plots/{plot_id}/reserve`
+  - Hủy giữ chỗ ô mộ: `POST /api/v1/plots/{plot_id}/cancel-reservation`
+- **Web Frontend (React 19 + TypeScript + Leaflet GIS):**
+  - Phân hệ **"Sơ Đồ Ô Mộ"** (`PlotMapModule.tsx`):
+    - Bản đồ không gian tương tác Leaflet 1.9, marker SVG định dạng theo trạng thái màu sắc.
+    - Huy hiệu khiên bảo vệ `🛡️` cho ô Kim Tĩnh và ổ khóa `🔒` cho ô đã khóa.
+    - Chuyển đổi giữa chế độ Bản đồ và chế độ Lưới trực quan.
+    - Bộ lọc đa chiều (khu vực, trạng thái, Kim Tĩnh, tìm kiếm mã mộ).
+    - Drawer hiển thị chi tiết ô mộ, tọa độ GPS, danh sách slot và người mất.
+    - Modal đặt giữ chỗ với xử lý thông báo xung đột `409 Conflict`.
+- **Mobile App (Flutter Android):**
+  - Thêm tab **"Sơ Đồ Ô Mộ"** trên BottomNavigationBar.
+  - Tra cứu danh sách ô mộ theo khu vực, tìm kiếm nhanh mã ô mộ.
+  - Hiển thị huy hiệu Kim Tĩnh và trạng thái ô mộ.
+  - Bottom Sheet xem chi tiết ô mộ phục vụ kiểm tra thực địa.
+  - Bổ sung 2 widget tests cho Sơ Đồ Ô Mộ (unauthenticated prompt & authenticated detail rendering).
+- **Kiểm Thử & Đảm Bảo Chất Lượng:**
+  - 32 backend tests (`uv run pytest`) passed 100%. `uv run ruff check .` clean.
+  - Web `pnpm lint` 0 errors, `pnpm build` passed trong 234ms.
+  - Mobile `flutter analyze` 0 issues, `flutter test` (5/5 passed).
+  - Tiêu chuẩn Quality Gate `scripts/quality-gate.ps1` ĐẠT 100%.
+
+---
+
 ## [0.5.0-design-catalog] - 2026-10-03 (M04)
 
 ### Added

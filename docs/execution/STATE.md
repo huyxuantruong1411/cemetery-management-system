@@ -8,22 +8,22 @@
 
 ## 1. Trạng thái tổng quan
 
-- **Milestone hiện tại:** Hoàn tất **M04** (Design system & cấu hình nền) -> Sẵn sàng khởi động **M05** (Không gian, ô mộ, slot và bản đồ).
+- **Milestone hiện tại:** Hoàn tất **M05** (Không gian, ô mộ, slot và bản đồ) -> Sẵn sàng khởi động **M06** (Hồ sơ khách hàng, người mất, giấy báo tử).
 - **Trạng thái CSDL:**
   - Máy chủ: `DESKTOP-HKIPI1M`
   - CSDL chính: `QL_NghiaTrang`
   - CSDL kiểm thử: `QL_NghiaTrang_Test` (bảo vệ tuyệt đối CSDL chính)
   - Đã backup an toàn: `backend/runtime/backups/sql/QL_NghiaTrang_M02_baseline.bak`
-  - Alembic Head: `0004_g03_catalog_pricing_templates` (đã áp dụng trên cả DB chính và DB test).
-  - 37 bảng nghiệp vụ + 6 bảng mở rộng mới: `auth_sessions` (G01), `file_objects` (G02), `document_versions` (G02), `background_jobs` (G17), `outbox_events` (G17), `contract_templates` (G03) cùng 4 cột phạm vi giá trên `price_items`.
+  - Alembic Head: `0005_g04_g05_g06_plots_reservations` (đã áp dụng trên cả DB chính và DB test).
+  - 37 bảng nghiệp vụ + 8 bảng mở rộng mới: `auth_sessions` (G01), `file_objects` (G02), `document_versions` (G02), `background_jobs` (G17), `outbox_events` (G17), `contract_templates` (G03), `plot_reservations` (G04), `plot_ownerships` (G05).
   - Kết nối native qua pyodbc và `ODBC Driver 18 for SQL Server` hoạt động 100%.
 - **Hạ tầng lưu trữ:**
   - MinIO Docker Container (`elestio/minio:latest`) đang chạy trên máy.
   - Bind mount trực tiếp vào `D:\work\TH-PTTK\QL-NghiaTrang\backend\runtime\minio\data` trên ổ D.
 - **Bộ công cụ & Chất lượng mã nguồn:**
-  - Backend: Python 3.12 (`uv`). 26 tests passed (6 auth + 6 catalog + 6 documents + 2 jobs + 2 triggers + 4 health/storage), ruff clean.
-  - Web: React 19 + TypeScript + Vite (`pnpm`). Build thành công trong 206ms, 0 lint errors.
-  - Mobile: Flutter 3.41.6 / Dart 3.11.4 Android. Analyze 0 issues, 3/3 tests passed.
+  - Backend: Python 3.12 (`uv`). 32 tests passed (6 plots + 6 auth + 6 catalog + 6 documents + 2 jobs + 2 triggers + 4 health/storage), ruff clean.
+  - Web: React 19 + TypeScript + Vite (`pnpm`). Build thành công trong 234ms, 0 lint errors.
+  - Mobile: Flutter 3.41.6 / Dart 3.11.4 Android. Analyze 0 issues, 5/5 tests passed.
   - Tiêu chuẩn Quality Gate (`scripts/quality-gate.ps1`) đạt 100% trên cả 3 phân hệ.
 
 ---
@@ -37,8 +37,8 @@
 | **M02** | Baseline migration, auth & phân quyền | **ĐẠT (Done)** | `v0.3.0-auth` | Backup CSDL, Alembic baseline + G01 migration, 37 SQLAlchemy models, trigger bypass (`implicit_returning=False`), Argon2 + JWT + RFC 6819 rotation, RBAC 4 vai trò, Web & Flutter Auth E2E. |
 | **M03** | Tệp, job/outbox & chứng từ nền | **ĐẠT (Done)** | `v0.4.0-documents` | Migration G02/G17, stream MinIO, kiểm tra Magic Bytes & SHA-256, ReportLab xuất PDF tiếng Việt UTF-8 (Arial), openpyxl Excel, Background Worker lease lock. |
 | **M04** | Design system & cấu hình nền | **ĐẠT (Done)** | `v0.5.0-design-catalog` | Migration G03 (`contract_templates`, scope `price_items`), CatalogService chống trùng khoảng thời gian, Web 5 views, Flutter Catalog tab, Quality Gate 100%. |
-| **M05** | Không gian, ô mộ, slot và bản đồ | Sẵn sàng bắt đầu | `v0.6.0-plots` | G04/G06, bản đồ Leaflet, quản lý khu/hàng/ô/slot, chống trùng giữ chỗ. |
-| **M06** | Khách hàng, người mất & giấy báo tử | Chưa bắt đầu | `v0.7.0-profiles` | G07/G08, quản lý hồ sơ thân nhân, xác minh giấy báo tử. |
+| **M05** | Không gian, ô mộ, slot và bản đồ | **ĐẠT (Done)** | `v0.6.0-plots` | G04/G05/G06 migration, PlotService khóa Kim Tĩnh bất biến, sinh slot ACID, khóa giữ chỗ chống xung đột row-level, Web Leaflet GIS Map & Drawer, Flutter Sơ Đồ Ô Mộ tab, 32 backend tests, 5 flutter tests, Quality Gate 100%. |
+| **M06** | Khách hàng, người mất & giấy báo tử | Sẵn sàng bắt đầu | `v0.7.0-profiles` | G07/G08, quản lý hồ sơ thân nhân, xác minh giấy báo tử trước an táng, chống lộ thông tin PII. |
 | **M07** | Luồng mua đất -> ký ngoài -> kích hoạt | Chưa bắt đầu | `v0.8.0-land-contracts` | G09, HĐ mua đất, giữ chỗ transaction-safe, scan và kích hoạt, sinh nợ. |
 | **M08** | An táng, Kim Tĩnh, cải táng, chuyển nhượng | Chưa bắt đầu | `v0.9.0-domain-lifecycle` | G10/G18/G20, khóa Kim Tĩnh bất biến, chuyển nhượng, an táng, cải táng. |
 | **M09** | Quản lý thi công thực địa | Chưa bắt đầu | `v0.10.0-construction` | G11/G13, checklist công trình, bằng chứng ảnh, phân công thợ. |
@@ -158,5 +158,55 @@
 - Web: `pnpm lint` 0 errors, `pnpm build` hoàn tất trong 206ms.
 - Mobile: `flutter analyze` 0 issues, `flutter test` đạt 3/3 tests passed.
 - Bộ kiểm định chất lượng toàn diện `scripts/quality-gate.ps1` ĐẠT 100%.
+
+---
+
+## 6. Bằng chứng nghiệm thu Milestone M05 (Không Gian, Ô Mộ, Slot và Bản Đồ GIS)
+
+### 6.1. CSDL & Alembic Migration (G04, G05, G06)
+- **Revision:** `0005_g04_g05_g06_plots_reservations.py`
+  - Đã nâng cấp thành công trên cả `QL_NghiaTrang_Test` và `QL_NghiaTrang` trên `DESKTOP-HKIPI1M`.
+  - Mở rộng bảng `plots`: Thêm cột `orientation` (NVARCHAR(50), hướng mộ phong thủy) và `notes` (NVARCHAR(MAX)).
+  - Bảng mới `plot_reservations` (G04): Quản lý vòng đời giữ chỗ (`ACTIVE`, `CONVERTED`, `EXPIRED`, `CANCELLED`), mã hợp đồng phát sinh, thời hạn hiệu lực `expires_at`, cùng chỉ mục lọc chống trùng lặp giữ chỗ:
+    `CREATE UNIQUE INDEX UQ_plot_reservations_active ON plot_reservations(plot_id) WHERE state = 'ACTIVE'`.
+  - Bảng mới `plot_ownerships` (G05): Quản lý chuỗi lịch sử sở hữu ô mộ theo thời gian (`is_current`, `valid_from`, `valid_to`, `transfer_contract_id`), bảo tồn lịch sử pháp lý khi chuyển nhượng.
+  - Chỉ mục lọc trên `plot_slots` (G06): Ràng buộc duy nhất trên `current_deceased_id` khi có dữ liệu:
+    `CREATE UNIQUE INDEX UQ_plot_slots_current_deceased ON plot_slots(current_deceased_id) WHERE current_deceased_id IS NOT NULL`.
+  - Giữ nguyên cấu hình cốt lõi: `implicit_returning=False` trên model `Plot` để tương thích tuyệt đối với trigger bảo toàn Kim Tĩnh của CSDL.
+
+### 6.2. Nghiệp Vụ Backend & Ràng Buộc Miền (PlotService)
+- **Quy tắc Kim Tĩnh Bất Biến (Server Invariant):**
+  - Mọi thao tác cập nhật ô mộ qua API đều kiểm tra cờ Kim Tĩnh. Nếu ô mộ đã có `is_kim_tinh = True`, hệ thống kiên quyết từ chối mọi yêu cầu hủy cờ Kim Tĩnh (`400 Bad Request: Không thể gỡ bỏ cờ Kim Tĩnh`).
+  - Nếu ô mộ đã bị khóa (`is_locked = True`), chặn toàn bộ thay đổi cấu trúc, số slot hoặc thông tin cố định.
+- **Tự động sinh Slot trong 1 Transaction ACID (Slot Auto-Generation):**
+  - Khi tạo mới một ô mộ với `default_slots = N`, `PlotService` tự động sinh đủ N bản ghi `PlotSlot` (`slot_number` từ 1..N, trạng thái ban đầu `EMPTY`) ngay trong transaction tạo ô mộ, loại bỏ hoàn toàn khả năng ô mộ mồ côi slot.
+- **Khóa hàng Chống trùng giữ chỗ (Anti-Double Booking Concurrency Guard G04):**
+  - Phương thức `reserve_plot` sử dụng khóa dòng `with_for_update()` của SQLAlchemy trên SQL Server, kiểm tra trạng thái ô mộ và bảng `plot_reservations`.
+  - Nếu ô mộ đang có yêu cầu giữ chỗ khác còn hiệu lực hoặc trạng thái ô mộ không phải `EMPTY_UNSOLD`, hệ thống từ chối ngay với lỗi chuẩn `409 Conflict`.
+- **Quản lý Vòng đời & Hết hạn Giữ chỗ:**
+  - Hỗ trợ hủy giữ chỗ (`cancel_reservation`) hoặc tự động kiểm tra thời hạn hết hạn (`expires_at`), chuyển trạng thái giữ chỗ sang `CANCELLED`/`EXPIRED` và hoàn trả trạng thái ô mộ về `EMPTY_UNSOLD`. Chuẩn hóa múi giờ datetime giữa MSSQL naive và UTC.
+
+### 6.3. Giao Diện Web (React 19 + TypeScript + Leaflet GIS)
+- Phân hệ **"Sơ Đồ Ô Mộ"** (`PlotMapModule.tsx`) hoàn chỉnh:
+  - Bản đồ tương tác Leaflet 1.9 với tọa độ thực tế nghĩa trang, các marker màu đại diện trực quan cho trạng thái (Xanh: Trống, Vàng: Giữ chỗ, Xanh dương: Đã mua chờ an táng, Tím: Đang xây, Đỏ: Đã chôn, Xám: Đang cải táng).
+  - Tích hợp biểu tượng khiên bảo vệ `🛡️` cho ô mộ Kim Tĩnh và biểu tượng ổ khóa `🔒` cho ô mộ đã khóa.
+  - Chuyển đổi linh hoạt giữa chế độ Bản đồ (Map View) và chế độ Lưới ô mộ (Grid View).
+  - Thanh bộ lọc đa năng: Lọc theo khu vực (Khu A, Khu B, Khu VIP), lọc theo trạng thái, lọc riêng ô Kim Tĩnh, và ô tìm kiếm tức thời theo mã mộ.
+  - Drawer trượt hiển thị chi tiết ô mộ: thông tin tọa độ GPS chính xác, loại mộ, hướng phong thủy, chủ sở hữu, danh sách các slot huyệt và thông tin người quá cố trong từng slot.
+  - Hộp thoại Giữ chỗ (Reservation Modal) với cơ chế bắt lỗi `409 Conflict` hiển thị cảnh báo tranh chấp giữ chỗ rõ ràng cho người dùng.
+
+### 6.4. Ứng Dụng Di Động (Flutter Android)
+- Tích hợp tab **"Sơ Đồ Ô Mộ"** tại BottomNavigationBar (`mobile/lib/main.dart`).
+- Tra cứu danh sách ô mộ thực địa theo khu vực (Khu A, Khu B, Khu VIP, Tất cả) kèm thanh tìm kiếm mã mộ tức thời.
+- Thẻ ô mộ hiển thị huy hiệu Kim Tĩnh mạ vàng tôn nghiêm, chip trạng thái (Trống / Giữ chỗ / Đã chôn).
+- Modal Bottom Sheet hiển thị chi tiết ô mộ phục vụ nhân viên quản trang ngoài hiện trường: tọa độ GPS (kinh độ, vĩ độ), hướng mộ phong thủy, số lượng slot, chủ sở hữu và ghi chú thực địa.
+- Xử lý đầy đủ 4 trạng thái chuẩn: Loading shimmer, Normal data list, Empty state với nút làm mới, và Error state.
+
+### 6.5. Kiểm Thử & Tiêu Chuẩn Quality Gate
+- **Backend:** `uv run pytest` đạt 32/32 bài kiểm thử (100% passed). `uv run ruff check .` All checks passed!
+- **Web:** `pnpm lint` 0 errors, `pnpm build` đạt chuẩn hoàn tất trong 234ms.
+- **Mobile:** `flutter analyze` 0 issues, `flutter test` đạt 5/5 tests passed.
+- Bộ kiểm định chất lượng toàn diện `scripts/quality-gate.ps1` ĐẠT 100%.
+
 
 

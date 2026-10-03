@@ -8,7 +8,8 @@ from sqlalchemy import (
     Integer,
     Numeric,
     String,
-    Text,
+    Unicode,
+    UnicodeText,
 )
 from sqlalchemy.orm import relationship
 
@@ -20,9 +21,9 @@ class Zone(Base):
 
     zone_id = Column(Integer, primary_key=True, autoincrement=True)
     zone_code = Column(String(20), unique=True, nullable=False)
-    zone_name = Column(String(100), nullable=False)
+    zone_name = Column(Unicode(100), nullable=False)
     total_rows = Column(Integer, nullable=False, default=0)
-    description = Column(String(255), nullable=True)
+    description = Column(Unicode(255), nullable=True)
 
     rows = relationship("Row", back_populates="zone", cascade="all, delete-orphan")
 
@@ -43,11 +44,11 @@ class PlotType(Base):
     __tablename__ = "plot_types"
 
     type_id = Column(Integer, primary_key=True, autoincrement=True)
-    type_name = Column(String(100), nullable=False)
+    type_name = Column(Unicode(100), nullable=False)
     default_slots = Column(Integer, nullable=False, default=1)
     length = Column(Numeric(5, 2), nullable=False)
     width = Column(Numeric(5, 2), nullable=False)
-    description = Column(String(255), nullable=True)
+    description = Column(Unicode(255), nullable=True)
 
     plots = relationship("Plot", back_populates="plot_type")
 
@@ -66,6 +67,8 @@ class Plot(Base):
     owner_id = Column(Integer, nullable=True)  # FK to customers.customer_id
     latitude = Column(Numeric(10, 7), nullable=True)
     longitude = Column(Numeric(10, 7), nullable=True)
+    orientation = Column(Unicode(50), nullable=True)  # e.g., 'ĐÔNG', 'TÂY', 'NAM', 'BẮC'
+    notes = Column(UnicodeText, nullable=True)
     status = Column(String(30), nullable=False, default="EMPTY_UNSOLD")
     is_kim_tinh = Column(Boolean, nullable=False, default=False)
     is_locked = Column(Boolean, nullable=False, default=False)
@@ -74,7 +77,10 @@ class Plot(Base):
 
     row = relationship("Row", back_populates="plots")
     plot_type = relationship("PlotType", back_populates="plots")
-    slots = relationship("PlotSlot", back_populates="plot", cascade="all, delete-orphan")
+    slots = relationship("PlotSlot", back_populates="plot", cascade="all, delete-orphan", order_by="PlotSlot.slot_number")
+    reservations = relationship("PlotReservation", back_populates="plot", cascade="all, delete-orphan")
+    ownerships = relationship("PlotOwnership", back_populates="plot")
+    burial_histories = relationship("BurialHistory", back_populates="plot")
 
 
 class PlotSlot(Base):
@@ -84,9 +90,40 @@ class PlotSlot(Base):
     plot_id = Column(Integer, ForeignKey("plots.plot_id", ondelete="CASCADE"), nullable=False)
     slot_number = Column(Integer, nullable=False)
     status = Column(String(20), nullable=False, default="EMPTY")
-    current_deceased_id = Column(Integer, nullable=True)
+    current_deceased_id = Column(Integer, nullable=True)  # FK to deceased_profiles.deceased_id
 
     plot = relationship("Plot", back_populates="slots")
+
+
+class PlotReservation(Base):
+    __tablename__ = "plot_reservations"
+
+    reservation_id = Column(Integer, primary_key=True, autoincrement=True)
+    plot_id = Column(Integer, ForeignKey("plots.plot_id", ondelete="CASCADE"), nullable=False)
+    reserved_by = Column(Integer, ForeignKey("users.user_id"), nullable=False)
+    customer_name = Column(Unicode(100), nullable=True)
+    customer_phone = Column(String(20), nullable=True)
+    state = Column(String(20), nullable=False, default="ACTIVE")  # 'ACTIVE', 'CONVERTED', 'EXPIRED', 'CANCELLED'
+    reserved_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    expires_at = Column(DateTime, nullable=False)
+    notes = Column(Unicode(500), nullable=True)
+
+    plot = relationship("Plot", back_populates="reservations")
+
+
+class PlotOwnership(Base):
+    __tablename__ = "plot_ownerships"
+
+    ownership_id = Column(Integer, primary_key=True, autoincrement=True)
+    plot_id = Column(Integer, ForeignKey("plots.plot_id"), nullable=False)
+    customer_id = Column(Integer, ForeignKey("customers.customer_id"), nullable=False)
+    basis_contract_id = Column(Integer, ForeignKey("contracts.contract_id"), nullable=True)
+    valid_from = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    valid_to = Column(DateTime, nullable=True)
+    transfer_reason = Column(Unicode(255), nullable=True)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    plot = relationship("Plot", back_populates="ownerships")
 
 
 class BurialHistory(Base):
@@ -99,5 +136,7 @@ class BurialHistory(Base):
     action_type = Column(String(20), nullable=False)  # 'BURIED', 'EXHUMED'
     action_date = Column(DateTime, nullable=False)
     proof_url = Column(String(500), nullable=True)
-    notes = Column(Text, nullable=True)
+    notes = Column(UnicodeText, nullable=True)
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    plot = relationship("Plot", back_populates="burial_histories")

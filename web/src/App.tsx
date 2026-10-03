@@ -21,6 +21,7 @@ import {
 import { LoginModal } from './components/auth/LoginModal'
 import { CatalogModule } from './components/catalog/CatalogModule'
 import { DocumentManager } from './components/documents/DocumentManager'
+import { PlotMapModule } from './components/plots/PlotMapModule'
 import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './context/useAuth'
 
@@ -38,7 +39,7 @@ interface VersionData {
 }
 
 function MainApp() {
-  const { user, logout, hasPermission } = useAuth()
+  const { user, accessToken, logout, hasPermission } = useAuth()
   const [readiness, setReadiness] = useState<ReadinessData | null>(null)
   const [version, setVersion] = useState<VersionData | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
@@ -661,14 +662,12 @@ function MainApp() {
           </>
         )}
 
-        {/* Tab 2: Plots placeholder */}
+        {/* Tab 2: Plots GIS & Mapping (M05) */}
         {activeTab === 'plots' && (
-          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', padding: '32px', border: '1px solid #E2E8F0' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-main)' }}>Sơ Đồ Phân Khu & Bản Đồ Ô Mộ</h3>
-            <p style={{ fontSize: '14px', color: '#64748B' }}>
-              Quyền hạn của bạn cho phép tra cứu trạng thái ô mộ, slot an táng và sơ đồ mặt bằng nghĩa trang (Milestone M05).
-            </p>
-          </div>
+          <PlotMapModule
+            token={accessToken}
+            onRequireLogin={() => setIsLoginOpen(true)}
+          />
         )}
 
         {/* Tab 3: Contracts placeholder */}

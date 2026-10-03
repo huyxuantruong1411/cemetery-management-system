@@ -253,6 +253,60 @@ class CarePackageModel {
   }
 }
 
+// Plot Models (M05)
+class PlotModel {
+  final int plotId;
+  final String plotCode;
+  final String rowCode;
+  final String zoneCode;
+  final String zoneName;
+  final String typeName;
+  final int defaultSlots;
+  final String status;
+  final bool isKimTinh;
+  final bool isLocked;
+  final double? latitude;
+  final double? longitude;
+  final String? orientation;
+  final String? ownerName;
+
+  PlotModel({
+    required this.plotId,
+    required this.plotCode,
+    required this.rowCode,
+    required this.zoneCode,
+    required this.zoneName,
+    required this.typeName,
+    required this.defaultSlots,
+    required this.status,
+    required this.isKimTinh,
+    required this.isLocked,
+    this.latitude,
+    this.longitude,
+    this.orientation,
+    this.ownerName,
+  });
+
+  factory PlotModel.fromJson(Map<String, dynamic> json) {
+    return PlotModel(
+      plotId: json['plot_id'] as int? ?? 0,
+      plotCode: json['plot_code'] as String? ?? '',
+      rowCode: json['row_code'] as String? ?? '',
+      zoneCode: json['zone_code'] as String? ?? '',
+      zoneName: json['zone_name'] as String? ?? '',
+      typeName: json['type_name'] as String? ?? '',
+      defaultSlots: json['default_slots'] as int? ?? 1,
+      status: json['status'] as String? ?? 'EMPTY_UNSOLD',
+      isKimTinh: json['is_kim_tinh'] as bool? ?? false,
+      isLocked: json['is_locked'] as bool? ?? false,
+      latitude: (json['latitude'] as num?)?.toDouble(),
+      longitude: (json['longitude'] as num?)?.toDouble(),
+      orientation: json['orientation'] as String?,
+      ownerName: json['owner_name'] as String?,
+    );
+  }
+}
+
 // =============================================================================
 // Providers
 // =============================================================================
@@ -364,6 +418,21 @@ final carePackagesProvider = FutureProvider.autoDispose<List<CarePackageModel>>(
   return list.map((item) => CarePackageModel.fromJson(item as Map<String, dynamic>)).toList();
 });
 
+// Plot Providers (M05)
+final plotsProvider = FutureProvider.autoDispose<List<PlotModel>>((ref) async {
+  final authState = ref.watch(authProvider);
+  if (!authState.isAuthenticated) {
+    return [];
+  }
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get(
+    '/plots?limit=200',
+    options: Options(headers: {'Authorization': 'Bearer ${authState.accessToken}'}),
+  );
+  final list = res.data as List<dynamic>;
+  return list.map((item) => PlotModel.fromJson(item as Map<String, dynamic>)).toList();
+});
+
 // =============================================================================
 // App & Dashboard
 // =============================================================================
@@ -410,6 +479,8 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   int _currentTabIndex = 0;
+  String _selectedZoneFilter = 'ALL';
+  String _plotSearchQuery = '';
 
   void _showLoginDialog(BuildContext context) {
     final usernameController = TextEditingController();
@@ -544,6 +615,108 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
+  void _showPlotDetailSheet(BuildContext context, PlotModel plot) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    plot.plotCode,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  if (plot.isKimTinh)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF3C7),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: const Color(0xFFFCD34D)),
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.shield, color: Color(0xFFD97706), size: 14),
+                          SizedBox(width: 4),
+                          Text(
+                            'Kim Tĩnh',
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF92400E)),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${plot.zoneName} · ${plot.rowCode}',
+                style: const TextStyle(color: Colors.black54, fontSize: 13),
+              ),
+              const Divider(height: 24),
+              _buildDetailRow('Loại mộ:', plot.typeName),
+              _buildDetailRow('Dung lượng:', '${plot.defaultSlots} slot an táng'),
+              _buildDetailRow('Hướng phong thủy:', plot.orientation ?? 'Chưa định hướng'),
+              _buildDetailRow('Trạng thái:', plot.status),
+              if (plot.latitude != null && plot.longitude != null)
+                _buildDetailRow(
+                  'Tọa độ GPS:',
+                  '${plot.latitude!.toStringAsFixed(6)}, ${plot.longitude!.toStringAsFixed(6)}',
+                ),
+              if (plot.isLocked) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFFECACA)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.lock, color: Colors.red, size: 18),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Ô mộ Kim Tĩnh đã an táng và khóa vĩnh viễn. Nghiêm cấm cải táng.',
+                          style: TextStyle(color: Colors.red, fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: const TextStyle(color: Colors.black54, fontSize: 13)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final readinessAsync = ref.watch(readinessProvider);
@@ -587,6 +760,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               ref.invalidate(readinessProvider);
               ref.invalidate(versionProvider);
               if (authState.isAuthenticated) {
+                ref.invalidate(plotsProvider);
                 ref.invalidate(priceListsProvider);
                 ref.invalidate(carePackagesProvider);
               }
@@ -594,9 +768,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ],
       ),
-      body: _currentTabIndex == 0
-          ? _buildHomeTab(context, readinessAsync, versionAsync, authState)
-          : _buildCatalogTab(context, authState),
+      body: IndexedStack(
+        index: _currentTabIndex,
+        children: [
+          _buildHomeTab(context, readinessAsync, versionAsync, authState),
+          _buildPlotsTab(context, authState),
+          _buildCatalogTab(context, authState),
+        ],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _currentTabIndex,
         selectedItemColor: const Color(0xFF24594D),
@@ -611,6 +790,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             icon: Icon(Icons.dashboard_outlined),
             activeIcon: Icon(Icons.dashboard),
             label: 'Tổng Quan',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.map_outlined),
+            activeIcon: Icon(Icons.map),
+            label: 'Sơ Đồ Ô Mộ',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.price_change_outlined),
@@ -874,6 +1058,271 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           color: isOk ? Colors.green : Colors.red,
         ),
       ),
+    );
+  }
+
+  // ===========================================================================
+  // M05: Plots & Maps Tab
+  // ===========================================================================
+  Widget _buildPlotsTab(BuildContext context, AuthState authState) {
+    if (!authState.isAuthenticated) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: Color(0xFFE5E7EB)),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.map_outlined, size: 48, color: Color(0xFF24594D)),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Tra Cứu Ô Mộ & Thực Địa',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Vui lòng đăng nhập với vai trò Quản Trang hoặc Kinh Doanh để tra cứu danh sách ô mộ, tọa độ GPS và trạng thái Kim Tĩnh.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.black54, fontSize: 13),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF24594D),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    onPressed: () => _showLoginDialog(context),
+                    icon: const Icon(Icons.login, size: 18),
+                    label: const Text('Đăng nhập ngay'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final plotsAsync = ref.watch(plotsProvider);
+
+    return Column(
+      children: [
+        // Search & Filter header
+        Container(
+          color: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Column(
+            children: [
+              TextField(
+                decoration: InputDecoration(
+                  hintText: 'Tìm theo mã ô mộ...',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  isDense: true,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                ),
+                onChanged: (val) {
+                  setState(() {
+                    _plotSearchQuery = val;
+                  });
+                },
+              ),
+              const SizedBox(height: 8),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    ChoiceChip(
+                      label: const Text('Tất cả'),
+                      selected: _selectedZoneFilter == 'ALL',
+                      onSelected: (_) => setState(() => _selectedZoneFilter = 'ALL'),
+                    ),
+                    const SizedBox(width: 6),
+                    ChoiceChip(
+                      label: const Text('Khu A'),
+                      selected: _selectedZoneFilter == 'KHU-A',
+                      onSelected: (_) => setState(() => _selectedZoneFilter = 'KHU-A'),
+                    ),
+                    const SizedBox(width: 6),
+                    ChoiceChip(
+                      label: const Text('Khu B'),
+                      selected: _selectedZoneFilter == 'KHU-B',
+                      onSelected: (_) => setState(() => _selectedZoneFilter = 'KHU-B'),
+                    ),
+                    const SizedBox(width: 6),
+                    ChoiceChip(
+                      label: const Text('Khu VIP'),
+                      selected: _selectedZoneFilter == 'KHU-VIP',
+                      onSelected: (_) => setState(() => _selectedZoneFilter = 'KHU-VIP'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: plotsAsync.when(
+            data: (allPlots) {
+              final filtered = allPlots.where((p) {
+                if (_selectedZoneFilter != 'ALL' && p.zoneCode != _selectedZoneFilter) {
+                  return false;
+                }
+                if (_plotSearchQuery.trim().isNotEmpty) {
+                  final q = _plotSearchQuery.toLowerCase();
+                  return p.plotCode.toLowerCase().contains(q) ||
+                      p.zoneName.toLowerCase().contains(q);
+                }
+                return true;
+              }).toList();
+
+              if (filtered.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.crop_free, size: 48, color: Colors.grey),
+                      const SizedBox(height: 12),
+                      const Text('Không tìm thấy ô mộ nào', style: TextStyle(color: Colors.black54)),
+                      const SizedBox(height: 12),
+                      ElevatedButton(
+                        onPressed: () => ref.invalidate(plotsProvider),
+                        child: const Text('Làm mới'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: () async {
+                  ref.invalidate(plotsProvider);
+                  await ref.read(plotsProvider.future);
+                },
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final plot = filtered[index];
+                    return Card(
+                      elevation: 0,
+                      margin: const EdgeInsets.only(bottom: 10),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: const BorderSide(color: Color(0xFFE5E7EB)),
+                      ),
+                      child: ListTile(
+                        onTap: () => _showPlotDetailSheet(context, plot),
+                        leading: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: plot.isKimTinh
+                                ? const Color(0xFFFEF3C7)
+                                : const Color(0xFF24594D).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                            border: plot.isKimTinh
+                                ? Border.all(color: const Color(0xFFFCD34D), width: 1.5)
+                                : null,
+                          ),
+                          child: Icon(
+                            plot.isKimTinh ? Icons.shield : Icons.place,
+                            color: plot.isKimTinh
+                                ? const Color(0xFFD97706)
+                                : const Color(0xFF24594D),
+                            size: 20,
+                          ),
+                        ),
+                        title: Text(
+                          plot.plotCode,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        ),
+                        subtitle: Text(
+                          '${plot.zoneName} · ${plot.typeName}',
+                          style: const TextStyle(fontSize: 12, color: Colors.black54),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: plot.status == 'EMPTY_UNSOLD'
+                                    ? const Color(0xFFDCFCE7)
+                                    : (plot.status == 'RESERVED'
+                                        ? const Color(0xFFFEF3C7)
+                                        : const Color(0xFFFEE2E2)),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                plot.status == 'EMPTY_UNSOLD'
+                                    ? 'Trống'
+                                    : (plot.status == 'RESERVED' ? 'Giữ chỗ' : 'Đã chôn'),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: plot.status == 'EMPTY_UNSOLD'
+                                      ? const Color(0xFF166534)
+                                      : (plot.status == 'RESERVED'
+                                          ? const Color(0xFF92400E)
+                                          : const Color(0xFF991B1B)),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.chevron_right, size: 18, color: Colors.black26),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+            loading: () => const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Color(0xFF24594D)),
+                  SizedBox(height: 12),
+                  Text('Đang tải danh sách ô mộ thực địa...'),
+                ],
+              ),
+            ),
+            error: (err, _) => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 40, color: Colors.red),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Lỗi tải sơ đồ ô mộ: $err',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.red, fontSize: 13),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () => ref.invalidate(plotsProvider),
+                      icon: const Icon(Icons.refresh, size: 16),
+                      label: const Text('Thử lại'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 
