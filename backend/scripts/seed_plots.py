@@ -127,20 +127,119 @@ def seed_plots():
 
         plots_spec = [
             # Khu A - Hàng 1: Mộ đơn tiêu chuẩn
-            ("KHU-A_HANG-01", "A-H01-01", "Mộ Đơn Tiêu Chuẩn", Decimal("0.000100"), Decimal("0.000050"), "ĐÔNG", False, "EMPTY_UNSOLD"),
-            ("KHU-A_HANG-01", "A-H01-02", "Mộ Đơn Tiêu Chuẩn", Decimal("0.000100"), Decimal("0.000100"), "ĐÔNG", False, "EMPTY_UNSOLD"),
-            ("KHU-A_HANG-01", "A-H01-03", "Mộ Đơn Tiêu Chuẩn", Decimal("0.000100"), Decimal("0.000150"), "ĐÔNG", False, "RESERVED"),
-            ("KHU-A_HANG-01", "A-H01-04", "Mộ Đơn Tiêu Chuẩn", Decimal("0.000100"), Decimal("0.000200"), "ĐÔNG", False, "EMPTY_UNSOLD"),
+            (
+                "KHU-A_HANG-01",
+                "A-H01-01",
+                "Mộ Đơn Tiêu Chuẩn",
+                Decimal("0.000100"),
+                Decimal("0.000050"),
+                "ĐÔNG",
+                False,
+                "EMPTY_UNSOLD",
+            ),
+            (
+                "KHU-A_HANG-01",
+                "A-H01-02",
+                "Mộ Đơn Tiêu Chuẩn",
+                Decimal("0.000100"),
+                Decimal("0.000100"),
+                "ĐÔNG",
+                False,
+                "EMPTY_UNSOLD",
+            ),
+            (
+                "KHU-A_HANG-01",
+                "A-H01-03",
+                "Mộ Đơn Tiêu Chuẩn",
+                Decimal("0.000100"),
+                Decimal("0.000150"),
+                "ĐÔNG",
+                False,
+                "RESERVED",
+            ),
+            (
+                "KHU-A_HANG-01",
+                "A-H01-04",
+                "Mộ Đơn Tiêu Chuẩn",
+                Decimal("0.000100"),
+                Decimal("0.000200"),
+                "ĐÔNG",
+                False,
+                "EMPTY_UNSOLD",
+            ),
             # Khu A - Hàng 2: Mộ đơn
-            ("KHU-A_HANG-02", "A-H02-01", "Mộ Đơn Tiêu Chuẩn", Decimal("0.000200"), Decimal("0.000050"), "ĐÔNG", False, "EMPTY_UNSOLD"),
-            ("KHU-A_HANG-02", "A-H02-02", "Mộ Đơn Tiêu Chuẩn", Decimal("0.000200"), Decimal("0.000100"), "ĐÔNG", False, "EMPTY_UNSOLD"),
+            (
+                "KHU-A_HANG-02",
+                "A-H02-01",
+                "Mộ Đơn Tiêu Chuẩn",
+                Decimal("0.000200"),
+                Decimal("0.000050"),
+                "ĐÔNG",
+                False,
+                "EMPTY_UNSOLD",
+            ),
+            (
+                "KHU-A_HANG-02",
+                "A-H02-02",
+                "Mộ Đơn Tiêu Chuẩn",
+                Decimal("0.000200"),
+                Decimal("0.000100"),
+                "ĐÔNG",
+                False,
+                "EMPTY_UNSOLD",
+            ),
             # Khu B - Hàng 1: Mộ đôi Kim Tĩnh
-            ("KHU-B_HANG-01", "B-H01-01", "Mộ Đôi Kim Tĩnh", Decimal("0.000400"), Decimal("0.000050"), "NAM", True, "EMPTY_UNSOLD"),
-            ("KHU-B_HANG-01", "B-H01-02", "Mộ Đôi Kim Tĩnh", Decimal("0.000400"), Decimal("0.000120"), "NAM", True, "EMPTY_UNSOLD"),
-            ("KHU-B_HANG-01", "B-H01-03", "Mộ Đôi Kim Tĩnh", Decimal("0.000400"), Decimal("0.000190"), "NAM", True, "EMPTY_UNSOLD"),
+            (
+                "KHU-B_HANG-01",
+                "B-H01-01",
+                "Mộ Đôi Kim Tĩnh",
+                Decimal("0.000400"),
+                Decimal("0.000050"),
+                "NAM",
+                True,
+                "EMPTY_UNSOLD",
+            ),
+            (
+                "KHU-B_HANG-01",
+                "B-H01-02",
+                "Mộ Đôi Kim Tĩnh",
+                Decimal("0.000400"),
+                Decimal("0.000120"),
+                "NAM",
+                True,
+                "EMPTY_UNSOLD",
+            ),
+            (
+                "KHU-B_HANG-01",
+                "B-H01-03",
+                "Mộ Đôi Kim Tĩnh",
+                Decimal("0.000400"),
+                Decimal("0.000190"),
+                "NAM",
+                True,
+                "EMPTY_UNSOLD",
+            ),
             # Khu VIP - Hàng 1: Khuôn viên gia tộc
-            ("KHU-VIP_HANG-01", "VIP-H01-01", "Khuôn Viên Gia Tộc", Decimal("0.000700"), Decimal("0.000100"), "ĐÔNG NAM", True, "EMPTY_UNSOLD"),
-            ("KHU-VIP_HANG-01", "VIP-H01-02", "Khuôn Viên Gia Tộc", Decimal("0.000700"), Decimal("0.000300"), "ĐÔNG NAM", True, "EMPTY_UNSOLD"),
+            (
+                "KHU-VIP_HANG-01",
+                "VIP-H01-01",
+                "Khuôn Viên Gia Tộc",
+                Decimal("0.000700"),
+                Decimal("0.000100"),
+                "ĐÔNG NAM",
+                True,
+                "EMPTY_UNSOLD",
+            ),
+            (
+                "KHU-VIP_HANG-01",
+                "VIP-H01-02",
+                "Khuôn Viên Gia Tộc",
+                Decimal("0.000700"),
+                Decimal("0.000300"),
+                "ĐÔNG NAM",
+                True,
+                "EMPTY_UNSOLD",
+            ),
         ]
 
         admin_user = db.query(User).filter(User.username == "admin").first()
@@ -192,7 +291,9 @@ def seed_plots():
                     )
                     db.add(res)
 
-                print(f"  + Tạo ô mộ: {plot.plot_code} ({t_name}, {pt.default_slots} slots, Kim Tĩnh={is_kt})")
+                print(
+                    f"  + Tạo ô mộ: {plot.plot_code} ({t_name}, {pt.default_slots} slots, Kim Tĩnh={is_kt})"
+                )
 
         # Sync total_plots for all rows
         for row in row_map.values():

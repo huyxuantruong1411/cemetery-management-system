@@ -18,7 +18,9 @@ class BackgroundJob(Base):
     job_type = Column(String(50), nullable=False)
     payload = Column(Text, nullable=False)
     result = Column(Text, nullable=True)
-    state = Column(String(20), nullable=False, default="PENDING")  # PENDING, CLAIMED, COMPLETED, FAILED
+    state = Column(
+        String(20), nullable=False, default="PENDING"
+    )  # PENDING, CLAIMED, COMPLETED, FAILED
     attempts = Column(Integer, nullable=False, default=0)
     max_attempts = Column(Integer, nullable=False, default=3)
     lease_until = Column(DateTime, nullable=True)

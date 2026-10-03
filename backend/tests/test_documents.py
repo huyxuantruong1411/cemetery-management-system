@@ -14,6 +14,7 @@ from app.services.excel_service import ExcelService
 
 client = TestClient(app)
 
+
 # Helper to get admin token
 def get_admin_token() -> str:
     resp = client.post(
@@ -163,7 +164,9 @@ def test_document_versioning():
     finally:
         db.rollback()
         if contract and contract.contract_id:
-            db.query(DocumentVersion).filter(DocumentVersion.contract_id == contract.contract_id).delete()
+            db.query(DocumentVersion).filter(
+                DocumentVersion.contract_id == contract.contract_id
+            ).delete()
             db.query(Contract).filter(Contract.contract_id == contract.contract_id).delete()
         if customer and customer.customer_id:
             db.query(Customer).filter(Customer.customer_id == customer.customer_id).delete()

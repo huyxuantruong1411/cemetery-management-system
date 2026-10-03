@@ -183,9 +183,27 @@ def seed_rbac(
             print("[+] Bắt đầu seed các tài khoản demo (4 vai trò)...")
             demo_accounts = [
                 ("admin", "Admin2026!", "Quản Trị Viên Hệ Thống", "admin@nghiatrang.vn", "ADMIN"),
-                ("marketing", "Marketing2026!", "Chuyên Viên Kinh Doanh", "marketing@nghiatrang.vn", "MARKETING"),
-                ("accountant", "Accountant2026!", "Kế Toán Viên", "accountant@nghiatrang.vn", "ACCOUNTANT"),
-                ("caretaker", "Caretaker2026!", "Quản Trang Thực Địa", "caretaker@nghiatrang.vn", "CARETAKER"),
+                (
+                    "marketing",
+                    "Marketing2026!",
+                    "Chuyên Viên Kinh Doanh",
+                    "marketing@nghiatrang.vn",
+                    "MARKETING",
+                ),
+                (
+                    "accountant",
+                    "Accountant2026!",
+                    "Kế Toán Viên",
+                    "accountant@nghiatrang.vn",
+                    "ACCOUNTANT",
+                ),
+                (
+                    "caretaker",
+                    "Caretaker2026!",
+                    "Quản Trang Thực Địa",
+                    "caretaker@nghiatrang.vn",
+                    "CARETAKER",
+                ),
             ]
             for u_name, u_pass, u_full, u_mail, u_role in demo_accounts:
                 target_user = db.query(User).filter(User.username == u_name).first()
@@ -224,7 +242,9 @@ if __name__ == "__main__":
     parser.add_argument("--admin-user", help="Username cho tài khoản admin khởi tạo")
     parser.add_argument("--admin-pass", help="Mật khẩu cho tài khoản admin khởi tạo")
     parser.add_argument("--admin-email", help="Email cho tài khoản admin khởi tạo")
-    parser.add_argument("--seed-demo-users", action="store_true", help="Tạo bộ tài khoản demo cho 4 vai trò")
+    parser.add_argument(
+        "--seed-demo-users", action="store_true", help="Tạo bộ tài khoản demo cho 4 vai trò"
+    )
     args = parser.parse_args()
 
     seed_rbac(args.admin_user, args.admin_pass, args.admin_email, args.seed_demo_users)

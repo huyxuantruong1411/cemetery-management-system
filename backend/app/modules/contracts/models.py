@@ -32,12 +32,25 @@ class Contract(Base):
     )  # DRAFT, PENDING_SIGN, ACTIVE, CANCELLED, TRANSFERRED
     total_amount = Column(Numeric(15, 2), nullable=False)
     signed_scan_url = Column(String(500), nullable=True)
+    signed_scan_file_id = Column(String(64), ForeignKey("file_objects.file_id"), nullable=True)
+    signed_at = Column(Date, nullable=True)
+    activated_at = Column(DateTime, nullable=True)
+    activated_by = Column(Integer, ForeignKey("users.user_id"), nullable=True)
+    activation_notes = Column(UnicodeText, nullable=True)
+    template_id = Column(Integer, ForeignKey("contract_templates.template_id"), nullable=True)
+    template_version = Column(Integer, nullable=True)
+    notes = Column(UnicodeText, nullable=True)
     created_by_user_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
     customer = relationship("Customer", back_populates="contracts")
     annexes = relationship("ContractAnnex", back_populates="contract", cascade="all, delete-orphan")
+    creator = relationship("User", foreign_keys=[created_by_user_id])
+    activator = relationship("User", foreign_keys=[activated_by])
+    template = relationship("ContractTemplate", foreign_keys=[template_id])
+    scan_file = relationship("FileObject", foreign_keys=[signed_scan_file_id])
+    reservation = relationship("PlotReservation", back_populates="contract", uselist=False)
 
     # Subtypes (TPT)
     land_purchase = relationship(
@@ -201,4 +214,3 @@ class ContractTemplate(Base):
     is_active = Column(Boolean, nullable=False, default=True)
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
-

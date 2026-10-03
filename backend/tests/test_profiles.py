@@ -146,7 +146,9 @@ def test_deceased_year_only_precision_g07():
     assert data["deceased_code"].startswith("NM-")
     assert data["birth_year"] == 1938
     assert data["birth_date_precision"] == "YEAR_ONLY"
-    assert data["date_of_birth"] is None, "Hệ thống tuyệt đối không được tự bịa ngày 01/01 khi chỉ biết năm sinh!"
+    assert data["date_of_birth"] is None, (
+        "Hệ thống tuyệt đối không được tự bịa ngày 01/01 khi chỉ biết năm sinh!"
+    )
 
 
 def test_death_certificate_verification_workflow_g08():
@@ -191,7 +193,9 @@ def test_death_certificate_verification_workflow_g08():
     assert cert_resp.status_code == 200, cert_resp.text
     cert_data = cert_resp.json()
     cert_id = cert_data["cert_id"]
-    assert cert_data["is_verified"] is False, "G08: Giấy báo tử mới đính kèm phải có trạng thái chưa xác minh!"
+    assert cert_data["is_verified"] is False, (
+        "G08: Giấy báo tử mới đính kèm phải có trạng thái chưa xác minh!"
+    )
     assert cert_data["verified_at"] is None
     assert cert_data["verified_by"] is None
 
@@ -225,7 +229,10 @@ def test_death_certificate_verification_workflow_g08():
     # Reject / revoke certificate
     reject_resp = client.post(
         f"/api/v1/profiles/certificates/{cert_id}/verify",
-        json={"is_verified": False, "rejection_reason": "Mộc đỏ bị mờ, yêu cầu nộp bản sao trích lục"},
+        json={
+            "is_verified": False,
+            "rejection_reason": "Mộc đỏ bị mờ, yêu cầu nộp bản sao trích lục",
+        },
         headers={"Authorization": f"Bearer {token}"},
     )
     assert reject_resp.status_code == 200, reject_resp.text
@@ -255,7 +262,14 @@ def test_public_lookup_zero_pii_g19():
     assert item["plot_code"] == "A-H01-02"
 
     # PII Leakage Check: verify forbidden fields are absent
-    forbidden_pii = ["citizen_id", "phone_number", "email", "address", "certificate_number", "scan_file_url"]
+    forbidden_pii = [
+        "citizen_id",
+        "phone_number",
+        "email",
+        "address",
+        "certificate_number",
+        "scan_file_url",
+    ]
     for field in forbidden_pii:
         assert field not in item, f"RÒ RỈ THÔNG TIN NHẠY CẢM: Cổng công khai chứa trường {field}!"
 

@@ -10,7 +10,9 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 class PriceItemBase(BaseModel):
     item_code: str = Field(..., max_length=50, description="Mã danh mục giá, ví dụ: GIA-DAT-A1")
     item_name: str = Field(..., max_length=150, description="Tên khoản mục giá")
-    unit_price: Decimal = Field(..., gt=0, decimal_places=2, description="Đơn giá (VNĐ, DECIMAL(15,2))")
+    unit_price: Decimal = Field(
+        ..., gt=0, decimal_places=2, description="Đơn giá (VNĐ, DECIMAL(15,2))"
+    )
     unit: str = Field(..., max_length=30, description="Đơn vị tính, ví dụ: m2, ô mộ, gói/năm")
     zone_id: Optional[int] = Field(None, description="Scope phân khu (nếu có)")
     plot_type_id: Optional[int] = Field(None, description="Scope loại ô mộ (nếu có)")
@@ -42,7 +44,9 @@ class PriceItemResponse(PriceItemBase):
 class PriceListBase(BaseModel):
     price_list_name: str = Field(..., max_length=100, description="Tên bảng giá áp dụng")
     effective_from_date: date = Field(..., description="Ngày bắt đầu có hiệu lực")
-    effective_to_date: Optional[date] = Field(None, description="Ngày kết thúc hiệu lực (None nếu vô thời hạn)")
+    effective_to_date: Optional[date] = Field(
+        None, description="Ngày kết thúc hiệu lực (None nếu vô thời hạn)"
+    )
     is_active: bool = Field(True, description="Trạng thái kích hoạt")
 
     @field_validator("effective_to_date")
@@ -134,7 +138,7 @@ class ContractTemplateBase(BaseModel):
     version_no: int = Field(1, ge=1, description="Số hiệu phiên bản điều khoản")
     content_html: str = Field(..., description="Nội dung điều khoản HTML / UTF-8 Markdown")
     required_documents_json: Optional[str] = Field(
-        None, description="Danh mục hồ sơ bắt buộc đi kèm, ví dụ: [\"DEATH_CERTIFICATE\"]"
+        None, description='Danh mục hồ sơ bắt buộc đi kèm, ví dụ: ["DEATH_CERTIFICATE"]'
     )
     is_active: bool = Field(True, description="Trạng thái hiệu lực bản mẫu")
 

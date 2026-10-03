@@ -10,7 +10,9 @@ from pydantic import BaseModel, ConfigDict, Field
 # =============================================================================
 class ZoneBase(BaseModel):
     zone_code: str = Field(..., max_length=20, description="Mã khu vực (ví dụ: KHU-A, KHU-VIP)")
-    zone_name: str = Field(..., max_length=100, description="Tên khu vực (ví dụ: Khu An Lạc, Khu Vĩnh Hằng)")
+    zone_name: str = Field(
+        ..., max_length=100, description="Tên khu vực (ví dụ: Khu An Lạc, Khu Vĩnh Hằng)"
+    )
     total_rows: int = Field(0, ge=0, description="Tổng số hàng mộ trong khu")
     description: Optional[str] = Field(None, max_length=255)
 
@@ -58,7 +60,9 @@ class RowResponse(RowBase):
 # Plot Type Schemas
 # =============================================================================
 class PlotTypeBase(BaseModel):
-    type_name: str = Field(..., max_length=100, description="Tên loại mộ (ví dụ: Mộ đơn tiêu chuẩn, Mộ đôi gia tộc)")
+    type_name: str = Field(
+        ..., max_length=100, description="Tên loại mộ (ví dụ: Mộ đơn tiêu chuẩn, Mộ đôi gia tộc)"
+    )
     default_slots: int = Field(..., gt=0, description="Số lượng slot an táng mặc định")
     length: Decimal = Field(..., gt=0, description="Chiều dài ô mộ (m)")
     width: Decimal = Field(..., gt=0, description="Chiều rộng ô mộ (m)")
@@ -101,9 +105,13 @@ class PlotSlotResponse(BaseModel):
 # Reservation Schemas (G04)
 # =============================================================================
 class PlotReserveRequest(BaseModel):
-    customer_name: Optional[str] = Field(None, max_length=100, description="Họ tên khách hàng giữ chỗ")
+    customer_name: Optional[str] = Field(
+        None, max_length=100, description="Họ tên khách hàng giữ chỗ"
+    )
     customer_phone: Optional[str] = Field(None, max_length=20, description="Số điện thoại liên hệ")
-    duration_hours: int = Field(48, ge=1, le=720, description="Thời hạn giữ chỗ tính theo giờ (mặc định 48h)")
+    duration_hours: int = Field(
+        48, ge=1, le=720, description="Thời hạn giữ chỗ tính theo giờ (mặc định 48h)"
+    )
     notes: Optional[str] = Field(None, max_length=500, description="Ghi chú giữ chỗ")
 
 
@@ -130,7 +138,9 @@ class PlotBase(BaseModel):
     type_id: int
     latitude: Optional[Decimal] = None
     longitude: Optional[Decimal] = None
-    orientation: Optional[str] = Field(None, max_length=50, description="Hướng mộ (ĐÔNG, TÂY, NAM, BẮC,...)")
+    orientation: Optional[str] = Field(
+        None, max_length=50, description="Hướng mộ (ĐÔNG, TÂY, NAM, BẮC,...)"
+    )
     notes: Optional[str] = None
     is_kim_tinh: bool = Field(False, description="Cờ đánh dấu kết cấu huyệt mộ Kim Tĩnh kiên cố")
 

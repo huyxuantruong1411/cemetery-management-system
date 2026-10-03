@@ -435,6 +435,76 @@ void main() {
     // G08 verified certificate check
     expect(find.textContaining('ĐÃ XÁC THỰC'), findsOneWidget);
   });
+
+  testWidgets('CemeteryMobileApp contracts tab authenticated displays contracts list and opens detail sheet test',
+      (WidgetTester tester) async {
+    final fakeUser = UserModel(
+      userId: 15,
+      username: 'marketing',
+      fullName: 'Chuyên Viên Kinh Doanh',
+      email: 'marketing@nghiatrang.vn',
+      roles: ['MARKETING'],
+      permissions: ['contracts:read', 'contracts:write'],
+    );
+
+    final fakeContracts = [
+      ContractBriefModel(
+        contractId: 101,
+        contractCode: 'HD-MD-2026-0001',
+        contractType: 'LAND_PURCHASE',
+        status: 'ACTIVE',
+        totalAmount: 45000000,
+        customerId: 1,
+        customerName: 'Nguyễn Văn An',
+        customerPhone: '0901234567',
+        plotId: 10,
+        plotCode: 'A-H01-01',
+        zoneName: 'Khu A',
+        signedAt: '2026-10-01',
+        activatedAt: '2026-10-02T10:00:00Z',
+        createdAt: '2026-10-01T08:00:00Z',
+      ),
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          readinessProvider.overrideWith((ref) async => SystemReadiness(
+                status: 'ready',
+                database: 'Database connected',
+                storage: 'Storage connected',
+                timestamp: '2026-10-03T12:00:00Z',
+              )),
+          versionProvider.overrideWith((ref) async => SystemVersion(
+                appName: 'Hệ thống Quản lý Nghĩa trang',
+                version: '0.8.0',
+                environment: 'test',
+              )),
+          authProvider.overrideWith(() => _FakeAuthNotifier(fakeUser)),
+          contractsProvider.overrideWith((ref) async => fakeContracts),
+        ],
+        child: const CemeteryMobileApp(),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Tap the contracts tab
+    await tester.tap(find.text('Hợp Đồng'));
+    await tester.pumpAndSettle();
+
+    // Verify contract code and customer name are visible
+    expect(find.text('HD-MD-2026-0001'), findsOneWidget);
+    expect(find.text('Nguyễn Văn An'), findsOneWidget);
+    expect(find.text('Hiệu lực'), findsWidgets);
+
+    // Tap contract card to open details sheet
+    await tester.tap(find.text('HD-MD-2026-0001'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Mua Bán Quyền Sử Dụng Đất'), findsOneWidget);
+    expect(find.text('0901234567'), findsWidgets);
+  });
 }
 
 class _FakeAuthNotifier extends AuthNotifier {

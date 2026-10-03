@@ -19,7 +19,9 @@ from app.modules.contracts.models import ContractTemplate
 
 def seed_catalog():
     db = SessionLocal()
-    print("🌱 Bắt đầu nạp dữ liệu danh mục mẫu (Catalog, Pricing, Care Packages & Contract Templates)...")
+    print(
+        "🌱 Bắt đầu nạp dữ liệu danh mục mẫu (Catalog, Pricing, Care Packages & Contract Templates)..."
+    )
 
     try:
         # 1. Seed Contract Templates (4 mã chuẩn + 1 phụ lục)
@@ -66,7 +68,9 @@ def seed_catalog():
                 <h3>HỢP ĐỒNG DỊCH VỤ CẢI TÁNG VÀ DI DỜI HÀI CỐT</h3>
                 <p>Điều khoản an toàn: Tuân thủ quy định vệ sinh dịch tễ môi trường, thời gian cải táng tối thiểu theo quy định.</p>
                 """,
-                "required_documents_json": json.dumps(["DEATH_CERTIFICATE", "EXHUMATION_PERMIT", "CITIZEN_ID"]),
+                "required_documents_json": json.dumps(
+                    ["DEATH_CERTIFICATE", "EXHUMATION_PERMIT", "CITIZEN_ID"]
+                ),
                 "is_active": True,
             },
             {
@@ -96,7 +100,11 @@ def seed_catalog():
         ]
 
         for td in templates_data:
-            tmpl = db.query(ContractTemplate).filter(ContractTemplate.template_code == td["template_code"]).first()
+            tmpl = (
+                db.query(ContractTemplate)
+                .filter(ContractTemplate.template_code == td["template_code"])
+                .first()
+            )
             if not tmpl:
                 tmpl = ContractTemplate(**td)
                 db.add(tmpl)
@@ -114,12 +122,14 @@ def seed_catalog():
                 "package_name": "Gói Chăm Sóc Mộ Định Kỳ Hàng Tháng (Cơ Bản)",
                 "cycle_type": "MONTHLY",
                 "unit_price": Decimal("350000.00"),
-                "default_tasks_json": json.dumps([
-                    "Dọn cỏ dại và thu gom rác quanh khuôn viên mộ",
-                    "Lau sạch bia đá hoa cương và bề mặt mộ",
-                    "Thắp hương vào ngày rằm (15) và mùng một (01) âm lịch hàng tháng",
-                    "Chụp ảnh hiện trạng gửi gia đình qua ứng dụng di động",
-                ]),
+                "default_tasks_json": json.dumps(
+                    [
+                        "Dọn cỏ dại và thu gom rác quanh khuôn viên mộ",
+                        "Lau sạch bia đá hoa cương và bề mặt mộ",
+                        "Thắp hương vào ngày rằm (15) và mùng một (01) âm lịch hàng tháng",
+                        "Chụp ảnh hiện trạng gửi gia đình qua ứng dụng di động",
+                    ]
+                ),
                 "is_active": True,
             },
             {
@@ -127,12 +137,14 @@ def seed_catalog():
                 "package_name": "Gói Chăm Sóc & Hoa Viên Theo Quý (Nâng Cao)",
                 "cycle_type": "QUARTERLY",
                 "unit_price": Decimal("1200000.00"),
-                "default_tasks_json": json.dumps([
-                    "Toàn bộ các hạng mục chăm sóc định kỳ hàng tháng",
-                    "Cắt tỉa, tạo tán cây cảnh và thay hoa tươi tại bồn hoa khuôn viên",
-                    "Đánh bóng bia đá granite và vệ sinh mạch nối kim tĩnh",
-                    "Dâng mâm quả lễ vào các ngày sóc vọng và lễ tiết",
-                ]),
+                "default_tasks_json": json.dumps(
+                    [
+                        "Toàn bộ các hạng mục chăm sóc định kỳ hàng tháng",
+                        "Cắt tỉa, tạo tán cây cảnh và thay hoa tươi tại bồn hoa khuôn viên",
+                        "Đánh bóng bia đá granite và vệ sinh mạch nối kim tĩnh",
+                        "Dâng mâm quả lễ vào các ngày sóc vọng và lễ tiết",
+                    ]
+                ),
                 "is_active": True,
             },
             {
@@ -140,23 +152,31 @@ def seed_catalog():
                 "package_name": "Gói Chăm Sóc Toàn Diện & Đại Lễ Hàng Năm (VIP)",
                 "cycle_type": "YEARLY",
                 "unit_price": Decimal("4500000.00"),
-                "default_tasks_json": json.dumps([
-                    "Toàn bộ các hạng mục chăm sóc theo tháng và theo quý",
-                    "Tổng vệ sinh và bảo dưỡng kết cấu đá khuôn viên trước Tết Nguyên Đán",
-                    "Phục hồi chữ khắc nhũ vàng / thếp vàng trên bia mộ khi có dấu hiệu phai mờ",
-                    "Tổ chức cúng giỗ gia tiên và đại lễ Vu Lan Báo Hiếu",
-                    "Báo cáo nghiệm thu hình ảnh 360 độ lưu trữ hệ thống MinIO",
-                ]),
+                "default_tasks_json": json.dumps(
+                    [
+                        "Toàn bộ các hạng mục chăm sóc theo tháng và theo quý",
+                        "Tổng vệ sinh và bảo dưỡng kết cấu đá khuôn viên trước Tết Nguyên Đán",
+                        "Phục hồi chữ khắc nhũ vàng / thếp vàng trên bia mộ khi có dấu hiệu phai mờ",
+                        "Tổ chức cúng giỗ gia tiên và đại lễ Vu Lan Báo Hiếu",
+                        "Báo cáo nghiệm thu hình ảnh 360 độ lưu trữ hệ thống MinIO",
+                    ]
+                ),
                 "is_active": True,
             },
         ]
 
         for pkg_data in care_packages_data:
-            pkg = db.query(CarePackage).filter(CarePackage.package_code == pkg_data["package_code"]).first()
+            pkg = (
+                db.query(CarePackage)
+                .filter(CarePackage.package_code == pkg_data["package_code"])
+                .first()
+            )
             if not pkg:
                 pkg = CarePackage(**pkg_data)
                 db.add(pkg)
-                print(f"  + Tạo Care Package: {pkg_data['package_code']} - {pkg_data['package_name']}")
+                print(
+                    f"  + Tạo Care Package: {pkg_data['package_code']} - {pkg_data['package_name']}"
+                )
             else:
                 pkg.package_name = pkg_data["package_name"]
                 pkg.unit_price = pkg_data["unit_price"]
@@ -178,17 +198,65 @@ def seed_catalog():
             print(f"  + Tạo Price List: {pl_name}")
 
         items_data = [
-            ("GIA-DAT-DON", "Đơn giá chuyển nhượng ô mộ đơn tiêu chuẩn", Decimal("120000000.00"), "ô mộ", None),
-            ("GIA-DAT-DOI", "Đơn giá chuyển nhượng ô mộ đôi song thân", Decimal("250000000.00"), "ô mộ", None),
-            ("GIA-DAT-GIA-TOC", "Đơn giá khuôn viên hoa viên gia tộc VIP", Decimal("650000000.00"), "khuôn viên", None),
-            ("DV-XAY-KIMTINH", "Chi phí thi công đúc khối kim tĩnh bê tông cốt thép", Decimal("18000000.00"), "hố mộ", "CONSTRUCTION"),
-            ("DV-ANTANG", "Dịch vụ nghi thức hạ huyệt an táng tiêu chuẩn", Decimal("6000000.00"), "lượt", "BURIAL"),
-            ("DV-CAITANG", "Dịch vụ bốc mộ cải táng sang tiểu quách", Decimal("12000000.00"), "lượt", "EXHUMATION"),
-            ("DV-HOATANG", "Dịch vụ hỏa táng nguyên vẹn công nghệ châu Âu", Decimal("8500000.00"), "lượt", "CREMATION"),
+            (
+                "GIA-DAT-DON",
+                "Đơn giá chuyển nhượng ô mộ đơn tiêu chuẩn",
+                Decimal("120000000.00"),
+                "ô mộ",
+                None,
+            ),
+            (
+                "GIA-DAT-DOI",
+                "Đơn giá chuyển nhượng ô mộ đôi song thân",
+                Decimal("250000000.00"),
+                "ô mộ",
+                None,
+            ),
+            (
+                "GIA-DAT-GIA-TOC",
+                "Đơn giá khuôn viên hoa viên gia tộc VIP",
+                Decimal("650000000.00"),
+                "khuôn viên",
+                None,
+            ),
+            (
+                "DV-XAY-KIMTINH",
+                "Chi phí thi công đúc khối kim tĩnh bê tông cốt thép",
+                Decimal("18000000.00"),
+                "hố mộ",
+                "CONSTRUCTION",
+            ),
+            (
+                "DV-ANTANG",
+                "Dịch vụ nghi thức hạ huyệt an táng tiêu chuẩn",
+                Decimal("6000000.00"),
+                "lượt",
+                "BURIAL",
+            ),
+            (
+                "DV-CAITANG",
+                "Dịch vụ bốc mộ cải táng sang tiểu quách",
+                Decimal("12000000.00"),
+                "lượt",
+                "EXHUMATION",
+            ),
+            (
+                "DV-HOATANG",
+                "Dịch vụ hỏa táng nguyên vẹn công nghệ châu Âu",
+                Decimal("8500000.00"),
+                "lượt",
+                "CREMATION",
+            ),
         ]
 
         for item_code, item_name, unit_price, unit, service_code in items_data:
-            it = db.query(PriceItem).filter(PriceItem.price_list_id == pl.price_list_id, PriceItem.item_code == item_code).first()
+            it = (
+                db.query(PriceItem)
+                .filter(
+                    PriceItem.price_list_id == pl.price_list_id, PriceItem.item_code == item_code
+                )
+                .first()
+            )
             if not it:
                 it = PriceItem(
                     price_list_id=pl.price_list_id,
@@ -199,7 +267,9 @@ def seed_catalog():
                     service_code=service_code,
                 )
                 db.add(it)
-                print(f"    - Thêm Price Item: [{item_code}] {item_name}: {unit_price:,.0f} VNĐ / {unit}")
+                print(
+                    f"    - Thêm Price Item: [{item_code}] {item_name}: {unit_price:,.0f} VNĐ / {unit}"
+                )
             else:
                 it.unit_price = unit_price
                 it.item_name = item_name

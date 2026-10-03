@@ -192,7 +192,10 @@ def test_anti_double_booking_reservation_success_and_conflict():
         },
     )
     assert conflict_resp.status_code == 409
-    assert "người giữ chỗ" in conflict_resp.json()["detail"] or "Tạm giữ chỗ" in conflict_resp.json()["detail"]
+    assert (
+        "người giữ chỗ" in conflict_resp.json()["detail"]
+        or "Tạm giữ chỗ" in conflict_resp.json()["detail"]
+    )
 
     # 3. Cancel the reservation -> plot returns to EMPTY_UNSOLD
     cancel_resp = client.post(

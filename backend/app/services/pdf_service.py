@@ -107,7 +107,9 @@ class PDFService:
         elements.append(Spacer(1, 14))
 
         elements.append(Paragraph("HỢP ĐỒNG DỊCH VỤ NGHĨA TRANG TƯ NHÂN", title_style))
-        elements.append(Paragraph(f"Mã hợp đồng: {contract_code} · Loại: {contract_type}", subtitle_style))
+        elements.append(
+            Paragraph(f"Mã hợp đồng: {contract_code} · Loại: {contract_type}", subtitle_style)
+        )
         elements.append(Spacer(1, 20))
 
         # 2. Bên A: Ban Quản Lý Nghĩa Trang
@@ -127,7 +129,11 @@ class PDFService:
             ],
         ]
         t_a = Table(bena_data, colWidths=[150, 370])
-        t_a.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("BOTTOMPADDING", (0, 0), (-1, -1), 4)]))
+        t_a.setStyle(
+            TableStyle(
+                [("VALIGN", (0, 0), (-1, -1), "TOP"), ("BOTTOMPADDING", (0, 0), (-1, -1), 4)]
+            )
+        )
         elements.append(t_a)
         elements.append(Spacer(1, 14))
 
@@ -148,7 +154,11 @@ class PDFService:
             ],
         ]
         t_b = Table(benb_data, colWidths=[150, 370])
-        t_b.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("BOTTOMPADDING", (0, 0), (-1, -1), 4)]))
+        t_b.setStyle(
+            TableStyle(
+                [("VALIGN", (0, 0), (-1, -1), "TOP"), ("BOTTOMPADDING", (0, 0), (-1, -1), 4)]
+            )
+        )
         elements.append(t_b)
         elements.append(Spacer(1, 14))
 
@@ -169,7 +179,11 @@ class PDFService:
             ],
         ]
         t_deal = Table(deal_data, colWidths=[150, 370])
-        t_deal.setStyle(TableStyle([("VALIGN", (0, 0), (-1, -1), "TOP"), ("BOTTOMPADDING", (0, 0), (-1, -1), 4)]))
+        t_deal.setStyle(
+            TableStyle(
+                [("VALIGN", (0, 0), (-1, -1), "TOP"), ("BOTTOMPADDING", (0, 0), (-1, -1), 4)]
+            )
+        )
         elements.append(t_deal)
         elements.append(Spacer(1, 14))
 

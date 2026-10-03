@@ -43,8 +43,12 @@ class PriceItem(Base):
 
     # G03 Scope fields
     zone_id = Column(Integer, ForeignKey("zones.zone_id", ondelete="SET NULL"), nullable=True)
-    plot_type_id = Column(Integer, ForeignKey("plot_types.type_id", ondelete="SET NULL"), nullable=True)
-    package_id = Column(Integer, ForeignKey("care_packages.package_id", ondelete="SET NULL"), nullable=True)
+    plot_type_id = Column(
+        Integer, ForeignKey("plot_types.type_id", ondelete="SET NULL"), nullable=True
+    )
+    package_id = Column(
+        Integer, ForeignKey("care_packages.package_id", ondelete="SET NULL"), nullable=True
+    )
     service_code = Column(String(50), nullable=True)
 
     price_list = relationship("PriceList", back_populates="items")

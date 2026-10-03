@@ -30,7 +30,9 @@ router = APIRouter(prefix="/profiles", tags=["Profiles: Customers, Deceased & De
 # =============================================================================
 @router.get("/public/memorials", response_model=List[DeceasedPublicLookupResponse])
 def public_memorial_lookup(
-    q: str = Query(..., min_length=2, description="Tên hoặc mã người quá cố để tra cứu nơi an táng"),
+    q: str = Query(
+        ..., min_length=2, description="Tên hoặc mã người quá cố để tra cứu nơi an táng"
+    ),
     limit: int = Query(20, ge=1, le=50),
     db: Session = Depends(get_db),
 ):
@@ -90,7 +92,9 @@ def update_customer(
 # =============================================================================
 # 3. Deceased Profiles Endpoints (G07)
 # =============================================================================
-@router.post("/deceased", response_model=DeceasedProfileResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/deceased", response_model=DeceasedProfileResponse, status_code=status.HTTP_201_CREATED
+)
 def create_deceased_profile(
     data: DeceasedProfileCreate,
     db: Session = Depends(get_db),
@@ -167,13 +171,17 @@ def verify_death_certificate(
     Ghi nhận nhân sự thẩm định thực tế (verified_by) và thời điểm xác minh.
     Là điều kiện tiên quyết bắt buộc trước khi kích hoạt phụ lục an táng.
     """
-    return ProfileService.verify_certificate(db, cert_id, data, verifier_user_id=current_user.user_id)
+    return ProfileService.verify_certificate(
+        db, cert_id, data, verifier_user_id=current_user.user_id
+    )
 
 
 # =============================================================================
 # 5. Customer - Deceased Relations
 # =============================================================================
-@router.post("/relations", response_model=CustomerRelationBrief, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/relations", response_model=CustomerRelationBrief, status_code=status.HTTP_201_CREATED
+)
 def link_customer_to_deceased(
     data: RelationCreate,
     db: Session = Depends(get_db),

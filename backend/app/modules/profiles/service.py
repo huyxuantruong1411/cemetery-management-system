@@ -62,9 +62,12 @@ class ProfileService:
             code = f"KH-{year}-{len(count) + 1:04d}"
 
         # Ensure code is unique
-        while db.execute(select(Customer).where(Customer.customer_code == code)).scalar_one_or_none():
+        while db.execute(
+            select(Customer).where(Customer.customer_code == code)
+        ).scalar_one_or_none():
             year = datetime.now(timezone.utc).year
             import random
+
             code = f"KH-{year}-{random.randint(1000, 9999)}"
 
         customer = Customer(
@@ -85,7 +88,9 @@ class ProfileService:
     def update_customer(db: Session, customer_id: int, data: CustomerUpdate) -> CustomerResponse:
         customer = db.get(Customer, customer_id)
         if not customer:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy khách hàng")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy khách hàng"
+            )
 
         if data.full_name is not None:
             customer.full_name = data.full_name.strip()
@@ -105,22 +110,32 @@ class ProfileService:
 
     @staticmethod
     def get_customer(db: Session, customer_id: int) -> CustomerResponse:
-        customer = db.execute(
-            select(Customer)
-            .options(
-                joinedload(Customer.relations).joinedload(CustomerDeceasedRelation.deceased)
+        customer = (
+            db.execute(
+                select(Customer)
+                .options(
+                    joinedload(Customer.relations).joinedload(CustomerDeceasedRelation.deceased)
+                )
+                .where(Customer.customer_id == customer_id)
             )
-            .where(Customer.customer_id == customer_id)
-        ).unique().scalar_one_or_none()
+            .unique()
+            .scalar_one_or_none()
+        )
         if not customer:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy khách hàng")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy khách hàng"
+            )
         return ProfileService._to_customer_response(customer)
 
     @staticmethod
-    def list_customers(db: Session, search: str | None = None, limit: int = 100) -> list[CustomerResponse]:
-        query = select(Customer).options(
-            joinedload(Customer.relations).joinedload(CustomerDeceasedRelation.deceased)
-        ).order_by(Customer.created_at.desc())
+    def list_customers(
+        db: Session, search: str | None = None, limit: int = 100
+    ) -> list[CustomerResponse]:
+        query = (
+            select(Customer)
+            .options(joinedload(Customer.relations).joinedload(CustomerDeceasedRelation.deceased))
+            .order_by(Customer.created_at.desc())
+        )
 
         if search and search.strip():
             term = f"%{search.strip()}%"
@@ -164,9 +179,12 @@ class ProfileService:
             count = db.execute(select(DeceasedProfile)).scalars().all()
             code = f"NM-{year}-{len(count) + 1:04d}"
 
-        while db.execute(select(DeceasedProfile).where(DeceasedProfile.deceased_code == code)).scalar_one_or_none():
+        while db.execute(
+            select(DeceasedProfile).where(DeceasedProfile.deceased_code == code)
+        ).scalar_one_or_none():
             year = datetime.now(timezone.utc).year
             import random
+
             code = f"NM-{year}-{random.randint(1000, 9999)}"
 
         # G07: Determine birth_year and precision
@@ -197,11 +215,16 @@ class ProfileService:
         if data.customer_id:
             customer = db.get(Customer, data.customer_id)
             if not customer:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy khách hàng thân nhân")
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Không tìm thấy khách hàng thân nhân",
+                )
             rel = CustomerDeceasedRelation(
                 customer_id=customer.customer_id,
                 deceased_id=profile.deceased_id,
-                relationship_type=data.relationship_type.strip() if data.relationship_type else "Thân nhân",
+                relationship_type=data.relationship_type.strip()
+                if data.relationship_type
+                else "Thân nhân",
                 is_primary_contact=data.is_primary_contact,
             )
             db.add(rel)
@@ -231,7 +254,9 @@ class ProfileService:
     ) -> DeceasedProfileResponse:
         profile = db.get(DeceasedProfile, deceased_id)
         if not profile:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy hồ sơ người mất")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy hồ sơ người mất"
+            )
 
         if data.full_name is not None:
             profile.full_name = data.full_name.strip()
@@ -251,10 +276,22 @@ class ProfileService:
             profile.religion = data.religion.strip() if data.religion else None
 
         # Re-validate dates
-        if profile.date_of_birth and profile.date_of_death and profile.date_of_birth > profile.date_of_death:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Ngày sinh không thể sau ngày mất")
-        if profile.birth_year and profile.date_of_death and profile.birth_year > profile.date_of_death.year:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Năm sinh không thể lớn hơn năm mất")
+        if (
+            profile.date_of_birth
+            and profile.date_of_death
+            and profile.date_of_birth > profile.date_of_death
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Ngày sinh không thể sau ngày mất"
+            )
+        if (
+            profile.birth_year
+            and profile.date_of_death
+            and profile.birth_year > profile.date_of_death.year
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Năm sinh không thể lớn hơn năm mất"
+            )
 
         profile.updated_at = datetime.now(timezone.utc)
         db.commit()
@@ -262,24 +299,38 @@ class ProfileService:
 
     @staticmethod
     def get_deceased_profile(db: Session, deceased_id: int) -> DeceasedProfileResponse:
-        profile = db.execute(
-            select(DeceasedProfile)
-            .options(
-                joinedload(DeceasedProfile.death_certificate).joinedload(DeathCertificate.verifier),
-                joinedload(DeceasedProfile.relations).joinedload(CustomerDeceasedRelation.customer),
+        profile = (
+            db.execute(
+                select(DeceasedProfile)
+                .options(
+                    joinedload(DeceasedProfile.death_certificate).joinedload(
+                        DeathCertificate.verifier
+                    ),
+                    joinedload(DeceasedProfile.relations).joinedload(
+                        CustomerDeceasedRelation.customer
+                    ),
+                )
+                .where(DeceasedProfile.deceased_id == deceased_id)
             )
-            .where(DeceasedProfile.deceased_id == deceased_id)
-        ).unique().scalar_one_or_none()
+            .unique()
+            .scalar_one_or_none()
+        )
 
         if not profile:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy hồ sơ người mất")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy hồ sơ người mất"
+            )
 
         # Query burial slot if any
-        slot = db.execute(
-            select(PlotSlot)
-            .options(joinedload(PlotSlot.plot).joinedload(Plot.row).joinedload(Row.zone))
-            .where(PlotSlot.current_deceased_id == deceased_id)
-        ).unique().scalar_one_or_none()
+        slot = (
+            db.execute(
+                select(PlotSlot)
+                .options(joinedload(PlotSlot.plot).joinedload(Plot.row).joinedload(Row.zone))
+                .where(PlotSlot.current_deceased_id == deceased_id)
+            )
+            .unique()
+            .scalar_one_or_none()
+        )
 
         return ProfileService._to_deceased_response(profile, slot)
 
@@ -287,10 +338,14 @@ class ProfileService:
     def list_deceased_profiles(
         db: Session, search: str | None = None, limit: int = 100
     ) -> list[DeceasedProfileResponse]:
-        query = select(DeceasedProfile).options(
-            joinedload(DeceasedProfile.death_certificate).joinedload(DeathCertificate.verifier),
-            joinedload(DeceasedProfile.relations).joinedload(CustomerDeceasedRelation.customer),
-        ).order_by(DeceasedProfile.created_at.desc())
+        query = (
+            select(DeceasedProfile)
+            .options(
+                joinedload(DeceasedProfile.death_certificate).joinedload(DeathCertificate.verifier),
+                joinedload(DeceasedProfile.relations).joinedload(CustomerDeceasedRelation.customer),
+            )
+            .order_by(DeceasedProfile.created_at.desc())
+        )
 
         if search and search.strip():
             term = f"%{search.strip()}%"
@@ -308,16 +363,22 @@ class ProfileService:
         dec_ids = [p.deceased_id for p in profiles]
         slots_map = {}
         if dec_ids:
-            slots = db.execute(
-                select(PlotSlot)
-                .options(joinedload(PlotSlot.plot).joinedload(Plot.row).joinedload(Row.zone))
-                .where(PlotSlot.current_deceased_id.in_(dec_ids))
-            ).scalars().all()
+            slots = (
+                db.execute(
+                    select(PlotSlot)
+                    .options(joinedload(PlotSlot.plot).joinedload(Plot.row).joinedload(Row.zone))
+                    .where(PlotSlot.current_deceased_id.in_(dec_ids))
+                )
+                .scalars()
+                .all()
+            )
             for s in slots:
                 if s.current_deceased_id:
                     slots_map[s.current_deceased_id] = s
 
-        return [ProfileService._to_deceased_response(p, slots_map.get(p.deceased_id)) for p in profiles]
+        return [
+            ProfileService._to_deceased_response(p, slots_map.get(p.deceased_id)) for p in profiles
+        ]
 
     # ==========================================================================
     # Death Certificate & Verification Workflow (G08)
@@ -328,7 +389,9 @@ class ProfileService:
     ) -> DeathCertificateResponse:
         profile = db.get(DeceasedProfile, deceased_id)
         if not profile:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy hồ sơ người mất")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy hồ sơ người mất"
+            )
 
         cert = db.execute(
             select(DeathCertificate).where(DeathCertificate.deceased_id == deceased_id)
@@ -373,14 +436,22 @@ class ProfileService:
     def verify_certificate(
         db: Session, cert_id: int, data: DeathCertificateVerifyRequest, verifier_user_id: int
     ) -> DeathCertificateResponse:
-        cert = db.execute(
-            select(DeathCertificate)
-            .options(joinedload(DeathCertificate.deceased), joinedload(DeathCertificate.verifier))
-            .where(DeathCertificate.cert_id == cert_id)
-        ).unique().scalar_one_or_none()
+        cert = (
+            db.execute(
+                select(DeathCertificate)
+                .options(
+                    joinedload(DeathCertificate.deceased), joinedload(DeathCertificate.verifier)
+                )
+                .where(DeathCertificate.cert_id == cert_id)
+            )
+            .unique()
+            .scalar_one_or_none()
+        )
 
         if not cert:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy giấy báo tử")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy giấy báo tử"
+            )
 
         if data.is_verified:
             cert.is_verified = True
@@ -408,8 +479,7 @@ class ProfileService:
     def check_death_certificate_verified(db: Session, deceased_id: int) -> bool:
         """Domain invariant helper: returns True iff a verified death certificate exists."""
         cert = db.execute(
-            select(DeathCertificate)
-            .where(
+            select(DeathCertificate).where(
                 DeathCertificate.deceased_id == deceased_id,
                 DeathCertificate.is_verified == True,  # noqa: E712
             )
@@ -420,31 +490,41 @@ class ProfileService:
     # Public Lookup (Zero PII Leakage - G19 & ADR-001)
     # ==========================================================================
     @staticmethod
-    def public_lookup_deceased(db: Session, query_str: str, limit: int = 20) -> list[DeceasedPublicLookupResponse]:
+    def public_lookup_deceased(
+        db: Session, query_str: str, limit: int = 20
+    ) -> list[DeceasedPublicLookupResponse]:
         if not query_str or len(query_str.strip()) < 2:
             return []
 
         search_term = f"%{query_str.strip()}%"
-        profiles = db.execute(
-            select(DeceasedProfile)
-            .where(
-                or_(
-                    DeceasedProfile.full_name.ilike(search_term),
-                    DeceasedProfile.deceased_code.ilike(search_term),
+        profiles = (
+            db.execute(
+                select(DeceasedProfile)
+                .where(
+                    or_(
+                        DeceasedProfile.full_name.ilike(search_term),
+                        DeceasedProfile.deceased_code.ilike(search_term),
+                    )
                 )
+                .order_by(DeceasedProfile.full_name)
+                .limit(limit)
             )
-            .order_by(DeceasedProfile.full_name)
-            .limit(limit)
-        ).scalars().all()
+            .scalars()
+            .all()
+        )
 
         dec_ids = [p.deceased_id for p in profiles]
         slots_map = {}
         if dec_ids:
-            slots = db.execute(
-                select(PlotSlot)
-                .options(joinedload(PlotSlot.plot).joinedload(Plot.row).joinedload(Row.zone))
-                .where(PlotSlot.current_deceased_id.in_(dec_ids))
-            ).scalars().all()
+            slots = (
+                db.execute(
+                    select(PlotSlot)
+                    .options(joinedload(PlotSlot.plot).joinedload(Plot.row).joinedload(Row.zone))
+                    .where(PlotSlot.current_deceased_id.in_(dec_ids))
+                )
+                .scalars()
+                .all()
+            )
             for s in slots:
                 if s.current_deceased_id:
                     slots_map[s.current_deceased_id] = s
@@ -461,8 +541,12 @@ class ProfileService:
                     year_of_birth=yob,
                     date_of_death=p.date_of_death,
                     hometown=p.hometown,
-                    zone_name=slot.plot.row.zone.zone_name if slot and slot.plot and slot.plot.row and slot.plot.row.zone else None,
-                    row_code=slot.plot.row.row_code if slot and slot.plot and slot.plot.row else None,
+                    zone_name=slot.plot.row.zone.zone_name
+                    if slot and slot.plot and slot.plot.row and slot.plot.row.zone
+                    else None,
+                    row_code=slot.plot.row.row_code
+                    if slot and slot.plot and slot.plot.row
+                    else None,
                     plot_code=slot.plot.plot_code if slot and slot.plot else None,
                     slot_number=slot.slot_number if slot else None,
                     is_kim_tinh=slot.plot.is_kim_tinh if slot and slot.plot else False,
@@ -477,10 +561,14 @@ class ProfileService:
     def link_relation(db: Session, data: RelationCreate) -> CustomerRelationBrief:
         customer = db.get(Customer, data.customer_id)
         if not customer:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy khách hàng")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy khách hàng"
+            )
         deceased = db.get(DeceasedProfile, data.deceased_id)
         if not deceased:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy người mất")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy người mất"
+            )
 
         # Check existing link
         existing = db.execute(
@@ -520,7 +608,9 @@ class ProfileService:
     def remove_relation(db: Session, relation_id: int) -> None:
         rel = db.get(CustomerDeceasedRelation, relation_id)
         if not rel:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy mối quan hệ")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy mối quan hệ"
+            )
         db.delete(rel)
         db.commit()
 
@@ -558,7 +648,9 @@ class ProfileService:
         )
 
     @staticmethod
-    def _to_deceased_response(p: DeceasedProfile, slot: PlotSlot | None = None) -> DeceasedProfileResponse:
+    def _to_deceased_response(
+        p: DeceasedProfile, slot: PlotSlot | None = None
+    ) -> DeceasedProfileResponse:
         cert_resp = None
         if p.death_certificate:
             cert_resp = ProfileService._to_certificate_response(p.death_certificate)
@@ -587,8 +679,12 @@ class ProfileService:
                 plot_id=slot.plot_id,
                 slot_number=slot.slot_number,
                 plot_code=slot.plot.plot_code,
-                zone_code=slot.plot.row.zone.zone_code if slot.plot.row and slot.plot.row.zone else "",
-                zone_name=slot.plot.row.zone.zone_name if slot.plot.row and slot.plot.row.zone else "",
+                zone_code=slot.plot.row.zone.zone_code
+                if slot.plot.row and slot.plot.row.zone
+                else "",
+                zone_name=slot.plot.row.zone.zone_name
+                if slot.plot.row and slot.plot.row.zone
+                else "",
                 row_code=slot.plot.row.row_code if slot.plot.row else "",
                 status=slot.status,
                 is_kim_tinh=slot.plot.is_kim_tinh,

@@ -39,7 +39,9 @@ class DocumentVersionResponse(BaseModel):
 
 class LinkDocumentRequest(BaseModel):
     file_id: str = Field(..., description="ID của tệp đã tải lên")
-    document_type: str = Field(..., description="SIGNED_CONTRACT, SIGNED_ANNEX, DEATH_CERTIFICATE, EVIDENCE_PHOTO, RECEIPT")
+    document_type: str = Field(
+        ..., description="SIGNED_CONTRACT, SIGNED_ANNEX, DEATH_CERTIFICATE, EVIDENCE_PHOTO, RECEIPT"
+    )
     contract_id: int | None = None
     annex_id: int | None = None
     certificate_id: int | None = None

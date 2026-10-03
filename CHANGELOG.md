@@ -4,6 +4,49 @@ Tất cả những thay đổi quan trọng trong hệ thống Quản lý Nghĩa
 
 ---
 
+## [0.8.0-land-contracts] - 2026-10-03 (M07)
+
+### Added
+- **CSDL & Alembic Migration (G09):**
+  - Migration `0007_g09_contracts_workflow.py`:
+    - Tạo Database Sequence `seq_contract_number` (khởi đầu từ 1001) phục vụ sinh mã hợp đồng tuần tự chống race condition: `HD-MD-YYYY-NNNN`.
+    - Mở rộng bảng `contracts`: `signed_at` (DATE), `activated_at` (DATETIME2), `activated_by` (FK đến `users`), `activation_notes` (NVARCHAR(MAX)), `template_id` (FK đến `contract_templates`), `template_version` (INT), `signed_scan_file_id` (VARCHAR(64), FK đến `file_objects`), `notes` (NVARCHAR(MAX)).
+    - Bổ sung FK `contract_id` trên `plot_reservations` để liên kết chính xác vòng đời giữ chỗ phát sinh từ hợp đồng.
+- **Nghiệp Vụ Backend & Ràng Buộc Miền (ContractService):**
+  - Khóa hàng chống double-booking (`with_for_update()`): Kiểm tra ô mộ `EMPTY_UNSOLD` và từ chối xung đột giữ chỗ tức thời với `409 Conflict`.
+  - Snapshot đơn giá đất tự động từ biểu giá niêm yết đang có hiệu lực (`price_lists` & `price_items`), bảo toàn tính toàn vẹn giá tại thời điểm ký kết.
+  - Quy trình gửi ký (`submit_for_signing`): Chuyển trạng thái hợp đồng sang `PENDING_SIGN` để xuất in văn bản trình thân nhân.
+  - Xuất bản in hợp đồng PDF chuẩn pháp lý tiếng Việt UTF-8 (Arial) via ReportLab.
+  - Kích hoạt hợp đồng toàn vẹn ACID 6 bước (`activate_contract`):
+    1. Cập nhật hợp đồng: `status = 'ACTIVE'`, ghi nhận `signed_scan_file_id`, ngày ký và người duyệt.
+    2. Cập nhật ô mộ: `status = 'OWNED_EMPTY'` và `owner_id = customer_id`.
+    3. Cập nhật giữ chỗ: `plot_reservations.state = 'CONVERTED'`.
+    4. Ghi nhận chuỗi lịch sử quyền sở hữu: Tạo bản ghi `PlotOwnership` (G05).
+    5. Tự động sinh nghĩa vụ tài chính: Tạo bản ghi `Receivable` (G14) trạng thái `UNPAID` với hạn nợ 30 ngày.
+    6. Phát sinh sự kiện Outbox `CONTRACT_ACTIVATED` (G17) và ghi `AuditLog`.
+  - Cơ chế Idempotent activation chống trùng lặp tác dụng phụ khi gọi lặp lại.
+  - Hủy hợp đồng nháp (`cancel_contract`): Giải phóng ô mộ về `EMPTY_UNSOLD`, hủy giữ chỗ.
+- **Web Frontend (React 19 + TypeScript):**
+  - Phân hệ **"Hợp Đồng & Khách Hàng"** (`ContractModule.tsx`):
+    - KPI Cards thống kê số lượng hợp đồng, hợp đồng hiệu lực, chờ ký kết, doanh thu hiệu lực.
+    - Thanh công cụ tìm kiếm và lọc trạng thái linh hoạt.
+    - 4-Step Land Purchase Wizard Modal: 1. Chọn KH -> 2. Chọn ô mộ trống -> 3. Định giá đất & điều khoản -> 4. Rà soát & phát hành dự thảo.
+    - Modal chi tiết hợp đồng & thanh công cụ thao tác: In PDF, Chuyển chờ ký, Kích hoạt hợp đồng kèm upload scan MinIO, Hủy dự thảo.
+    - Xử lý trọn vẹn 4 trạng thái giao diện: Loading, Normal, Empty với CTA, Error với retry.
+- **Mobile App (Flutter Android):**
+  - Bổ sung tab **"Hợp Đồng"** thứ 5 trên BottomNavigationBar.
+  - Tra cứu danh sách hợp đồng kèm tìm kiếm tức thời và bộ lọc chip trạng thái.
+  - Thẻ hợp đồng với định dạng tiền VND chuẩn mực và chip trạng thái trực quan.
+  - Bottom sheet chi tiết hợp đồng cho nhân viên thực địa.
+  - Bổ sung widget test chuyên biệt cho hợp đồng trong `widget_test.dart`.
+- **Kiểm Thử & Đảm Bảo Chất Lượng:**
+  - 45 backend tests (`uv run pytest`) passed 100%. `uv run ruff check .` và `uv run ruff format --check .` clean.
+  - Web `pnpm lint` 0 errors, `pnpm build` passed trong 249ms.
+  - Mobile `flutter analyze` 0 issues, `flutter test` (8/8 passed).
+  - Tiêu chuẩn Quality Gate `scripts/quality-gate.ps1` ĐẠT 100%.
+
+---
+
 ## [0.7.0-profiles] - 2026-10-03 (M06)
 
 ### Added

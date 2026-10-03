@@ -138,7 +138,11 @@ def process_job(
         completed = JobService.complete_job(
             db=db,
             job_id=claimed.job_id,
-            result={"file_id": file_obj.file_id, "file_name": file_obj.file_name, "sha256": file_obj.sha256_hash},
+            result={
+                "file_id": file_obj.file_id,
+                "file_name": file_obj.file_name,
+                "sha256": file_obj.sha256_hash,
+            },
         )
         return completed
     except Exception as e:

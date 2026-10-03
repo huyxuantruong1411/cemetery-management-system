@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { LoginModal } from './components/auth/LoginModal'
 import { CatalogModule } from './components/catalog/CatalogModule'
+import { ContractModule } from './components/contracts/ContractModule'
 import { DocumentManager } from './components/documents/DocumentManager'
 import { PlotMapModule } from './components/plots/PlotMapModule'
 import { ProfileModule } from './components/profiles/ProfileModule'
@@ -699,14 +700,12 @@ function MainApp() {
           />
         )}
 
-        {/* Tab 3: Contracts placeholder */}
+        {/* Tab 3: Contracts M07 */}
         {activeTab === 'contracts' && (
-          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', padding: '32px', border: '1px solid #E2E8F0' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-main)' }}>Quản Lý Hợp Đồng & Hồ Sơ Khách Hàng</h3>
-            <p style={{ fontSize: '14px', color: '#64748B' }}>
-              Quyền hạn của bạn cho phép tư vấn, lập hợp đồng mua bán đất, kích hoạt phụ lục an táng và tra cứu CCCD thân nhân (Milestone M06–M07).
-            </p>
-          </div>
+          <ContractModule
+            token={accessToken}
+            currentUserRoles={user?.roles ? user.roles.map((r) => r.role_name) : []}
+          />
         )}
 
         {/* Tab Documents: M03 */}

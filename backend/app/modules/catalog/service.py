@@ -101,8 +101,14 @@ class CatalogService:
     def update_price_list(db: Session, price_list_id: int, data: PriceListUpdate) -> PriceList:
         pl = CatalogService.get_price_list(db, price_list_id)
 
-        new_from = data.effective_from_date if data.effective_from_date is not None else pl.effective_from_date
-        new_to = data.effective_to_date if data.effective_to_date is not None else pl.effective_to_date
+        new_from = (
+            data.effective_from_date
+            if data.effective_from_date is not None
+            else pl.effective_from_date
+        )
+        new_to = (
+            data.effective_to_date if data.effective_to_date is not None else pl.effective_to_date
+        )
         new_active = data.is_active if data.is_active is not None else pl.is_active
 
         if new_to and new_to < new_from:
@@ -112,9 +118,7 @@ class CatalogService:
             )
 
         if new_active:
-            CatalogService.check_price_list_overlap(
-                db, new_from, new_to, exclude_id=price_list_id
-            )
+            CatalogService.check_price_list_overlap(db, new_from, new_to, exclude_id=price_list_id)
 
         if data.price_list_name is not None:
             pl.price_list_name = data.price_list_name
@@ -233,7 +237,9 @@ class CatalogService:
             return PriceLookupResponse(matched=False)
 
         # Tìm kiếm khoản mục khớp nhất theo thứ tự ưu tiên scope
-        items_query = db.query(PriceItem).filter(PriceItem.price_list_id == active_list.price_list_id)
+        items_query = db.query(PriceItem).filter(
+            PriceItem.price_list_id == active_list.price_list_id
+        )
 
         matched_item: Optional[PriceItem] = None
 
@@ -304,7 +310,9 @@ class CatalogService:
 
     @staticmethod
     def create_care_package(db: Session, data: CarePackageCreate) -> CarePackage:
-        existing = db.query(CarePackage).filter(CarePackage.package_code == data.package_code).first()
+        existing = (
+            db.query(CarePackage).filter(CarePackage.package_code == data.package_code).first()
+        )
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -348,14 +356,20 @@ class CatalogService:
     # =========================================================================
     @staticmethod
     def list_contract_templates(db: Session, active_only: bool = False) -> List[ContractTemplate]:
-        query = db.query(ContractTemplate).order_by(ContractTemplate.contract_type.asc(), ContractTemplate.template_code.asc())
+        query = db.query(ContractTemplate).order_by(
+            ContractTemplate.contract_type.asc(), ContractTemplate.template_code.asc()
+        )
         if active_only:
             query = query.filter(ContractTemplate.is_active == True)  # noqa: E712
         return query.all()
 
     @staticmethod
-    def get_contract_template(db: Session, template_id: int, ensure_active: bool = False) -> ContractTemplate:
-        tmpl = db.query(ContractTemplate).filter(ContractTemplate.template_id == template_id).first()
+    def get_contract_template(
+        db: Session, template_id: int, ensure_active: bool = False
+    ) -> ContractTemplate:
+        tmpl = (
+            db.query(ContractTemplate).filter(ContractTemplate.template_id == template_id).first()
+        )
         if not tmpl:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -370,7 +384,11 @@ class CatalogService:
 
     @staticmethod
     def create_contract_template(db: Session, data: ContractTemplateCreate) -> ContractTemplate:
-        existing = db.query(ContractTemplate).filter(ContractTemplate.template_code == data.template_code).first()
+        existing = (
+            db.query(ContractTemplate)
+            .filter(ContractTemplate.template_code == data.template_code)
+            .first()
+        )
         if existing:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -395,7 +413,9 @@ class CatalogService:
         return tmpl
 
     @staticmethod
-    def bump_template_version(db: Session, template_id: int, data: ContractTemplateUpdate) -> ContractTemplate:
+    def bump_template_version(
+        db: Session, template_id: int, data: ContractTemplateUpdate
+    ) -> ContractTemplate:
         """Tăng số hiệu phiên bản điều khoản mà không làm biến động các hợp đồng cũ (Không hồi tố - G03)."""
         tmpl = CatalogService.get_contract_template(db, template_id)
 

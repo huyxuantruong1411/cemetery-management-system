@@ -24,7 +24,9 @@ class FileObject(Base):
     mime_type = Column(String(100), nullable=False)
     file_size_bytes = Column(BigInteger, nullable=False)
     sha256_hash = Column(String(64), nullable=False)
-    state = Column(String(20), nullable=False, default="STAGING")  # STAGING, READY, QUARANTINED, DELETED
+    state = Column(
+        String(20), nullable=False, default="STAGING"
+    )  # STAGING, READY, QUARANTINED, DELETED
     uploaded_by_user_id = Column(Integer, ForeignKey("users.user_id"), nullable=True)
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
@@ -37,7 +39,9 @@ class DocumentVersion(Base):
     __tablename__ = "document_versions"
 
     document_id = Column(Integer, primary_key=True, autoincrement=True)
-    document_type = Column(String(50), nullable=False)  # SIGNED_CONTRACT, SIGNED_ANNEX, DEATH_CERTIFICATE, etc.
+    document_type = Column(
+        String(50), nullable=False
+    )  # SIGNED_CONTRACT, SIGNED_ANNEX, DEATH_CERTIFICATE, etc.
     contract_id = Column(Integer, ForeignKey("contracts.contract_id"), nullable=True)
     annex_id = Column(Integer, ForeignKey("contract_annexes.annex_id"), nullable=True)
     certificate_id = Column(Integer, ForeignKey("death_certificates.cert_id"), nullable=True)

@@ -226,7 +226,12 @@ class PlotService:
             s = f"%{search.strip()}%"
             query = query.filter(Plot.plot_code.ilike(s))
 
-        plots = query.order_by(Zone.zone_code, Row.row_code, Plot.plot_code).offset(skip).limit(limit).all()
+        plots = (
+            query.order_by(Zone.zone_code, Row.row_code, Plot.plot_code)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
 
         results = []
         for p in plots:
@@ -434,12 +439,7 @@ class PlotService:
     ) -> PlotReservationResponse:
         """Giữ chỗ ô đất độc quyền chống tranh chấp (Anti-Double Booking Concurrency)."""
         # Concurrency Lock: Lock the plot row for update
-        plot = (
-            db.query(Plot)
-            .filter(Plot.plot_id == plot_id)
-            .with_for_update()
-            .first()
-        )
+        plot = db.query(Plot).filter(Plot.plot_id == plot_id).with_for_update().first()
         if not plot:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -529,7 +529,10 @@ class PlotService:
         plot.status = "EMPTY_UNSOLD"
         plot.updated_at = datetime.now(timezone.utc)
         db.commit()
-        return {"message": f"Đã hủy giữ chỗ ô mộ {plot.plot_code} thành công.", "status": "EMPTY_UNSOLD"}
+        return {
+            "message": f"Đã hủy giữ chỗ ô mộ {plot.plot_code} thành công.",
+            "status": "EMPTY_UNSOLD",
+        }
 
     # =========================================================================
     # 6. Statistics

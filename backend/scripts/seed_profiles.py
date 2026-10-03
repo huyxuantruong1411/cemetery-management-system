@@ -39,7 +39,9 @@ def seed_profiles():
     db = SessionLocal()
     try:
         now = datetime.now(timezone.utc)
-        admin = db.execute(select(User).where(User.username == "admin")).unique().scalar_one_or_none()
+        admin = (
+            db.execute(select(User).where(User.username == "admin")).unique().scalar_one_or_none()
+        )
         admin_id = admin.user_id if admin else 1
 
         print("[INFO] Seeding Customers...")
@@ -75,7 +77,11 @@ def seed_profiles():
 
         cust_map = {}
         for c in customers_data:
-            cust = db.execute(select(Customer).where(Customer.citizen_id == c["cccd"])).unique().scalar_one_or_none()
+            cust = (
+                db.execute(select(Customer).where(Customer.citizen_id == c["cccd"]))
+                .unique()
+                .scalar_one_or_none()
+            )
             if not cust:
                 cust = Customer(
                     customer_code=c["code"],
@@ -156,7 +162,13 @@ def seed_profiles():
 
         dec_map = {}
         for d in deceased_data:
-            dec = db.execute(select(DeceasedProfile).where(DeceasedProfile.deceased_code == d["code"])).unique().scalar_one_or_none()
+            dec = (
+                db.execute(
+                    select(DeceasedProfile).where(DeceasedProfile.deceased_code == d["code"])
+                )
+                .unique()
+                .scalar_one_or_none()
+            )
             if not dec:
                 dec = DeceasedProfile(
                     deceased_code=d["code"],
@@ -174,7 +186,9 @@ def seed_profiles():
                 )
                 db.add(dec)
                 db.flush()
-                print(f"  + Tạo người mất: {dec.deceased_code} - {dec.full_name} ({dec.birth_date_precision})")
+                print(
+                    f"  + Tạo người mất: {dec.deceased_code} - {dec.full_name} ({dec.birth_date_precision})"
+                )
 
                 # Add death certificate
                 cert = DeathCertificate(
@@ -206,11 +220,17 @@ def seed_profiles():
             dec_map[d["code"]] = dec
 
         # Assign Cụ Nguyễn Văn Phúc (NM-2024-0001) to slot 1 of A-H01-02
-        plot_p = db.execute(select(Plot).where(Plot.plot_code == "A-H01-02")).unique().scalar_one_or_none()
+        plot_p = (
+            db.execute(select(Plot).where(Plot.plot_code == "A-H01-02"))
+            .unique()
+            .scalar_one_or_none()
+        )
         phuc = dec_map.get("NM-2024-0001")
         if plot_p and phuc:
             slot = db.execute(
-                select(PlotSlot).where(PlotSlot.plot_id == plot_p.plot_id, PlotSlot.slot_number == 1)
+                select(PlotSlot).where(
+                    PlotSlot.plot_id == plot_p.plot_id, PlotSlot.slot_number == 1
+                )
             ).scalar_one_or_none()
             if slot and slot.current_deceased_id is None:
                 slot.current_deceased_id = phuc.deceased_id

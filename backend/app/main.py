@@ -9,6 +9,7 @@ from app.core.config import settings
 from app.db.session import check_database_readiness
 from app.modules.auth.router import router as auth_router
 from app.modules.catalog.router import router as catalog_router
+from app.modules.contracts.router import router as contracts_router
 from app.modules.documents.router import router as documents_router
 from app.modules.jobs.router import router as jobs_router
 from app.modules.plots.router import router as plots_router
@@ -38,6 +39,7 @@ app.include_router(auth_router, prefix=settings.API_V1_PREFIX)
 app.include_router(catalog_router, prefix=settings.API_V1_PREFIX)
 app.include_router(plots_router, prefix=settings.API_V1_PREFIX)
 app.include_router(profiles_router, prefix=settings.API_V1_PREFIX)
+app.include_router(contracts_router, prefix=settings.API_V1_PREFIX)
 app.include_router(documents_router, prefix=settings.API_V1_PREFIX)
 app.include_router(jobs_router, prefix=settings.API_V1_PREFIX)
 

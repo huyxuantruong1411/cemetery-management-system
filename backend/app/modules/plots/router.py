@@ -176,7 +176,9 @@ def get_plots(
     zone_id: Optional[int] = Query(None, description="Lọc theo khu vực"),
     row_id: Optional[int] = Query(None, description="Lọc theo hàng"),
     type_id: Optional[int] = Query(None, description="Lọc theo loại mộ"),
-    status: Optional[str] = Query(None, description="Lọc theo trạng thái (EMPTY_UNSOLD, RESERVED, OCCUPIED...)"),
+    status: Optional[str] = Query(
+        None, description="Lọc theo trạng thái (EMPTY_UNSOLD, RESERVED, OCCUPIED...)"
+    ),
     is_kim_tinh: Optional[bool] = Query(None, description="Lọc mộ kết cấu Kim Tĩnh"),
     search: Optional[str] = Query(None, description="Tìm kiếm theo mã ô mộ"),
     skip: int = Query(0, ge=0),

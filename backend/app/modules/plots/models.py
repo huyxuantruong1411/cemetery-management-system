@@ -77,8 +77,15 @@ class Plot(Base):
 
     row = relationship("Row", back_populates="plots")
     plot_type = relationship("PlotType", back_populates="plots")
-    slots = relationship("PlotSlot", back_populates="plot", cascade="all, delete-orphan", order_by="PlotSlot.slot_number")
-    reservations = relationship("PlotReservation", back_populates="plot", cascade="all, delete-orphan")
+    slots = relationship(
+        "PlotSlot",
+        back_populates="plot",
+        cascade="all, delete-orphan",
+        order_by="PlotSlot.slot_number",
+    )
+    reservations = relationship(
+        "PlotReservation", back_populates="plot", cascade="all, delete-orphan"
+    )
     ownerships = relationship("PlotOwnership", back_populates="plot")
     burial_histories = relationship("BurialHistory", back_populates="plot")
 
@@ -103,12 +110,18 @@ class PlotReservation(Base):
     reserved_by = Column(Integer, ForeignKey("users.user_id"), nullable=False)
     customer_name = Column(Unicode(100), nullable=True)
     customer_phone = Column(String(20), nullable=True)
-    state = Column(String(20), nullable=False, default="ACTIVE")  # 'ACTIVE', 'CONVERTED', 'EXPIRED', 'CANCELLED'
+    state = Column(
+        String(20), nullable=False, default="ACTIVE"
+    )  # 'ACTIVE', 'CONVERTED', 'EXPIRED', 'CANCELLED'
     reserved_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     expires_at = Column(DateTime, nullable=False)
+    contract_id = Column(
+        Integer, ForeignKey("contracts.contract_id", ondelete="SET NULL"), nullable=True
+    )
     notes = Column(Unicode(500), nullable=True)
 
     plot = relationship("Plot", back_populates="reservations")
+    contract = relationship("Contract", back_populates="reservation")
 
 
 class PlotOwnership(Base):

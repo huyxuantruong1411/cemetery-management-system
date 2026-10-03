@@ -211,6 +211,7 @@ class DeceasedPublicLookupResponse(BaseModel):
     Public lookup response: NEVER returns CCCD/citizen_id, phone, address,
     or death certificate details. Only public cemetery memorial information.
     """
+
     model_config = ConfigDict(from_attributes=True)
 
     deceased_code: str

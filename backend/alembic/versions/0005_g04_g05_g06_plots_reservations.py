@@ -38,7 +38,9 @@ def upgrade() -> None:
         sa.Column("customer_name", sa.Unicode(100), nullable=True),
         sa.Column("customer_phone", sa.String(20), nullable=True),
         sa.Column("state", sa.String(20), nullable=False, server_default="ACTIVE"),
-        sa.Column("reserved_at", sa.DateTime(), nullable=False, server_default=sa.text("SYSUTCDATETIME()")),
+        sa.Column(
+            "reserved_at", sa.DateTime(), nullable=False, server_default=sa.text("SYSUTCDATETIME()")
+        ),
         sa.Column("expires_at", sa.DateTime(), nullable=False),
         sa.Column("notes", sa.Unicode(500), nullable=True),
         sa.ForeignKeyConstraint(["plot_id"], ["plots.plot_id"], ondelete="CASCADE"),
@@ -62,10 +64,14 @@ def upgrade() -> None:
         sa.Column("plot_id", sa.Integer(), nullable=False),
         sa.Column("customer_id", sa.Integer(), nullable=False),
         sa.Column("basis_contract_id", sa.Integer(), nullable=True),
-        sa.Column("valid_from", sa.DateTime(), nullable=False, server_default=sa.text("SYSUTCDATETIME()")),
+        sa.Column(
+            "valid_from", sa.DateTime(), nullable=False, server_default=sa.text("SYSUTCDATETIME()")
+        ),
         sa.Column("valid_to", sa.DateTime(), nullable=True),
         sa.Column("transfer_reason", sa.Unicode(255), nullable=True),
-        sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.text("SYSUTCDATETIME()")),
+        sa.Column(
+            "created_at", sa.DateTime(), nullable=False, server_default=sa.text("SYSUTCDATETIME()")
+        ),
         sa.ForeignKeyConstraint(["plot_id"], ["plots.plot_id"]),
         sa.ForeignKeyConstraint(["customer_id"], ["customers.customer_id"]),
         sa.ForeignKeyConstraint(["basis_contract_id"], ["contracts.contract_id"]),

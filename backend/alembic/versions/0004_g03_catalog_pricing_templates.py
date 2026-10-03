@@ -34,8 +34,12 @@ def upgrade() -> None:
         sa.Column("content_html", sa.UnicodeText(), nullable=False),
         sa.Column("required_documents_json", sa.UnicodeText(), nullable=True),
         sa.Column("is_active", sa.Boolean(), nullable=False, server_default=sa.text("1")),
-        sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.text("SYSUTCDATETIME()")),
-        sa.Column("updated_at", sa.DateTime(), nullable=False, server_default=sa.text("SYSUTCDATETIME()")),
+        sa.Column(
+            "created_at", sa.DateTime(), nullable=False, server_default=sa.text("SYSUTCDATETIME()")
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(), nullable=False, server_default=sa.text("SYSUTCDATETIME()")
+        ),
         sa.UniqueConstraint("template_code", name="uq_contract_templates_code"),
         sa.CheckConstraint(
             "contract_type IN ('LAND_PURCHASE', 'EXHUMATION', 'CREMATION', 'TRANSFER', 'CARE_ANNEX')",

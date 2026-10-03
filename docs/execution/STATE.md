@@ -8,22 +8,22 @@
 
 ## 1. Trạng thái tổng quan
 
-- **Milestone hiện tại:** Hoàn tất **M06** (Hồ sơ khách hàng, người mất, giấy báo tử) -> Sẵn sàng khởi động **M07** (Luồng mua đất -> ký ngoài -> kích hoạt).
+- **Milestone hiện tại:** Hoàn tất **M07** (Hợp đồng mua bán đất -> ký ngoài -> kích hoạt ACID) -> Sẵn sàng khởi động **M08** (Vòng đời an táng, Kim Tĩnh, cải táng, chuyển nhượng).
 - **Trạng thái CSDL:**
   - Máy chủ: `DESKTOP-HKIPI1M`
   - CSDL chính: `QL_NghiaTrang`
   - CSDL kiểm thử: `QL_NghiaTrang_Test` (bảo vệ tuyệt đối CSDL chính)
   - Đã backup an toàn: `backend/runtime/backups/sql/QL_NghiaTrang_M02_baseline.bak`
-  - Alembic Head: `0006_g07_g08_profiles_certificates` (đã áp dụng trên cả DB chính và DB test).
-  - 37 bảng nghiệp vụ + 8 bảng mở rộng: `auth_sessions` (G01), `file_objects` (G02), `document_versions` (G02), `background_jobs` (G17), `outbox_events` (G17), `contract_templates` (G03), `plot_reservations` (G04), `plot_ownerships` (G05).
+  - Alembic Head: `0007_g09_contracts` (đã áp dụng trên cả DB chính và DB test).
+  - 37 bảng nghiệp vụ + 8 bảng mở rộng: `auth_sessions` (G01), `file_objects` (G02), `document_versions` (G02), `background_jobs` (G17), `outbox_events` (G17), `contract_templates` (G03), `plot_reservations` (G04), `plot_ownerships` (G05) + Sequence `seq_contract_number` (G09).
   - Kết nối native qua pyodbc và `ODBC Driver 18 for SQL Server` hoạt động 100%.
 - **Hạ tầng lưu trữ:**
   - MinIO Docker Container (`elestio/minio:latest`) đang chạy trên máy.
   - Bind mount trực tiếp vào `D:\work\TH-PTTK\QL-NghiaTrang\backend\runtime\minio\data` trên ổ D.
 - **Bộ công cụ & Chất lượng mã nguồn:**
-  - Backend: Python 3.12 (`uv`). 39 tests passed (7 profiles + 6 plots + 6 auth + 6 catalog + 6 documents + 2 jobs + 2 triggers + 4 health/storage), ruff clean.
-  - Web: React 19 + TypeScript + Vite (`pnpm`). Build thành công trong 241ms, 0 lint errors.
-  - Mobile: Flutter 3.41.6 / Dart 3.11.4 Android. Analyze 0 issues, 7/7 tests passed.
+  - Backend: Python 3.12 (`uv`). 45 tests passed (6 contracts + 7 profiles + 6 plots + 6 auth + 6 catalog + 6 documents + 2 jobs + 2 triggers + 4 health/storage), ruff clean.
+  - Web: React 19 + TypeScript + Vite (`pnpm`). Build thành công trong 249ms, 0 lint errors.
+  - Mobile: Flutter 3.41.6 / Dart 3.11.4 Android. Analyze 0 issues, 8/8 tests passed.
   - Tiêu chuẩn Quality Gate (`scripts/quality-gate.ps1`) đạt 100% trên cả 3 phân hệ.
 
 ---
@@ -39,8 +39,8 @@
 | **M04** | Design system & cấu hình nền | **ĐẠT (Done)** | `v0.5.0-design-catalog` | Migration G03 (`contract_templates`, scope `price_items`), CatalogService chống trùng khoảng thời gian, Web 5 views, Flutter Catalog tab, Quality Gate 100%. |
 | **M05** | Không gian, ô mộ, slot và bản đồ | **ĐẠT (Done)** | `v0.6.0-plots` | G04/G05/G06 migration, PlotService khóa Kim Tĩnh bất biến, sinh slot ACID, khóa giữ chỗ chống xung đột row-level, Web Leaflet GIS Map & Drawer, Flutter Sơ Đồ Ô Mộ tab, 32 backend tests, 5 flutter tests, Quality Gate 100%. |
 | **M06** | Khách hàng, người mất & giấy báo tử | **ĐẠT (Done)** | `v0.7.0-profiles` | G07/G08, quản lý hồ sơ thân nhân, kiểm tra trùng CCCD (409), độ chính xác năm sinh EXACT/YEAR_ONLY, quy trình xác minh giấy báo tử kèm file MinIO, cổng tra cứu công khai Zero PII. |
-| **M07** | Luồng mua đất -> ký ngoài -> kích hoạt | Sẵn sàng bắt đầu | `v0.8.0-land-contracts` | G09, HĐ mua đất, giữ chỗ transaction-safe, scan và kích hoạt, sinh nợ. |
-| **M08** | An táng, Kim Tĩnh, cải táng, chuyển nhượng | Chưa bắt đầu | `v0.9.0-domain-lifecycle` | G10/G18/G20, khóa Kim Tĩnh bất biến, chuyển nhượng, an táng, cải táng. |
+| **M07** | Luồng mua đất -> ký ngoài -> kích hoạt | **ĐẠT (Done)** | `v0.8.0-land-contracts` | G09, HĐ mua đất, Sequence số HĐ, khóa ô mộ chống double booking, kích hoạt ACID 6 bước (HĐ -> ACTIVE, ô mộ -> OWNED_EMPTY, reservation -> CONVERTED, ownership history, receivable công nợ, outbox event), Web Wizard 4 bước, Flutter Hợp Đồng tab, 45 tests backend, 8 tests mobile. |
+| **M08** | An táng, Kim Tĩnh, cải táng, chuyển nhượng | Sẵn sàng bắt đầu | `v0.9.0-domain-lifecycle` | G10/G18/G20, khóa Kim Tĩnh bất biến, chuyển nhượng, an táng, cải táng. |
 | **M09** | Quản lý thi công thực địa | Chưa bắt đầu | `v0.10.0-construction` | G11/G13, checklist công trình, bằng chứng ảnh, phân công thợ. |
 | **M10** | Chăm sóc định kỳ & mobile offline | Chưa bắt đầu | `v0.11.0-care` | G12, sinh lịch định kỳ, Quản trang đóng ca, offline queue retry. |
 | **M11** | Công nợ, thu tiền, chiết khấu, biên lai | Chưa bắt đầu | `v0.12.0-finance` | G14-G16, Idempotency payment, tính nợ trigger-aware, biên lai PDF. |
@@ -256,6 +256,74 @@
 - **Web:** `pnpm lint` 0 errors, `pnpm build` hoàn tất trong 241ms.
 - **Mobile:** `flutter analyze` 0 issues, `flutter test` đạt 7/7 tests passed.
 - Bộ kiểm định chất lượng toàn diện `scripts/quality-gate.ps1` ĐẠT 100%.
+
+---
+
+## 8. Bằng chứng nghiệm thu Milestone M07 (Hợp Đồng Mua Đất -> Ký Ngoài -> Kích Hoạt ACID)
+
+### 8.1. CSDL & Alembic Migration (G09)
+- **Revision:** `0007_g09_contracts_workflow.py`
+  - Đã nâng cấp thành công trên cả `QL_NghiaTrang_Test` và `QL_NghiaTrang` trên `DESKTOP-HKIPI1M`.
+  - Tạo Database Sequence `seq_contract_number` (bắt đầu từ 1001) phục vụ sinh mã số hợp đồng tuần tự chống xung đột race-condition: `HD-MD-YYYY-NNNN`.
+  - Mở rộng bảng `contracts`:
+    - `signed_at` (DATE, nullable): Ngày ký thực tế trên bản giấy có chữ ký thân nhân.
+    - `activated_at` (DATETIME2, nullable): Thời điểm kích hoạt giao dịch trên hệ thống.
+    - `activated_by` (INT, FK đến `users(user_id)`).
+    - `activation_notes` (NVARCHAR(MAX)).
+    - `template_id` (INT, FK đến `contract_templates(template_id)`).
+    - `template_version` (INT).
+    - `signed_scan_file_id` (VARCHAR(64), FK đến `file_objects(file_id)`).
+    - `notes` (NVARCHAR(MAX)).
+  - Bổ sung FK `contract_id` trên `plot_reservations` để liên kết chính xác vòng đời giữ chỗ phát sinh từ hợp đồng.
+
+### 8.2. Nghiệp Vụ Backend & Ràng Buộc Miền (ContractService)
+- **Khóa hàng Chống Double-Booking (G04 & G09 Concurrency Guard):**
+  - Khi lập hợp đồng mua đất, hệ thống thực hiện `with_for_update()` khóa tức thời ô mộ, kiểm tra trạng thái khả dụng `EMPTY_UNSOLD` và kiểm tra `plot_reservations` đang `ACTIVE`. Nếu ô mộ đang được giữ hoặc không khả dụng, ném lỗi chuẩn `409 Conflict`.
+- **Snapshot Đơn Giá Tự Động (G03/G09 Price Snapshot):**
+  - Tự động tra cứu biểu giá niêm yết đang có hiệu lực (`effective_from_date <= today <= effective_to_date`) từ bảng `price_lists` và `price_items` tương ứng với loại mộ của ô đất, hoặc áp dụng đơn giá thỏa thuận đặc biệt.
+- **Quy Trình Chuyển Đổi Ký Ngoài (G09 Signing Workflow):**
+  - Chuyển trạng thái hợp đồng sang `PENDING_SIGN` để xuất in văn bản trình thân nhân ký kết.
+  - Xuất bản in hợp đồng PDF định dạng tiếng Việt UTF-8 (Arial) chuẩn mực pháp lý via ReportLab.
+- **Kích Hoạt Hợp Đồng Toàn Vẹn ACID 6 Bước (G09 Activation Invariant):**
+  - Thực hiện trong 1 transaction ACID duy nhất khi thân nhân đã nộp bản scan hợp đồng có chữ ký:
+    1. Cập nhật hợp đồng: `status = 'ACTIVE'`, lưu `signed_scan_file_id`, `signed_at`, `activated_at`, `activated_by`.
+    2. Cập nhật ô mộ: `status = 'OWNED_EMPTY'` (Đất trống đã có chủ sở hữu), gán `owner_id = customer_id`.
+    3. Cập nhật giữ chỗ: Chuyển `plot_reservations.state = 'CONVERTED'`.
+    4. Ghi nhận chuỗi lịch sử quyền sở hữu: Tạo bản ghi `PlotOwnership` (G05).
+    5. Tự động sinh nghĩa vụ tài chính: Tạo bản ghi `Receivable` (G14) trạng thái `UNPAID` với hạn thanh toán 30 ngày.
+    6. Phát sinh sự kiện Outbox: Tạo `OutboxEvent` (`CONTRACT_ACTIVATED`) (G17) và ghi `AuditLog`.
+- **Tính Bất Biến & Idempotency:**
+  - Lặp lại lời gọi `activate_contract` khi hợp đồng đã `ACTIVE` trả về ngay kết quả mà không sinh thêm trùng lặp công nợ hay lịch sử sở hữu.
+  - Hủy hợp đồng dự thảo (`cancel_contract`): Giải phóng ô mộ trở về `EMPTY_UNSOLD`, chuyển giữ chỗ sang `CANCELLED`.
+
+### 8.3. Giao Diện Web (React 19 + TypeScript)
+- Phân hệ **"Hợp Đồng & Khách Hàng"** (`ContractModule.tsx`):
+  - **KPI Dashboard Cards:** Thống kê tổng hợp đồng, hợp đồng đang hiệu lực, hợp đồng chờ ký kết/dự thảo, tổng doanh thu hiệu lực.
+  - **Bảng Danh Sách Hợp Đồng:** Tìm kiếm đa tiêu chí (mã HĐ, tên KH, SĐT, mã ô), bộ lọc trạng thái (Tất cả, Dự thảo, Chờ ký, Hiệu lực, Đã hủy), chip trạng thái trực quan, nút xem chi tiết và tải nhanh PDF.
+  - **4-Step Land Purchase Wizard Modal:**
+    - Bước 1: Tra cứu & chọn khách hàng đứng tên.
+    - Bước 2: Chọn ô mộ trống khả dụng (lọc theo khu vực, kiểm tra trạng thái tức thời).
+    - Bước 3: Thiết lập đơn giá đất (áp dụng tự động theo bảng giá niêm yết hoặc thỏa thuận) và điều khoản thỏa thuận.
+    - Bước 4: Tóm tắt rà soát toàn bộ thông tin hợp đồng và xác nhận phát hành dự thảo.
+  - **Modal Chi Tiết Hợp Đồng & Thao Tác Nghiệp Vụ:**
+    - Hiển thị thẻ khách hàng, thẻ ô mộ, bảng công nợ tài chính (Receivable), lịch sử phê duyệt.
+    - Các nút hành động nghiệp vụ theo vai trò: In hợp đồng PDF UTF-8, Chuyển chờ ký, Kích hoạt hợp đồng kèm upload file scan MinIO, Hủy dự thảo giải phóng ô đất.
+  - Xử lý trọn vẹn 4 trạng thái giao diện: Loading, Normal, Empty với CTA, Error với nút thử lại.
+
+### 8.4. Ứng Dụng Di Động (Flutter Android)
+- Bổ sung tab **"Hợp Đồng"** thứ 5 trên BottomNavigationBar (`mobile/lib/main.dart`):
+  - Tra cứu danh sách hợp đồng thực địa kèm thanh tìm kiếm và các chip lọc trạng thái (`Tất cả`, `Dự thảo`, `Chờ ký`, `Hiệu lực`, `Đã hủy`).
+  - Thẻ hợp đồng hiển thị mã HĐ, tên khách hàng, SĐT, mã ô mộ, giá trị tiền tệ VND định dạng chuẩn và chip màu trạng thái.
+  - Modal Bottom Sheet hiển thị chi tiết hợp đồng cho cán bộ kinh doanh / quản trang thực địa: loại hợp đồng, vị trí đất, số tiền, ngày ký, ngày kích hoạt.
+  - Xử lý đầy đủ 4 trạng thái giao diện (Loading, Normal, Empty, Error).
+  - Bổ sung widget test `CemeteryMobileApp contracts tab authenticated displays contracts list and opens detail sheet test` trong `mobile/test/widget_test.dart`.
+
+### 8.5. Kiểm Thử & Tiêu Chuẩn Quality Gate
+- **Backend:** `uv run pytest` đạt 45/45 bài kiểm thử (100% passed, bao gồm 6 test cases mới cho M07). `uv run ruff check .` và `uv run ruff format --check .` All checks passed!
+- **Web:** `pnpm lint` 0 errors, `pnpm build` hoàn tất trong 249ms.
+- **Mobile:** `flutter analyze` 0 issues, `flutter test` đạt 8/8 tests passed.
+- Toàn bộ bộ kiểm tra chất lượng tự động `scripts/quality-gate.ps1` ĐẠT 100%.
+
 
 
 

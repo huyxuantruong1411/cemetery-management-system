@@ -543,6 +543,59 @@ class MemorialLookupModel {
   }
 }
 
+class ContractBriefModel {
+  final int contractId;
+  final String contractCode;
+  final String contractType;
+  final String status;
+  final num totalAmount;
+  final int customerId;
+  final String customerName;
+  final String customerPhone;
+  final int? plotId;
+  final String? plotCode;
+  final String? zoneName;
+  final String? signedAt;
+  final String? activatedAt;
+  final String createdAt;
+
+  ContractBriefModel({
+    required this.contractId,
+    required this.contractCode,
+    required this.contractType,
+    required this.status,
+    required this.totalAmount,
+    required this.customerId,
+    required this.customerName,
+    required this.customerPhone,
+    this.plotId,
+    this.plotCode,
+    this.zoneName,
+    this.signedAt,
+    this.activatedAt,
+    required this.createdAt,
+  });
+
+  factory ContractBriefModel.fromJson(Map<String, dynamic> json) {
+    return ContractBriefModel(
+      contractId: json['contract_id'] as int? ?? 0,
+      contractCode: json['contract_code'] as String? ?? '',
+      contractType: json['contract_type'] as String? ?? 'LAND_PURCHASE',
+      status: json['status'] as String? ?? 'DRAFT',
+      totalAmount: json['total_amount'] as num? ?? 0,
+      customerId: json['customer_id'] as int? ?? 0,
+      customerName: json['customer_name'] as String? ?? '',
+      customerPhone: json['customer_phone'] as String? ?? '',
+      plotId: json['plot_id'] as int?,
+      plotCode: json['plot_code'] as String?,
+      zoneName: json['zone_name'] as String?,
+      signedAt: json['signed_at'] as String?,
+      activatedAt: json['activated_at'] as String?,
+      createdAt: json['created_at'] as String? ?? '',
+    );
+  }
+}
+
 // =============================================================================
 // Providers
 // =============================================================================
@@ -725,6 +778,21 @@ final memorialSearchResultsProvider = FutureProvider.autoDispose<List<MemorialLo
   return list.map((item) => MemorialLookupModel.fromJson(item as Map<String, dynamic>)).toList();
 });
 
+// Contracts Provider (M07)
+final contractsProvider = FutureProvider.autoDispose<List<ContractBriefModel>>((ref) async {
+  final authState = ref.watch(authProvider);
+  if (!authState.isAuthenticated) {
+    return [];
+  }
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get(
+    '/contracts?limit=100',
+    options: Options(headers: {'Authorization': 'Bearer ${authState.accessToken}'}),
+  );
+  final list = res.data as List<dynamic>;
+  return list.map((item) => ContractBriefModel.fromJson(item as Map<String, dynamic>)).toList();
+});
+
 // =============================================================================
 // App & Dashboard
 // =============================================================================
@@ -776,6 +844,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   late final TextEditingController _memorialSearchController;
   String _customerSearchQuery = '';
   String _deceasedSearchQuery = '';
+  String _contractSearchQuery = '';
+  String _contractStatusFilter = 'ALL';
 
   @override
   void initState() {
@@ -1072,6 +1142,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ref.invalidate(carePackagesProvider);
                 ref.invalidate(customersProvider);
                 ref.invalidate(deceasedProfilesProvider);
+                ref.invalidate(contractsProvider);
               }
               ref.invalidate(memorialSearchResultsProvider);
             },
@@ -1085,6 +1156,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           _buildPlotsTab(context, authState),
           _buildCatalogTab(context, authState),
           _buildProfilesTab(context, authState),
+          _buildContractsTab(context, authState),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -1117,6 +1189,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             icon: Icon(Icons.people_alt_outlined),
             activeIcon: Icon(Icons.people_alt),
             label: 'Hồ Sơ & Tra Cứu',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.description_outlined),
+            activeIcon: Icon(Icons.description),
+            label: 'Hợp Đồng',
           ),
         ],
       ),
@@ -2892,6 +2969,341 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildContractsTab(BuildContext context, AuthState authState) {
+    if (!authState.isAuthenticated) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.lock_outline, size: 56, color: Color(0xFF24594D)),
+              const SizedBox(height: 16),
+              const Text(
+                'Yêu Cầu Xác Thực',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF24594D)),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Vui lòng đăng nhập với tài khoản Kinh Doanh hoặc Quản Trị để tra cứu hợp đồng mua đất.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.black54, fontSize: 13),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                onPressed: () => _showLoginDialog(context),
+                icon: const Icon(Icons.login),
+                label: const Text('Đăng nhập ngay'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF24594D),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final contractsAsync = ref.watch(contractsProvider);
+
+    return Column(
+      children: [
+        // Filter toolbar
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          color: Colors.white,
+          child: Column(
+            children: [
+              TextField(
+                decoration: InputDecoration(
+                  hintText: 'Tìm theo mã HĐ, tên KH, SĐT...',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  isDense: true,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    borderSide: const BorderSide(color: Colors.black12),
+                  ),
+                ),
+                onChanged: (val) {
+                  setState(() {
+                    _contractSearchQuery = val;
+                  });
+                },
+              ),
+              const SizedBox(height: 8),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildContractFilterChip('ALL', 'Tất cả'),
+                    const SizedBox(width: 6),
+                    _buildContractFilterChip('DRAFT', 'Dự thảo'),
+                    const SizedBox(width: 6),
+                    _buildContractFilterChip('PENDING_SIGN', 'Chờ ký'),
+                    const SizedBox(width: 6),
+                    _buildContractFilterChip('ACTIVE', 'Hiệu lực'),
+                    const SizedBox(width: 6),
+                    _buildContractFilterChip('CANCELLED', 'Đã hủy'),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Divider(height: 1, color: Colors.black12),
+        // List
+        Expanded(
+          child: contractsAsync.when(
+            data: (contracts) {
+              final filtered = contracts.where((c) {
+                if (_contractStatusFilter != 'ALL' && c.status != _contractStatusFilter) {
+                  return false;
+                }
+                if (_contractSearchQuery.trim().isNotEmpty) {
+                  final q = _contractSearchQuery.trim().toLowerCase();
+                  return c.contractCode.toLowerCase().contains(q) ||
+                      c.customerName.toLowerCase().contains(q) ||
+                      c.customerPhone.toLowerCase().contains(q) ||
+                      (c.plotCode != null && c.plotCode!.toLowerCase().contains(q));
+                }
+                return true;
+              }).toList();
+
+              if (filtered.isEmpty) {
+                return Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.description_outlined, size: 48, color: Colors.black26),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Chưa có hợp đồng nào phù hợp',
+                        style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black54),
+                      ),
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Kiểm tra lại từ khóa tìm kiếm hoặc bộ lọc trạng thái.',
+                        style: TextStyle(fontSize: 12, color: Colors.black38),
+                      ),
+                    ],
+                  ),
+                );
+              }
+
+              return RefreshIndicator(
+                onRefresh: () async => ref.invalidate(contractsProvider),
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(12),
+                  itemCount: filtered.length,
+                  itemBuilder: (ctx, idx) {
+                    final item = filtered[idx];
+                    return _buildContractCard(context, item);
+                  },
+                ),
+              );
+            },
+            loading: () => const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: Color(0xFF24594D)),
+                  SizedBox(height: 12),
+                  Text('Đang tải danh sách hợp đồng...'),
+                ],
+              ),
+            ),
+            error: (err, _) => Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 40, color: Colors.red),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Lỗi tải hợp đồng: $err',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.red, fontSize: 13),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      onPressed: () => ref.invalidate(contractsProvider),
+                      icon: const Icon(Icons.refresh, size: 16),
+                      label: const Text('Thử lại'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContractFilterChip(String key, String label) {
+    final isSelected = _contractStatusFilter == key;
+    return ChoiceChip(
+      label: Text(label, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : Colors.black87)),
+      selected: isSelected,
+      selectedColor: const Color(0xFF24594D),
+      backgroundColor: Colors.grey.shade100,
+      onSelected: (selected) {
+        if (selected) {
+          setState(() {
+            _contractStatusFilter = key;
+          });
+        }
+      },
+    );
+  }
+
+  Widget _buildContractCard(BuildContext context, ContractBriefModel item) {
+    Color statusColor;
+    String statusLabel;
+    switch (item.status) {
+      case 'DRAFT':
+        statusColor = Colors.grey.shade700;
+        statusLabel = 'Dự thảo';
+        break;
+      case 'PENDING_SIGN':
+        statusColor = Colors.orange.shade800;
+        statusLabel = 'Chờ ký';
+        break;
+      case 'ACTIVE':
+        statusColor = const Color(0xFF16A34A);
+        statusLabel = 'Hiệu lực';
+        break;
+      case 'CANCELLED':
+        statusColor = Colors.red.shade700;
+        statusLabel = 'Đã hủy';
+        break;
+      default:
+        statusColor = Colors.grey;
+        statusLabel = item.status;
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => _showContractDetailsSheet(context, item),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    item.contractCode,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF24594D)),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                    ),
+                    child: Text(
+                      statusLabel,
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: statusColor),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.person_outline, size: 16, color: Colors.black54),
+                  const SizedBox(width: 6),
+                  Text(item.customerName, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                  const SizedBox(width: 8),
+                  Text('(${item.customerPhone})', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                ],
+              ),
+              if (item.plotCode != null) ...[
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    const Icon(Icons.place_outlined, size: 16, color: Colors.black54),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Ô: ${item.plotCode}${item.zoneName != null ? " (${item.zoneName})" : ""}',
+                      style: const TextStyle(fontSize: 13, color: Colors.black87),
+                    ),
+                  ],
+                ),
+              ],
+              const SizedBox(height: 6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Giá trị: ${formatVnd(item.totalAmount)}',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF0F172A)),
+                  ),
+                  const Icon(Icons.chevron_right, size: 18, color: Colors.black38),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showContractDetailsSheet(BuildContext context, ContractBriefModel item) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    item.contractCode,
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF24594D)),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const Divider(),
+              _buildDetailRow('Loại hợp đồng', item.contractType == 'LAND_PURCHASE' ? 'Mua Bán Quyền Sử Dụng Đất' : 'Dịch Vụ'),
+              _buildDetailRow('Trạng thái', item.status),
+              _buildDetailRow('Khách hàng', item.customerName),
+              _buildDetailRow('Số điện thoại', item.customerPhone),
+              if (item.plotCode != null) _buildDetailRow('Mã ô mộ', item.plotCode!),
+              if (item.zoneName != null) _buildDetailRow('Khu mộ', item.zoneName!),
+              _buildDetailRow('Tổng số tiền', formatVnd(item.totalAmount)),
+              if (item.signedAt != null) _buildDetailRow('Ngày ký', item.signedAt!),
+              if (item.activatedAt != null) _buildDetailRow('Ngày kích hoạt', item.activatedAt!),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
     );
   }
 }

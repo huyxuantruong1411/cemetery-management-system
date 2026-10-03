@@ -30,7 +30,9 @@ class Customer(Base):
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
-    relations = relationship("CustomerDeceasedRelation", back_populates="customer", cascade="all, delete-orphan")
+    relations = relationship(
+        "CustomerDeceasedRelation", back_populates="customer", cascade="all, delete-orphan"
+    )
     contracts = relationship("Contract", back_populates="customer")
 
 
@@ -44,15 +46,21 @@ class DeceasedProfile(Base):
     date_of_birth = Column(Date, nullable=True)
     date_of_death = Column(Date, nullable=False)
     birth_year = Column(Integer, nullable=True)
-    birth_date_precision = Column(String(20), nullable=False, default="EXACT")  # 'EXACT', 'YEAR_ONLY', 'UNKNOWN'
+    birth_date_precision = Column(
+        String(20), nullable=False, default="EXACT"
+    )  # 'EXACT', 'YEAR_ONLY', 'UNKNOWN'
     hometown = Column(Unicode(255), nullable=True)
     religion = Column(Unicode(50), nullable=True)
     has_death_certificate = Column(Boolean, nullable=False, default=False)
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
-    death_certificate = relationship("DeathCertificate", back_populates="deceased", uselist=False, cascade="all, delete-orphan")
-    relations = relationship("CustomerDeceasedRelation", back_populates="deceased", cascade="all, delete-orphan")
+    death_certificate = relationship(
+        "DeathCertificate", back_populates="deceased", uselist=False, cascade="all, delete-orphan"
+    )
+    relations = relationship(
+        "CustomerDeceasedRelation", back_populates="deceased", cascade="all, delete-orphan"
+    )
     current_slot = relationship(
         "PlotSlot",
         primaryjoin="DeceasedProfile.deceased_id == foreign(PlotSlot.current_deceased_id)",
@@ -74,7 +82,9 @@ class DeathCertificate(Base):
     issuing_authority = Column(Unicode(150), nullable=False)
     issue_date = Column(Date, nullable=False)
     scan_file_url = Column(String(500), nullable=True)
-    file_id = Column(String(64), ForeignKey("file_objects.file_id", ondelete="SET NULL"), nullable=True)
+    file_id = Column(
+        String(64), ForeignKey("file_objects.file_id", ondelete="SET NULL"), nullable=True
+    )
     is_verified = Column(Boolean, nullable=False, default=False)
     verified_at = Column(DateTime, nullable=True)
     verified_by = Column(Integer, ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)

@@ -34,10 +34,16 @@ def upgrade() -> None:
         sa.Column("mime_type", sa.String(length=100), nullable=False),
         sa.Column("file_size_bytes", sa.BigInteger(), nullable=False),
         sa.Column("sha256_hash", sa.String(length=64), nullable=False),
-        sa.Column("state", sa.String(length=20), nullable=False, server_default=sa.text("'STAGING'")),
+        sa.Column(
+            "state", sa.String(length=20), nullable=False, server_default=sa.text("'STAGING'")
+        ),
         sa.Column("uploaded_by_user_id", sa.Integer(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.text("SYSUTCDATETIME()")),
-        sa.Column("updated_at", sa.DateTime(), nullable=False, server_default=sa.text("SYSUTCDATETIME()")),
+        sa.Column(
+            "created_at", sa.DateTime(), nullable=False, server_default=sa.text("SYSUTCDATETIME()")
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(), nullable=False, server_default=sa.text("SYSUTCDATETIME()")
+        ),
         sa.ForeignKeyConstraint(["uploaded_by_user_id"], ["users.user_id"]),
         sa.UniqueConstraint("object_key"),
         sa.CheckConstraint(
@@ -61,7 +67,9 @@ def upgrade() -> None:
         sa.Column("notes", sa.String(length=255), nullable=True),
         sa.Column("verified_by_user_id", sa.Integer(), nullable=True),
         sa.Column("verified_at", sa.DateTime(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.text("SYSUTCDATETIME()")),
+        sa.Column(
+            "created_at", sa.DateTime(), nullable=False, server_default=sa.text("SYSUTCDATETIME()")
+        ),
         sa.ForeignKeyConstraint(["contract_id"], ["contracts.contract_id"]),
         sa.ForeignKeyConstraint(["annex_id"], ["contract_annexes.annex_id"]),
         sa.ForeignKeyConstraint(["certificate_id"], ["death_certificates.cert_id"]),
@@ -79,13 +87,17 @@ def upgrade() -> None:
         sa.Column("job_type", sa.String(length=50), nullable=False),
         sa.Column("payload", sa.Text(), nullable=False),
         sa.Column("result", sa.Text(), nullable=True),
-        sa.Column("state", sa.String(length=20), nullable=False, server_default=sa.text("'PENDING'")),
+        sa.Column(
+            "state", sa.String(length=20), nullable=False, server_default=sa.text("'PENDING'")
+        ),
         sa.Column("attempts", sa.Integer(), nullable=False, server_default=sa.text("0")),
         sa.Column("max_attempts", sa.Integer(), nullable=False, server_default=sa.text("3")),
         sa.Column("lease_until", sa.DateTime(), nullable=True),
         sa.Column("claimed_by_worker", sa.String(length=100), nullable=True),
         sa.Column("last_error", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.text("SYSUTCDATETIME()")),
+        sa.Column(
+            "created_at", sa.DateTime(), nullable=False, server_default=sa.text("SYSUTCDATETIME()")
+        ),
         sa.Column("completed_at", sa.DateTime(), nullable=True),
         sa.CheckConstraint(
             "state IN ('PENDING', 'CLAIMED', 'COMPLETED', 'FAILED')",
@@ -102,9 +114,13 @@ def upgrade() -> None:
         sa.Column("aggregate_id", sa.String(length=100), nullable=False),
         sa.Column("event_type", sa.String(length=100), nullable=False),
         sa.Column("payload", sa.Text(), nullable=False),
-        sa.Column("state", sa.String(length=20), nullable=False, server_default=sa.text("'PENDING'")),
+        sa.Column(
+            "state", sa.String(length=20), nullable=False, server_default=sa.text("'PENDING'")
+        ),
         sa.Column("retry_count", sa.Integer(), nullable=False, server_default=sa.text("0")),
-        sa.Column("created_at", sa.DateTime(), nullable=False, server_default=sa.text("SYSUTCDATETIME()")),
+        sa.Column(
+            "created_at", sa.DateTime(), nullable=False, server_default=sa.text("SYSUTCDATETIME()")
+        ),
         sa.Column("processed_at", sa.DateTime(), nullable=True),
         sa.CheckConstraint(
             "state IN ('PENDING', 'PROCESSED', 'FAILED')",
