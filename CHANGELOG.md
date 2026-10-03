@@ -4,6 +4,39 @@ Tất cả những thay đổi quan trọng trong hệ thống Quản lý Nghĩa
 
 ---
 
+## [0.4.0-documents] - 2026-10-03 (M03)
+
+### Added
+- **CSDL & Alembic Migration (G02 & G17):**
+  - Migration `0003_g02_g17_files_documents_jobs_outbox.py` bổ sung 4 bảng: `file_objects`, `document_versions`, `background_jobs`, `outbox_events`.
+  - Hỗ trợ lưu trữ siêu dữ liệu tệp MinIO, lịch sử phiên bản tài liệu (hợp đồng, phụ lục, giấy báo tử), hàng đợi tác vụ nền có lease lock và outbox events.
+  - SQLAlchemy models mapped tại `backend/app/modules/documents/models.py` và `backend/app/modules/jobs/models.py`.
+- **Dịch vụ Quản lý Tệp & Chứng từ (Backend):**
+  - `DocumentService`: Kiểm tra an toàn chữ ký tệp Magic Bytes (%PDF-, PNG, JPEG, XLSX), streaming upload trực tiếp vào MinIO bucket trên ổ D, tính mã SHA-256 song song, preview & download kèm xác thực JWT.
+  - `PDFService`: Công cụ biên dịch tài liệu PDF ReportLab chuẩn tiếng Việt UTF-8 sử dụng font hệ thống `Arial`, sinh mẫu hợp đồng hoàn chỉnh kèm bảng thông tin và khung chữ ký hai bên.
+  - `ExcelService`: Công cụ xuất báo cáo bảng tính `.xlsx` chuyên nghiệp với `openpyxl`, thiết lập kiểu bảng, căn lề và màu thương hiệu trang nghiêm `#24594D`.
+  - `BackgroundJobService`: Xử lý công việc ngầm với cơ chế lease claiming (`lease_until`), hỗ trợ nhiều worker chạy đồng thời không bị tranh chấp.
+- **API Endpoints:**
+  - `/api/v1/documents/upload`: Tải lên tệp có kiểm tra Magic Bytes và lưu MinIO.
+  - `/api/v1/documents/{file_id}/download` & `/preview`: Tải về và xem trước tệp có xác thực.
+  - `/api/v1/documents/versions`: Liên kết tệp vào hợp đồng/chứng từ và tự động đánh số phiên bản (`version_no`).
+  - `/api/v1/documents/sample-contract-pdf`: Tạo mẫu PDF hợp đồng tiếng Việt và lưu MinIO.
+  - `/api/v1/jobs/enqueue`, `/status/{job_id}`, `/process-next`: Quản trị hàng đợi tác vụ nền.
+- **Web Frontend (React 19 + TypeScript):**
+  - Phân hệ **"Hồ Sơ Chứng Từ & MinIO"** (`DocumentManager.tsx`):
+    - Tải tệp lên kèm xác thực định dạng tức thời.
+    - 1-click tạo mẫu PDF tiếng Việt chuẩn MinIO.
+    - Cửa sổ Preview Modal tương tác xem trước PDF và ảnh.
+    - Hộp thoại liên kết hồ sơ chứng từ và đánh số phiên bản tự động.
+    - Bảng giám sát tác vụ nền (Background Jobs Queue Monitor) kiểm thử worker step.
+- **Kiểm Thử & Đảm Bảo Chất Lượng:**
+  - 20 bài kiểm thử backend (`uv run pytest`) đạt 100%.
+  - `uv run ruff check .` All checks passed!
+  - `pnpm lint` 0 errors, `pnpm build` (200ms) thành công.
+  - `flutter analyze` 0 issues, `flutter test` vượt qua hoàn toàn.
+
+---
+
 ## [0.3.0-auth] - 2026-10-03 (M02)
 
 ### Added
