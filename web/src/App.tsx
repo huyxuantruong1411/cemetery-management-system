@@ -4,6 +4,7 @@ import {
   AlertCircle,
   Coins,
   Database,
+  FileCheck,
   FileText,
   HardDrive,
   Key,
@@ -17,6 +18,7 @@ import {
   Wrench,
 } from 'lucide-react'
 import { LoginModal } from './components/auth/LoginModal'
+import { DocumentManager } from './components/documents/DocumentManager'
 import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './context/useAuth'
 
@@ -255,6 +257,28 @@ function MainApp() {
             >
               <FileText size={16} />
               <span>Hợp Đồng & Khách Hàng</span>
+            </button>
+          )}
+
+          {user && (
+            <button
+              onClick={() => setActiveTab('documents')}
+              style={{
+                padding: '12px 16px',
+                border: 'none',
+                borderBottom: activeTab === 'documents' ? '2px solid var(--brand-primary)' : '2px solid transparent',
+                backgroundColor: 'transparent',
+                color: activeTab === 'documents' ? 'var(--brand-primary)' : '#64748B',
+                fontWeight: activeTab === 'documents' ? 600 : 500,
+                fontSize: '13px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <FileCheck size={16} />
+              <span>Hồ Sơ Chứng Từ & MinIO</span>
             </button>
           )}
 
@@ -632,6 +656,9 @@ function MainApp() {
             </p>
           </div>
         )}
+
+        {/* Tab Documents: M03 */}
+        {activeTab === 'documents' && <DocumentManager />}
 
         {/* Tab 4: Finance placeholder */}
         {activeTab === 'finance' && (
