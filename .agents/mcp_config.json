@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "dart": {
+      "command": "cmd",
+      "args": [
+        "/d",
+        "/c",
+        "dart",
+        "mcp-server"
+      ]
+    }
+  }
+}

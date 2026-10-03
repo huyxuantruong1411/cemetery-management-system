@@ -1,0 +1,3784 @@
+{
+  "server": "DESKTOP-HKIPI1M",
+  "database": "QL_NghiaTrang",
+  "tables": {
+    "audit_logs": {
+      "name": "audit_logs",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "log_id",
+          "type": "bigint",
+          "max_length": 8,
+          "precision": 19,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "user_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "action_type",
+          "type": "varchar",
+          "max_length": 50,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "target_entity",
+          "type": "varchar",
+          "max_length": 50,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "target_id",
+          "type": "varchar",
+          "max_length": 50,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "pre_change_values",
+          "type": "nvarchar",
+          "max_length": -1,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "post_change_values",
+          "type": "nvarchar",
+          "max_length": -1,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "ip_address",
+          "type": "varchar",
+          "max_length": 45,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "timestamp",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        }
+      ],
+      "primary_keys": [
+        "log_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_audit_user",
+          "column": "user_id",
+          "ref_table": "users",
+          "ref_column": "user_id",
+          "on_delete": "SET_NULL",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [],
+      "check_constraints": [
+        {
+          "name": "CK_audit_pre_json",
+          "definition": "([pre_change_values] IS NULL OR isjson([pre_change_values])>(0))"
+        },
+        {
+          "name": "CK_audit_post_json",
+          "definition": "([post_change_values] IS NULL OR isjson([post_change_values])>(0))"
+        }
+      ]
+    },
+    "burial_annexes": {
+      "name": "burial_annexes",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "annex_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "deceased_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "plot_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "slot_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "burial_date",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "is_kim_tinh",
+          "type": "bit",
+          "max_length": 1,
+          "precision": 1,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "((0))"
+        },
+        {
+          "name": "construction_notes",
+          "type": "nvarchar",
+          "max_length": -1,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        }
+      ],
+      "primary_keys": [
+        "annex_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_ba_slot",
+          "column": "slot_id",
+          "ref_table": "plot_slots",
+          "ref_column": "slot_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_ba_annex",
+          "column": "annex_id",
+          "ref_table": "contract_annexes",
+          "ref_column": "annex_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_ba_deceased",
+          "column": "deceased_id",
+          "ref_table": "deceased_profiles",
+          "ref_column": "deceased_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_ba_plot",
+          "column": "plot_id",
+          "ref_table": "plots",
+          "ref_column": "plot_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [],
+      "check_constraints": []
+    },
+    "burial_histories": {
+      "name": "burial_histories",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "history_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "plot_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "slot_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "deceased_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "action_type",
+          "type": "varchar",
+          "max_length": 20,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "action_date",
+          "type": "date",
+          "max_length": 3,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "proof_url",
+          "type": "varchar",
+          "max_length": 500,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "notes",
+          "type": "nvarchar",
+          "max_length": -1,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        }
+      ],
+      "primary_keys": [
+        "history_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_burial_hist_slot",
+          "column": "slot_id",
+          "ref_table": "plot_slots",
+          "ref_column": "slot_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_burial_hist_deceased",
+          "column": "deceased_id",
+          "ref_table": "deceased_profiles",
+          "ref_column": "deceased_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_burial_hist_plot",
+          "column": "plot_id",
+          "ref_table": "plots",
+          "ref_column": "plot_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [],
+      "check_constraints": [
+        {
+          "name": "CK_burial_action",
+          "definition": "([action_type]='EXHUMED' OR [action_type]='BURIED')"
+        }
+      ]
+    },
+    "care_annexes": {
+      "name": "care_annexes",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "annex_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "package_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "cycle_months",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "((12))"
+        },
+        {
+          "name": "recurring_price",
+          "type": "decimal",
+          "max_length": 9,
+          "precision": 15,
+          "scale": 2,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        }
+      ],
+      "primary_keys": [
+        "annex_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_ca_annex",
+          "column": "annex_id",
+          "ref_table": "contract_annexes",
+          "ref_column": "annex_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_care_annex_package",
+          "column": "package_id",
+          "ref_table": "care_packages",
+          "ref_column": "package_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [],
+      "check_constraints": []
+    },
+    "care_checklist_items": {
+      "name": "care_checklist_items",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "item_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "schedule_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "task_description",
+          "type": "nvarchar",
+          "max_length": 510,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "is_completed",
+          "type": "bit",
+          "max_length": 1,
+          "precision": 1,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "((0))"
+        },
+        {
+          "name": "field_notes",
+          "type": "nvarchar",
+          "max_length": -1,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        }
+      ],
+      "primary_keys": [
+        "item_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_ccl_schedule",
+          "column": "schedule_id",
+          "ref_table": "care_schedules",
+          "ref_column": "schedule_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [],
+      "check_constraints": []
+    },
+    "care_media_evidences": {
+      "name": "care_media_evidences",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "evidence_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "schedule_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "media_url",
+          "type": "varchar",
+          "max_length": 500,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "uploaded_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        },
+        {
+          "name": "caption",
+          "type": "nvarchar",
+          "max_length": 510,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        }
+      ],
+      "primary_keys": [
+        "evidence_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_cme_schedule",
+          "column": "schedule_id",
+          "ref_table": "care_schedules",
+          "ref_column": "schedule_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [],
+      "check_constraints": []
+    },
+    "care_packages": {
+      "name": "care_packages",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "package_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "package_code",
+          "type": "varchar",
+          "max_length": 30,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "package_name",
+          "type": "nvarchar",
+          "max_length": 200,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "cycle_type",
+          "type": "varchar",
+          "max_length": 20,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "default_tasks_json",
+          "type": "nvarchar",
+          "max_length": -1,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "unit_price",
+          "type": "decimal",
+          "max_length": 9,
+          "precision": 15,
+          "scale": 2,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "is_active",
+          "type": "bit",
+          "max_length": 1,
+          "precision": 1,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "((1))"
+        }
+      ],
+      "primary_keys": [
+        "package_id"
+      ],
+      "foreign_keys": [],
+      "unique_constraints": [
+        {
+          "index_name": "UQ_care_pack_code",
+          "column": "package_code",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        }
+      ],
+      "check_constraints": [
+        {
+          "name": "CK_care_cycle",
+          "definition": "([cycle_type]='YEARLY' OR [cycle_type]='QUARTERLY' OR [cycle_type]='MONTHLY')"
+        },
+        {
+          "name": "CK_care_tasks_json",
+          "definition": "(isjson([default_tasks_json])>(0))"
+        },
+        {
+          "name": "CK_care_price",
+          "definition": "([unit_price]>=(0))"
+        }
+      ]
+    },
+    "care_schedules": {
+      "name": "care_schedules",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "schedule_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "care_annex_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "plot_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "package_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "caretaker_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "scheduled_date",
+          "type": "date",
+          "max_length": 3,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "performed_date",
+          "type": "date",
+          "max_length": 3,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "varchar",
+          "max_length": 20,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "('SCHEDULED')"
+        },
+        {
+          "name": "closed_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        }
+      ],
+      "primary_keys": [
+        "schedule_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_cs_caretaker",
+          "column": "caretaker_id",
+          "ref_table": "users",
+          "ref_column": "user_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_cs_annex",
+          "column": "care_annex_id",
+          "ref_table": "care_annexes",
+          "ref_column": "annex_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_cs_package",
+          "column": "package_id",
+          "ref_table": "care_packages",
+          "ref_column": "package_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_cs_plot",
+          "column": "plot_id",
+          "ref_table": "plots",
+          "ref_column": "plot_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [],
+      "check_constraints": [
+        {
+          "name": "CK_cs_status",
+          "definition": "([status]='OVERDUE' OR [status]='CLOSED' OR [status]='IN_PROGRESS' OR [status]='ASSIGNED' OR [status]='SCHEDULED')"
+        }
+      ]
+    },
+    "construction_annexes": {
+      "name": "construction_annexes",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "annex_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "plot_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "estimated_start_date",
+          "type": "date",
+          "max_length": 3,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "estimated_end_date",
+          "type": "date",
+          "max_length": 3,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "checklist_specifications",
+          "type": "nvarchar",
+          "max_length": -1,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        }
+      ],
+      "primary_keys": [
+        "annex_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_csa_annex",
+          "column": "annex_id",
+          "ref_table": "contract_annexes",
+          "ref_column": "annex_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_csa_plot",
+          "column": "plot_id",
+          "ref_table": "plots",
+          "ref_column": "plot_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [],
+      "check_constraints": []
+    },
+    "construction_orders": {
+      "name": "construction_orders",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "order_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "annex_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "plot_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "supervisor_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "start_date",
+          "type": "date",
+          "max_length": 3,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "expected_end_date",
+          "type": "date",
+          "max_length": 3,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "actual_end_date",
+          "type": "date",
+          "max_length": 3,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "overall_progress",
+          "type": "decimal",
+          "max_length": 5,
+          "precision": 5,
+          "scale": 2,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "((0.00))"
+        },
+        {
+          "name": "status",
+          "type": "varchar",
+          "max_length": 20,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "('PENDING')"
+        },
+        {
+          "name": "created_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        }
+      ],
+      "primary_keys": [
+        "order_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_co_annex",
+          "column": "annex_id",
+          "ref_table": "contract_annexes",
+          "ref_column": "annex_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_co_supervisor",
+          "column": "supervisor_id",
+          "ref_table": "users",
+          "ref_column": "user_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_co_plot",
+          "column": "plot_id",
+          "ref_table": "plots",
+          "ref_column": "plot_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [],
+      "check_constraints": [
+        {
+          "name": "CK_co_progress",
+          "definition": "([overall_progress]>=(0) AND [overall_progress]<=(100))"
+        },
+        {
+          "name": "CK_co_status",
+          "definition": "([status]='OVERDUE' OR [status]='COMPLETED' OR [status]='IN_PROGRESS' OR [status]='PENDING')"
+        }
+      ]
+    },
+    "construction_tasks": {
+      "name": "construction_tasks",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "task_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "order_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "task_name",
+          "type": "nvarchar",
+          "max_length": 300,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "assigned_team_or_contractor",
+          "type": "nvarchar",
+          "max_length": 200,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "varchar",
+          "max_length": 20,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "('TODO')"
+        },
+        {
+          "name": "proof_media_url",
+          "type": "varchar",
+          "max_length": 500,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "field_notes",
+          "type": "nvarchar",
+          "max_length": -1,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "completed_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        }
+      ],
+      "primary_keys": [
+        "task_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_ct_order",
+          "column": "order_id",
+          "ref_table": "construction_orders",
+          "ref_column": "order_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [],
+      "check_constraints": [
+        {
+          "name": "CK_ct_status",
+          "definition": "([status]='DONE' OR [status]='DOING' OR [status]='TODO')"
+        }
+      ]
+    },
+    "contract_annexes": {
+      "name": "contract_annexes",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "annex_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "annex_code",
+          "type": "varchar",
+          "max_length": 50,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "contract_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "annex_type",
+          "type": "varchar",
+          "max_length": 30,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "varchar",
+          "max_length": 30,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "('DRAFT')"
+        },
+        {
+          "name": "additional_amount",
+          "type": "decimal",
+          "max_length": 9,
+          "precision": 15,
+          "scale": 2,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "((0.00))"
+        },
+        {
+          "name": "signed_scan_url",
+          "type": "varchar",
+          "max_length": 500,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "valid_from",
+          "type": "date",
+          "max_length": 3,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "valid_to",
+          "type": "date",
+          "max_length": 3,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        }
+      ],
+      "primary_keys": [
+        "annex_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_annexes_contract",
+          "column": "contract_id",
+          "ref_table": "contracts",
+          "ref_column": "contract_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [
+        {
+          "index_name": "UQ_annexes_code",
+          "column": "annex_code",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        }
+      ],
+      "check_constraints": [
+        {
+          "name": "CK_annexes_type",
+          "definition": "([annex_type]='CONSTRUCTION' OR [annex_type]='CARE' OR [annex_type]='BURIAL')"
+        },
+        {
+          "name": "CK_annexes_status",
+          "definition": "([status]='CANCELLED' OR [status]='COMPLETED' OR [status]='ACTIVE' OR [status]='PENDING_SIGN' OR [status]='DRAFT')"
+        },
+        {
+          "name": "CK_annexes_amount",
+          "definition": "([additional_amount]>=(0))"
+        }
+      ]
+    },
+    "contracts": {
+      "name": "contracts",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "contract_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "contract_code",
+          "type": "varchar",
+          "max_length": 50,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "contract_type",
+          "type": "varchar",
+          "max_length": 30,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "customer_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "varchar",
+          "max_length": 30,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "('DRAFT')"
+        },
+        {
+          "name": "total_amount",
+          "type": "decimal",
+          "max_length": 9,
+          "precision": 15,
+          "scale": 2,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "((0.00))"
+        },
+        {
+          "name": "signed_scan_url",
+          "type": "varchar",
+          "max_length": 500,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "created_by_user_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        }
+      ],
+      "primary_keys": [
+        "contract_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_contracts_user",
+          "column": "created_by_user_id",
+          "ref_table": "users",
+          "ref_column": "user_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_contracts_customer",
+          "column": "customer_id",
+          "ref_table": "customers",
+          "ref_column": "customer_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [
+        {
+          "index_name": "UQ_contracts_code",
+          "column": "contract_code",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        }
+      ],
+      "check_constraints": [
+        {
+          "name": "CK_contracts_type",
+          "definition": "([contract_type]='TRANSFER' OR [contract_type]='CREMATION' OR [contract_type]='EXHUMATION' OR [contract_type]='LAND_PURCHASE')"
+        },
+        {
+          "name": "CK_contracts_status",
+          "definition": "([status]='TRANSFERRED' OR [status]='CANCELLED' OR [status]='ACTIVE' OR [status]='PENDING_SIGN' OR [status]='DRAFT')"
+        },
+        {
+          "name": "CK_contracts_total",
+          "definition": "([total_amount]>=(0))"
+        }
+      ]
+    },
+    "cremation_contracts": {
+      "name": "cremation_contracts",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "contract_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "deceased_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "cremation_date",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "package_service_code",
+          "type": "varchar",
+          "max_length": 50,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "urn_storage_option",
+          "type": "nvarchar",
+          "max_length": 200,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "service_fee",
+          "type": "decimal",
+          "max_length": 9,
+          "precision": 15,
+          "scale": 2,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        }
+      ],
+      "primary_keys": [
+        "contract_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_crem_contract",
+          "column": "contract_id",
+          "ref_table": "contracts",
+          "ref_column": "contract_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_crem_deceased",
+          "column": "deceased_id",
+          "ref_table": "deceased_profiles",
+          "ref_column": "deceased_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [],
+      "check_constraints": []
+    },
+    "customer_deceased_relations": {
+      "name": "customer_deceased_relations",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "relation_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "customer_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "deceased_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "relationship_type",
+          "type": "nvarchar",
+          "max_length": 100,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "is_primary_contact",
+          "type": "bit",
+          "max_length": 1,
+          "precision": 1,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "((0))"
+        }
+      ],
+      "primary_keys": [
+        "relation_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_relation_customer",
+          "column": "customer_id",
+          "ref_table": "customers",
+          "ref_column": "customer_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_relation_deceased",
+          "column": "deceased_id",
+          "ref_table": "deceased_profiles",
+          "ref_column": "deceased_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [
+        {
+          "index_name": "UQ_cust_deceased",
+          "column": "customer_id",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        },
+        {
+          "index_name": "UQ_cust_deceased",
+          "column": "deceased_id",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        }
+      ],
+      "check_constraints": []
+    },
+    "customers": {
+      "name": "customers",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "customer_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "customer_code",
+          "type": "varchar",
+          "max_length": 30,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "full_name",
+          "type": "nvarchar",
+          "max_length": 200,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "citizen_id",
+          "type": "varchar",
+          "max_length": 20,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "phone_number",
+          "type": "varchar",
+          "max_length": 20,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "email",
+          "type": "varchar",
+          "max_length": 100,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "address",
+          "type": "nvarchar",
+          "max_length": 510,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        }
+      ],
+      "primary_keys": [
+        "customer_id"
+      ],
+      "foreign_keys": [],
+      "unique_constraints": [
+        {
+          "index_name": "UQ_customers_citizen_id",
+          "column": "citizen_id",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        },
+        {
+          "index_name": "UQ_customers_code",
+          "column": "customer_code",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        }
+      ],
+      "check_constraints": []
+    },
+    "death_certificates": {
+      "name": "death_certificates",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "cert_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "deceased_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "certificate_number",
+          "type": "nvarchar",
+          "max_length": 100,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "issuing_authority",
+          "type": "nvarchar",
+          "max_length": 300,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "issue_date",
+          "type": "date",
+          "max_length": 3,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "scan_file_url",
+          "type": "varchar",
+          "max_length": 500,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "is_verified",
+          "type": "bit",
+          "max_length": 1,
+          "precision": 1,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "((1))"
+        },
+        {
+          "name": "verified_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        }
+      ],
+      "primary_keys": [
+        "cert_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_death_cert_deceased",
+          "column": "deceased_id",
+          "ref_table": "deceased_profiles",
+          "ref_column": "deceased_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [
+        {
+          "index_name": "UQ_death_cert_deceased",
+          "column": "deceased_id",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        }
+      ],
+      "check_constraints": []
+    },
+    "deceased_profiles": {
+      "name": "deceased_profiles",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "deceased_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "deceased_code",
+          "type": "varchar",
+          "max_length": 30,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "full_name",
+          "type": "nvarchar",
+          "max_length": 200,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "gender",
+          "type": "varchar",
+          "max_length": 10,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "date_of_birth",
+          "type": "date",
+          "max_length": 3,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "date_of_death",
+          "type": "date",
+          "max_length": 3,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "hometown",
+          "type": "nvarchar",
+          "max_length": 510,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "religion",
+          "type": "nvarchar",
+          "max_length": 100,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "has_death_certificate",
+          "type": "bit",
+          "max_length": 1,
+          "precision": 1,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "((0))"
+        },
+        {
+          "name": "created_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        }
+      ],
+      "primary_keys": [
+        "deceased_id"
+      ],
+      "foreign_keys": [],
+      "unique_constraints": [
+        {
+          "index_name": "UQ_deceased_code",
+          "column": "deceased_code",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        }
+      ],
+      "check_constraints": [
+        {
+          "name": "CK_deceased_gender",
+          "definition": "([gender]='OTHER' OR [gender]='FEMALE' OR [gender]='MALE')"
+        }
+      ]
+    },
+    "discount_records": {
+      "name": "discount_records",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "discount_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "receivable_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "discount_type",
+          "type": "varchar",
+          "max_length": 20,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "discount_value",
+          "type": "decimal",
+          "max_length": 9,
+          "precision": 10,
+          "scale": 2,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "calculated_amount",
+          "type": "decimal",
+          "max_length": 9,
+          "precision": 15,
+          "scale": 2,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "justification_reason",
+          "type": "nvarchar",
+          "max_length": -1,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "approved_by_user_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "applied_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        }
+      ],
+      "primary_keys": [
+        "discount_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_disc_approver",
+          "column": "approved_by_user_id",
+          "ref_table": "users",
+          "ref_column": "user_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_disc_receivable",
+          "column": "receivable_id",
+          "ref_table": "receivables",
+          "ref_column": "receivable_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [
+        {
+          "index_name": "UQ_discount_receivable",
+          "column": "receivable_id",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        }
+      ],
+      "check_constraints": [
+        {
+          "name": "CK_disc_type",
+          "definition": "([discount_type]='FIXED_AMOUNT' OR [discount_type]='PERCENTAGE')"
+        },
+        {
+          "name": "CK_disc_calc",
+          "definition": "([calculated_amount]>=(0))"
+        }
+      ]
+    },
+    "exhumation_contracts": {
+      "name": "exhumation_contracts",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "contract_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "plot_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "current_deceased_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "exhumation_date",
+          "type": "date",
+          "max_length": 3,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "exhumation_fee",
+          "type": "decimal",
+          "max_length": 9,
+          "precision": 15,
+          "scale": 2,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "reason",
+          "type": "nvarchar",
+          "max_length": -1,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        }
+      ],
+      "primary_keys": [
+        "contract_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_exh_contract",
+          "column": "contract_id",
+          "ref_table": "contracts",
+          "ref_column": "contract_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_exh_deceased",
+          "column": "current_deceased_id",
+          "ref_table": "deceased_profiles",
+          "ref_column": "deceased_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_exh_plot",
+          "column": "plot_id",
+          "ref_table": "plots",
+          "ref_column": "plot_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [],
+      "check_constraints": []
+    },
+    "invoices": {
+      "name": "invoices",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "invoice_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "invoice_number",
+          "type": "varchar",
+          "max_length": 50,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "payment_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "issued_date",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        },
+        {
+          "name": "total_amount_in_words",
+          "type": "nvarchar",
+          "max_length": 510,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "pdf_file_url",
+          "type": "varchar",
+          "max_length": 500,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        }
+      ],
+      "primary_keys": [
+        "invoice_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_inv_payment",
+          "column": "payment_id",
+          "ref_table": "payments",
+          "ref_column": "payment_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [
+        {
+          "index_name": "UQ_invoices_number",
+          "column": "invoice_number",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        },
+        {
+          "index_name": "UQ_invoices_payment",
+          "column": "payment_id",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        }
+      ],
+      "check_constraints": []
+    },
+    "land_purchase_contracts": {
+      "name": "land_purchase_contracts",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "contract_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "plot_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "land_unit_price",
+          "type": "decimal",
+          "max_length": 9,
+          "precision": 15,
+          "scale": 2,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        }
+      ],
+      "primary_keys": [
+        "contract_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_lpc_contract",
+          "column": "contract_id",
+          "ref_table": "contracts",
+          "ref_column": "contract_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_lpc_plot",
+          "column": "plot_id",
+          "ref_table": "plots",
+          "ref_column": "plot_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [],
+      "check_constraints": []
+    },
+    "payments": {
+      "name": "payments",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "payment_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "receivable_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "paid_amount",
+          "type": "decimal",
+          "max_length": 9,
+          "precision": 15,
+          "scale": 2,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "payment_method",
+          "type": "varchar",
+          "max_length": 20,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "transaction_reference",
+          "type": "varchar",
+          "max_length": 100,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "paid_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        },
+        {
+          "name": "recorded_by_user_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        }
+      ],
+      "primary_keys": [
+        "payment_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_pay_recorder",
+          "column": "recorded_by_user_id",
+          "ref_table": "users",
+          "ref_column": "user_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_pay_receivable",
+          "column": "receivable_id",
+          "ref_table": "receivables",
+          "ref_column": "receivable_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [],
+      "check_constraints": [
+        {
+          "name": "CK_pay_amount",
+          "definition": "([paid_amount]>(0))"
+        },
+        {
+          "name": "CK_pay_method",
+          "definition": "([payment_method]='VIET_QR' OR [payment_method]='BANK_TRANSFER' OR [payment_method]='CASH')"
+        }
+      ]
+    },
+    "permissions": {
+      "name": "permissions",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "permission_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "permission_code",
+          "type": "varchar",
+          "max_length": 100,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "resource",
+          "type": "varchar",
+          "max_length": 50,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "action",
+          "type": "varchar",
+          "max_length": 50,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        }
+      ],
+      "primary_keys": [
+        "permission_id"
+      ],
+      "foreign_keys": [],
+      "unique_constraints": [
+        {
+          "index_name": "UQ_permissions_code",
+          "column": "permission_code",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        }
+      ],
+      "check_constraints": []
+    },
+    "plot_slots": {
+      "name": "plot_slots",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "slot_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "plot_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "slot_number",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "varchar",
+          "max_length": 20,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "('EMPTY')"
+        },
+        {
+          "name": "current_deceased_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        }
+      ],
+      "primary_keys": [
+        "slot_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_plot_slots_deceased",
+          "column": "current_deceased_id",
+          "ref_table": "deceased_profiles",
+          "ref_column": "deceased_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_plot_slots_plot",
+          "column": "plot_id",
+          "ref_table": "plots",
+          "ref_column": "plot_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [
+        {
+          "index_name": "UQ_plot_slot",
+          "column": "plot_id",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        },
+        {
+          "index_name": "UQ_plot_slot",
+          "column": "slot_number",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        }
+      ],
+      "check_constraints": [
+        {
+          "name": "CK_plot_slots_status",
+          "definition": "([status]='OCCUPIED' OR [status]='EMPTY')"
+        }
+      ]
+    },
+    "plot_types": {
+      "name": "plot_types",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "type_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "type_name",
+          "type": "nvarchar",
+          "max_length": 200,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "default_slots",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "length",
+          "type": "decimal",
+          "max_length": 5,
+          "precision": 5,
+          "scale": 2,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "width",
+          "type": "decimal",
+          "max_length": 5,
+          "precision": 5,
+          "scale": 2,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "description",
+          "type": "nvarchar",
+          "max_length": 510,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        }
+      ],
+      "primary_keys": [
+        "type_id"
+      ],
+      "foreign_keys": [],
+      "unique_constraints": [
+        {
+          "index_name": "UQ_plot_types_name",
+          "column": "type_name",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        }
+      ],
+      "check_constraints": [
+        {
+          "name": "CK_plot_types_slots",
+          "definition": "([default_slots]>(0))"
+        }
+      ]
+    },
+    "plots": {
+      "name": "plots",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "plot_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "plot_code",
+          "type": "varchar",
+          "max_length": 30,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "row_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "type_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "owner_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "latitude",
+          "type": "decimal",
+          "max_length": 9,
+          "precision": 10,
+          "scale": 8,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "longitude",
+          "type": "decimal",
+          "max_length": 9,
+          "precision": 11,
+          "scale": 8,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "varchar",
+          "max_length": 30,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "('EMPTY_UNSOLD')"
+        },
+        {
+          "name": "is_kim_tinh",
+          "type": "bit",
+          "max_length": 1,
+          "precision": 1,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "((0))"
+        },
+        {
+          "name": "is_locked",
+          "type": "bit",
+          "max_length": 1,
+          "precision": 1,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "((0))"
+        },
+        {
+          "name": "created_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        }
+      ],
+      "primary_keys": [
+        "plot_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_plots_owner",
+          "column": "owner_id",
+          "ref_table": "customers",
+          "ref_column": "customer_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_plots_row",
+          "column": "row_id",
+          "ref_table": "rows",
+          "ref_column": "row_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_plots_type",
+          "column": "type_id",
+          "ref_table": "plot_types",
+          "ref_column": "type_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [
+        {
+          "index_name": "UQ_plots_code",
+          "column": "plot_code",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        }
+      ],
+      "check_constraints": [
+        {
+          "name": "CK_plots_status",
+          "definition": "([status]='UNDER_EXHUMATION' OR [status]='OCCUPIED' OR [status]='UNDER_CONSTRUCTION' OR [status]='OWNED_EMPTY' OR [status]='RESERVED' OR [status]='EMPTY_UNSOLD')"
+        }
+      ]
+    },
+    "price_items": {
+      "name": "price_items",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "item_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "price_list_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "item_code",
+          "type": "varchar",
+          "max_length": 50,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "item_name",
+          "type": "nvarchar",
+          "max_length": 300,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "unit_price",
+          "type": "decimal",
+          "max_length": 9,
+          "precision": 15,
+          "scale": 2,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "unit",
+          "type": "nvarchar",
+          "max_length": 60,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        }
+      ],
+      "primary_keys": [
+        "item_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_price_items_list",
+          "column": "price_list_id",
+          "ref_table": "price_lists",
+          "ref_column": "price_list_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [
+        {
+          "index_name": "UQ_price_items_code",
+          "column": "price_list_id",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        },
+        {
+          "index_name": "UQ_price_items_code",
+          "column": "item_code",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        }
+      ],
+      "check_constraints": [
+        {
+          "name": "CK_price_items_price",
+          "definition": "([unit_price]>=(0))"
+        }
+      ]
+    },
+    "price_lists": {
+      "name": "price_lists",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "price_list_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "price_list_name",
+          "type": "nvarchar",
+          "max_length": 200,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "effective_from_date",
+          "type": "date",
+          "max_length": 3,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "effective_to_date",
+          "type": "date",
+          "max_length": 3,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "is_active",
+          "type": "bit",
+          "max_length": 1,
+          "precision": 1,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "((1))"
+        },
+        {
+          "name": "created_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        }
+      ],
+      "primary_keys": [
+        "price_list_id"
+      ],
+      "foreign_keys": [],
+      "unique_constraints": [],
+      "check_constraints": []
+    },
+    "receivables": {
+      "name": "receivables",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "receivable_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "contract_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "annex_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "customer_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "original_amount",
+          "type": "decimal",
+          "max_length": 9,
+          "precision": 15,
+          "scale": 2,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "discount_amount",
+          "type": "decimal",
+          "max_length": 9,
+          "precision": 15,
+          "scale": 2,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "((0.00))"
+        },
+        {
+          "name": "final_payable_amount",
+          "type": "decimal",
+          "max_length": 9,
+          "precision": 15,
+          "scale": 2,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "total_paid_amount",
+          "type": "decimal",
+          "max_length": 9,
+          "precision": 15,
+          "scale": 2,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "((0.00))"
+        },
+        {
+          "name": "status",
+          "type": "varchar",
+          "max_length": 20,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "('UNPAID')"
+        },
+        {
+          "name": "due_date",
+          "type": "date",
+          "max_length": 3,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        }
+      ],
+      "primary_keys": [
+        "receivable_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_rec_contract",
+          "column": "contract_id",
+          "ref_table": "contracts",
+          "ref_column": "contract_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_rec_annex",
+          "column": "annex_id",
+          "ref_table": "contract_annexes",
+          "ref_column": "annex_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_rec_customer",
+          "column": "customer_id",
+          "ref_table": "customers",
+          "ref_column": "customer_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [],
+      "check_constraints": [
+        {
+          "name": "CK_rec_orig",
+          "definition": "([original_amount]>=(0))"
+        },
+        {
+          "name": "CK_rec_disc",
+          "definition": "([discount_amount]>=(0))"
+        },
+        {
+          "name": "CK_rec_final",
+          "definition": "([final_payable_amount]>=(0))"
+        },
+        {
+          "name": "CK_rec_paid",
+          "definition": "([total_paid_amount]>=(0))"
+        },
+        {
+          "name": "CK_rec_status",
+          "definition": "([status]='CANCELLED' OR [status]='PAID' OR [status]='PARTIALLY_PAID' OR [status]='UNPAID')"
+        },
+        {
+          "name": "CK_receivable_source",
+          "definition": "([contract_id] IS NOT NULL OR [annex_id] IS NOT NULL)"
+        }
+      ]
+    },
+    "role_permissions": {
+      "name": "role_permissions",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "role_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "permission_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        }
+      ],
+      "primary_keys": [
+        "role_id",
+        "permission_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_role_permissions_role",
+          "column": "role_id",
+          "ref_table": "roles",
+          "ref_column": "role_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_role_permissions_perm",
+          "column": "permission_id",
+          "ref_table": "permissions",
+          "ref_column": "permission_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [],
+      "check_constraints": []
+    },
+    "roles": {
+      "name": "roles",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "role_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "role_name",
+          "type": "nvarchar",
+          "max_length": 100,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "description",
+          "type": "nvarchar",
+          "max_length": 510,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        }
+      ],
+      "primary_keys": [
+        "role_id"
+      ],
+      "foreign_keys": [],
+      "unique_constraints": [
+        {
+          "index_name": "UQ_roles_name",
+          "column": "role_name",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        }
+      ],
+      "check_constraints": []
+    },
+    "rows": {
+      "name": "rows",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "row_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "zone_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "row_code",
+          "type": "varchar",
+          "max_length": 20,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "total_plots",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "((0))"
+        }
+      ],
+      "primary_keys": [
+        "row_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_rows_zone",
+          "column": "zone_id",
+          "ref_table": "zones",
+          "ref_column": "zone_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [
+        {
+          "index_name": "UQ_zone_row",
+          "column": "zone_id",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        },
+        {
+          "index_name": "UQ_zone_row",
+          "column": "row_code",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        }
+      ],
+      "check_constraints": []
+    },
+    "transfer_contracts": {
+      "name": "transfer_contracts",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "contract_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "plot_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "seller_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "buyer_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "commission_fee",
+          "type": "decimal",
+          "max_length": 9,
+          "precision": 15,
+          "scale": 2,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "((0.00))"
+        }
+      ],
+      "primary_keys": [
+        "contract_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_trans_contract",
+          "column": "contract_id",
+          "ref_table": "contracts",
+          "ref_column": "contract_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_trans_seller",
+          "column": "seller_id",
+          "ref_table": "customers",
+          "ref_column": "customer_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_trans_buyer",
+          "column": "buyer_id",
+          "ref_table": "customers",
+          "ref_column": "customer_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_trans_plot",
+          "column": "plot_id",
+          "ref_table": "plots",
+          "ref_column": "plot_id",
+          "on_delete": "NO_ACTION",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [],
+      "check_constraints": [
+        {
+          "name": "CK_diff_transfer_parties",
+          "definition": "([seller_id]<>[buyer_id])"
+        }
+      ]
+    },
+    "user_roles": {
+      "name": "user_roles",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "role_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        }
+      ],
+      "primary_keys": [
+        "user_id",
+        "role_id"
+      ],
+      "foreign_keys": [
+        {
+          "name": "FK_user_roles_role",
+          "column": "role_id",
+          "ref_table": "roles",
+          "ref_column": "role_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        },
+        {
+          "name": "FK_user_roles_user",
+          "column": "user_id",
+          "ref_table": "users",
+          "ref_column": "user_id",
+          "on_delete": "CASCADE",
+          "on_update": "NO_ACTION"
+        }
+      ],
+      "unique_constraints": [],
+      "check_constraints": []
+    },
+    "users": {
+      "name": "users",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "username",
+          "type": "varchar",
+          "max_length": 50,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "password_hash",
+          "type": "varchar",
+          "max_length": 255,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "full_name",
+          "type": "nvarchar",
+          "max_length": 200,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "email",
+          "type": "varchar",
+          "max_length": 100,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "phone_number",
+          "type": "varchar",
+          "max_length": 20,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "is_active",
+          "type": "bit",
+          "max_length": 1,
+          "precision": 1,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "((1))"
+        },
+        {
+          "name": "created_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        },
+        {
+          "name": "updated_at",
+          "type": "datetime2",
+          "max_length": 7,
+          "precision": 23,
+          "scale": 3,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "(sysutcdatetime())"
+        }
+      ],
+      "primary_keys": [
+        "user_id"
+      ],
+      "foreign_keys": [],
+      "unique_constraints": [
+        {
+          "index_name": "UQ_users_email",
+          "column": "email",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        },
+        {
+          "index_name": "UQ_users_username",
+          "column": "username",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        }
+      ],
+      "check_constraints": []
+    },
+    "zones": {
+      "name": "zones",
+      "row_count": 0,
+      "columns": [
+        {
+          "name": "zone_id",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": true,
+          "default": null
+        },
+        {
+          "name": "zone_code",
+          "type": "varchar",
+          "max_length": 20,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "zone_name",
+          "type": "nvarchar",
+          "max_length": 200,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": null
+        },
+        {
+          "name": "total_rows",
+          "type": "int",
+          "max_length": 4,
+          "precision": 10,
+          "scale": 0,
+          "is_nullable": false,
+          "is_identity": false,
+          "default": "((0))"
+        },
+        {
+          "name": "description",
+          "type": "nvarchar",
+          "max_length": 510,
+          "precision": 0,
+          "scale": 0,
+          "is_nullable": true,
+          "is_identity": false,
+          "default": null
+        }
+      ],
+      "primary_keys": [
+        "zone_id"
+      ],
+      "foreign_keys": [],
+      "unique_constraints": [
+        {
+          "index_name": "UQ_zones_code",
+          "column": "zone_code",
+          "is_unique": true,
+          "has_filter": false,
+          "filter_definition": null
+        }
+      ],
+      "check_constraints": []
+    }
+  },
+  "triggers": [
+    {
+      "name": "trg_plots_enforce_kim_tinh_immutability",
+      "table": "plots",
+      "definition": "\r\n-- ============================================================================\r\n-- 10. TRIGGERS T-SQL XỬ LÝ QUY TẮC NGHIỆP VỤ BẮT BUỘC\r\n-- ============================================================================\r\n\r\n-- Trigger 1: BẢO VỆ MỘ KIM TĨNH BẤT BIẾN (Business Rules BR1 - Module 1 & 3)\r\n-- Nghiêm cấm bóc dỡ, cải táng hoặc gỡ bỏ cờ khóa khi mộ Kim Tĩnh đã chôn cất\r\nCREATE   TRIGGER trg_plots_enforce_kim_tinh_immutability\r\nON plots\r\nAFTER UPDATE\r\nAS\r\nBEGIN\r\n    SET NOCOUNT ON;\r\n\r\n    -- Kiểm tra 1: Mộ đang bị khóa (is_locked = 1) mà cố tình đổi sang cải táng\r\n    IF EXISTS (\r\n        SELECT 1 \r\n        FROM inserted i\r\n        JOIN deleted d ON i.plot_id = d.plot_id\r\n        WHERE d.is_locked = 1 AND i.status = 'UNDER_EXHUMATION'\r\n    )\r\n    BEGIN\r\n        THROW 51000, N'LỖI NGHIỆP VỤ [BR-KIMTINH]: Ô mộ xây kết cấu Kim Tĩnh đã kiên cố vĩnh viễn, nghiêm cấm lập thủ tục bóc mộ/cải táng!', 1;\r\n    END\r\n\r\n    -- Kiểm tra 2: Mộ đang bị khóa mà cố tình can thiệp gỡ cờ khóa (is_locked chuyển từ 1 về 0)\r\n    IF EXISTS (\r\n        SELECT 1 \r\n        FROM inserted i\r\n        JOIN deleted d ON i.plot_id = d.plot_id\r\n        WHERE d.is_locked = 1 AND i.is_locked = 0\r\n    )\r\n    BEGIN\r\n        THROW 51001, N'LỖI BẢO MẬT: Cơ chế khóa vĩnh viễn của mộ Kim Tĩnh không được phép gỡ bỏ!', 1;\r\n    END\r\n\r\n    -- Kiểm tra 3: Tự động kích hoạt is_locked = 1 khi mộ Kim Tĩnh hoàn tất an táng (status = OCCUPIED)\r\n    IF EXISTS (\r\n        SELECT 1 \r\n        FROM inserted i\r\n        WHERE i.is_kim_tinh = 1 AND i.status = 'OCCUPIED' AND i.is_locked = 0\r\n    )\r\n    BEGIN\r\n        UPDATE p\r\n        SET p.is_locked = 1\r\n        FROM plots p\r\n        JOIN inserted i ON p.plot_id = i.plot_id\r\n        WHERE i.is_kim_tinh = 1 AND i.status = 'OCCUPIED';\r\n    END\r\nEND;\r\n"
+    },
+    {
+      "name": "trg_payments_sync_receivable_balance",
+      "table": "payments",
+      "definition": "\r\n-- Trigger 2: TỰ ĐỘNG CẤN TRỪ CÔNG NỢ & CẬP NHẬT TRẠNG THÁI KHOẢN THU (Module 6)\r\nCREATE   TRIGGER trg_payments_sync_receivable_balance\r\nON payments\r\nAFTER INSERT\r\nAS\r\nBEGIN\r\n    SET NOCOUNT ON;\r\n\r\n    -- Cập nhật tổng tiền đã thanh toán và trạng thái nợ của khoản phải thu\r\n    WITH PaymentAgg AS (\r\n        SELECT \r\n            p.receivable_id, \r\n            SUM(p.paid_amount) AS total_paid\r\n        FROM payments p\r\n        WHERE p.receivable_id IN (SELECT DISTINCT receivable_id FROM inserted)\r\n        GROUP BY p.receivable_id\r\n    )\r\n    UPDATE r\r\n    SET \r\n        r.total_paid_amount = pa.total_paid,\r\n        r.status = CASE \r\n            WHEN pa.total_paid >= r.final_payable_amount THEN 'PAID'\r\n            WHEN pa.total_paid > 0 THEN 'PARTIALLY_PAID'\r\n            ELSE r.status\r\n        END\r\n    FROM receivables r\r\n    JOIN PaymentAgg pa ON r.receivable_id = pa.receivable_id;\r\nEND;\r\n"
+    }
+  ]
+}
