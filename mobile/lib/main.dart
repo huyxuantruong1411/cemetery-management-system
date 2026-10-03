@@ -843,6 +843,109 @@ class CareScheduleModel {
 }
 
 // =============================================================================
+// Finance Models (M11)
+// =============================================================================
+class ReceivableBriefModel {
+  final int receivableId;
+  final int? contractId;
+  final String? contractCode;
+  final int? annexId;
+  final String? annexCode;
+  final int installmentNo;
+  final double originalAmount;
+  final double discountAmount;
+  final double finalPayableAmount;
+  final double paidAmount;
+  final double remainingBalance;
+  final String status;
+  final String? dueDate;
+  final String createdAt;
+  final int paymentsCount;
+  final String? notes;
+
+  ReceivableBriefModel({
+    required this.receivableId,
+    this.contractId,
+    this.contractCode,
+    this.annexId,
+    this.annexCode,
+    required this.installmentNo,
+    required this.originalAmount,
+    required this.discountAmount,
+    required this.finalPayableAmount,
+    required this.paidAmount,
+    required this.remainingBalance,
+    required this.status,
+    this.dueDate,
+    required this.createdAt,
+    required this.paymentsCount,
+    this.notes,
+  });
+
+  factory ReceivableBriefModel.fromJson(Map<String, dynamic> json) {
+    return ReceivableBriefModel(
+      receivableId: json['receivable_id'] as int? ?? 0,
+      contractId: json['contract_id'] as int?,
+      contractCode: json['contract_code'] as String?,
+      annexId: json['annex_id'] as int?,
+      annexCode: json['annex_code'] as String?,
+      installmentNo: json['installment_no'] as int? ?? 1,
+      originalAmount: (json['original_amount'] as num?)?.toDouble() ?? 0.0,
+      discountAmount: (json['discount_amount'] as num?)?.toDouble() ?? 0.0,
+      finalPayableAmount: (json['final_payable_amount'] as num?)?.toDouble() ?? 0.0,
+      paidAmount: (json['paid_amount'] as num?)?.toDouble() ?? 0.0,
+      remainingBalance: (json['remaining_balance'] as num?)?.toDouble() ?? 0.0,
+      status: json['status'] as String? ?? 'UNPAID',
+      dueDate: json['due_date'] as String?,
+      createdAt: json['created_at'] as String? ?? '',
+      paymentsCount: json['payments_count'] as int? ?? 0,
+      notes: json['notes'] as String?,
+    );
+  }
+}
+
+class FinanceSummaryModel {
+  final int totalReceivables;
+  final double totalOriginalAmount;
+  final double totalDiscountAmount;
+  final double totalPayableAmount;
+  final double totalCollectedAmount;
+  final double totalOutstandingAmount;
+  final int unpaidCount;
+  final int partiallyPaidCount;
+  final int paidCount;
+  final int overdueCount;
+
+  FinanceSummaryModel({
+    required this.totalReceivables,
+    required this.totalOriginalAmount,
+    required this.totalDiscountAmount,
+    required this.totalPayableAmount,
+    required this.totalCollectedAmount,
+    required this.totalOutstandingAmount,
+    required this.unpaidCount,
+    required this.partiallyPaidCount,
+    required this.paidCount,
+    required this.overdueCount,
+  });
+
+  factory FinanceSummaryModel.fromJson(Map<String, dynamic> json) {
+    return FinanceSummaryModel(
+      totalReceivables: json['total_receivables'] as int? ?? 0,
+      totalOriginalAmount: (json['total_original_amount'] as num?)?.toDouble() ?? 0.0,
+      totalDiscountAmount: (json['total_discount_amount'] as num?)?.toDouble() ?? 0.0,
+      totalPayableAmount: (json['total_payable_amount'] as num?)?.toDouble() ?? 0.0,
+      totalCollectedAmount: (json['total_collected_amount'] as num?)?.toDouble() ?? 0.0,
+      totalOutstandingAmount: (json['total_outstanding_amount'] as num?)?.toDouble() ?? 0.0,
+      unpaidCount: json['unpaid_count'] as int? ?? 0,
+      partiallyPaidCount: json['partially_paid_count'] as int? ?? 0,
+      paidCount: json['paid_count'] as int? ?? 0,
+      overdueCount: json['overdue_count'] as int? ?? 0,
+    );
+  }
+}
+
+// =============================================================================
 // Providers
 // =============================================================================
 final dioProvider = Provider<Dio>((ref) {
@@ -1069,6 +1172,34 @@ final careSchedulesProvider = FutureProvider.autoDispose<List<CareScheduleModel>
   return list.map((item) => CareScheduleModel.fromJson(item as Map<String, dynamic>)).toList();
 });
 
+// Finance Providers (M11)
+final receivablesProvider = FutureProvider.autoDispose<List<ReceivableBriefModel>>((ref) async {
+  final authState = ref.watch(authProvider);
+  if (!authState.isAuthenticated) {
+    return [];
+  }
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get(
+    '/finance/receivables',
+    options: Options(headers: {'Authorization': 'Bearer ${authState.accessToken}'}),
+  );
+  final list = res.data as List<dynamic>;
+  return list.map((item) => ReceivableBriefModel.fromJson(item as Map<String, dynamic>)).toList();
+});
+
+final financeSummaryProvider = FutureProvider.autoDispose<FinanceSummaryModel?>((ref) async {
+  final authState = ref.watch(authProvider);
+  if (!authState.isAuthenticated) {
+    return null;
+  }
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get(
+    '/finance/summary',
+    options: Options(headers: {'Authorization': 'Bearer ${authState.accessToken}'}),
+  );
+  return FinanceSummaryModel.fromJson(res.data as Map<String, dynamic>);
+});
+
 // =============================================================================
 // App & Dashboard
 // =============================================================================
@@ -1126,6 +1257,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   String _constructionSearchQuery = '';
   String _careStatusFilter = 'ALL';
   String _careSearchQuery = '';
+  String _financeStatusFilter = 'ALL';
+  String _financeSearchQuery = '';
 
   @override
   void initState() {
@@ -1441,6 +1574,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           _buildContractsTab(context, authState),
           _buildConstructionTab(context, authState),
           _buildCareTab(context, authState),
+          _buildFinanceTab(context, authState),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -1488,6 +1622,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             icon: Icon(Icons.cleaning_services_outlined),
             activeIcon: Icon(Icons.cleaning_services),
             label: 'Chăm Sóc',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.payments_outlined),
+            activeIcon: Icon(Icons.payments),
+            label: 'Tài Chính',
           ),
         ],
       ),
@@ -4700,6 +4839,561 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         ),
                       );
                     }),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ===========================================================================
+  // Finance Tab (M11)
+  // ===========================================================================
+  Widget _buildFinanceTab(BuildContext context, AuthState authState) {
+    if (!authState.isAuthenticated) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Card(
+            elevation: 1,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.account_balance_wallet_outlined, size: 48, color: Color(0xFF24594D)),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Yêu Cầu Xác Thực Kế Toán / Nhân Viên',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Vui lòng đăng nhập với tài khoản có quyền tài chính (finance:read) để tra cứu công nợ và biên lai.',
+                    style: TextStyle(color: Colors.black54, fontSize: 13),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton.icon(
+                    onPressed: () => _showLoginDialog(context),
+                    icon: const Icon(Icons.login),
+                    label: const Text('Đăng nhập ngay'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF24594D),
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final receivablesAsync = ref.watch(receivablesProvider);
+    final summaryAsync = ref.watch(financeSummaryProvider);
+
+    return receivablesAsync.when(
+      loading: () => const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: Color(0xFF24594D)),
+            SizedBox(height: 12),
+            Text('Đang tải dữ liệu công nợ & thu chi...', style: TextStyle(color: Colors.black54)),
+          ],
+        ),
+      ),
+      error: (err, stack) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Color(0xFFDC2626)),
+              const SizedBox(height: 12),
+              Text(
+                'Lỗi khi tải dữ liệu công nợ: $err',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Color(0xFFDC2626)),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () {
+                  ref.invalidate(receivablesProvider);
+                  ref.invalidate(financeSummaryProvider);
+                },
+                icon: const Icon(Icons.refresh),
+                label: const Text('Thử lại'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF24594D),
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+      data: (items) {
+        final summary = summaryAsync.value;
+        final totalPayable = summary?.totalPayableAmount ?? items.fold<double>(0, (sum, i) => sum + i.finalPayableAmount);
+        final totalPaid = summary?.totalCollectedAmount ?? items.fold<double>(0, (sum, i) => sum + i.paidAmount);
+        final totalRemaining = summary?.totalOutstandingAmount ?? items.fold<double>(0, (sum, i) => sum + i.remainingBalance);
+
+        final filtered = items.where((r) {
+          if (_financeStatusFilter != 'ALL' && r.status != _financeStatusFilter) {
+            return false;
+          }
+          if (_financeSearchQuery.isNotEmpty) {
+            final q = _financeSearchQuery.toLowerCase();
+            final contractMatch = r.contractCode?.toLowerCase().contains(q) ?? false;
+            final annexMatch = r.annexCode?.toLowerCase().contains(q) ?? false;
+            final notesMatch = r.notes?.toLowerCase().contains(q) ?? false;
+            final idMatch = r.receivableId.toString().contains(q);
+            return contractMatch || annexMatch || notesMatch || idMatch;
+          }
+          return true;
+        }).toList();
+
+        return RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(receivablesProvider);
+            ref.invalidate(financeSummaryProvider);
+            await ref.read(receivablesProvider.future);
+          },
+          child: ListView(
+            padding: const EdgeInsets.all(12),
+            children: [
+              // Header Card
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF24594D), Color(0xFF2E6F62)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Sổ Cái Công Nợ & Thu Tiền (M11)',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    SizedBox(height: 4),
+                    Text(
+                      'Ràng buộc XOR nguồn thu (G14), thanh toán lũy kế chống trùng (G15), chiết khấu chuẩn hóa (G16)',
+                      style: TextStyle(color: Colors.white70, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // KPI Cards
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildFinanceKpiCard(
+                      'Tổng Phải Thu',
+                      formatVnd(totalPayable),
+                      Icons.receipt_long,
+                      const Color(0xFF24594D),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: _buildFinanceKpiCard(
+                      'Đã Thu',
+                      formatVnd(totalPaid),
+                      Icons.check_circle_outline,
+                      const Color(0xFF16A34A),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: _buildFinanceKpiCard(
+                      'Còn Nợ Tồn',
+                      formatVnd(totalRemaining),
+                      Icons.warning_amber_rounded,
+                      const Color(0xFFDC2626),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Search Input
+              TextField(
+                decoration: InputDecoration(
+                  hintText: 'Tìm mã HĐ, phụ lục, ghi chú...',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  isDense: true,
+                ),
+                onChanged: (val) {
+                  setState(() {
+                    _financeSearchQuery = val.trim();
+                  });
+                },
+              ),
+              const SizedBox(height: 10),
+
+              // Filter Chips
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildFinanceFilterChip('Tất cả', 'ALL'),
+                    const SizedBox(width: 6),
+                    _buildFinanceFilterChip('Chưa trả', 'UNPAID'),
+                    const SizedBox(width: 6),
+                    _buildFinanceFilterChip('Thu 1 phần', 'PARTIALLY_PAID'),
+                    const SizedBox(width: 6),
+                    _buildFinanceFilterChip('Đã thu xong', 'PAID'),
+                    const SizedBox(width: 6),
+                    _buildFinanceFilterChip('Quá hạn', 'OVERDUE'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              if (filtered.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.payments_outlined, size: 48, color: Colors.black26),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Không tìm thấy khoản công nợ nào',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _financeSearchQuery.isNotEmpty || _financeStatusFilter != 'ALL'
+                              ? 'Thử thay đổi từ khóa hoặc bộ lọc trạng thái.'
+                              : 'Chưa có dữ liệu công nợ được ghi nhận.',
+                          style: const TextStyle(fontSize: 12, color: Colors.black45),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                ...filtered.map((item) => _buildReceivableCard(context, item)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFinanceKpiCard(String title, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.black12),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            title,
+            style: const TextStyle(fontSize: 10, color: Colors.black54),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFinanceFilterChip(String label, String value) {
+    final isSelected = _financeStatusFilter == value;
+    return ChoiceChip(
+      label: Text(label, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : Colors.black87)),
+      selected: isSelected,
+      selectedColor: const Color(0xFF24594D),
+      backgroundColor: Colors.white,
+      side: BorderSide(color: isSelected ? const Color(0xFF24594D) : Colors.black12),
+      onSelected: (selected) {
+        if (selected) {
+          setState(() {
+            _financeStatusFilter = value;
+          });
+        }
+      },
+    );
+  }
+
+  Widget _buildReceivableCard(BuildContext context, ReceivableBriefModel item) {
+    Color statusColor;
+    String statusText;
+    switch (item.status) {
+      case 'PAID':
+        statusColor = const Color(0xFF16A34A);
+        statusText = 'Đã thu xong';
+        break;
+      case 'PARTIALLY_PAID':
+        statusColor = const Color(0xFF2563EB);
+        statusText = 'Thu 1 phần';
+        break;
+      case 'OVERDUE':
+        statusColor = const Color(0xFFDC2626);
+        statusText = 'Quá hạn';
+        break;
+      case 'UNPAID':
+      default:
+        statusColor = const Color(0xFFD97706);
+        statusText = 'Chưa thanh toán';
+        break;
+    }
+
+    final sourceLabel = item.contractCode != null
+        ? 'HĐ: ${item.contractCode}'
+        : 'Phụ lục: ${item.annexCode ?? "#${item.annexId}"}';
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      elevation: 1,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => _showReceivableDetailSheet(context, item),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF24594D).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'Đợt ${item.installmentNo}',
+                            style: const TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF24594D),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            sourceLabel,
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      statusText,
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        color: statusColor,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Phải thu thực tế:', style: TextStyle(fontSize: 11, color: Colors.black54)),
+                      Text(
+                        formatVnd(item.finalPayableAmount),
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      const Text('Còn nợ:', style: TextStyle(fontSize: 11, color: Colors.black54)),
+                      Text(
+                        formatVnd(item.remainingBalance),
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: item.remainingBalance > 0 ? const Color(0xFFDC2626) : const Color(0xFF16A34A),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const Divider(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Hạn TT: ${item.dueDate ?? "Không thời hạn"}',
+                    style: const TextStyle(fontSize: 11, color: Colors.black54),
+                  ),
+                  Text(
+                    '${item.paymentsCount} lượt thu',
+                    style: const TextStyle(fontSize: 11, color: Color(0xFF24594D), fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showReceivableDetailSheet(BuildContext context, ReceivableBriefModel item) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.65,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return SingleChildScrollView(
+              controller: scrollController,
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Khoản Phải Thu #${item.receivableId}',
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF24594D)),
+                            ),
+                            Text(
+                              'Đợt ${item.installmentNo} · Tạo: ${item.createdAt.split("T").first}',
+                              style: const TextStyle(fontSize: 12, color: Colors.black54),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF24594D).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          item.status,
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF24594D)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 24),
+
+                  _buildDetailRow(
+                    'Nguồn Phát Sinh (G14):',
+                    item.contractCode != null
+                        ? 'Hợp đồng ${item.contractCode}'
+                        : 'Phụ lục hợp đồng ${item.annexCode ?? "#${item.annexId}"}',
+                  ),
+                  _buildDetailRow('Số Tiền Niêm Yết:', formatVnd(item.originalAmount)),
+                  _buildDetailRow('Chiết Khấu (G16):', '- ${formatVnd(item.discountAmount)}'),
+                  _buildDetailRow('Phải Thu Thực Tế:', formatVnd(item.finalPayableAmount)),
+                  _buildDetailRow('Đã Thanh Toán:', formatVnd(item.paidAmount)),
+                  _buildDetailRow('Số Dư Còn Nợ:', formatVnd(item.remainingBalance)),
+                  if (item.dueDate != null)
+                    _buildDetailRow('Hạn Thanh Toán:', item.dueDate!),
+                  if (item.notes != null)
+                    _buildDetailRow('Ghi Chú:', item.notes!),
+
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.black12),
+                    ),
+                    child: const Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Quy Tắc Quản Trị Tài Chính (G14, G15, G16)',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF24594D)),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          '• G14: Nguồn thu chỉ thuộc đúng Hợp đồng hoặc Phụ lục (XOR constraint).\n'
+                          '• G15: Phiếu thu là bản ghi chỉ thêm (append-only), chống trùng lặp theo actor và request-key.\n'
+                          '• G16: Chiết khấu được kiểm toán chặt chẽ, không thể vượt quá giá trị còn lại.',
+                          style: TextStyle(fontSize: 11, color: Colors.black54, height: 1.4),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 20),
                 ],
               ),

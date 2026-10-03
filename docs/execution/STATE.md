@@ -8,22 +8,22 @@
 
 ## 1. Trạng thái tổng quan
 
-- **Milestone hiện tại:** Hoàn tất **M10** (Chăm sóc định kỳ & mobile offline, Idempotent Generator G12 & Gate nghiệm thu đóng ca) -> Sẵn sàng khởi động **M11** (Công nợ, thu tiền, chiết khấu & biên lai).
+- **Milestone hiện tại:** Hoàn tất **M11** (Công nợ XOR, thu tiền idempotent, chiết khấu hóa đơn, biên lai PDF) -> Sẵn sàng khởi động **M12** (Báo cáo quản trị, cổng tra cứu thông tin công khai Zero PII & audit logs).
 - **Trạng thái CSDL:**
   - Máy chủ: `DESKTOP-HKIPI1M`
   - CSDL chính: `QL_NghiaTrang`
   - CSDL kiểm thử: `QL_NghiaTrang_Test` (bảo vệ tuyệt đối CSDL chính)
   - Đã backup an toàn: `backend/runtime/backups/sql/QL_NghiaTrang_M02_baseline.bak`
-  - Alembic Head: `0010_g12_care_schedules` (đã áp dụng trên cả DB chính và DB test).
-  - 37 bảng nghiệp vụ + 10 bảng mở rộng: `auth_sessions` (G01), `file_objects` (G02), `document_versions` (G02), `background_jobs` (G17), `outbox_events` (G17), `contract_templates` (G03), `plot_reservations` (G04), `plot_ownerships` (G05), `construction_task_evidences` (G11), `staff_unavailability` (G13) + Mở rộng G12 trên `care_schedules`, `care_checklist_items`, `care_media_evidences` + Sequence `seq_contract_number` (G09) + Sequence `seq_annex_number` (G10/G18/G20).
+  - Alembic Head: `0011_g14_g15_g16_finance` (đã áp dụng trên cả DB chính và DB test).
+  - 37 bảng nghiệp vụ + 11 bảng mở rộng: `auth_sessions` (G01), `file_objects` (G02), `document_versions` (G02), `background_jobs` (G17), `outbox_events` (G17), `contract_templates` (G03), `plot_reservations` (G04), `plot_ownerships` (G05), `construction_task_evidences` (G11), `staff_unavailability` (G13), `idempotency_requests` (G15) + Mở rộng G12 trên `care_schedules` + Mở rộng G14/G16 trên `receivables`, `discount_records`, `invoices` + Sequence `seq_contract_number` (G09) + Sequence `seq_annex_number` (G10/G18/G20) + Sequence `seq_payment_number` (G15).
   - Kết nối native qua pyodbc và `ODBC Driver 18 for SQL Server` hoạt động 100%.
 - **Hạ tầng lưu trữ:**
   - MinIO Docker Container (`elestio/minio:latest`) đang chạy trên máy.
   - Bind mount trực tiếp vào `D:\work\TH-PTTK\QL-NghiaTrang\backend\runtime\minio\data` trên ổ D.
 - **Bộ công cụ & Chất lượng mã nguồn:**
-  - Backend: Python 3.12 (`uv`). 66 tests passed (7 care + 7 construction + 7 lifecycle + 6 contracts + 7 profiles + 6 plots + 6 auth + 6 catalog + 6 documents + 2 jobs + 2 triggers + 4 health/storage), ruff check/format clean.
-  - Web: React 19 + TypeScript + Vite (`pnpm`). Build thành công trong 259ms, 0 lint errors.
-  - Mobile: Flutter 3.41.6 / Dart 3.11.4 Android. Analyze 0 issues, 12/12 tests passed.
+  - Backend: Python 3.12 (`uv`). 73 tests passed (7 finance + 7 care + 7 construction + 7 lifecycle + 6 contracts + 7 profiles + 6 plots + 6 auth + 6 catalog + 6 documents + 2 jobs + 2 triggers + 4 health/storage), ruff check/format clean.
+  - Web: React 19 + TypeScript + Vite (`pnpm`). Build thành công trong 305ms, 0 lint errors.
+  - Mobile: Flutter 3.41.6 / Dart 3.11.4 Android. Analyze 0 issues, 14/14 tests passed.
   - Tiêu chuẩn Quality Gate (`scripts/quality-gate.ps1`) đạt 100% trên cả 3 phân hệ.
 
 ---
@@ -43,7 +43,7 @@
 | **M08** | An táng, Kim Tĩnh, cải táng, chuyển nhượng | **ĐẠT (Done)** | `v0.9.0-domain-lifecycle` | G10/G18/G20, khóa Kim Tĩnh bất biến (Trigger 51000/51001), phụ lục an táng, kiểm tra giấy báo tử G08, cải táng giải phóng slot, chuyển nhượng quyền sở hữu G05, HĐ hỏa táng độc lập G18. |
 | **M09** | Quản lý thi công thực địa | **ĐẠT (Done)** | `v0.10.0-construction` | G11/G13, checklist công trình, bằng chứng ảnh MinIO READY, phân công thợ kiểm tra xung đột lịch nghỉ, nghiệm thu an toàn không đổi trạng thái an táng. |
 | **M10** | Chăm sóc định kỳ & mobile offline | **ĐẠT (Done)** | `v0.11.0-care` | G12, sinh lịch định kỳ idempotent, neo ngày cuối tháng, Quản trang checklist, minh chứng ảnh MinIO, đóng ca G12 gate. |
-| **M11** | Công nợ, thu tiền, chiết khấu, biên lai | Chưa bắt đầu | `v0.12.0-finance` | G14-G16, Idempotency payment, tính nợ trigger-aware, biên lai PDF. |
+| **M11** | Công nợ, thu tiền, chiết khấu, biên lai | **ĐẠT (Done)** | `v0.12.0-finance` | G14-G16, ràng buộc XOR nguồn thu, Idempotency payment chống trùng, chiết khấu chuẩn hóa, xuất biên lai PDF tiếng Việt UTF-8 MinIO. |
 | **M12** | Báo cáo, tra cứu công khai & audit | Chưa bắt đầu | `v0.13.0-feature-complete` | 4 báo cáo thống kê, cổng tra cứu không lộ PII, audit log viewer. |
 | **M13** | Kiểm thử hệ thống, UX & khôi phục | Chưa bắt đầu | `v1.0.0-rc.1` | Regression toàn diện, test tải, backup/restore CSDL + S3 đối soát. |
 | **M14** | Bàn giao và phát hành | Chưa bắt đầu | `v1.0.0` | Scripts vận hành, tài liệu bàn giao, APK thử nghiệm, release manifest. |
@@ -478,6 +478,73 @@
 - **Web:** `pnpm lint` 0 errors, `pnpm build` hoàn tất sạch sẽ trong 259ms.
 - **Mobile:** `flutter analyze` 0 issues, `flutter test` đạt **12/12 tests passed**.
 - Bộ kiểm tra chất lượng tự động `scripts/quality-gate.ps1` ĐẠT 100%.
+
+---
+
+## 12. Bằng chứng nghiệm thu Milestone M11 (Kế Toán Công Nợ, Thu Tiền, Chiết Khấu & Biên Lai)
+
+### 12.1. CSDL & Migration (G14, G15, G16)
+- Migration: `0011_g14_g15_g16_finance_receivables.py`
+  - Đã apply thành công trên cả 2 CSDL: `QL_NghiaTrang` và `QL_NghiaTrang_Test`.
+  - Điều chỉnh dữ liệu di sản (reconciliation): `UPDATE receivables SET contract_id = NULL WHERE annex_id IS NOT NULL AND contract_id IS NOT NULL` để giải tỏa xung đột dữ liệu cũ.
+  - Thay thế ràng buộc OR cũ bằng ràng buộc XOR chuẩn hóa (G14) `ck_receivable_source_xor` trên bảng `receivables`:
+    `CONSTRAINT ck_receivable_source_xor CHECK ((contract_id IS NOT NULL AND annex_id IS NULL) OR (contract_id IS NULL AND annex_id IS NOT NULL))`.
+  - Bổ sung ràng buộc số học trên `receivables`:
+    - `ck_receivable_discount_le_original`: `discount_amount <= original_amount`.
+    - `ck_receivable_final_calc`: `final_payable_amount = (original_amount - discount_amount)`.
+  - Bổ sung các cột: `notes`, `created_by_user_id`, `installment_no` vào `receivables`.
+  - Tạo các chỉ mục duy nhất có điều kiện (filtered unique indices):
+    - `uq_receivable_contract_installment` trên `(contract_id, installment_no)` WHERE `contract_id IS NOT NULL`.
+    - `uq_receivable_annex_installment` trên `(annex_id, installment_no)` WHERE `annex_id IS NOT NULL`.
+  - Điều chỉnh cột `discount_records.discount_value` sang `DECIMAL(15,2)` và thêm ràng buộc khoảng giá trị `ck_disc_value_range` (G16).
+  - Tạo bảng `idempotency_requests` (G15) với index duy nhất `uq_idempotency_actor_op_key` trên `(user_id, operation_type, idempotency_key)`.
+  - Bổ sung `file_id`, `notes`, `created_by_user_id` vào `invoices`.
+  - Tạo Sequence `seq_payment_number` sinh mã phiếu thu `PT-YYYYMM-NNNN`.
+
+### 12.2. Quy Tắc Miền Nghiệp Vụ & Server-side Invariants
+- **Ràng buộc XOR nguồn công nợ (G14 Source Invariant):** Khoản phải thu chỉ thuộc về Hợp đồng chính (khi mua đất) hoặc Phụ lục (khi xây dựng, an táng, chăm sóc). Không thể cùng lúc vừa gắn hợp đồng vừa gắn phụ lục.
+- **Thanh toán lũy kế chống trùng (G15 Idempotent Payment Invariant):**
+  - Mọi request thu tiền gửi kèm `Idempotency-Key` (header hoặc body).
+  - Nếu request trùng lặp được gửi đến, hệ thống trả về kết quả đã thực hiện trước đó (HTTP 200) thay vì ném lỗi hoặc ghi nhận trùng tiền.
+  - Sử dụng khóa dòng `with_for_update` trên MSSQL để bảo vệ số dư nợ còn lại trong môi trường chịu tải cao.
+  - Kiểm tra điều kiện: `amount <= remaining_balance` (chặn vượt quá số nợ với lỗi `400 Bad Request`).
+  - Trigger `trg_payments_sync_receivable_balance` trên SQL Server tự động cập nhật `paid_amount` và trạng thái `PAID` / `PARTIALLY_PAID`.
+- **Quản trị chiết khấu chuẩn hóa (G16 Discount Invariant):**
+  - Hỗ trợ chiết khấu theo tỷ lệ phần trăm (`PERCENTAGE`) hoặc số tiền cố định (`FIXED_AMOUNT`).
+  - Chặn chiết khấu vượt giá trị niêm yết ban đầu.
+  - Chặn chiết khấu làm số dư nợ âm sau khi khách hàng đã thanh toán một phần (`final_payable_amount < paid_amount`).
+  - Đảm bảo tính nhất quán số học: `final_payable_amount = original_amount - discount_amount`.
+- **Tự động xuất biên lai PDF chuẩn tiếng Việt UTF-8:**
+  - Tích hợp hàm chuyển đổi số tiền thành chữ tiếng Việt (`number_to_vietnamese_words`) có unit test độc lập.
+  - Xuất file PDF biên lai thu tiền với font Arial Unicode tiếng Việt, bảng chi tiết công nợ, số tiền bằng số và bằng chữ, mã QR VietQR và chữ ký điện tử.
+  - Tải biên lai PDF lên MinIO, băm mã SHA-256, chuyển trạng thái `READY` và liên kết với hóa đơn `invoices`.
+  - Phát sinh Outbox event `PAYMENT_RECORDED` và ghi nhật ký kiểm toán `AuditLog`.
+
+### 12.3. Giao Diện Web (React 19 + TypeScript)
+- Phân hệ **"Kế Toán & Công Nợ"** (`FinanceModule.tsx`):
+  - Tích hợp trực tiếp vào thanh điều hướng chính `activeTab === 'finance'`.
+  - 4 thẻ KPI tài chính thống kê thời gian thực: Tổng phải thu, Đã thu thực tế, Còn nợ tồn đọng, Tổng chiết khấu.
+  - Bộ lọc công nợ theo trạng thái (`UNPAID`, `PARTIALLY_PAID`, `PAID`, `OVERDUE`) và ô tìm kiếm tức thời theo mã HĐ, phụ lục, ghi chú.
+  - Modal ghi nhận thu tiền (Payment Modal): nhập số tiền, phương thức (Tiền mặt, Chuyển khoản, Thẻ), hỗ trợ nút thanh toán toàn bộ (Auto-fill remaining balance), tự động tải biên lai PDF sau khi thanh toán thành công.
+  - Modal áp dụng chiết khấu (Discount Modal): chọn loại tỷ lệ % hoặc số tiền cố định, live preview số tiền giảm và số dư sau chiết khấu.
+  - Drawer chi tiết công nợ: xem lịch sử các lượt thu tiền kèm nút tải biên lai PDF, lịch sử chiết khấu, thông tin nguồn phát sinh (G14 XOR) và số tiền bằng chữ.
+  - Xử lý trọn vẹn 4 trạng thái giao diện: `Loading`, `Normal`, `Empty Data`, `Error` (kèm nút Thử lại).
+
+### 12.4. Ứng Dụng Di Động (Flutter Android)
+- Tích hợp phân hệ **"Tài Chính"** (`mobile/lib/main.dart`):
+  - Tab thứ 8 trên BottomNavigationBar với biểu tượng `Icons.payments`.
+  - 3 thẻ KPI tóm tắt: Tổng phải thu, Đã thu, Còn nợ tồn.
+  - Thanh tìm kiếm và bộ lọc trạng thái công nợ.
+  - Danh sách khoản phải thu: hiển thị nguồn HĐ/phụ lục, đợt thu, số tiền phải thu, còn nợ và số lượt thu.
+  - Bottom sheet chi tiết công nợ: bảng kê chi tiết số tiền gốc, chiết khấu, phải thu, đã thu, số dư nợ, ghi chú và các nguyên tắc quản trị tài chính (G14, G15, G16).
+  - Bộ kiểm thử widget (`mobile/test/widget_test.dart`) bổ sung 2 test cases mới cho phân hệ tài chính, nâng tổng số test lên **14/14 tests passed 100%**.
+
+### 12.5. Kiểm Thử & Tiêu Chuẩn Quality Gate
+- **Backend:** `uv run pytest` đạt **73/73 bài kiểm thử** (100% passed, bao gồm 7 test cases chuyên sâu trong `test_finance.py`). `uv run ruff check .` và `uv run ruff format --check .` All checks passed!
+- **Web:** `pnpm lint` 0 errors, `pnpm build` hoàn tất sạch sẽ trong 305ms.
+- **Mobile:** `flutter analyze` 0 issues, `flutter test` đạt **14/14 tests passed**.
+- Tiêu chuẩn Quality Gate `scripts/quality-gate.ps1` ĐẠT 100%.
+
 
 
 

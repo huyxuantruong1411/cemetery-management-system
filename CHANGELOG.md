@@ -4,6 +4,60 @@ Tất cả những thay đổi quan trọng trong hệ thống Quản lý Nghĩa
 
 ---
 
+## [0.12.0-finance] - 2026-10-04 (M11)
+
+### Added
+- **CSDL & Alembic Migration (G14, G15, G16):**
+  - Migration `0011_g14_g15_g16_finance_receivables.py`:
+    - Reconciliation dữ liệu cũ: cập nhật `contract_id = NULL` khi `annex_id IS NOT NULL`.
+    - Thay thế ràng buộc OR cũ bằng ràng buộc XOR chuẩn hóa (G14) `ck_receivable_source_xor` trên `receivables`:
+      `CHECK ((contract_id IS NOT NULL AND annex_id IS NULL) OR (contract_id IS NULL AND annex_id IS NOT NULL))`.
+    - Bổ sung ràng buộc số học `discount_amount <= original_amount` và `final_payable_amount = original_amount - discount_amount`.
+    - Thêm các cột: `notes`, `created_by_user_id`, `installment_no` vào `receivables`.
+    - Tạo các filtered unique index: `uq_receivable_contract_installment` và `uq_receivable_annex_installment`.
+    - Điều chỉnh kiểu dữ liệu `discount_records.discount_value` sang `DECIMAL(15,2)` kèm ràng buộc khoảng giá trị `ck_disc_value_range` (G16).
+    - Tạo bảng `idempotency_requests` (G15) với unique index `uq_idempotency_actor_op_key`.
+    - Mở rộng bảng `invoices` với `file_id`, `notes`, `created_by_user_id`.
+    - Tạo Database Sequence `seq_payment_number` sinh mã phiếu thu `PT-YYYYMM-NNNN`.
+- **Nghiệp Vụ Backend & Ràng Buộc Miền (Finance Service & Invariants):**
+  - **Ràng buộc XOR nguồn công nợ (G14):** Khoản phải thu chỉ thuộc về Hợp đồng chính hoặc Phụ lục, ngăn chặn dữ liệu mâu thuẫn.
+  - **Thu tiền lũy kế chống trùng lặp (G15 Idempotent Payment):**
+    - Kiểm soát qua cặp khóa `(user_id, operation_type, idempotency_key)`, tự động trả về kết quả trước đó nếu gửi trùng request.
+    - Khóa dòng `with_for_update` trên MSSQL để bảo vệ số dư nợ trong môi trường đồng thời.
+    - Chặn thu vượt quá số dư nợ còn lại (`amount <= remaining_balance`).
+    - Hỗ trợ trigger CSDL `trg_payments_sync_receivable_balance` tự động cập nhật số tiền đã thu và trạng thái `PAID` / `PARTIALLY_PAID`.
+  - **Quản trị chiết khấu chuẩn hóa (G16):**
+    - Hỗ trợ loại chiết khấu theo tỷ lệ `%` hoặc số tiền cố định.
+    - Chặn chiết khấu vượt giá trị ban đầu hoặc làm số dư nợ âm sau khi khách hàng đã thanh toán một phần.
+  - **Tự động xuất biên lai PDF chuẩn tiếng Việt UTF-8:**
+    - Chuyển đổi số tiền thành chữ tiếng Việt (`number_to_vietnamese_words`).
+    - Tạo tệp PDF biên lai thu tiền với font Arial Unicode tiếng Việt, bảng chi tiết công nợ, mã QR VietQR.
+    - Lưu trữ MinIO có mã kiểm tra SHA-256, liên kết bảng `invoices`.
+    - Phát sinh Outbox event `PAYMENT_RECORDED` và ghi nhật ký kiểm toán `AuditLog`.
+  - **7 REST API Endpoints:** Hỗ trợ tra cứu công nợ, thống kê KPI, chi tiết khoản thu, ghi nhận thanh toán idempotent, áp dụng chiết khấu và tải file PDF biên lai.
+- **Web Frontend (React 19 + TypeScript):**
+  - Tạo mới module `FinanceModule.tsx`:
+    - Tab "Tài Chính" tích hợp trên thanh điều hướng, phân quyền `finance:read`.
+    - 4 thẻ KPI tài chính thống kê thời gian thực: Tổng phải thu, Đã thu, Còn nợ tồn, Tổng chiết khấu.
+    - Bộ lọc trạng thái công nợ (`UNPAID`, `PARTIALLY_PAID`, `PAID`, `OVERDUE`) và tìm kiếm tức thời theo mã HĐ, phụ lục, ghi chú.
+    - Modal ghi nhận thu tiền (Payment Modal) kèm tính năng tự động tải biên lai PDF sau khi thanh toán.
+    - Modal áp dụng chiết khấu (Discount Modal) với tính năng live preview số dư sau giảm giá.
+    - Drawer chi tiết công nợ hiển thị lịch sử thanh toán, chiết khấu, nguồn phát sinh (G14 XOR) và số tiền bằng chữ.
+    - Xử lý đủ 4 trạng thái giao diện: `Loading`, `Normal`, `Empty Data`, `Error`.
+- **Mobile App (Flutter Android):**
+  - Tích hợp tab thứ 8 "Tài Chính" (`Icons.payments`) trên BottomNavigationBar.
+  - 3 thẻ KPI tóm tắt tài chính và danh sách khoản phải thu kèm mã nguồn HĐ/phụ lục, tiến độ thu tiền.
+  - Bottom sheet chi tiết công nợ: bảng kê chi tiết số tiền gốc, chiết khấu, phải thu, đã thu, số dư nợ, ghi chú và các nguyên tắc quản trị tài chính (G14, G15, G16).
+  - Bổ sung 2 test cases mới trong `widget_test.dart` (nâng tổng số lên 14/14 passed 100%).
+- **Kiểm Thử & Đảm Bảo Chất Lượng:**
+  - 73 backend tests (`uv run pytest`) passed 100% (7 test cases mới trong `test_finance.py`).
+  - `uv run ruff check .` và `uv run ruff format --check .` All checks passed!
+  - Web `pnpm lint` 0 errors, `pnpm build` passed trong 305ms.
+  - Mobile `flutter analyze` 0 issues, `flutter test` (14/14 passed).
+  - Tiêu chuẩn Quality Gate `scripts/quality-gate.ps1` ĐẠT 100%.
+
+---
+
 ## [0.11.0-care] - 2026-10-04 (M10)
 
 ### Added

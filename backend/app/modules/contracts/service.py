@@ -1405,21 +1405,27 @@ class ContractService:
         annex_id: Optional[int] = None,
         amount: Optional[Decimal] = None,
     ) -> Receivable:
-        existing = (
-            db.query(Receivable)
-            .filter(
-                Receivable.contract_id == contract.contract_id,
-                Receivable.annex_id == annex_id,
+        if annex_id is not None:
+            existing = db.query(Receivable).filter(Receivable.annex_id == annex_id).first()
+            cid = None
+        else:
+            existing = (
+                db.query(Receivable)
+                .filter(
+                    Receivable.contract_id == contract.contract_id,
+                    Receivable.annex_id.is_(None),
+                )
+                .first()
             )
-            .first()
-        )
+            cid = contract.contract_id
+
         if existing:
             return existing
 
         total = amount if amount is not None else contract.total_amount
         due_date = signed_date + timedelta(days=30)
         rec = Receivable(
-            contract_id=contract.contract_id,
+            contract_id=cid,
             annex_id=annex_id,
             customer_id=contract.customer_id,
             original_amount=total,

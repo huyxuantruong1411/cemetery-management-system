@@ -780,6 +780,125 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Lau chùi bia đá và thắp hương'), findsOneWidget);
   });
+
+  testWidgets('CemeteryMobileApp finance tab unauthenticated prompt test', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          readinessProvider.overrideWith((ref) async => SystemReadiness(
+                status: 'ready',
+                database: 'Database connected',
+                storage: 'Storage connected',
+                timestamp: '2026-10-03T12:00:00Z',
+              )),
+          versionProvider.overrideWith((ref) async => SystemVersion(
+                appName: 'Hệ thống Quản lý Nghĩa trang',
+                version: '0.12.0',
+                environment: 'test',
+              )),
+        ],
+        child: const CemeteryMobileApp(),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Tap the Tài Chính tab
+    await tester.tap(find.text('Tài Chính'));
+    await tester.pumpAndSettle();
+
+    // Verify unauthenticated prompt
+    expect(find.text('Yêu Cầu Xác Thực Kế Toán / Nhân Viên'), findsOneWidget);
+    expect(find.text('Đăng nhập ngay'), findsOneWidget);
+  });
+
+  testWidgets('CemeteryMobileApp finance tab authenticated renders data test', (WidgetTester tester) async {
+    final fakeUser = UserModel(
+      userId: 5,
+      username: 'accountant',
+      fullName: 'Trần Thị Thu Ngân',
+      email: 'accountant@nghiatrang.vn',
+      roles: ['ACCOUNTANT'],
+      permissions: ['finance:read', 'finance:write'],
+    );
+
+    final fakeReceivable = ReceivableBriefModel(
+      receivableId: 201,
+      contractId: 10,
+      contractCode: 'HD-2026-001',
+      annexId: null,
+      annexCode: null,
+      installmentNo: 1,
+      originalAmount: 50000000.0,
+      discountAmount: 2000000.0,
+      finalPayableAmount: 48000000.0,
+      paidAmount: 20000000.0,
+      remainingBalance: 28000000.0,
+      status: 'PARTIALLY_PAID',
+      dueDate: '2026-11-01',
+      createdAt: '2026-10-04T00:00:00Z',
+      paymentsCount: 1,
+      notes: 'Thanh toán đợt 1',
+    );
+
+    final fakeSummary = FinanceSummaryModel(
+      totalReceivables: 1,
+      totalOriginalAmount: 50000000.0,
+      totalDiscountAmount: 2000000.0,
+      totalPayableAmount: 48000000.0,
+      totalCollectedAmount: 20000000.0,
+      totalOutstandingAmount: 28000000.0,
+      unpaidCount: 0,
+      partiallyPaidCount: 1,
+      paidCount: 0,
+      overdueCount: 0,
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          readinessProvider.overrideWith((ref) async => SystemReadiness(
+                status: 'ready',
+                database: 'Database connected',
+                storage: 'Storage connected',
+                timestamp: '2026-10-03T12:00:00Z',
+              )),
+          versionProvider.overrideWith((ref) async => SystemVersion(
+                appName: 'Hệ thống Quản lý Nghĩa trang',
+                version: '0.12.0',
+                environment: 'test',
+              )),
+          authProvider.overrideWith(() => _FakeAuthNotifier(fakeUser)),
+          receivablesProvider.overrideWith((ref) async => [fakeReceivable]),
+          financeSummaryProvider.overrideWith((ref) async => fakeSummary),
+        ],
+        child: const CemeteryMobileApp(),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Tap the Tài Chính tab
+    await tester.tap(find.text('Tài Chính'));
+    await tester.pumpAndSettle();
+
+    // Verify header and card
+    expect(find.text('Sổ Cái Công Nợ & Thu Tiền (M11)'), findsOneWidget);
+    expect(find.text('HĐ: HD-2026-001'), findsOneWidget);
+    expect(find.text('Đợt 1'), findsOneWidget);
+    expect(find.text('Thu 1 phần'), findsWidgets);
+    expect(find.text('48.000.000 đ'), findsWidgets);
+    expect(find.text('28.000.000 đ'), findsWidgets);
+    expect(find.text('1 lượt thu'), findsOneWidget);
+
+    // Tap receivable card to open details sheet
+    await tester.tap(find.text('HĐ: HD-2026-001'));
+    await tester.pumpAndSettle();
+
+    // Verify detail sheet content
+    expect(find.text('Khoản Phải Thu #201'), findsOneWidget);
+    expect(find.text('Quy Tắc Quản Trị Tài Chính (G14, G15, G16)'), findsOneWidget);
+  });
 }
 
 class _FakeAuthNotifier extends AuthNotifier {

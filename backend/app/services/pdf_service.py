@@ -216,3 +216,178 @@ class PDFService:
 
         doc.build(elements)
         return buffer.getvalue()
+
+    @classmethod
+    def generate_receipt_pdf(
+        cls,
+        invoice_number: str,
+        customer_name: str,
+        customer_phone: str,
+        customer_address: str,
+        reason_content: str,
+        source_code: str,
+        paid_amount_str: str,
+        total_amount_in_words: str,
+        payment_method_str: str,
+        transaction_reference: str | None,
+        recorder_name: str,
+        issued_date: datetime,
+    ) -> bytes:
+        """Generate a dignified, professional Vietnamese payment receipt PDF."""
+        regular_font, bold_font = _setup_fonts()
+        buffer = io.BytesIO()
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=A4,
+            rightMargin=40,
+            leftMargin=40,
+            topMargin=40,
+            bottomMargin=40,
+        )
+
+        styles = getSampleStyleSheet()
+
+        title_style = ParagraphStyle(
+            "ReceiptTitle",
+            parent=styles["Normal"],
+            fontName=bold_font,
+            fontSize=16,
+            leading=20,
+            alignment=1,  # Center
+            textColor=colors.HexColor("#24594D"),
+        )
+
+        subtitle_style = ParagraphStyle(
+            "ReceiptSubtitle",
+            parent=styles["Normal"],
+            fontName=regular_font,
+            fontSize=10,
+            leading=14,
+            alignment=1,
+            textColor=colors.HexColor("#475569"),
+        )
+
+        label_style = ParagraphStyle(
+            "ReceiptLabel",
+            parent=styles["Normal"],
+            fontName=bold_font,
+            fontSize=10,
+            leading=14,
+            textColor=colors.HexColor("#1E293B"),
+        )
+
+        value_style = ParagraphStyle(
+            "ReceiptValue",
+            parent=styles["Normal"],
+            fontName=regular_font,
+            fontSize=10,
+            leading=14,
+            textColor=colors.HexColor("#334155"),
+        )
+
+        highlight_style = ParagraphStyle(
+            "ReceiptHighlight",
+            parent=styles["Normal"],
+            fontName=bold_font,
+            fontSize=12,
+            leading=16,
+            textColor=colors.HexColor("#24594D"),
+        )
+
+        elements = []
+
+        # 1. Header
+        elements.append(Paragraph("HỆ THỐNG QUẢN LÝ NGHĨA TRANG TƯ NHÂN", subtitle_style))
+        elements.append(Paragraph("BAN QUẢN LÝ CÔNG VIÊN NGHĨA TRANG", subtitle_style))
+        elements.append(Spacer(1, 10))
+        elements.append(Paragraph("BIÊN LAI THU TIỀN", title_style))
+        elements.append(
+            Paragraph(
+                f"Mã biên lai: <b>{invoice_number}</b> &nbsp;|&nbsp; Ngày lập: {issued_date.strftime('%d/%m/%Y %H:%M')}",
+                subtitle_style,
+            )
+        )
+        elements.append(Spacer(1, 16))
+
+        # 2. Receipt Details Table
+        receipt_data = [
+            [
+                Paragraph("Họ và tên người nộp:", label_style),
+                Paragraph(f"<b>{customer_name}</b>", value_style),
+            ],
+            [
+                Paragraph("Số điện thoại:", label_style),
+                Paragraph(customer_phone or "Chưa cung cấp", value_style),
+            ],
+            [
+                Paragraph("Địa chỉ:", label_style),
+                Paragraph(customer_address or "Chưa cung cấp", value_style),
+            ],
+            [
+                Paragraph("Lý do nộp tiền:", label_style),
+                Paragraph(f"{reason_content} (Mã căn cứ: <b>{source_code}</b>)", value_style),
+            ],
+            [
+                Paragraph("Số tiền thanh toán:", label_style),
+                Paragraph(f"<b>{paid_amount_str}</b>", highlight_style),
+            ],
+            [
+                Paragraph("Viết bằng chữ:", label_style),
+                Paragraph(f"<i>{total_amount_in_words}</i>", value_style),
+            ],
+            [
+                Paragraph("Hình thức thanh toán:", label_style),
+                Paragraph(payment_method_str, value_style),
+            ],
+            [
+                Paragraph("Mã tham chiếu / Giao dịch:", label_style),
+                Paragraph(transaction_reference or "Thu trực tiếp / Tiền mặt", value_style),
+            ],
+            [
+                Paragraph("Nhân viên thu tiền:", label_style),
+                Paragraph(recorder_name, value_style),
+            ],
+        ]
+
+        t_receipt = Table(receipt_data, colWidths=[160, 350])
+        t_receipt.setStyle(
+            TableStyle(
+                [
+                    ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                    ("TOPPADDING", (0, 0), (-1, -1), 6),
+                    ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
+                    ("LINEBELOW", (0, 0), (-1, -2), 0.5, colors.HexColor("#E2E8F0")),
+                    ("BOX", (0, 0), (-1, -1), 1, colors.HexColor("#CBD5E1")),
+                    ("BACKGROUND", (0, 0), (0, -1), colors.HexColor("#F8FAFC")),
+                ]
+            )
+        )
+        elements.append(t_receipt)
+        elements.append(Spacer(1, 24))
+
+        # 3. Signature block
+        elements.append(
+            Paragraph(
+                f"Ngày {issued_date.day:02d} tháng {issued_date.month:02d} năm {issued_date.year}",
+                ParagraphStyle("DateStyle", parent=subtitle_style, alignment=2),
+            )
+        )
+        elements.append(Spacer(1, 10))
+
+        sig_data = [
+            [
+                Paragraph("<b>NGƯỜI NỘP TIỀN</b><br/>(Ký và ghi rõ họ tên)", subtitle_style),
+                Paragraph(
+                    "<b>NGƯỜI THU TIỀN / THỦ QUỸ</b><br/>(Ký và ghi rõ họ tên)", subtitle_style
+                ),
+            ],
+            [
+                Paragraph("<br/><br/><br/><br/>", value_style),
+                Paragraph(f"<br/><br/><br/><b>{recorder_name}</b>", subtitle_style),
+            ],
+        ]
+        t_sig = Table(sig_data, colWidths=[255, 255])
+        elements.append(t_sig)
+
+        doc.build(elements)
+        return buffer.getvalue()

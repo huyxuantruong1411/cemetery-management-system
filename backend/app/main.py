@@ -13,6 +13,7 @@ from app.modules.catalog.router import router as catalog_router
 from app.modules.construction.router import router as construction_router
 from app.modules.contracts.router import router as contracts_router
 from app.modules.documents.router import router as documents_router
+from app.modules.finance.router import router as finance_router
 from app.modules.jobs.router import router as jobs_router
 from app.modules.plots.router import router as plots_router
 from app.modules.profiles.router import router as profiles_router
@@ -44,6 +45,7 @@ app.include_router(profiles_router, prefix=settings.API_V1_PREFIX)
 app.include_router(contracts_router, prefix=settings.API_V1_PREFIX)
 app.include_router(construction_router, prefix=settings.API_V1_PREFIX)
 app.include_router(care_router, prefix=settings.API_V1_PREFIX)
+app.include_router(finance_router, prefix=settings.API_V1_PREFIX)
 app.include_router(documents_router, prefix=settings.API_V1_PREFIX)
 app.include_router(jobs_router, prefix=settings.API_V1_PREFIX)
 

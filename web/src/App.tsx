@@ -25,6 +25,7 @@ import { CareModule } from './components/care/CareModule'
 import { ConstructionModule } from './components/construction/ConstructionModule'
 import { ContractModule } from './components/contracts/ContractModule'
 import { DocumentManager } from './components/documents/DocumentManager'
+import { FinanceModule } from './components/finance/FinanceModule'
 import { PlotMapModule } from './components/plots/PlotMapModule'
 import { ProfileModule } from './components/profiles/ProfileModule'
 import { AuthProvider } from './context/AuthContext'
@@ -739,15 +740,8 @@ function MainApp() {
         {/* Tab Catalog: M04 */}
         {activeTab === 'catalog' && <CatalogModule />}
 
-        {/* Tab 4: Finance placeholder */}
-        {activeTab === 'finance' && (
-          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', padding: '32px', border: '1px solid #E2E8F0' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-main)' }}>Quản Lý Công Nợ & Thu Tiền</h3>
-            <p style={{ fontSize: '14px', color: '#64748B' }}>
-              Quyền hạn của bạn cho phép ghi nhận thanh toán, áp dụng chiết khấu và theo dõi số dư công nợ (Milestone M11).
-            </p>
-          </div>
-        )}
+        {/* Tab 4: Finance M11 */}
+        {activeTab === 'finance' && <FinanceModule />}
 
         {/* Tab Construction: M09 */}
         {activeTab === 'construction' && <ConstructionModule />}
