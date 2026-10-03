@@ -8,6 +8,9 @@ Desktop.ini
 .env.local
 .env.*.local
 !.env.example
+note.txt
+*.note.txt
+notes/
 
 # Python & Backend
 __pycache__/
