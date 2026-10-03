@@ -2,8 +2,6 @@
 
 Phần mềm hoạch định, quản lý nghiệp vụ và vận hành nghĩa trang tư nhân toàn diện, đáp ứng tiêu chuẩn nghiêm ngặt về quản trị không gian địa lý, vòng đời mộ phần, an táng tâm linh, thi công thực địa và kế toán công nợ.
 
-Repository: [https://github.com/huyxuantruong1411/cemetery-management-system.git](https://github.com/huyxuantruong1411/cemetery-management-system.git)
-
 ---
 
 ## 1. Giới thiệu tổng quan
@@ -94,6 +92,7 @@ Hệ thống được thiết kế với các chốt chặn mức Server và CSD
 | **G08 - Kiểm Soát Giấy Báo Tử** | Tuyệt đối không cho phép tạo phụ lục an táng hoặc hợp đồng hỏa táng khi chưa có giấy báo tử đã được duyệt. | Hàm `check_death_certificate_verified` kiểm tra trạng thái `VERIFIED` kèm file scan MinIO. Nếu chưa duyệt, trả về lỗi 400. |
 | **G09 - Chống Trùng Giữ Chỗ** | Ngăn chặn hành vi hai nhân viên kinh doanh cùng bán hoặc giữ chỗ một ô mộ cùng thời điểm. | Sử dụng khóa dòng SQLAlchemy `with_for_update` kết hợp khóa phụ lục `active_contract_id`. |
 | **G11 - Nghiệm Thu Thi Công** | Mọi hạng mục bắt buộc (`is_required`) trong công trình phải có ảnh hiện trường ở trạng thái `READY` trước khi chuyển sang `DONE`. Tiến độ bị chặn ở mức 99% nếu còn hạng mục bắt buộc chưa hoàn thành. | Kiểm tra bảng `construction_task_evidences` liên kết `file_objects.state == 'READY'`. |
+| **G12 - Nghiệm Thu Đóng Ca Chăm Sóc** | Chặn nghiệm thu đóng ca chăm sóc (`CLOSED`) nếu còn bất kỳ công việc bắt buộc (`is_required`) nào chưa hoàn tất hoặc thiếu ảnh hiện trường minh chứng ở trạng thái `READY`. | Kiểm tra toàn bộ checklist items và liên kết ảnh `file_objects.state == 'READY'` trước khi chuyển trạng thái lịch sang `CLOSED`. |
 | **Bảo Toàn Trạng Thái An Táng** | Nghiệm thu và hoàn tất thi công KHÔNG BAO GIỜ tự ý đổi trạng thái ô mộ hoặc slot sang `OCCUPIED`. | Ô mộ `UNDER_CONSTRUCTION` chỉ hoàn trả về `OWNED_EMPTY` (chưa có người mất) hoặc `OCCUPIED` (nếu đã có người an táng từ trước). |
 | **G13 - Tránh Xung Đột Lịch** | Phân công thợ thi công hoặc lập kế hoạch hiện trường phải kiểm tra lịch vắng mặt/nghỉ phép. | Bảng `staff_unavailability` phát hiện và trả về cảnh báo xung đột lịch làm việc. |
 | **Chính Xác Tiền Tệ** | Cấm sử dụng kiểu số thực (Float) trong tính toán tài chính. | Toàn bộ tiền tệ dùng `DECIMAL(15,2)` trong SQL và `Decimal` (`ROUND_HALF_UP`) trong Python. |
@@ -166,6 +165,47 @@ sequenceDiagram
     API->>DB: Đổi order.status = 'COMPLETED', plot hoàn trả OWNED_EMPTY / OCCUPIED
     API->>DB: Ghi OutboxEvent & AuditLog
     API-->>App: Nghiệm thu thành công, công trình bàn giao
+```
+
+### 4.3. Luồng chăm sóc định kỳ và nghiệm thu đóng ca G12 (M10)
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor NV as Quản Trang Hiện Trường
+    participant App as Web / Mobile App
+    participant API as FastAPI Care Engine
+    participant DB as SQL Server 2022
+    participant S3 as MinIO Object Storage
+
+    Note over API,DB: Tự động sinh lịch định kỳ (Anchor Day bảo toàn cuối tháng)
+    App->>API: POST /api/v1/care/schedules/generate?period_key=2026-Oct
+    API->>DB: Truy vấn hợp đồng chăm sóc ACTIVE & kiểm tra Unique uq_care_schedule_annex_period
+    DB-->>API: Tạo mới care_schedules + nạp mẫu checklist từ gói dịch vụ
+    API-->>App: Sinh thành công N lịch định kỳ không trùng lặp
+
+    NV->>App: Nhận lịch ca trực & thực hiện việc hiện trường
+    NV->>App: Đánh dấu hoàn thành checklist (Lau dọn, cắm hoa, thắp hương)
+    App->>API: PATCH /api/v1/care/checklist/{item_id}
+    API->>DB: Cập nhật is_done = True, completed_at, notes
+
+    NV->>App: Chụp ảnh hiện trường minh chứng hoàn tất
+    App->>API: POST /api/v1/documents/upload
+    API->>S3: Lưu tệp MinIO, tính SHA-256, chuyển READY
+    S3-->>API: file_id minh chứng
+    App->>API: POST /api/v1/care/schedules/{schedule_id}/evidence
+    API->>DB: Lưu care_media_evidences (loại AFTER_CARE)
+
+    NV->>App: Gửi yêu cầu nghiệm thu đóng ca
+    App->>API: POST /api/v1/care/schedules/{schedule_id}/close
+    API->>DB: Kiểm tra invariant G12: Còn task is_required chưa xong hoặc thiếu ảnh READY?
+    alt Thiếu điều kiện G12
+        API-->>App: Lỗi 400 (Từ chối đóng ca do thiếu minh chứng hoặc công việc bắt buộc)
+    else Đủ điều kiện G12
+        API->>DB: Đổi status = 'CLOSED', ghi nhận completed_by_id & completed_at
+        API->>DB: Ghi OutboxEvent ('care.schedule.closed') & AuditLog
+        API-->>App: Đóng ca thành công, sẵn sàng gửi báo cáo cho thân nhân
+    end
 ```
 
 ---
@@ -271,9 +311,9 @@ powershell -ExecutionPolicy Bypass -File scripts/quality-gate.ps1
 ```
 
 Quy chuẩn kiểm tra bao gồm:
-- **Backend:** `uv run ruff check .` (linter không có lỗi) và `uv run pytest` (**59/59 bài kiểm thử đạt 100%**).
+- **Backend:** `uv run ruff check .` (linter không có lỗi) và `uv run pytest` (**66/66 bài kiểm thử đạt 100%**).
 - **Web Frontend:** `pnpm lint` (0 lỗi) và `pnpm build` (biên dịch TypeScript và đóng gói Vite sạch sẽ).
-- **Mobile App:** `flutter analyze` (0 lỗi cảnh báo) và `flutter test` (**10/10 bài kiểm thử đạt 100%**).
+- **Mobile App:** `flutter analyze` (0 lỗi cảnh báo) và `flutter test` (**12/12 bài kiểm thử đạt 100%**).
 
 ---
 
@@ -291,8 +331,8 @@ Quy chuẩn kiểm tra bao gồm:
 | M07 | Quy trình hợp đồng mua đất, Sequence số HĐ, kích hoạt ACID | `v0.8.0-land-contracts` | Hoàn thành |
 | M08 | Vòng đời an táng, khóa Kim Tĩnh vĩnh viễn, cải táng, chuyển nhượng | `v0.9.0-domain-lifecycle` | Hoàn thành |
 | M09 | Quản lý thi công thực địa, checklist nhiệm vụ, bằng chứng ảnh MinIO | `v0.10.0-construction` | Hoàn thành |
-| M10 | Chăm sóc định kỳ mộ phần, đóng ca quản trang, hàng đợi offline | `v0.11.0-care` | Đang triển khai |
-| M11 | Kế toán công nợ, thu tiền, chiết khấu hóa đơn, biên lai tài chính | `v0.12.0-finance` | Kế hoạch |
+| M10 | Chăm sóc định kỳ mộ phần, đóng ca quản trang, hàng đợi offline | `v0.11.0-care` | Hoàn thành |
+| M11 | Kế toán công nợ, thu tiền, chiết khấu hóa đơn, biên lai tài chính | `v0.12.0-finance` | Đang triển khai |
 | M12 | Báo cáo quản trị, cổng tra cứu thông tin công khai Zero PII | `v0.13.0-feature-complete` | Kế hoạch |
 | M13 | Kiểm thử tải, bảo mật, đối soát phục hồi CSDL và S3 | `v1.0.0-rc.1` | Kế hoạch |
 | M14 | Đóng gói bản phát hành chính thức, tài liệu bàn giao vận hành | `v1.0.0` | Kế hoạch |

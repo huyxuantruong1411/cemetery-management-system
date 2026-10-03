@@ -638,6 +638,148 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Đổ bê tông thành mộ'), findsOneWidget);
   });
+
+  testWidgets('CemeteryMobileApp care tab unauthenticated prompt test', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          readinessProvider.overrideWith((ref) async => SystemReadiness(
+                status: 'ready',
+                database: 'Database connected',
+                storage: 'Storage connected',
+                timestamp: '2026-10-03T12:00:00Z',
+              )),
+          versionProvider.overrideWith((ref) async => SystemVersion(
+                appName: 'Hệ thống Quản lý Nghĩa trang',
+                version: '0.11.0',
+                environment: 'test',
+              )),
+        ],
+        child: const CemeteryMobileApp(),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Tap the Chăm Sóc tab
+    await tester.tap(find.text('Chăm Sóc'));
+    await tester.pumpAndSettle();
+
+    // Verify unauthenticated card is shown
+    expect(find.text('Yêu Cầu Đăng Nhập Chăm Sóc'), findsOneWidget);
+    expect(find.text('Đăng nhập ngay'), findsOneWidget);
+  });
+
+  testWidgets('CemeteryMobileApp care tab authenticated displays schedules and opens checklist sheet test', (WidgetTester tester) async {
+    final fakeUser = UserModel(
+      userId: 2,
+      username: 'caretaker_2',
+      fullName: 'Lê Văn Chăm Sóc',
+      email: 'chamsoc@nghiatrang.vn',
+      roles: ['CARETAKER'],
+      permissions: ['care:read', 'care:execute'],
+    );
+
+    final fakeSchedules = [
+      CareScheduleModel(
+        scheduleId: 101,
+        careAnnexId: 5,
+        plotId: 20,
+        plotCode: 'B2-05',
+        zoneName: 'Khu B',
+        packageId: 1,
+        packageName: 'Gói Chăm Sóc Toàn Diện',
+        caretakerId: 2,
+        caretakerName: 'Lê Văn Chăm Sóc',
+        scheduledDate: '2026-10-15',
+        performedDate: null,
+        status: 'IN_PROGRESS',
+        periodKey: '2026-M10',
+        notes: 'Chăm sóc định kỳ rằm tháng 10',
+        closedAt: null,
+        tasksCount: 2,
+        completedTasksCount: 1,
+        evidenceCount: 1,
+        checklistItems: [
+          CareChecklistItemModel(
+            itemId: 11,
+            scheduleId: 101,
+            taskDescription: 'Dọn sạch cỏ dại xung quanh mộ',
+            isRequired: true,
+            sortOrder: 1,
+            isCompleted: true,
+            fieldNotes: 'Đã cắt cỏ sạch sẽ',
+          ),
+          CareChecklistItemModel(
+            itemId: 12,
+            scheduleId: 101,
+            taskDescription: 'Lau chùi bia đá và thắp hương',
+            isRequired: true,
+            sortOrder: 2,
+            isCompleted: false,
+            fieldNotes: null,
+          ),
+        ],
+        mediaEvidences: [
+          CareMediaEvidenceModel(
+            evidenceId: 50,
+            scheduleId: 101,
+            fileId: 'file_care_test_01',
+            caption: 'Ảnh sau dọn cỏ',
+            uploadedAt: '2026-10-15T08:30:00Z',
+          ),
+        ],
+      ),
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          readinessProvider.overrideWith((ref) async => SystemReadiness(
+                status: 'ready',
+                database: 'Database connected',
+                storage: 'Storage connected',
+                timestamp: '2026-10-03T12:00:00Z',
+              )),
+          versionProvider.overrideWith((ref) async => SystemVersion(
+                appName: 'Hệ thống Quản lý Nghĩa trang',
+                version: '0.11.0',
+                environment: 'test',
+              )),
+          authProvider.overrideWith(() => _FakeAuthNotifier(fakeUser)),
+          careSchedulesProvider.overrideWith((ref) async => fakeSchedules),
+        ],
+        child: const CemeteryMobileApp(),
+      ),
+    );
+
+    await tester.pumpAndSettle();
+
+    // Tap the Chăm Sóc tab
+    await tester.tap(find.text('Chăm Sóc'));
+    await tester.pumpAndSettle();
+
+    // Verify schedule card is rendered
+    expect(find.text('#101'), findsOneWidget);
+    expect(find.text('2026-M10'), findsOneWidget);
+    expect(find.text('Đang làm'), findsWidgets);
+    expect(find.text('Gói Chăm Sóc Toàn Diện'), findsOneWidget);
+    expect(find.text('1/2'), findsOneWidget);
+
+    // Tap schedule card to open details sheet
+    await tester.tap(find.text('#101'));
+    await tester.pumpAndSettle();
+
+    // Verify checklist items in sheet
+    expect(find.text('Hạng Mục Công Việc & Minh Chứng (G12)'), findsOneWidget);
+    expect(find.text('Dọn sạch cỏ dại xung quanh mộ'), findsOneWidget);
+    expect(find.text('Bắt buộc'), findsWidgets);
+
+    // Scroll to see second item
+    await tester.drag(find.text('Dọn sạch cỏ dại xung quanh mộ'), const Offset(0, -150));
+    await tester.pumpAndSettle();
+    expect(find.text('Lau chùi bia đá và thắp hương'), findsOneWidget);
+  });
 }
 
 class _FakeAuthNotifier extends AuthNotifier {

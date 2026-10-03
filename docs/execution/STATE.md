@@ -8,22 +8,22 @@
 
 ## 1. Trạng thái tổng quan
 
-- **Milestone hiện tại:** Hoàn tất **M09** (Quản lý thi công thực địa, Task Evidence G11 & Phân công lịch làm việc G13) -> Sẵn sàng khởi động **M10** (Chăm sóc định kỳ & mobile offline).
+- **Milestone hiện tại:** Hoàn tất **M10** (Chăm sóc định kỳ & mobile offline, Idempotent Generator G12 & Gate nghiệm thu đóng ca) -> Sẵn sàng khởi động **M11** (Công nợ, thu tiền, chiết khấu & biên lai).
 - **Trạng thái CSDL:**
   - Máy chủ: `DESKTOP-HKIPI1M`
   - CSDL chính: `QL_NghiaTrang`
   - CSDL kiểm thử: `QL_NghiaTrang_Test` (bảo vệ tuyệt đối CSDL chính)
   - Đã backup an toàn: `backend/runtime/backups/sql/QL_NghiaTrang_M02_baseline.bak`
-  - Alembic Head: `0009_g11_g13_construction_evidence_scheduling` (đã áp dụng trên cả DB chính và DB test).
-  - 37 bảng nghiệp vụ + 10 bảng mở rộng: `auth_sessions` (G01), `file_objects` (G02), `document_versions` (G02), `background_jobs` (G17), `outbox_events` (G17), `contract_templates` (G03), `plot_reservations` (G04), `plot_ownerships` (G05), `construction_task_evidences` (G11), `staff_unavailability` (G13) + Sequence `seq_contract_number` (G09) + Sequence `seq_annex_number` (G10/G18/G20).
+  - Alembic Head: `0010_g12_care_schedules` (đã áp dụng trên cả DB chính và DB test).
+  - 37 bảng nghiệp vụ + 10 bảng mở rộng: `auth_sessions` (G01), `file_objects` (G02), `document_versions` (G02), `background_jobs` (G17), `outbox_events` (G17), `contract_templates` (G03), `plot_reservations` (G04), `plot_ownerships` (G05), `construction_task_evidences` (G11), `staff_unavailability` (G13) + Mở rộng G12 trên `care_schedules`, `care_checklist_items`, `care_media_evidences` + Sequence `seq_contract_number` (G09) + Sequence `seq_annex_number` (G10/G18/G20).
   - Kết nối native qua pyodbc và `ODBC Driver 18 for SQL Server` hoạt động 100%.
 - **Hạ tầng lưu trữ:**
   - MinIO Docker Container (`elestio/minio:latest`) đang chạy trên máy.
   - Bind mount trực tiếp vào `D:\work\TH-PTTK\QL-NghiaTrang\backend\runtime\minio\data` trên ổ D.
 - **Bộ công cụ & Chất lượng mã nguồn:**
-  - Backend: Python 3.12 (`uv`). 59 tests passed (7 construction + 7 lifecycle + 6 contracts + 7 profiles + 6 plots + 6 auth + 6 catalog + 6 documents + 2 jobs + 2 triggers + 4 health/storage), ruff check/format clean.
-  - Web: React 19 + TypeScript + Vite (`pnpm`). Build thành công trong 265ms, 0 lint errors.
-  - Mobile: Flutter 3.41.6 / Dart 3.11.4 Android. Analyze 0 issues, 10/10 tests passed.
+  - Backend: Python 3.12 (`uv`). 66 tests passed (7 care + 7 construction + 7 lifecycle + 6 contracts + 7 profiles + 6 plots + 6 auth + 6 catalog + 6 documents + 2 jobs + 2 triggers + 4 health/storage), ruff check/format clean.
+  - Web: React 19 + TypeScript + Vite (`pnpm`). Build thành công trong 259ms, 0 lint errors.
+  - Mobile: Flutter 3.41.6 / Dart 3.11.4 Android. Analyze 0 issues, 12/12 tests passed.
   - Tiêu chuẩn Quality Gate (`scripts/quality-gate.ps1`) đạt 100% trên cả 3 phân hệ.
 
 ---
@@ -42,7 +42,7 @@
 | **M07** | Luồng mua đất -> ký ngoài -> kích hoạt | **ĐẠT (Done)** | `v0.8.0-land-contracts` | G09, HĐ mua đất, Sequence số HĐ, khóa ô mộ chống double booking, kích hoạt ACID 6 bước (HĐ -> ACTIVE, ô mộ -> OWNED_EMPTY, reservation -> CONVERTED, ownership history, receivable công nợ, outbox event), Web Wizard 4 bước, Flutter Hợp Đồng tab, 45 tests backend, 8 tests mobile. |
 | **M08** | An táng, Kim Tĩnh, cải táng, chuyển nhượng | **ĐẠT (Done)** | `v0.9.0-domain-lifecycle` | G10/G18/G20, khóa Kim Tĩnh bất biến (Trigger 51000/51001), phụ lục an táng, kiểm tra giấy báo tử G08, cải táng giải phóng slot, chuyển nhượng quyền sở hữu G05, HĐ hỏa táng độc lập G18. |
 | **M09** | Quản lý thi công thực địa | **ĐẠT (Done)** | `v0.10.0-construction` | G11/G13, checklist công trình, bằng chứng ảnh MinIO READY, phân công thợ kiểm tra xung đột lịch nghỉ, nghiệm thu an toàn không đổi trạng thái an táng. |
-| **M10** | Chăm sóc định kỳ & mobile offline | Chưa bắt đầu | `v0.11.0-care` | G12, sinh lịch định kỳ, Quản trang đóng ca, offline queue retry. |
+| **M10** | Chăm sóc định kỳ & mobile offline | **ĐẠT (Done)** | `v0.11.0-care` | G12, sinh lịch định kỳ idempotent, neo ngày cuối tháng, Quản trang checklist, minh chứng ảnh MinIO, đóng ca G12 gate. |
 | **M11** | Công nợ, thu tiền, chiết khấu, biên lai | Chưa bắt đầu | `v0.12.0-finance` | G14-G16, Idempotency payment, tính nợ trigger-aware, biên lai PDF. |
 | **M12** | Báo cáo, tra cứu công khai & audit | Chưa bắt đầu | `v0.13.0-feature-complete` | 4 báo cáo thống kê, cổng tra cứu không lộ PII, audit log viewer. |
 | **M13** | Kiểm thử hệ thống, UX & khôi phục | Chưa bắt đầu | `v1.0.0-rc.1` | Regression toàn diện, test tải, backup/restore CSDL + S3 đối soát. |
@@ -435,6 +435,50 @@
 - **Web:** `pnpm lint` 0 errors, `pnpm build` hoàn tất sạch sẽ trong 261ms (0 build errors).
 - **Mobile:** `flutter analyze` 0 issues, `flutter test` đạt **10/10 tests passed**.
 - Bộ kiểm tra chất lượng tự động `scripts/quality-gate.ps1` ĐẠT 100%.
+
+---
+
+## 11. Bằng chứng nghiệm thu Milestone M10 (Chăm Sóc Định Kỳ & Mobile Quản Trang)
+
+### 11.1. CSDL & Migration (G12)
+- Migration: `0010_g12_care_schedules_period_evidence.py`
+  - Đã apply thành công trên cả 2 CSDL: `QL_NghiaTrang` và `QL_NghiaTrang_Test`.
+  - Mở rộng bảng `care_schedules`: `period_key` (String 50, định dạng `YYYY-Mmm`), `notes` (NVARCHAR MAX), `completed_by_id` (ForeignKey `users.user_id`).
+  - Tạo Unique Constraint `uq_care_schedule_annex_period` trên cặp `(care_annex_id, period_key)` đảm bảo tính bất biến (idempotent) khi chạy bộ sinh lịch định kỳ nhiều lần.
+  - Mở rộng bảng `care_checklist_items`: `is_required` (Boolean, default 1), `sort_order` (Integer, default 0).
+  - Mở rộng bảng `care_media_evidences`: `file_id` (String 64, ForeignKey `file_objects.file_id`), `uploaded_by_user_id` (ForeignKey `users.user_id`).
+
+### 11.2. Quy Tắc Miền Nghiệp Vụ & Server-side Invariants
+- **Quy tắc neo ngày cuối tháng (End-of-Month Anchor Rule):** Hợp đồng bắt đầu vào ngày 31, khi sinh lịch cho tháng 2 (28/29 ngày) hoặc tháng 4/6/9/11 (30 ngày) sẽ tự động neo vào ngày cuối tháng, nhưng vẫn bảo toàn mốc ngày 31 cho các tháng có 31 ngày (tháng 3, tháng 5...).
+- **Tính bất biến khi sinh lịch định kỳ (Idempotent Generator):** API `POST /api/v1/care/schedules/generate` có thể chạy nhiều lần cho cùng một tháng mà không sinh trùng lịch công việc, trả về chính xác số ca được sinh mới và số ca bị bỏ qua (skipped count).
+- **Cảnh báo xung đột lịch công tác (G13):** Khi phân công ca chăm sóc cho nhân viên (`/care/schedules/{id}/assign`), hệ thống tự động đối chiếu với bảng `staff_unavailability` và trả về cờ `has_conflict` kèm lý do chi tiết nếu nhân viên đang nghỉ phép.
+- **Cổng nghiệm thu đóng ca (G12 Gate Invariants):**
+  - **Gate Invariant 1 (Required Tasks):** Nghiêm cấm đóng ca nếu còn bất kỳ hạng mục công việc nào được đánh dấu `is_required == True` mà chưa hoàn tất (`400 Bad Request` nêu rõ tên các hạng mục còn thiếu).
+  - **Gate Invariant 2 (Photo Evidence):** Bắt buộc phải có ít nhất 1 ảnh minh chứng hiện trường ở trạng thái `READY` trên MinIO (`400 Bad Request` nếu thiếu ảnh).
+  - **Trạng thái đóng ca:** Chuyển trạng thái ca sang `CLOSED` (tuân thủ CHECK constraint `CK_cs_status` của CSDL gốc), cập nhật `closed_at`, `completed_by_id`, phát sinh Outbox event `CARE_SCHEDULE_CLOSED` và ghi `AuditLog`.
+
+### 11.3. Giao Diện Web (React 19 + TypeScript)
+- Phân hệ **"Chăm Sóc Mộ Phần"** (`CareModule.tsx`):
+  - Tích hợp trực tiếp vào thanh điều hướng chính `activeTab === 'care'`.
+  - 6 thẻ KPI thống kê trực quan: Tổng ca, Chờ chỉ định, Đã chỉ định, Đang thực hiện, Đã đóng ca (G12), Quá hạn.
+  - Thanh lọc theo kỳ (`YYYY-Mmm`), trạng thái và ô tìm kiếm tức thời theo mã mộ, khu, nhân viên.
+  - Modal sinh lịch định kỳ theo tháng/năm tự động.
+  - Drawer chi tiết ca chăm sóc: giao việc cho nhân viên, checklist tương tác với huy hiệu [Bắt buộc], thư viện ảnh hiện trường MinIO, nút nghiệm thu đóng ca với hướng dẫn điều kiện G12.
+  - Đáp ứng trọn vẹn 4 trạng thái giao diện: `Loading`, `Normal`, `Empty Data` (kèm CTA sinh lịch), `Error`.
+
+### 11.4. Ứng Dụng Di Động (Flutter Android)
+- Tích hợp phân hệ **"Chăm Sóc"** (`mobile/lib/main.dart`):
+  - Tab thứ 7 trên BottomNavigationBar với biểu tượng `Icons.cleaning_services`.
+  - Thẻ tóm tắt KPI 4 chỉ số và danh sách ca chăm sóc định kỳ với mã ô mộ, gói dịch vụ, tiến độ việc/ảnh.
+  - Bottom sheet chi tiết ca: kiểm tra checklist việc cần làm, đánh dấu [Bắt buộc], ghi nhận hiện trạng.
+  - Bộ kiểm thử widget (`mobile/test/widget_test.dart`) bổ sung 2 test cases mới cho phân hệ chăm sóc, nâng tổng số test lên **12/12 tests passed**.
+
+### 11.5. Kiểm Thử & Tiêu Chuẩn Quality Gate
+- **Backend:** `uv run pytest` đạt **66/66 bài kiểm thử** (100% passed, bao gồm 7 test cases chuyên sâu trong `test_care.py`). `uv run ruff check .` và `uv run ruff format --check .` All checks passed!
+- **Web:** `pnpm lint` 0 errors, `pnpm build` hoàn tất sạch sẽ trong 259ms.
+- **Mobile:** `flutter analyze` 0 issues, `flutter test` đạt **12/12 tests passed**.
+- Bộ kiểm tra chất lượng tự động `scripts/quality-gate.ps1` ĐẠT 100%.
+
 
 
 
