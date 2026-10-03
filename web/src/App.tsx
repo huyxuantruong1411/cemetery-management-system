@@ -6,6 +6,7 @@ import {
   Database,
   FileCheck,
   FileText,
+  Hammer,
   HardDrive,
   Key,
   LogIn,
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react'
 import { LoginModal } from './components/auth/LoginModal'
 import { CatalogModule } from './components/catalog/CatalogModule'
+import { ConstructionModule } from './components/construction/ConstructionModule'
 import { ContractModule } from './components/contracts/ContractModule'
 import { DocumentManager } from './components/documents/DocumentManager'
 import { PlotMapModule } from './components/plots/PlotMapModule'
@@ -351,7 +353,29 @@ function MainApp() {
             </button>
           )}
 
-          {(hasPermission('care:read') || hasPermission('construction:read')) && (
+          {hasPermission('construction:read') && (
+            <button
+              onClick={() => setActiveTab('construction')}
+              style={{
+                padding: '12px 16px',
+                border: 'none',
+                borderBottom: activeTab === 'construction' ? '2px solid var(--brand-primary)' : '2px solid transparent',
+                backgroundColor: 'transparent',
+                color: activeTab === 'construction' ? 'var(--brand-primary)' : '#64748B',
+                fontWeight: activeTab === 'construction' ? 600 : 500,
+                fontSize: '13px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <Hammer size={16} />
+              <span>Thi Công Thực Địa</span>
+            </button>
+          )}
+
+          {hasPermission('care:read') && (
             <button
               onClick={() => setActiveTab('care')}
               style={{
@@ -369,7 +393,7 @@ function MainApp() {
               }}
             >
               <Wrench size={16} />
-              <span>Thi Công & Chăm Sóc</span>
+              <span>Chăm Sóc Mộ Phần</span>
             </button>
           )}
 
@@ -724,12 +748,15 @@ function MainApp() {
           </div>
         )}
 
+        {/* Tab Construction: M09 */}
+        {activeTab === 'construction' && <ConstructionModule />}
+
         {/* Tab 5: Care placeholder */}
         {activeTab === 'care' && (
           <div style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', padding: '32px', border: '1px solid #E2E8F0' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-main)' }}>Quản Trang Thực Địa & Chăm Sóc</h3>
+            <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-main)' }}>Chăm Sóc & Quản Trang Thực Địa</h3>
             <p style={{ fontSize: '14px', color: '#64748B' }}>
-              Quyền hạn của bạn cho phép phân công thợ thi công, nghiệm thu hiện trường và đóng ca chăm sóc định kỳ (Milestone M09–M10).
+              Quyền hạn của bạn cho phép lập kế hoạch chăm sóc định kỳ, kiểm tra hương khói và đóng ca (Milestone M10).
             </p>
           </div>
         )}

@@ -8,22 +8,22 @@
 
 ## 1. Trạng thái tổng quan
 
-- **Milestone hiện tại:** Hoàn tất **M08** (Vòng đời an táng, Kim Tĩnh bất biến, cải táng, chuyển nhượng & hỏa táng độc lập) -> Sẵn sàng khởi động **M09** (Quản lý thi công thực địa).
+- **Milestone hiện tại:** Hoàn tất **M09** (Quản lý thi công thực địa, Task Evidence G11 & Phân công lịch làm việc G13) -> Sẵn sàng khởi động **M10** (Chăm sóc định kỳ & mobile offline).
 - **Trạng thái CSDL:**
   - Máy chủ: `DESKTOP-HKIPI1M`
   - CSDL chính: `QL_NghiaTrang`
   - CSDL kiểm thử: `QL_NghiaTrang_Test` (bảo vệ tuyệt đối CSDL chính)
   - Đã backup an toàn: `backend/runtime/backups/sql/QL_NghiaTrang_M02_baseline.bak`
-  - Alembic Head: `0008_g10_g18_g20_lifecycle_annexes` (đã áp dụng trên cả DB chính và DB test).
-  - 37 bảng nghiệp vụ + 8 bảng mở rộng: `auth_sessions` (G01), `file_objects` (G02), `document_versions` (G02), `background_jobs` (G17), `outbox_events` (G17), `contract_templates` (G03), `plot_reservations` (G04), `plot_ownerships` (G05) + Sequence `seq_contract_number` (G09) + Sequence `seq_annex_number` (G10/G18/G20).
+  - Alembic Head: `0009_g11_g13_construction_evidence_scheduling` (đã áp dụng trên cả DB chính và DB test).
+  - 37 bảng nghiệp vụ + 10 bảng mở rộng: `auth_sessions` (G01), `file_objects` (G02), `document_versions` (G02), `background_jobs` (G17), `outbox_events` (G17), `contract_templates` (G03), `plot_reservations` (G04), `plot_ownerships` (G05), `construction_task_evidences` (G11), `staff_unavailability` (G13) + Sequence `seq_contract_number` (G09) + Sequence `seq_annex_number` (G10/G18/G20).
   - Kết nối native qua pyodbc và `ODBC Driver 18 for SQL Server` hoạt động 100%.
 - **Hạ tầng lưu trữ:**
   - MinIO Docker Container (`elestio/minio:latest`) đang chạy trên máy.
   - Bind mount trực tiếp vào `D:\work\TH-PTTK\QL-NghiaTrang\backend\runtime\minio\data` trên ổ D.
 - **Bộ công cụ & Chất lượng mã nguồn:**
-  - Backend: Python 3.12 (`uv`). 52 tests passed (7 lifecycle + 6 contracts + 7 profiles + 6 plots + 6 auth + 6 catalog + 6 documents + 2 jobs + 2 triggers + 4 health/storage), ruff check/format clean.
+  - Backend: Python 3.12 (`uv`). 59 tests passed (7 construction + 7 lifecycle + 6 contracts + 7 profiles + 6 plots + 6 auth + 6 catalog + 6 documents + 2 jobs + 2 triggers + 4 health/storage), ruff check/format clean.
   - Web: React 19 + TypeScript + Vite (`pnpm`). Build thành công trong 265ms, 0 lint errors.
-  - Mobile: Flutter 3.41.6 / Dart 3.11.4 Android. Analyze 0 issues, 8/8 tests passed.
+  - Mobile: Flutter 3.41.6 / Dart 3.11.4 Android. Analyze 0 issues, 10/10 tests passed.
   - Tiêu chuẩn Quality Gate (`scripts/quality-gate.ps1`) đạt 100% trên cả 3 phân hệ.
 
 ---
@@ -41,7 +41,7 @@
 | **M06** | Khách hàng, người mất & giấy báo tử | **ĐẠT (Done)** | `v0.7.0-profiles` | G07/G08, quản lý hồ sơ thân nhân, kiểm tra trùng CCCD (409), độ chính xác năm sinh EXACT/YEAR_ONLY, quy trình xác minh giấy báo tử kèm file MinIO, cổng tra cứu công khai Zero PII. |
 | **M07** | Luồng mua đất -> ký ngoài -> kích hoạt | **ĐẠT (Done)** | `v0.8.0-land-contracts` | G09, HĐ mua đất, Sequence số HĐ, khóa ô mộ chống double booking, kích hoạt ACID 6 bước (HĐ -> ACTIVE, ô mộ -> OWNED_EMPTY, reservation -> CONVERTED, ownership history, receivable công nợ, outbox event), Web Wizard 4 bước, Flutter Hợp Đồng tab, 45 tests backend, 8 tests mobile. |
 | **M08** | An táng, Kim Tĩnh, cải táng, chuyển nhượng | **ĐẠT (Done)** | `v0.9.0-domain-lifecycle` | G10/G18/G20, khóa Kim Tĩnh bất biến (Trigger 51000/51001), phụ lục an táng, kiểm tra giấy báo tử G08, cải táng giải phóng slot, chuyển nhượng quyền sở hữu G05, HĐ hỏa táng độc lập G18. |
-| **M09** | Quản lý thi công thực địa | Sẵn sàng bắt đầu | `v0.10.0-construction` | G11/G13, checklist công trình, bằng chứng ảnh MinIO, phân công thợ. |
+| **M09** | Quản lý thi công thực địa | **ĐẠT (Done)** | `v0.10.0-construction` | G11/G13, checklist công trình, bằng chứng ảnh MinIO READY, phân công thợ kiểm tra xung đột lịch nghỉ, nghiệm thu an toàn không đổi trạng thái an táng. |
 | **M10** | Chăm sóc định kỳ & mobile offline | Chưa bắt đầu | `v0.11.0-care` | G12, sinh lịch định kỳ, Quản trang đóng ca, offline queue retry. |
 | **M11** | Công nợ, thu tiền, chiết khấu, biên lai | Chưa bắt đầu | `v0.12.0-finance` | G14-G16, Idempotency payment, tính nợ trigger-aware, biên lai PDF. |
 | **M12** | Báo cáo, tra cứu công khai & audit | Chưa bắt đầu | `v0.13.0-feature-complete` | 4 báo cáo thống kê, cổng tra cứu không lộ PII, audit log viewer. |
@@ -394,6 +394,47 @@
 - **Web:** `pnpm lint` 0 errors, `pnpm build` hoàn tất trong 265ms (0 build errors).
 - **Mobile:** `flutter analyze` 0 issues, `flutter test` đạt 8/8 tests passed.
 - Toàn bộ bộ kiểm tra chất lượng tự động `scripts/quality-gate.ps1` ĐẠT 100%.
+
+---
+
+## 10. Bằng chứng nghiệm thu Milestone M09 (Quản lý thi công thực địa, Task Evidence & Lịch công tác)
+
+### 10.1. CSDL & Migration (G11 & G13)
+- Migration: `0009_g11_g13_construction_evidence_scheduling.py`
+  - Đã apply thành công trên cả 2 CSDL: `QL_NghiaTrang` và `QL_NghiaTrang_Test`.
+  - Mở rộng bảng `construction_tasks`: `is_required` (G11), `sort_order`, `assignee_user_id`, `start_date`, `due_date`, `completed_by`.
+  - Bổ sung `notes` cho `construction_orders`.
+  - Tạo mới bảng `construction_task_evidences` (G11): lưu ảnh hiện trường nghiệm thu, liên kết `file_objects(file_id)` trên MinIO, `users(user_id)`.
+  - Tạo mới bảng `staff_unavailability` (G13): theo dõi lịch nghỉ phép, công tác của nhân sự thi công.
+
+### 10.2. Quy Tắc Miền Nghiệp Vụ & Server-side Invariants
+- **Gate Invariant 1 (Annex Active Check):** Không thể tạo lệnh thi công từ phụ lục chưa được kích hoạt (`annex.status != 'ACTIVE'` trả về `400 Bad Request`).
+- **Gate Invariant 2 (G11 MinIO Ready Evidence):** Chỉ chấp nhận minh chứng ảnh ở trạng thái `READY`. Tệp ở trạng thái `STAGING`, `UPLOADING` hoặc `QUARANTINED` bị từ chối lập tức.
+- **Gate Invariant 3 (G11 Required Tasks Incomplete Block):** Nếu còn hạng mục bắt buộc (`is_required == True` và chưa `DONE`), tiến độ không thể đạt 100% (bị chặn tối đa ở 99%) và lệnh hoàn tất thi công bị hủy bỏ (`400 Bad Request`).
+- **Gate Invariant 4 (Crucial Domain Rule - Trạng thái an táng không bị thay đổi tự động):** Hoàn tất công trình thi công KHÔNG BAO GIỜ tự ý đổi trạng thái ô mộ hoặc slot sang `OCCUPIED`. Nếu ô mộ đang là `UNDER_CONSTRUCTION`, ô sẽ hoàn trả về `OWNED_EMPTY` (nếu chưa có người an táng) hoặc `OCCUPIED` (nếu đã có người an táng từ trước).
+- **Gate Invariant 5 (G13 Conflict Warning):** Giao việc hoặc lập lệnh trùng thời gian nhân viên nghỉ phép/bận sẽ phát sinh cảnh báo xung đột lịch trực quan.
+
+### 10.3. Giao Diện Web (React 19 + TypeScript)
+- Phân hệ **"Thi Công Thực Địa"** (`ConstructionModule.tsx`):
+  - Tab riêng biệt trên thanh điều hướng với icon công trình, yêu cầu quyền `construction:read`.
+  - Bảng lệnh thi công kèm 4 thẻ KPI tóm tắt (Tổng lệnh, Đang làm, Chờ duyệt, Hoàn tất).
+  - Modal chi tiết lệnh: sắp xếp thứ tự hạng mục (`sort_order`), cập nhật trạng thái `TODO` -> `DOING` -> `DONE`.
+  - Modal tải lên minh chứng hiện trường (G11) đẩy trực tiếp vào MinIO và kiểm tra mã SHA-256.
+  - Phân hệ quản lý lịch nghỉ / bận của nhân viên (G13) với cảnh báo xung đột thời gian thực.
+  - Xử lý trọn vẹn 4 trạng thái giao diện chuẩn: `Loading`, `Normal`, `Empty Data` (kèm CTA), `Error` (kèm nút Thử lại).
+
+### 10.4. Ứng Dụng Di Động (Flutter Android)
+- Tích hợp phân hệ **"Thi Công"** (`mobile/lib/main.dart`):
+  - Tab thứ 6 trong thanh điều hướng dưới cùng với biểu tượng `Icons.handyman`.
+  - Danh sách lệnh thi công có badge trạng thái, thanh tiến độ % công việc, huy hiệu cảnh báo minh chứng bắt buộc `G11 Minh chứng`.
+  - Bottom sheet chi tiết lệnh: danh sách checklist nhiệm vụ, đánh dấu hạng mục bắt buộc, hiển thị số lượng ảnh minh chứng kèm theo.
+  - Bộ kiểm thử widget (`mobile/test/widget_test.dart`) bổ sung 2 test cases mới cho phân hệ thi công, nâng tổng số test lên 10/10 passed 100%.
+
+### 10.5. Kiểm Thử & Tiêu Chuẩn Quality Gate
+- **Backend:** `uv run pytest` đạt **59/59 bài kiểm thử** (100% passed, bao gồm 7 test cases chuyên sâu trong `test_construction.py`). `uv run ruff check .` và `uv run ruff format --check .` All checks passed!
+- **Web:** `pnpm lint` 0 errors, `pnpm build` hoàn tất sạch sẽ trong 261ms (0 build errors).
+- **Mobile:** `flutter analyze` 0 issues, `flutter test` đạt **10/10 tests passed**.
+- Bộ kiểm tra chất lượng tự động `scripts/quality-gate.ps1` ĐẠT 100%.
 
 
 

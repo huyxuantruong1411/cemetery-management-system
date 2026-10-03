@@ -4,6 +4,43 @@ Tất cả những thay đổi quan trọng trong hệ thống Quản lý Nghĩa
 
 ---
 
+## [0.10.0-construction] - 2026-10-04 (M09)
+
+### Added
+- **CSDL & Alembic Migration (G11, G13):**
+  - Migration `0009_g11_g13_construction_evidence_scheduling.py`:
+    - Mở rộng bảng `construction_tasks`: `is_required`, `sort_order`, `assignee_user_id`, `start_date`, `due_date`, `completed_by`.
+    - Mở rộng bảng `construction_orders`: `notes`.
+    - Tạo bảng `construction_task_evidences` (G11): lưu siêu dữ liệu ảnh hiện trường, liên kết `file_objects(file_id)` trên MinIO và `users(user_id)`.
+    - Tạo bảng `staff_unavailability` (G13): theo dõi lịch nghỉ phép, công tác của thợ thi công và quản trang.
+- **Nghiệp Vụ Backend & Ràng Buộc Miền (Construction & Task Evidence):**
+  - **Gate Invariant 1 (Kích Hoạt Phụ Lục Tiên Quyết):** Chặn tạo lệnh thi công từ phụ lục chưa được kích hoạt (`annex.status != 'ACTIVE'`).
+  - **Gate Invariant 2 (G11 Minh Chứng Ảnh MinIO READY):** Bắt buộc hạng mục công việc quan trọng phải có ảnh minh chứng ở trạng thái `READY` trước khi chuyển sang `DONE`.
+  - **Gate Invariant 3 (G11 Chặn Hoàn Tất Khi Thiếu Task Bắt Buộc):** Khóa tiến độ ở mức tối đa 99% nếu còn task bắt buộc chưa xong; từ chối nghiệm thu hoàn tất (`400 Bad Request`).
+  - **Gate Invariant 4 (Trạng Thái An Táng Bất Biến Sau Thi Công):** Hoàn tất công trình KHÔNG tự động chuyển trạng thái ô mộ sang `OCCUPIED`. Ô mộ `UNDER_CONSTRUCTION` trở về `OWNED_EMPTY` (nếu chưa an táng) hoặc `OCCUPIED` (nếu đã có người an táng từ trước).
+  - **Gate Invariant 5 (G13 Cảnh Báo Xung Đột Lịch Thợ):** Phát sinh cảnh báo khi phân công nhân sự trùng với lịch nghỉ phép hoặc bận công tác.
+  - **14 REST API Endpoints:** Hỗ trợ lập lệnh, cấu hình checklist, phân công, nộp ảnh minh chứng, nghiệm thu và quản lý lịch nghỉ phép.
+- **Web Frontend (React 19 + TypeScript):**
+  - Tạo mới module `ConstructionModule.tsx`:
+    - Tab điều hướng "Thi Công Thực Địa" với biểu tượng chuyên biệt, phân quyền `construction:read`.
+    - Bảng danh sách lệnh kèm 4 thẻ KPI tóm tắt.
+    - Modal quản lý checklist: điều chỉnh thứ tự (`sort_order`), cập nhật trạng thái `TODO` -> `DOING` -> `DONE`.
+    - Modal tải lên minh chứng hiện trường kết nối lưu trữ MinIO và mã hóa SHA-256.
+    - Quản lý lịch nghỉ phép và cảnh báo xung đột thời gian thực cho thợ thi công.
+- **Mobile App (Flutter Android):**
+  - Tích hợp tab thứ 6 "Thi Công" (`Icons.handyman`) trong thanh điều hướng dưới cùng:
+    - Danh sách lệnh thi công có badge tiến độ %, chip trạng thái và huy hiệu cảnh báo minh chứng bắt buộc `G11 Minh chứng`.
+    - Bottom sheet chi tiết lệnh: checklist hạng mục công việc, đánh dấu việc bắt buộc, số lượng ảnh minh chứng kèm theo.
+  - Bổ sung 2 test cases mới trong `widget_test.dart` (nâng tổng số lên 10/10 passed).
+- **Kiểm Thử & Đảm Bảo Chất Lượng:**
+  - 59 backend tests (`uv run pytest`) passed 100% (7 test cases mới trong `test_construction.py`).
+  - `uv run ruff check .` và `uv run ruff format --check .` All checks passed!
+  - Web `pnpm lint` 0 errors, `pnpm build` passed trong 261ms.
+  - Mobile `flutter analyze` 0 issues, `flutter test` (10/10 passed).
+  - Tiêu chuẩn Quality Gate `scripts/quality-gate.ps1` ĐẠT 100%.
+
+---
+
 ## [0.9.0-domain-lifecycle] - 2026-10-03 (M08)
 
 ### Added
