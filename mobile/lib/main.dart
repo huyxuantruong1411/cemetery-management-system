@@ -703,6 +703,145 @@ class ConstructionOrderModel {
   }
 }
 
+// Care Models (M10)
+class CareChecklistItemModel {
+  final int itemId;
+  final int scheduleId;
+  final String taskDescription;
+  final bool isRequired;
+  final int sortOrder;
+  final bool isCompleted;
+  final String? fieldNotes;
+
+  CareChecklistItemModel({
+    required this.itemId,
+    required this.scheduleId,
+    required this.taskDescription,
+    required this.isRequired,
+    required this.sortOrder,
+    required this.isCompleted,
+    this.fieldNotes,
+  });
+
+  factory CareChecklistItemModel.fromJson(Map<String, dynamic> json) {
+    return CareChecklistItemModel(
+      itemId: json['item_id'] as int? ?? 0,
+      scheduleId: json['schedule_id'] as int? ?? 0,
+      taskDescription: json['task_description'] as String? ?? '',
+      isRequired: json['is_required'] as bool? ?? true,
+      sortOrder: json['sort_order'] as int? ?? 0,
+      isCompleted: json['is_completed'] as bool? ?? false,
+      fieldNotes: json['field_notes'] as String?,
+    );
+  }
+}
+
+class CareMediaEvidenceModel {
+  final int evidenceId;
+  final int scheduleId;
+  final String? fileId;
+  final String? mediaUrl;
+  final String? caption;
+  final String uploadedAt;
+
+  CareMediaEvidenceModel({
+    required this.evidenceId,
+    required this.scheduleId,
+    this.fileId,
+    this.mediaUrl,
+    this.caption,
+    required this.uploadedAt,
+  });
+
+  factory CareMediaEvidenceModel.fromJson(Map<String, dynamic> json) {
+    return CareMediaEvidenceModel(
+      evidenceId: json['evidence_id'] as int? ?? 0,
+      scheduleId: json['schedule_id'] as int? ?? 0,
+      fileId: json['file_id'] as String?,
+      mediaUrl: json['media_url'] as String?,
+      caption: json['caption'] as String?,
+      uploadedAt: json['uploaded_at'] as String? ?? '',
+    );
+  }
+}
+
+class CareScheduleModel {
+  final int scheduleId;
+  final int careAnnexId;
+  final int plotId;
+  final String? plotCode;
+  final String? zoneName;
+  final int packageId;
+  final String? packageName;
+  final int? caretakerId;
+  final String? caretakerName;
+  final String scheduledDate;
+  final String? performedDate;
+  final String status;
+  final String? periodKey;
+  final String? notes;
+  final String? closedAt;
+  final int tasksCount;
+  final int completedTasksCount;
+  final int evidenceCount;
+  final List<CareChecklistItemModel> checklistItems;
+  final List<CareMediaEvidenceModel> mediaEvidences;
+
+  CareScheduleModel({
+    required this.scheduleId,
+    required this.careAnnexId,
+    required this.plotId,
+    this.plotCode,
+    this.zoneName,
+    required this.packageId,
+    this.packageName,
+    this.caretakerId,
+    this.caretakerName,
+    required this.scheduledDate,
+    this.performedDate,
+    required this.status,
+    this.periodKey,
+    this.notes,
+    this.closedAt,
+    required this.tasksCount,
+    required this.completedTasksCount,
+    required this.evidenceCount,
+    required this.checklistItems,
+    required this.mediaEvidences,
+  });
+
+  factory CareScheduleModel.fromJson(Map<String, dynamic> json) {
+    final rawItems = json['checklist_items'] as List<dynamic>? ?? [];
+    final rawEvidences = json['media_evidences'] as List<dynamic>? ?? [];
+    return CareScheduleModel(
+      scheduleId: json['schedule_id'] as int? ?? 0,
+      careAnnexId: json['care_annex_id'] as int? ?? 0,
+      plotId: json['plot_id'] as int? ?? 0,
+      plotCode: json['plot_code'] as String?,
+      zoneName: json['zone_name'] as String?,
+      packageId: json['package_id'] as int? ?? 0,
+      packageName: json['package_name'] as String?,
+      caretakerId: json['caretaker_id'] as int?,
+      caretakerName: json['caretaker_name'] as String?,
+      scheduledDate: json['scheduled_date'] as String? ?? '',
+      performedDate: json['performed_date'] as String?,
+      status: json['status'] as String? ?? 'SCHEDULED',
+      periodKey: json['period_key'] as String?,
+      notes: json['notes'] as String?,
+      closedAt: json['closed_at'] as String?,
+      tasksCount: json['tasks_count'] as int? ?? 0,
+      completedTasksCount: json['completed_tasks_count'] as int? ?? 0,
+      evidenceCount: json['evidence_count'] as int? ?? 0,
+      checklistItems: rawItems
+          .map((i) => CareChecklistItemModel.fromJson(i as Map<String, dynamic>))
+          .toList(),
+      mediaEvidences: rawEvidences
+          .map((e) => CareMediaEvidenceModel.fromJson(e as Map<String, dynamic>))
+          .toList(),
+    );
+  }
+}
+
 // =============================================================================
 // Providers
 // =============================================================================
@@ -915,6 +1054,21 @@ final constructionOrdersProvider = FutureProvider.autoDispose<List<ConstructionO
   return list.map((item) => ConstructionOrderModel.fromJson(item as Map<String, dynamic>)).toList();
 });
 
+// Care Provider (M10)
+final careSchedulesProvider = FutureProvider.autoDispose<List<CareScheduleModel>>((ref) async {
+  final authState = ref.watch(authProvider);
+  if (!authState.isAuthenticated) {
+    return [];
+  }
+  final dio = ref.watch(dioProvider);
+  final res = await dio.get(
+    '/care/schedules',
+    options: Options(headers: {'Authorization': 'Bearer ${authState.accessToken}'}),
+  );
+  final list = res.data as List<dynamic>;
+  return list.map((item) => CareScheduleModel.fromJson(item as Map<String, dynamic>)).toList();
+});
+
 // =============================================================================
 // App & Dashboard
 // =============================================================================
@@ -970,6 +1124,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   String _contractStatusFilter = 'ALL';
   String _constructionStatusFilter = 'ALL';
   String _constructionSearchQuery = '';
+  String _careStatusFilter = 'ALL';
+  String _careSearchQuery = '';
 
   @override
   void initState() {
@@ -1268,6 +1424,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ref.invalidate(deceasedProfilesProvider);
                 ref.invalidate(contractsProvider);
                 ref.invalidate(constructionOrdersProvider);
+                ref.invalidate(careSchedulesProvider);
               }
               ref.invalidate(memorialSearchResultsProvider);
             },
@@ -1283,6 +1440,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           _buildProfilesTab(context, authState),
           _buildContractsTab(context, authState),
           _buildConstructionTab(context, authState),
+          _buildCareTab(context, authState),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -1325,6 +1483,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             icon: Icon(Icons.handyman_outlined),
             activeIcon: Icon(Icons.handyman),
             label: 'Thi Công',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.cleaning_services_outlined),
+            activeIcon: Icon(Icons.cleaning_services),
+            label: 'Chăm Sóc',
           ),
         ],
       ),
@@ -4012,4 +4175,539 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       },
     );
   }
+
+  // ===========================================================================
+  // Care Tab (M10)
+  // ===========================================================================
+  Widget _buildCareTab(BuildContext context, AuthState authState) {
+    if (!authState.isAuthenticated) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.cleaning_services_outlined, size: 56, color: Color(0xFF24594D)),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Yêu Cầu Đăng Nhập Chăm Sóc',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    'Vui lòng đăng nhập với tài khoản Quản trang hoặc Admin để xem ca chăm sóc định kỳ, checklist công việc và ghi nhận ảnh thực địa.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.black54, fontSize: 13),
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF24594D),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                    onPressed: () => _showLoginDialog(context),
+                    icon: const Icon(Icons.login),
+                    label: const Text('Đăng nhập ngay'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final careAsync = ref.watch(careSchedulesProvider);
+
+    return careAsync.when(
+      loading: () => const Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(color: Color(0xFF24594D)),
+            SizedBox(height: 12),
+            Text('Đang tải danh sách lịch chăm sóc...', style: TextStyle(color: Colors.black54)),
+          ],
+        ),
+      ),
+      error: (err, _) => Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, size: 48, color: Colors.red),
+              const SizedBox(height: 12),
+              Text(
+                'Lỗi tải lịch chăm sóc: ${err.toString()}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.black87),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: () => ref.invalidate(careSchedulesProvider),
+                icon: const Icon(Icons.refresh),
+                label: const Text('Thử lại'),
+              ),
+            ],
+          ),
+        ),
+      ),
+      data: (schedules) {
+        final filtered = schedules.where((s) {
+          if (_careStatusFilter != 'ALL' && s.status != _careStatusFilter) {
+            return false;
+          }
+          if (_careSearchQuery.isNotEmpty) {
+            final q = _careSearchQuery.toLowerCase();
+            final matchesPlot = (s.plotCode ?? '').toLowerCase().contains(q);
+            final matchesPkg = (s.packageName ?? '').toLowerCase().contains(q);
+            final matchesCare = (s.caretakerName ?? '').toLowerCase().contains(q);
+            final matchesPeriod = (s.periodKey ?? '').toLowerCase().contains(q);
+            return matchesPlot || matchesPkg || matchesCare || matchesPeriod;
+          }
+          return true;
+        }).toList();
+
+        final totalCount = schedules.length;
+        final scheduledCount = schedules.where((s) => s.status == 'SCHEDULED').length;
+        final inProgressCount = schedules.where((s) => s.status == 'IN_PROGRESS').length;
+        final closedCount = schedules.where((s) => s.status == 'CLOSED').length;
+
+        return RefreshIndicator(
+          onRefresh: () async {
+            ref.invalidate(careSchedulesProvider);
+            await ref.read(careSchedulesProvider.future);
+          },
+          child: ListView(
+            padding: const EdgeInsets.all(16.0),
+            children: [
+              // Summary KPIs
+              Row(
+                children: [
+                  Expanded(child: _buildCareKpiCard('Tổng ca', '$totalCount', Icons.assignment, const Color(0xFF1E293B))),
+                  const SizedBox(width: 6),
+                  Expanded(child: _buildCareKpiCard('Chờ giao', '$scheduledCount', Icons.schedule, const Color(0xFFD97706))),
+                  const SizedBox(width: 6),
+                  Expanded(child: _buildCareKpiCard('Đang làm', '$inProgressCount', Icons.cleaning_services, const Color(0xFF0284C7))),
+                  const SizedBox(width: 6),
+                  Expanded(child: _buildCareKpiCard('Đã đóng ca', '$closedCount', Icons.check_circle, const Color(0xFF16A34A))),
+                ],
+              ),
+              const SizedBox(height: 12),
+
+              // Search field
+              TextField(
+                decoration: InputDecoration(
+                  hintText: 'Tìm theo mã ô mộ, kỳ, nhân viên...',
+                  prefixIcon: const Icon(Icons.search, size: 20),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  isDense: true,
+                ),
+                onChanged: (val) {
+                  setState(() {
+                    _careSearchQuery = val.trim();
+                  });
+                },
+              ),
+              const SizedBox(height: 10),
+
+              // Filter chips
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    _buildCareFilterChip('Tất cả', 'ALL'),
+                    const SizedBox(width: 6),
+                    _buildCareFilterChip('Chờ giao', 'SCHEDULED'),
+                    const SizedBox(width: 6),
+                    _buildCareFilterChip('Đã giao việc', 'ASSIGNED'),
+                    const SizedBox(width: 6),
+                    _buildCareFilterChip('Đang làm', 'IN_PROGRESS'),
+                    const SizedBox(width: 6),
+                    _buildCareFilterChip('Đã đóng ca', 'CLOSED'),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              if (filtered.isEmpty)
+                Center(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 40.0),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.cleaning_services_outlined, size: 48, color: Colors.black26),
+                        const SizedBox(height: 12),
+                        const Text(
+                          'Không tìm thấy ca chăm sóc nào',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          _careSearchQuery.isNotEmpty || _careStatusFilter != 'ALL'
+                              ? 'Thử thay đổi từ khóa hoặc bộ lọc trạng thái.'
+                              : 'Chưa có dữ liệu chăm sóc định kỳ được ghi nhận.',
+                          style: const TextStyle(fontSize: 12, color: Colors.black45),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                ...filtered.map((item) => _buildCareScheduleCard(context, item)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCareKpiCard(String title, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.black12),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, size: 18, color: color),
+          const SizedBox(height: 4),
+          Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: color)),
+          const SizedBox(height: 2),
+          Text(title, style: const TextStyle(fontSize: 10, color: Colors.black54), textAlign: TextAlign.center),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCareFilterChip(String label, String value) {
+    final isSelected = _careStatusFilter == value;
+    return ChoiceChip(
+      label: Text(label, style: TextStyle(fontSize: 12, color: isSelected ? Colors.white : Colors.black87)),
+      selected: isSelected,
+      selectedColor: const Color(0xFF24594D),
+      backgroundColor: Colors.white,
+      side: BorderSide(color: isSelected ? const Color(0xFF24594D) : Colors.black12),
+      onSelected: (selected) {
+        if (selected) {
+          setState(() {
+            _careStatusFilter = value;
+          });
+        }
+      },
+    );
+  }
+
+  Widget _buildCareScheduleCard(BuildContext context, CareScheduleModel item) {
+    Color statusColor;
+    String statusText;
+    switch (item.status) {
+      case 'CLOSED':
+        statusColor = const Color(0xFF16A34A);
+        statusText = 'Đã đóng ca';
+        break;
+      case 'IN_PROGRESS':
+        statusColor = const Color(0xFF0284C7);
+        statusText = 'Đang làm';
+        break;
+      case 'ASSIGNED':
+        statusColor = const Color(0xFF6366F1);
+        statusText = 'Đã giao việc';
+        break;
+      case 'OVERDUE':
+        statusColor = const Color(0xFFDC2626);
+        statusText = 'Quá hạn';
+        break;
+      case 'SCHEDULED':
+      default:
+        statusColor = const Color(0xFFD97706);
+        statusText = 'Chờ giao';
+        break;
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(10),
+        onTap: () => _showCareScheduleDetailsSheet(context, item),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        '#${item.scheduleId}',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF24594D)),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE2E8F0),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          item.periodKey ?? 'Định kỳ',
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: statusColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: statusColor.withValues(alpha: 0.3)),
+                    ),
+                    child: Text(
+                      statusText,
+                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: statusColor),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Icon(Icons.place_outlined, size: 14, color: Colors.black54),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${item.plotCode ?? "Ô mộ #${item.plotId}"} (${item.zoneName ?? "Khu chung"})',
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(Icons.spa_outlined, size: 14, color: Colors.black54),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      item.packageName ?? 'Gói tiêu chuẩn',
+                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(Icons.person_outline, size: 14, color: Colors.black54),
+                  const SizedBox(width: 4),
+                  Text(
+                    item.caretakerName ?? 'Chưa phân công',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: item.caretakerName != null ? Colors.black87 : Colors.orange.shade800,
+                      fontStyle: item.caretakerName == null ? FontStyle.italic : FontStyle.normal,
+                    ),
+                  ),
+                  const Spacer(),
+                  Row(
+                    children: [
+                      const Icon(Icons.checklist, size: 14, color: Colors.black54),
+                      const SizedBox(width: 2),
+                      Text(
+                        '${item.completedTasksCount}/${item.tasksCount}',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(width: 8),
+                      const Icon(Icons.photo_camera_outlined, size: 14, color: Colors.black54),
+                      const SizedBox(width: 2),
+                      Text(
+                        '${item.evidenceCount}',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showCareScheduleDetailsSheet(BuildContext context, CareScheduleModel schedule) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.7,
+          minChildSize: 0.4,
+          maxChildSize: 0.95,
+          expand: false,
+          builder: (context, scrollController) {
+            return SingleChildScrollView(
+              controller: scrollController,
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Ca Chăm Sóc #${schedule.scheduleId}',
+                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF24594D)),
+                          ),
+                          Text(
+                            'Kỳ: ${schedule.periodKey ?? "Định kỳ"} · Ngày: ${schedule.scheduledDate}',
+                            style: const TextStyle(fontSize: 12, color: Colors.black54),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF24594D).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          schedule.status,
+                          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF24594D)),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 24),
+
+                  _buildDetailRow('Ô Mộ:', '${schedule.plotCode ?? "Plot #${schedule.plotId}"} - ${schedule.zoneName ?? ""}'),
+                  _buildDetailRow('Gói Dịch Vụ:', schedule.packageName ?? 'Tiêu chuẩn'),
+                  _buildDetailRow('Người Phụ Trách:', schedule.caretakerName ?? 'Chưa chỉ định'),
+                  if (schedule.closedAt != null)
+                    _buildDetailRow('Đã Đóng Ca:', schedule.closedAt!),
+                  if (schedule.notes != null)
+                    _buildDetailRow('Ghi Chú:', schedule.notes!),
+
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Hạng Mục Công Việc & Minh Chứng (G12)',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF24594D)),
+                  ),
+                  const SizedBox(height: 8),
+
+                  if (schedule.checklistItems.isEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Text('Chưa có hạng mục công việc được tạo.', style: TextStyle(color: Colors.black54, fontSize: 13)),
+                    )
+                  else
+                    ...schedule.checklistItems.map((task) {
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: task.isCompleted ? const Color(0xFFF0FDF4) : const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: task.isCompleted ? const Color(0xFFBBF7D0) : Colors.black12,
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              task.isCompleted ? Icons.check_circle : Icons.radio_button_unchecked,
+                              color: task.isCompleted ? const Color(0xFF16A34A) : Colors.black38,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          task.taskDescription,
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 13,
+                                            decoration: task.isCompleted ? TextDecoration.lineThrough : null,
+                                            color: task.isCompleted ? Colors.black54 : Colors.black87,
+                                          ),
+                                        ),
+                                      ),
+                                      if (task.isRequired)
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                          margin: const EdgeInsets.only(left: 4),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFFEE2E2),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                          child: const Text('Bắt buộc', style: TextStyle(fontSize: 10, color: Color(0xFFDC2626), fontWeight: FontWeight.bold)),
+                                        ),
+                                    ],
+                                  ),
+                                  if (task.fieldNotes != null) ...[
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Ghi chú: ${task.fieldNotes}',
+                                      style: const TextStyle(fontSize: 11, color: Colors.black54, fontStyle: FontStyle.italic),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 }
+

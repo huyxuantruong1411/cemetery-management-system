@@ -4,6 +4,45 @@ Tất cả những thay đổi quan trọng trong hệ thống Quản lý Nghĩa
 
 ---
 
+## [0.11.0-care] - 2026-10-04 (M10)
+
+### Added
+- **CSDL & Alembic Migration (G12):**
+  - Migration `0010_g12_care_schedules_period_evidence.py`:
+    - Mở rộng bảng `care_schedules`: `period_key` (`YYYY-Mmm`), `notes` (`NVARCHAR(MAX)`), `completed_by_id` (`users.user_id`).
+    - Unique Constraint `uq_care_schedule_annex_period` trên `(care_annex_id, period_key)` đảm bảo tính bất biến (idempotency) của bộ sinh lịch định kỳ.
+    - Mở rộng `care_checklist_items`: `is_required`, `sort_order`.
+    - Mở rộng `care_media_evidences`: `file_id` (tham chiếu `file_objects.file_id`), `uploaded_by_user_id`.
+- **Nghiệp Vụ Backend & Ràng Buộc Miền (Care Service & Invariants):**
+  - **Quy tắc neo ngày cuối tháng (End-of-Month Anchor Rule):** Hợp đồng bắt đầu ngày 31 tự động neo vào ngày 28/29 (tháng 2) hoặc ngày 30 (tháng 4, 6, 9, 11), nhưng bảo toàn mốc ngày 31 cho các tháng 31 ngày.
+  - **Bộ sinh lịch định kỳ bất biến (Idempotent Generator):** API `POST /api/v1/care/schedules/generate` chạy nhiều lần trong cùng tháng không sinh trùng lịch, trả về số ca sinh mới và số ca bỏ qua.
+  - **Cảnh báo xung đột lịch công tác (G13):** Khi phân công nhân sự quản trang (`POST /care/schedules/{id}/assign`), tự động kiểm tra bảng `staff_unavailability` và trả về cờ cảnh báo nếu nhân viên nghỉ phép.
+  - **Cổng nghiệm thu đóng ca G12 (G12 Gate Check):**
+    - Chặn đóng ca nếu còn bất kỳ hạng mục `is_required` nào chưa hoàn tất (`400 Bad Request`).
+    - Chặn đóng ca nếu chưa có ít nhất 1 ảnh minh chứng hiện trường ở trạng thái `READY` trên MinIO.
+    - Chuyển trạng thái ca sang `CLOSED` (tuân thủ `CK_cs_status`), cập nhật `closed_at`, `completed_by_id`, phát sinh Outbox event `CARE_SCHEDULE_CLOSED` và ghi `AuditLog`.
+  - **REST API Endpoints:** Hỗ trợ sinh lịch, phân công, cập nhật checklist, nộp ảnh minh chứng và nghiệm thu đóng ca.
+- **Web Frontend (React 19 + TypeScript):**
+  - Module `CareModule.tsx`:
+    - Tab "Chăm Sóc Mộ Phần" tích hợp thanh điều hướng, phân quyền `care:read`.
+    - Thẻ KPI 6 chỉ số: Tổng ca, Chờ chỉ định, Đã chỉ định, Đang thực hiện, Đã đóng ca, Quá hạn.
+    - Lọc theo kỳ (`YYYY-Mmm`), trạng thái và tìm kiếm tức thời theo mã ô mộ, khu, nhân viên.
+    - Modal sinh lịch định kỳ tự động và Drawer chi tiết ca chăm sóc với checklist tương tác, thư viện ảnh hiện trường MinIO, nút nghiệm thu đóng ca G12.
+    - Xử lý đủ 4 trạng thái giao diện: `Loading`, `Normal`, `Empty Data` (kèm CTA sinh lịch), `Error`.
+- **Mobile App (Flutter Android):**
+  - Tích hợp tab thứ 7 "Chăm Sóc" (`Icons.cleaning_services`) trong BottomNavigationBar.
+  - Danh sách ca chăm sóc kèm mã ô mộ, gói dịch vụ, tiến độ việc/ảnh.
+  - Bottom sheet chi tiết ca: kiểm tra checklist công việc, đánh dấu hạng mục bắt buộc, hiển thị số ảnh minh chứng.
+  - Bổ sung 2 test cases mới trong `widget_test.dart` (nâng tổng số lên 12/12 passed 100%).
+- **Kiểm Thử & Đảm Bảo Chất Lượng:**
+  - 66 backend tests (`uv run pytest`) passed 100% (7 test cases mới trong `test_care.py`).
+  - `uv run ruff check .` và `uv run ruff format --check .` All checks passed!
+  - Web `pnpm lint` 0 errors, `pnpm build` passed trong 259ms.
+  - Mobile `flutter analyze` 0 issues, `flutter test` (12/12 passed).
+  - Tiêu chuẩn Quality Gate `scripts/quality-gate.ps1` ĐẠT 100%.
+
+---
+
 ## [0.10.0-construction] - 2026-10-04 (M09)
 
 ### Added

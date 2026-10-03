@@ -8,6 +8,7 @@ import app.db.base  # noqa: F401
 from app.core.config import settings
 from app.db.session import check_database_readiness
 from app.modules.auth.router import router as auth_router
+from app.modules.care.router import router as care_router
 from app.modules.catalog.router import router as catalog_router
 from app.modules.construction.router import router as construction_router
 from app.modules.contracts.router import router as contracts_router
@@ -42,6 +43,7 @@ app.include_router(plots_router, prefix=settings.API_V1_PREFIX)
 app.include_router(profiles_router, prefix=settings.API_V1_PREFIX)
 app.include_router(contracts_router, prefix=settings.API_V1_PREFIX)
 app.include_router(construction_router, prefix=settings.API_V1_PREFIX)
+app.include_router(care_router, prefix=settings.API_V1_PREFIX)
 app.include_router(documents_router, prefix=settings.API_V1_PREFIX)
 app.include_router(jobs_router, prefix=settings.API_V1_PREFIX)
 

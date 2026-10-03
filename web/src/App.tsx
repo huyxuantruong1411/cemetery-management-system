@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { LoginModal } from './components/auth/LoginModal'
 import { CatalogModule } from './components/catalog/CatalogModule'
+import { CareModule } from './components/care/CareModule'
 import { ConstructionModule } from './components/construction/ConstructionModule'
 import { ContractModule } from './components/contracts/ContractModule'
 import { DocumentManager } from './components/documents/DocumentManager'
@@ -751,15 +752,8 @@ function MainApp() {
         {/* Tab Construction: M09 */}
         {activeTab === 'construction' && <ConstructionModule />}
 
-        {/* Tab 5: Care placeholder */}
-        {activeTab === 'care' && (
-          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', padding: '32px', border: '1px solid #E2E8F0' }}>
-            <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-main)' }}>Chăm Sóc & Quản Trang Thực Địa</h3>
-            <p style={{ fontSize: '14px', color: '#64748B' }}>
-              Quyền hạn của bạn cho phép lập kế hoạch chăm sóc định kỳ, kiểm tra hương khói và đóng ca (Milestone M10).
-            </p>
-          </div>
-        )}
+        {/* Tab 5: Care M10 */}
+        {activeTab === 'care' && <CareModule />}
 
         {/* Tab 6: Admin Users */}
         {activeTab === 'admin_users' && (
