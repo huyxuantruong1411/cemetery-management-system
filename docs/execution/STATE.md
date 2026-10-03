@@ -8,22 +8,22 @@
 
 ## 1. Trạng thái tổng quan
 
-- **Milestone hiện tại:** Hoàn tất **M03** (Tệp, job/outbox và chứng từ nền) -> Chuẩn bị **M04** (Design system & cấu hình nền).
+- **Milestone hiện tại:** Hoàn tất **M04** (Design system & cấu hình nền) -> Sẵn sàng khởi động **M05** (Không gian, ô mộ, slot và bản đồ).
 - **Trạng thái CSDL:**
   - Máy chủ: `DESKTOP-HKIPI1M`
   - CSDL chính: `QL_NghiaTrang`
   - CSDL kiểm thử: `QL_NghiaTrang_Test` (bảo vệ tuyệt đối CSDL chính)
   - Đã backup an toàn: `backend/runtime/backups/sql/QL_NghiaTrang_M02_baseline.bak`
-  - Alembic Head: `0003_g02_g17_files_documents_jobs_outbox` (đã áp dụng trên cả DB chính và DB test).
-  - 37 bảng nghiệp vụ + 5 bảng mở rộng mới: `auth_sessions` (G01), `file_objects` (G02), `document_versions` (G02), `background_jobs` (G17), `outbox_events` (G17).
+  - Alembic Head: `0004_g03_catalog_pricing_templates` (đã áp dụng trên cả DB chính và DB test).
+  - 37 bảng nghiệp vụ + 6 bảng mở rộng mới: `auth_sessions` (G01), `file_objects` (G02), `document_versions` (G02), `background_jobs` (G17), `outbox_events` (G17), `contract_templates` (G03) cùng 4 cột phạm vi giá trên `price_items`.
   - Kết nối native qua pyodbc và `ODBC Driver 18 for SQL Server` hoạt động 100%.
 - **Hạ tầng lưu trữ:**
   - MinIO Docker Container (`elestio/minio:latest`) đang chạy trên máy.
   - Bind mount trực tiếp vào `D:\work\TH-PTTK\QL-NghiaTrang\backend\runtime\minio\data` trên ổ D.
 - **Bộ công cụ & Chất lượng mã nguồn:**
-  - Backend: Python 3.12 (`uv`). 20 tests passed (6 auth + 6 documents + 2 jobs + 2 triggers + 4 health/storage), ruff clean.
-  - Web: React 19 + TypeScript + Vite (`pnpm`). Build thành công trong 200ms, 0 lint errors.
-  - Mobile: Flutter 3.41.6 / Dart 3.11.4 Android. Analyze 0 issues, test passed.
+  - Backend: Python 3.12 (`uv`). 26 tests passed (6 auth + 6 catalog + 6 documents + 2 jobs + 2 triggers + 4 health/storage), ruff clean.
+  - Web: React 19 + TypeScript + Vite (`pnpm`). Build thành công trong 206ms, 0 lint errors.
+  - Mobile: Flutter 3.41.6 / Dart 3.11.4 Android. Analyze 0 issues, 3/3 tests passed.
   - Tiêu chuẩn Quality Gate (`scripts/quality-gate.ps1`) đạt 100% trên cả 3 phân hệ.
 
 ---
@@ -36,8 +36,8 @@
 | **M01** | Scaffold, runtime và storage | **ĐẠT (Done)** | `v0.2.0-foundation` | Monorepo hoàn chỉnh (`backend`, `web`, `mobile`, `scripts`). FastAPI readiness/liveness, MinIO bind mount ổ D bền vững, Web & Flutter shell 4 trạng thái. |
 | **M02** | Baseline migration, auth & phân quyền | **ĐẠT (Done)** | `v0.3.0-auth` | Backup CSDL, Alembic baseline + G01 migration, 37 SQLAlchemy models, trigger bypass (`implicit_returning=False`), Argon2 + JWT + RFC 6819 rotation, RBAC 4 vai trò, Web & Flutter Auth E2E. |
 | **M03** | Tệp, job/outbox & chứng từ nền | **ĐẠT (Done)** | `v0.4.0-documents` | Migration G02/G17, stream MinIO, kiểm tra Magic Bytes & SHA-256, ReportLab xuất PDF tiếng Việt UTF-8 (Arial), openpyxl Excel, Background Worker lease lock. |
-| **M04** | Design system & cấu hình nền | **Đang tiến hành** | `v0.5.0-design-catalog` | Bảng giá G03, gói chăm sóc, template hợp đồng, UI components. |
-| **M05** | Không gian, ô mộ, slot và bản đồ | Chưa bắt đầu | `v0.6.0-plots` | G04/G06, bản đồ Leaflet, quản lý khu/hàng/ô/slot, chống trùng giữ chỗ. |
+| **M04** | Design system & cấu hình nền | **ĐẠT (Done)** | `v0.5.0-design-catalog` | Migration G03 (`contract_templates`, scope `price_items`), CatalogService chống trùng khoảng thời gian, Web 5 views, Flutter Catalog tab, Quality Gate 100%. |
+| **M05** | Không gian, ô mộ, slot và bản đồ | Sẵn sàng bắt đầu | `v0.6.0-plots` | G04/G06, bản đồ Leaflet, quản lý khu/hàng/ô/slot, chống trùng giữ chỗ. |
 | **M06** | Khách hàng, người mất & giấy báo tử | Chưa bắt đầu | `v0.7.0-profiles` | G07/G08, quản lý hồ sơ thân nhân, xác minh giấy báo tử. |
 | **M07** | Luồng mua đất -> ký ngoài -> kích hoạt | Chưa bắt đầu | `v0.8.0-land-contracts` | G09, HĐ mua đất, giữ chỗ transaction-safe, scan và kích hoạt, sinh nợ. |
 | **M08** | An táng, Kim Tĩnh, cải táng, chuyển nhượng | Chưa bắt đầu | `v0.9.0-domain-lifecycle` | G10/G18/G20, khóa Kim Tĩnh bất biến, chuyển nhượng, an táng, cải táng. |
@@ -122,4 +122,41 @@
 - Backend: `uv run pytest` đạt 20/20 bài kiểm thử (100% passed). `uv run ruff check .` All checks passed!
 - Web: `pnpm lint` 0 errors, `pnpm build` hoàn tất trong 200ms.
 - Mobile: `flutter analyze` 0 issues, `flutter test` passed.
+
+---
+
+## 5. Bằng chứng nghiệm thu Milestone M04 (Design System, Bảng Giá & Danh Mục Nền)
+
+### 5.1. CSDL & Alembic Migration (G03)
+- Revision: `0004_g03_catalog_pricing_templates.py`
+  - Đã nâng cấp thành công trên cả CSDL kiểm thử `QL_NghiaTrang_Test` và CSDL thực tế `QL_NghiaTrang` trên `DESKTOP-HKIPI1M`.
+  - Bảng `contract_templates`: Quản lý 4 mẫu văn bản pháp lý chuẩn (`LAND_PURCHASE`, `EXHUMATION`, `CREMATION`, `TRANSFER`) và phụ lục chăm sóc `CARE_ANNEX`. Ràng buộc `CHECK (template_type IN (...))`. Hỗ trợ versioning tăng tiến (`version_no`).
+  - Mở rộng bảng `price_items`: Bổ sung 4 trường phạm vi: `zone_id`, `plot_type_id`, `package_id`, `service_code` với các khóa ngoại `ON DELETE SET NULL`, cho phép định giá linh hoạt theo từng khu vực hoặc gói dịch vụ mà không phá vỡ tính toàn vẹn dữ liệu.
+  - Ánh xạ ORM: Các model `PriceItem`, `PriceList`, `CarePackage`, `ContractTemplate` sử dụng chuẩn `Unicode` và `UnicodeText` bảo tồn 100% tiếng Việt có dấu trên MSSQL.
+
+### 5.2. Nghiệp Vụ Backend & Ràng Buộc Miền (CatalogService)
+- **Chống trùng lặp thời gian hiệu lực (G03 Invariant):** Hai bảng giá cùng kích hoạt không được phép giao nhau về khoảng ngày hiệu lực `[effective_from, effective_to]`. Kiểm thử tự động `test_create_price_list_overlap_rejected` xác nhận từ chối với lỗi 400 Bad Request.
+- **Tra cứu đơn giá tức thời theo Scope:** Hàm `lookup_price` tự động tìm bảng giá hiệu lực tại ngày tra cứu và ưu tiên khớp phạm vi hẹp nhất (khuôn viên khu vực -> loại mộ -> gói dịch vụ).
+- **Kiểm soát gói chăm sóc:** Chặn kích hoạt hoặc áp dụng đơn giá cho gói dịch vụ đã bị vô hiệu hóa (`is_active=False`).
+- **Nguyên tắc bất biến phiên bản hợp đồng (Non-retroactivity):** Khi cập nhật mẫu hợp đồng, hàm `bump_template_version` đóng phiên bản cũ và sinh phiên bản mới với `version_no + 1`, bảo vệ tuyệt đối tính pháp lý của các hợp đồng đã ký trong quá khứ.
+
+### 5.3. Giao Diện Web (React 19 + TypeScript)
+- Phân hệ **"Bảng Giá & Danh Mục"** (`CatalogModule.tsx`) với 5 màn hình tương tác:
+  1. *Bảng Giá & Khoản Mục:* Hiển thị danh sách bảng giá hiệu lực, mở rộng xem chi tiết từng khoản mục giá, đơn giá VNĐ, phạm vi áp dụng.
+  2. *Gói Chăm Sóc Định Kỳ:* Hiển thị các gói cơ bản/cao cấp/đại lễ, chu kỳ thực hiện (hàng tháng, quý, năm) và danh sách công việc kiểm tra (checklist).
+  3. *Mẫu Hợp Đồng Pháp Lý:* Quản lý 4 loại hợp đồng chuẩn kèm phụ lục, xem nội dung điều khoản mẫu, nút bump version tăng số phiên bản.
+  4. *Bộ Mô Phỏng Tra Cứu Đơn Giá:* Công cụ tra cứu tức thời cho nhân viên kinh doanh theo ngày áp dụng, mã dịch vụ và phạm vi.
+  5. *Design System Gallery:* Bảng hướng dẫn phong cách thiết kế tôn nghiêm `#24594D`, typography, các thành phần trạng thái (Empty, Error, Loading).
+
+### 5.4. Ứng Dụng Di Động (Flutter Android)
+- Tích hợp tab **"Bảng Giá & Gói CS"** với thanh BottomNavigationBar.
+- Điều hướng dựa trên vai trò: Khi chưa đăng nhập, hiển thị thông báo yêu cầu xác thực nhân viên. Khi đã đăng nhập (Marketing, Admin, Accountant), hiển thị đầy đủ danh mục bảng giá và các gói chăm sóc định kỳ với giá tiền VNĐ rõ ràng.
+- Xử lý trọn vẹn 4 trạng thái theo quy tắc dự án: `Loading`, `Normal`, `Empty Data` (kèm CTA), `Error` (kèm nút Thử lại).
+
+### 5.5. Kiểm Thử & Quality Gate
+- Backend: `uv run pytest` đạt 26/26 bài kiểm thử (100% passed). `uv run ruff check .` All checks passed!
+- Web: `pnpm lint` 0 errors, `pnpm build` hoàn tất trong 206ms.
+- Mobile: `flutter analyze` 0 issues, `flutter test` đạt 3/3 tests passed.
+- Bộ kiểm định chất lượng toàn diện `scripts/quality-gate.ps1` ĐẠT 100%.
+
 

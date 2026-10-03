@@ -14,10 +14,12 @@ import {
   RefreshCw,
   Server,
   ShieldCheck,
+  Tag,
   Users,
   Wrench,
 } from 'lucide-react'
 import { LoginModal } from './components/auth/LoginModal'
+import { CatalogModule } from './components/catalog/CatalogModule'
 import { DocumentManager } from './components/documents/DocumentManager'
 import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './context/useAuth'
@@ -279,6 +281,28 @@ function MainApp() {
             >
               <FileCheck size={16} />
               <span>Hồ Sơ Chứng Từ & MinIO</span>
+            </button>
+          )}
+
+          {user && (
+            <button
+              onClick={() => setActiveTab('catalog')}
+              style={{
+                padding: '12px 16px',
+                border: 'none',
+                borderBottom: activeTab === 'catalog' ? '2px solid var(--brand-primary)' : '2px solid transparent',
+                backgroundColor: 'transparent',
+                color: activeTab === 'catalog' ? 'var(--brand-primary)' : '#64748B',
+                fontWeight: activeTab === 'catalog' ? 600 : 500,
+                fontSize: '13px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+            >
+              <Tag size={16} />
+              <span>Bảng Giá & Danh Mục</span>
             </button>
           )}
 
@@ -659,6 +683,9 @@ function MainApp() {
 
         {/* Tab Documents: M03 */}
         {activeTab === 'documents' && <DocumentManager />}
+
+        {/* Tab Catalog: M04 */}
+        {activeTab === 'catalog' && <CatalogModule />}
 
         {/* Tab 4: Finance placeholder */}
         {activeTab === 'finance' && (

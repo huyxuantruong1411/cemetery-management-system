@@ -4,6 +4,38 @@ Tất cả những thay đổi quan trọng trong hệ thống Quản lý Nghĩa
 
 ---
 
+## [0.5.0-design-catalog] - 2026-10-03 (M04)
+
+### Added
+- **CSDL & Alembic Migration (G03):**
+  - Migration `0004_g03_catalog_pricing_templates.py`:
+    - Tạo bảng `contract_templates` với 4 loại hợp đồng chuẩn (`LAND_PURCHASE`, `EXHUMATION`, `CREMATION`, `TRANSFER`) và phụ lục `CARE_ANNEX`.
+    - Mở rộng bảng `price_items` với 4 cột phạm vi: `zone_id`, `plot_type_id`, `package_id`, `service_code` có khóa ngoại `SET NULL`.
+  - SQLAlchemy models mapped tại `backend/app/modules/catalog/models.py` và `backend/app/modules/contracts/models.py`, chuẩn hóa `Unicode` và `UnicodeText` chống lỗi font tiếng Việt trên SQL Server.
+- **Dịch vụ Nghiệp Vụ Bảng Giá & Danh Mục (Backend):**
+  - `CatalogService`: Kiểm tra chống trùng lặp khoảng thời gian hiệu lực (`check_price_list_overlap`), tra cứu đơn giá tức thời theo scope (`lookup_price`), từ chối gói chăm sóc ngừng kích hoạt, bump version mẫu hợp đồng không hồi tố (`bump_template_version`).
+  - Script seed idempotent: `backend/scripts/seed_catalog.py` nạp bảng giá niêm yết 2026, 4 khoản mục giá mẫu, 3 gói chăm sóc định kỳ và 4 mẫu hợp đồng pháp lý chuẩn.
+- **API Endpoints:**
+  - CRUD bảng giá: `/api/v1/catalog/price-lists`, `/price-lists/{id}`
+  - CRUD khoản mục: `/api/v1/catalog/price-items`, `/price-items/{id}`
+  - Tra cứu mô phỏng đơn giá: `/api/v1/catalog/lookup-price`
+  - CRUD gói chăm sóc: `/api/v1/catalog/care-packages`, `/care-packages/{id}`
+  - CRUD mẫu hợp đồng: `/api/v1/catalog/contract-templates`, `/contract-templates/{id}/bump-version`
+- **Web Frontend (React 19 + TypeScript):**
+  - Phân hệ **"Bảng Giá & Danh Mục"** (`CatalogModule.tsx`): 5 giao diện trực quan (Bảng giá & khoản mục, Gói chăm sóc định kỳ, Mẫu hợp đồng pháp lý, Bộ mô phỏng tra cứu đơn giá thời gian thực, Design System Gallery).
+  - Tích hợp 4 trạng thái chuẩn, hiển thị tiền tệ định dạng VNĐ trang nghiêm `#24594D`.
+- **Mobile App (Flutter Android):**
+  - Tích hợp tab **"Bảng Giá & Gói CS"** trong `mobile/lib/main.dart` với BottomNavigationBar: phân biệt quyền truy cập, hiển thị chi tiết khoản mục giá tiền VNĐ rõ ràng, danh sách công việc chăm sóc dạng chip badges.
+  - Xử lý trọn vẹn 4 trạng thái (Loading, Normal, Empty, Error kèm Thử lại).
+  - 3 widget tests tự động kiểm thử smoke test, unauthenticated prompt và authenticated data render đạt 100%.
+- **Kiểm Thử & Đảm Bảo Chất Lượng:**
+  - 26 backend tests (`uv run pytest`) passed 100%. `uv run ruff check .` clean.
+  - `pnpm lint` 0 errors, `pnpm build` (206ms) passed.
+  - `flutter analyze` 0 issues, `flutter test` (3/3 passed).
+  - Bộ kiểm định chất lượng toàn diện `scripts/quality-gate.ps1` ĐẠT 100%.
+
+---
+
 ## [0.4.0-documents] - 2026-10-03 (M03)
 
 ### Added

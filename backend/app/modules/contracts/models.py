@@ -10,6 +10,8 @@ from sqlalchemy import (
     Numeric,
     String,
     Text,
+    Unicode,
+    UnicodeText,
 )
 from sqlalchemy.orm import relationship
 
@@ -184,3 +186,19 @@ class ConstructionAnnex(Base):
     checklist_specifications = Column(Text, nullable=True)
 
     annex = relationship("ContractAnnex", back_populates="construction")
+
+
+class ContractTemplate(Base):
+    __tablename__ = "contract_templates"
+
+    template_id = Column(Integer, primary_key=True, autoincrement=True)
+    template_code = Column(String(50), unique=True, nullable=False)
+    contract_type = Column(String(30), nullable=False)
+    template_name = Column(Unicode(150), nullable=False)
+    version_no = Column(Integer, nullable=False, default=1)
+    content_html = Column(UnicodeText, nullable=False)
+    required_documents_json = Column(UnicodeText, nullable=True)
+    is_active = Column(Boolean, nullable=False, default=True)
+    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+

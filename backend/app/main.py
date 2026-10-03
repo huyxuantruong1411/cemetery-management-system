@@ -4,9 +4,11 @@ from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
+import app.db.base  # noqa: F401
 from app.core.config import settings
 from app.db.session import check_database_readiness
 from app.modules.auth.router import router as auth_router
+from app.modules.catalog.router import router as catalog_router
 from app.modules.documents.router import router as documents_router
 from app.modules.jobs.router import router as jobs_router
 from app.storage.minio_adapter import storage_adapter
@@ -31,6 +33,7 @@ app.add_middleware(
 
 # Domain Routers
 app.include_router(auth_router, prefix=settings.API_V1_PREFIX)
+app.include_router(catalog_router, prefix=settings.API_V1_PREFIX)
 app.include_router(documents_router, prefix=settings.API_V1_PREFIX)
 app.include_router(jobs_router, prefix=settings.API_V1_PREFIX)
 
