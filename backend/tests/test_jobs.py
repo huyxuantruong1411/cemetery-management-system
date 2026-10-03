@@ -87,7 +87,7 @@ def test_outbox_publish_and_process():
         assert event.state == "PENDING"
 
         # Query pending
-        pending = OutboxService.get_pending_events(db)
+        pending = OutboxService.get_pending_events(db, limit=500)
         found = [e for e in pending if e.event_id == event.event_id]
         assert len(found) == 1
 

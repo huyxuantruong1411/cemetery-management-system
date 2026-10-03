@@ -3203,9 +3203,25 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    item.contractCode,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF24594D)),
+                  Row(
+                    children: [
+                      Text(
+                        item.contractCode,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF24594D)),
+                      ),
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE2E8F0),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          _getContractTypeShort(item.contractType),
+                          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
+                        ),
+                      ),
+                    ],
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -3262,6 +3278,38 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
+  String _getContractTypeName(String type) {
+    switch (type) {
+      case 'LAND_PURCHASE':
+        return 'Mua Bán Quyền Sử Dụng Đất';
+      case 'EXHUMATION':
+        return 'Cải Táng / Cất Bốc Hài Cốt';
+      case 'TRANSFER':
+        return 'Chuyển Nhượng Quyền Sử Dụng Đất';
+      case 'CREMATION':
+        return 'Hỏa Táng Trọn Gói';
+      case 'SERVICE':
+      default:
+        return 'Dịch Vụ Nghĩa Trang';
+    }
+  }
+
+  String _getContractTypeShort(String type) {
+    switch (type) {
+      case 'LAND_PURCHASE':
+        return 'Mua Đất';
+      case 'EXHUMATION':
+        return 'Cải Táng';
+      case 'TRANSFER':
+        return 'Chuyển Nhượng';
+      case 'CREMATION':
+        return 'Hỏa Táng';
+      case 'SERVICE':
+      default:
+        return 'Dịch Vụ';
+    }
+  }
+
   void _showContractDetailsSheet(BuildContext context, ContractBriefModel item) {
     showModalBottomSheet<void>(
       context: context,
@@ -3290,7 +3338,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ],
               ),
               const Divider(),
-              _buildDetailRow('Loại hợp đồng', item.contractType == 'LAND_PURCHASE' ? 'Mua Bán Quyền Sử Dụng Đất' : 'Dịch Vụ'),
+              _buildDetailRow('Loại hợp đồng', _getContractTypeName(item.contractType)),
               _buildDetailRow('Trạng thái', item.status),
               _buildDetailRow('Khách hàng', item.customerName),
               _buildDetailRow('Số điện thoại', item.customerPhone),

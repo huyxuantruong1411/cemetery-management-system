@@ -89,6 +89,7 @@ class ExhumationContract(Base):
         Integer, ForeignKey("contracts.contract_id", ondelete="CASCADE"), primary_key=True
     )
     plot_id = Column(Integer, ForeignKey("plots.plot_id"), nullable=False)
+    slot_id = Column(Integer, ForeignKey("plot_slots.slot_id"), nullable=True)
     current_deceased_id = Column(
         Integer, ForeignKey("deceased_profiles.deceased_id"), nullable=False
     )
@@ -97,6 +98,9 @@ class ExhumationContract(Base):
     reason = Column(String(255), nullable=True)
 
     contract = relationship("Contract", back_populates="exhumation")
+    plot = relationship("Plot", foreign_keys=[plot_id])
+    slot = relationship("PlotSlot", foreign_keys=[slot_id])
+    deceased = relationship("DeceasedProfile", foreign_keys=[current_deceased_id])
 
 
 class CremationContract(Base):
@@ -112,6 +116,7 @@ class CremationContract(Base):
     service_fee = Column(Numeric(15, 2), nullable=False)
 
     contract = relationship("Contract", back_populates="cremation")
+    deceased = relationship("DeceasedProfile", foreign_keys=[deceased_id])
 
 
 class TransferContract(Base):
@@ -124,8 +129,12 @@ class TransferContract(Base):
     seller_id = Column(Integer, ForeignKey("customers.customer_id"), nullable=False)
     buyer_id = Column(Integer, ForeignKey("customers.customer_id"), nullable=False)
     commission_fee = Column(Numeric(15, 2), nullable=False)
+    transfer_reason = Column(Unicode(500), nullable=True)
 
     contract = relationship("Contract", back_populates="transfer")
+    plot = relationship("Plot", foreign_keys=[plot_id])
+    seller = relationship("Customer", foreign_keys=[seller_id])
+    buyer = relationship("Customer", foreign_keys=[buyer_id])
 
 
 class ContractAnnex(Base):
@@ -140,12 +149,20 @@ class ContractAnnex(Base):
     status = Column(String(20), nullable=False, default="DRAFT")
     additional_amount = Column(Numeric(15, 2), nullable=False, default=0)
     signed_scan_url = Column(String(500), nullable=True)
+    signed_scan_file_id = Column(String(64), ForeignKey("file_objects.file_id"), nullable=True)
+    signed_at = Column(Date, nullable=True)
+    activated_at = Column(DateTime, nullable=True)
+    activated_by = Column(Integer, ForeignKey("users.user_id"), nullable=True)
+    activation_notes = Column(UnicodeText, nullable=True)
+    notes = Column(UnicodeText, nullable=True)
     valid_from = Column(Date, nullable=False)
     valid_to = Column(Date, nullable=True)
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
     contract = relationship("Contract", back_populates="annexes")
+    activator = relationship("User", foreign_keys=[activated_by])
+    scan_file = relationship("FileObject", foreign_keys=[signed_scan_file_id])
 
     burial = relationship(
         "BurialAnnex", back_populates="annex", uselist=False, cascade="all, delete-orphan"
@@ -172,6 +189,9 @@ class BurialAnnex(Base):
     construction_notes = Column(Text, nullable=True)
 
     annex = relationship("ContractAnnex", back_populates="burial")
+    plot = relationship("Plot", foreign_keys=[plot_id])
+    slot = relationship("PlotSlot", foreign_keys=[slot_id])
+    deceased = relationship("DeceasedProfile", foreign_keys=[deceased_id])
 
 
 class CareAnnex(Base):

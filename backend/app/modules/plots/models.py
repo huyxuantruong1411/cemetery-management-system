@@ -149,6 +149,8 @@ class BurialHistory(Base):
     action_type = Column(String(20), nullable=False)  # 'BURIED', 'EXHUMED'
     action_date = Column(DateTime, nullable=False)
     proof_url = Column(String(500), nullable=True)
+    proof_file_id = Column(String(64), ForeignKey("file_objects.file_id"), nullable=True)
+    performed_by = Column(Integer, ForeignKey("users.user_id"), nullable=True)
     notes = Column(UnicodeText, nullable=True)
     created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 

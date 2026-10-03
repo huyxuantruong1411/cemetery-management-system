@@ -4,6 +4,55 @@ Tất cả những thay đổi quan trọng trong hệ thống Quản lý Nghĩa
 
 ---
 
+## [0.9.0-domain-lifecycle] - 2026-10-03 (M08)
+
+### Added
+- **CSDL & Alembic Migration (G10, G18, G20):**
+  - Migration `0008_g10_g18_g20_lifecycle_annexes.py`:
+    - Tạo Database Sequence `seq_annex_number` (bắt đầu từ 1001) phục vụ sinh số phụ lục tuần tự: `PL-AT-YYYY-NNNN`.
+    - Tạo bảng `contract_annexes` (G10): quản lý vòng đời phụ lục hợp đồng (`BURIAL_ATTACHMENT`, `MAINTENANCE`, `UPGRADE`).
+    - Tạo bảng `burial_annex_details` (G10): chi tiết an táng, slot, người mất, cờ Kim Tĩnh, độ sâu an táng.
+    - Tạo bảng `exhumation_details` (G20): chi tiết cải táng di dời, slot, người mất, nghĩa trang tiếp nhận, hình thức cải táng.
+    - Tạo bảng `transfer_details` (G20): chi tiết chuyển nhượng quyền sử dụng đất, bên chuyển nhượng, bên nhận chuyển nhượng, phí chuyển nhượng.
+    - Tạo bảng `cremation_details` (G18): chi tiết dịch vụ hỏa táng độc lập, người mất, xử lý và nơi lưu giữ tro cốt.
+    - Mở rộng model ORM `Plot`: bổ sung trường `is_locked` (Boolean) tương thích với trigger CSDL.
+- **Nghiệp Vụ Backend & Ràng Buộc Miền (Lifecycle & Domain Invariants):**
+  - **Quy tắc Kim Tĩnh Bất Biến (Server Invariant & MSSQL Triggers):**
+    - Kích hoạt an táng Kim Tĩnh khóa vĩnh viễn ô mộ mức CSDL (`is_kim_tinh = True`, `is_locked = True`).
+    - Trigger `trg_plots_enforce_kim_tinh_immutability` chặn mọi thao tác mở khóa (Lỗi 51001) hoặc cải táng (Lỗi 51000).
+    - Tầng nghiệp vụ và giao diện từ chối tạo cải táng hoặc chuyển nhượng trên ô Kim Tĩnh.
+  - **Kiểm Soát Giấy Báo Tử Bắt Buộc (G08 Pre-Burial Verification):**
+    - Chốt chặn `check_death_certificate_verified` bắt buộc giấy báo tử của người quá cố phải được duyệt trước khi tạo phụ lục an táng hoặc hợp đồng hỏa táng.
+  - **Ràng Buộc Duy Nhất Slot Cho Người Mất:**
+    - Ngăn chặn một người quá cố bị an táng đồng thời tại nhiều hơn một vị trí (`409 Conflict`).
+  - **Quy Trình Cải Táng & Giải Phóng Slot (G20):**
+    - Hoàn tất cải táng: giải phóng slot về `EMPTY`, ô mộ chuyển về `OWNED_EMPTY` (hoặc `OCCUPIED` nếu còn slot khác), bảo toàn quyền sở hữu của thân nhân.
+  - **Quy Trình Chuyển Nhượng Quyền Sở Hữu (G20 & G05):**
+    - Đóng quyền sở hữu cũ (`valid_to = now`), tạo bản ghi sở hữu mới cho người nhận, cập nhật `plot.owner_id`, phát sinh nghĩa vụ tài chính phí chuyển nhượng.
+  - **Hợp Đồng Hỏa Táng Độc Lập (G18):**
+    - Cung cấp dịch vụ hỏa táng độc lập không gắn với mua đất, lưu vết chi tiết xử lý tro cốt.
+  - **Kích Hoạt Phụ Lục An Táng Kèm MinIO Scan:**
+    - Lưu file scan có chữ ký, cập nhật slot `OCCUPIED`, cập nhật ô mộ `OCCUPIED`, khóa Kim Tĩnh nếu có, sinh khoản phải thu tài chính và sự kiện Outbox.
+- **Web Frontend (React 19 + TypeScript):**
+  - Cập nhật `ContractModule.tsx`:
+    - Bổ sung huy hiệu phân loại hợp đồng (`Mua Đất`, `Cải Táng`, `Chuyển Nhượng`, `Hỏa Táng`, `Dịch Vụ`).
+    - Bổ sung 4 nút tác vụ trên toolbar: `+ Mua Đất`, `+ Cải Táng`, `+ Chuyển Nhượng`, `+ Hỏa Táng`.
+    - Thẻ Subtype trong modal chi tiết hiển thị thông tin chuyên biệt cho từng loại hợp đồng.
+    - Danh mục Phụ Lục Hợp Đồng với huy hiệu Kim Tĩnh, liên kết tải bản scan MinIO, nút "Trình Ký", và nút "Kích Hoạt Phụ Lục".
+    - 5 Modals nghiệp vụ mới: `BurialAnnexModal`, `AnnexActivateModal`, `ExhumationModal`, `TransferModal`, `CremationModal`.
+- **Mobile App (Flutter Android):**
+  - Cập nhật `mobile/lib/main.dart`:
+    - Thêm chip phân loại hợp đồng trên danh sách thực địa.
+    - Bản địa hóa tên loại hợp đồng trong Bottom Sheet chi tiết.
+- **Kiểm Thử & Đảm Bảo Chất Lượng:**
+  - 52 backend tests (`uv run pytest`) passed 100% (7 test cases mới trong `test_lifecycle.py`).
+  - `uv run ruff check .` và `uv run ruff format --check .` All checks passed!
+  - Web `pnpm lint` 0 errors, `pnpm build` passed trong 265ms.
+  - Mobile `flutter analyze` 0 issues, `flutter test` (8/8 passed).
+  - Tiêu chuẩn Quality Gate `scripts/quality-gate.ps1` ĐẠT 100%.
+
+---
+
 ## [0.8.0-land-contracts] - 2026-10-03 (M07)
 
 ### Added
