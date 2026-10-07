@@ -70,6 +70,100 @@ def enqueue_pdf_job(
 
 
 @router.get(
+    "",
+    response_model=list[JobResponse],
+    summary="Danh sách các tác vụ nền gần đây",
+)
+@router.get(
+    "/test-list",
+    response_model=list[JobResponse],
+    summary="Danh sách các tác vụ nền (bí danh quản trị)",
+)
+def list_jobs(
+    limit: int = 50,
+    _: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    return (
+        db.query(BackgroundJob)
+        .order_by(BackgroundJob.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+
+@router.post(
+    "/enqueue",
+    response_model=JobResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Đưa tác vụ mẫu vào hàng đợi",
+)
+def enqueue_generic_job(
+    req: dict[str, Any],
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    job_type = req.get("job_type", "GENERATE_PDF_CONTRACT")
+    payload = req.get("payload", {})
+    if isinstance(payload, dict):
+        payload.setdefault("contract_code", "HD-DEMO-001")
+        payload.setdefault("customer_name", "Khách Hàng Mẫu")
+        payload.setdefault("customer_phone", "0912345678")
+        payload.setdefault("customer_citizen_id", "001234567890")
+        payload.setdefault("plot_code", "KHA-01")
+        payload.setdefault("total_amount", "100000000")
+        payload["requested_by_user_id"] = current_user.user_id
+    job = JobService.enqueue_job(db=db, job_type=job_type, payload=payload)
+    return job
+
+
+@router.post(
+    "/process-next",
+    response_model=dict[str, Any],
+    summary="Thực thi tác vụ kế tiếp trong hàng đợi",
+)
+def process_next_job(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> Any:
+    claimed = JobService.claim_next_job(db, worker_id="api_worker_local")
+    if not claimed:
+        return {"message": "Không có tác vụ nào đang chờ xử lý."}
+    try:
+        payload = json.loads(claimed.payload)
+        now = datetime.now(timezone.utc)
+        pdf_bytes = PDFService.generate_contract_pdf(
+            contract_code=payload.get("contract_code", "HD-SAMPLE"),
+            contract_type=payload.get("contract_type", "LAND_PURCHASE"),
+            customer_name=payload.get("customer_name", "Khách hàng"),
+            customer_phone=payload.get("customer_phone", "0900000000"),
+            customer_citizen_id=payload.get("customer_citizen_id", "001090000000"),
+            plot_code=payload.get("plot_code", "A-01"),
+            total_amount=str(payload.get("total_amount", "0")),
+            created_at=now,
+        )
+        file_obj = DocumentService.upload_file(
+            db=db,
+            file_name=f"{payload.get('contract_code', 'HD-SAMPLE')}.pdf",
+            content=pdf_bytes,
+            user_id=current_user.user_id,
+        )
+        JobService.complete_job(
+            db=db,
+            job_id=claimed.job_id,
+            result={
+                "file_id": file_obj.file_id,
+                "file_name": file_obj.file_name,
+                "sha256": file_obj.sha256_hash,
+            },
+        )
+        return {"message": f"Đã hoàn thành tác vụ #{claimed.job_id}", "job_id": claimed.job_id}
+    except Exception as e:
+        JobService.fail_job(db, job_id=claimed.job_id, error_message=str(e))
+        return {"message": f"Tác vụ #{claimed.job_id} thất bại: {str(e)}", "job_id": claimed.job_id}
+
+
+@router.get(
     "/{job_id}",
     response_model=JobResponse,
     summary="Kiểm tra trạng thái tác vụ nền",

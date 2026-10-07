@@ -24,6 +24,7 @@ import type {
   ConstructionTaskBrief,
   StaffUnavailabilityResponse,
 } from '../../types/construction'
+import { Pagination, usePagination } from '../common/Pagination'
 
 export const ConstructionModule: React.FC = () => {
   const { accessToken: token, user, hasPermission } = useAuth()
@@ -404,6 +405,8 @@ export const ConstructionModule: React.FC = () => {
     return matchesStatus && matchesSearch
   })
 
+  const ordersPagination = usePagination(filteredOrders, { initialPageSize: 10 })
+
   const totalOrders = orders.length
   const pendingOrders = orders.filter((o) => o.status === 'PENDING').length
   const inProgressOrders = orders.filter((o) => o.status === 'IN_PROGRESS').length
@@ -577,7 +580,7 @@ export const ConstructionModule: React.FC = () => {
                 borderRadius: '4px',
               }}
             >
-              MILESTONE M09
+              Thi Công & Xây Dựng
             </span>
             <span style={{ fontSize: '12px', color: '#64748B' }}>
               Chuẩn Quy Trình Nghiệm Thu & Quản Lý Công Trình
@@ -686,7 +689,7 @@ export const ConstructionModule: React.FC = () => {
           }}
         >
           <Calendar size={16} />
-          <span>Lịch Nghỉ & Xung Đột Nhân Sự (G13) ({unavailabilities.length})</span>
+          <span>Lịch Nghỉ & Xung Đột Nhân Sự ({unavailabilities.length})</span>
         </button>
       </div>
 
@@ -1060,7 +1063,7 @@ export const ConstructionModule: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredOrders.map((order) => {
+                  {ordersPagination.pagedItems.map((order) => {
                     const progressNum = parseFloat(order.overall_progress.toString())
                     return (
                       <tr
@@ -1155,6 +1158,14 @@ export const ConstructionModule: React.FC = () => {
                   })}
                 </tbody>
               </table>
+              <Pagination
+                currentPage={ordersPagination.currentPage}
+                totalPages={ordersPagination.totalPages}
+                pageSize={ordersPagination.pageSize}
+                totalItems={ordersPagination.totalItems}
+                onPageChange={ordersPagination.handlePageChange}
+                onPageSizeChange={ordersPagination.handlePageSizeChange}
+              />
             </div>
           )}
         </>
@@ -1166,7 +1177,7 @@ export const ConstructionModule: React.FC = () => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
             <div>
               <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: 'var(--brand-secondary)' }}>
-                Danh Sách Lịch Nghỉ Phép & Lịch Bận Của Nhân Viên (G13)
+                Danh Sách Lịch Nghỉ Phép & Lịch Bận Của Nhân Viên
               </h3>
               <p style={{ fontSize: '13px', color: '#64748B', margin: '4px 0 0 0' }}>
                 Hệ thống tự động đối chiếu và cảnh báo xung đột lịch làm việc khi phân công quản trang thi công hoặc ca chăm sóc
@@ -1352,7 +1363,7 @@ export const ConstructionModule: React.FC = () => {
                     Danh Mục Công Việc Thi Công (Checklist)
                   </h4>
                   <span style={{ fontSize: '12px', color: '#64748B' }}>
-                    Sử dụng các nút mũi tên để sắp xếp lại thứ tự công việc (G11)
+                    Sử dụng các nút mũi tên để sắp xếp lại thứ tự công việc
                   </span>
                 </div>
 
@@ -1668,7 +1679,7 @@ export const ConstructionModule: React.FC = () => {
               }}
             >
               <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: 'var(--brand-secondary)' }}>
-                Lập Lệnh Thi Công Mới (M09)
+                Lập Lệnh Thi Công Mới
               </h3>
               <button
                 onClick={() => setIsCreateModalOpen(false)}
@@ -1697,7 +1708,7 @@ export const ConstructionModule: React.FC = () => {
                 >
                   <AlertTriangle size={16} color="#B45309" style={{ flexShrink: 0, marginTop: '2px' }} />
                   <div>
-                    <strong>Cảnh báo phân công nhân sự (G13):</strong>
+                    <strong>Cảnh báo phân công nhân sự:</strong>
                     <div style={{ marginTop: '2px' }}>{conflictWarning}</div>
                   </div>
                 </div>
@@ -1962,7 +1973,7 @@ export const ConstructionModule: React.FC = () => {
               }}
             >
               <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--brand-secondary)' }}>
-                Đăng Ký Lịch Nghỉ / Bận Của Nhân Viên (G13)
+                Đăng Ký Lịch Nghỉ / Bận Của Nhân Viên
               </h3>
               <button
                 onClick={() => setIsUnavailModalOpen(false)}

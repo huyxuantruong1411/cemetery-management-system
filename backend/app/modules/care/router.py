@@ -38,6 +38,7 @@ def list_schedules(
     status: Optional[str] = Query(None, description="Lọc theo trạng thái ca chăm sóc"),
     from_date: Optional[date] = Query(None, description="Từ ngày"),
     to_date: Optional[date] = Query(None, description="Đến ngày"),
+    period_key: Optional[str] = Query(None, description="Lọc theo kỳ chăm sóc (vd: 2026-M10)"),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
@@ -49,6 +50,7 @@ def list_schedules(
         status=status,
         from_date=from_date,
         to_date=to_date,
+        period_key=period_key,
         skip=skip,
         limit=limit,
     )
@@ -266,7 +268,7 @@ def register_care_annex(
     return CareAnnexResponse(
         annex_id=care_annex.annex_id,
         contract_id=base_annex.contract_id,
-        annex_number=base_annex.annex_number,
+        annex_number=base_annex.annex_code,
         package_id=care_annex.package_id,
         package_name=care_annex.package.package_name if care_annex.package else None,
         cycle_months=care_annex.cycle_months,

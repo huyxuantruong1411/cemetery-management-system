@@ -575,7 +575,7 @@ class FinanceService:
             payment_id=payment_id,
             issued_date=now,
             total_amount_in_words=amount_words,
-            pdf_file_url=f"/api/v1/documents/files/{file_obj.file_id}/download",
+            pdf_file_url=f"/api/v1/documents/{file_obj.file_id}/download",
             file_id=file_obj.file_id,
             created_by_user_id=user_id,
         )

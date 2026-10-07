@@ -80,6 +80,7 @@ class LandPurchaseContract(Base):
     land_unit_price = Column(Numeric(15, 2), nullable=False)
 
     contract = relationship("Contract", back_populates="land_purchase")
+    plot = relationship("Plot", foreign_keys=[plot_id])
 
 
 class ExhumationContract(Base):
@@ -205,6 +206,7 @@ class CareAnnex(Base):
     recurring_price = Column(Numeric(15, 2), nullable=False)
 
     annex = relationship("ContractAnnex", back_populates="care")
+    package = relationship("CarePackage", foreign_keys=[package_id])
 
 
 class ConstructionAnnex(Base):

@@ -13,9 +13,11 @@ import {
   FileCheck,
   HardDrive,
 } from 'lucide-react'
+import { useAuth } from '../../context/useAuth'
 import type { BackgroundJob, DocumentVersion, FileObject } from '../../types/document'
 
 export const DocumentManager: React.FC = () => {
+  const { accessToken } = useAuth()
   const [files, setFiles] = useState<FileObject[]>([])
   const [versions, setVersions] = useState<DocumentVersion[]>([])
   const [jobs, setJobs] = useState<BackgroundJob[]>([])
@@ -35,7 +37,7 @@ export const DocumentManager: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const getAuthToken = () => localStorage.getItem('access_token') || ''
+  const getAuthToken = () => accessToken || localStorage.getItem('access_token') || ''
 
   // Load documents and jobs
   const refreshData = async () => {
@@ -303,7 +305,7 @@ export const DocumentManager: React.FC = () => {
             </div>
             <div>
               <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-main)', margin: 0 }}>
-                Quản Trị Hồ Sơ Chứng Từ & Lưu Trữ MinIO (M03)
+                Quản Trị Hồ Sơ Chứng Từ & Lưu Trữ Số
               </h2>
               <p style={{ fontSize: '13px', color: '#64748B', margin: '2px 0 0 0' }}>
                 Hỗ trợ tải lên kiểm tra Magic Bytes, mã băm SHA-256 chống giả mạo, tạo PDF Tiếng Việt & Quản lý phiên bản
@@ -698,7 +700,7 @@ export const DocumentManager: React.FC = () => {
 
         {jobs.length === 0 ? (
           <p style={{ fontSize: '13px', color: '#64748B', margin: 0 }}>
-            Hàng đợi hiện đang trống. Nhấn "+ Đẩy Job Mẫu" để kiểm tra cơ chế lease lock và outbox event (G17).
+            Hàng đợi hiện đang trống. Chưa có tác vụ tài liệu nền cần xử lý.
           </p>
         ) : (
           <div style={{ overflowX: 'auto' }}>

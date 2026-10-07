@@ -33,6 +33,7 @@ import type {
 } from '../../types/contracts';
 import type { Customer, DeceasedProfile } from '../../types/profiles';
 import type { Plot, PlotSlot } from '../../types/plots';
+import { Pagination, usePagination } from '../common/Pagination';
 
 interface ContractModuleProps {
   token: string | null;
@@ -45,6 +46,7 @@ export const ContractModule: React.FC<ContractModuleProps> = ({ token, currentUs
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [typeFilter, setTypeFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Detail Modal State
@@ -148,6 +150,19 @@ export const ContractModule: React.FC<ContractModuleProps> = ({ token, currentUs
 
   const canManage = currentUserRoles.some((r) => ['ADMIN', 'MARKETING'].includes(r));
 
+function parseApiError(errJson: unknown, fallback: string): string {
+  if (!errJson || typeof errJson !== 'object') return fallback;
+  const data = errJson as Record<string, unknown>;
+  if (typeof data.detail === 'string') return data.detail;
+  if (Array.isArray(data.detail)) {
+    return data.detail
+      .map((d: any) => d.msg || (typeof d === 'string' ? d : JSON.stringify(d)))
+      .join(', ');
+  }
+  if (typeof data.message === 'string') return data.message;
+  return fallback;
+}
+
   // ==========================================
   // API Fetch Functions
   // ==========================================
@@ -155,8 +170,9 @@ export const ContractModule: React.FC<ContractModuleProps> = ({ token, currentUs
     setLoading(true);
     setError(null);
     try {
-      let url = '/api/v1/contracts?limit=100';
-      if (statusFilter) url += `&status_filter=${statusFilter}`;
+      let url = '/api/v1/contracts?limit=300';
+      if (statusFilter) url += `&status=${encodeURIComponent(statusFilter)}`;
+      if (typeFilter) url += `&contract_type=${encodeURIComponent(typeFilter)}`;
       if (searchQuery.trim()) url += `&search=${encodeURIComponent(searchQuery.trim())}`;
 
       const res = await fetch(url, {
@@ -164,7 +180,7 @@ export const ContractModule: React.FC<ContractModuleProps> = ({ token, currentUs
       });
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.detail || `Lỗi tải danh sách hợp đồng (${res.status})`);
+        throw new Error(parseApiError(errJson, `Lỗi tải danh sách hợp đồng (${res.status})`));
       }
       const data = await res.json();
       setContracts(data);
@@ -173,7 +189,7 @@ export const ContractModule: React.FC<ContractModuleProps> = ({ token, currentUs
     } finally {
       setLoading(false);
     }
-  }, [token, statusFilter, searchQuery]);
+  }, [token, statusFilter, typeFilter, searchQuery]);
 
   useEffect(() => {
     fetchContracts();
@@ -189,7 +205,7 @@ export const ContractModule: React.FC<ContractModuleProps> = ({ token, currentUs
       });
       if (!res.ok) {
         const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.detail || `Lỗi xem chi tiết (${res.status})`);
+        throw new Error(parseApiError(errJson, `Lỗi xem chi tiết (${res.status})`));
       }
       const data = await res.json();
       setContractDetail(data);
@@ -896,6 +912,19 @@ export const ContractModule: React.FC<ContractModuleProps> = ({ token, currentUs
     .filter((c) => c.status === 'ACTIVE')
     .reduce((acc, c) => acc + (typeof c.total_amount === 'string' ? parseFloat(c.total_amount) : c.total_amount), 0);
 
+  // Pagination for Contract Table
+  const {
+    currentPage: contractPage,
+    pageSize: contractPageSize,
+    totalPages: contractTotalPages,
+    totalItems: contractTotalItems,
+    paginatedItems: paginatedContracts,
+    setCurrentPage: setContractPage,
+    setPageSize: setContractPageSize,
+    startIndex: contractStartIndex,
+    endIndex: contractEndIndex,
+  } = usePagination(contracts, 10);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* Top Banner & KPI Cards */}
@@ -1031,10 +1060,29 @@ export const ContractModule: React.FC<ContractModuleProps> = ({ token, currentUs
             }}
           >
             <option value="">Tất cả trạng thái</option>
-            <option value="DRAFT">Dự thảo (Draft)</option>
-            <option value="PENDING_SIGN">Chờ ký kết (Pending Sign)</option>
-            <option value="ACTIVE">Đang hiệu lực (Active)</option>
-            <option value="CANCELLED">Đã hủy (Cancelled)</option>
+            <option value="DRAFT">Dự thảo</option>
+            <option value="PENDING_SIGN">Chờ ký kết</option>
+            <option value="ACTIVE">Đang hiệu lực</option>
+            <option value="CANCELLED">Đã hủy</option>
+          </select>
+
+          {/* Type Filter */}
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid #CBD5E1',
+              fontSize: '13px',
+              backgroundColor: '#FFFFFF',
+            }}
+          >
+            <option value="">Tất cả loại hợp đồng</option>
+            <option value="LAND_PURCHASE">Mua Đất</option>
+            <option value="EXHUMATION">Cải Táng</option>
+            <option value="TRANSFER">Chuyển Nhượng</option>
+            <option value="CREMATION">Hỏa Táng</option>
           </select>
 
           <button
@@ -1249,7 +1297,7 @@ export const ContractModule: React.FC<ContractModuleProps> = ({ token, currentUs
                 </tr>
               </thead>
               <tbody>
-                {contracts.map((c) => {
+                {paginatedContracts.map((c) => {
                   const badge = getStatusBadge(c.status);
                   return (
                     <tr
@@ -1360,6 +1408,16 @@ export const ContractModule: React.FC<ContractModuleProps> = ({ token, currentUs
               </tbody>
             </table>
           </div>
+          <Pagination
+            currentPage={contractPage}
+            totalPages={contractTotalPages}
+            totalItems={contractTotalItems}
+            pageSize={contractPageSize}
+            onPageChange={setContractPage}
+            onPageSizeChange={setContractPageSize}
+            startIndex={contractStartIndex}
+            endIndex={contractEndIndex}
+          />
         </div>
       )}
 
@@ -2834,7 +2892,7 @@ export const ContractModule: React.FC<ContractModuleProps> = ({ token, currentUs
               {selectedDeceased && !selectedDeceased.has_death_certificate && (
                 <div style={{ marginTop: '6px', fontSize: '12px', color: '#DC2626', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <ShieldAlert size={14} />
-                  <span>Cảnh báo G08: Người này chưa có Giấy Báo Tử được xác minh. Hệ thống sẽ từ chối tạo phụ lục!</span>
+                  <span>Cảnh báo: Người này chưa có Giấy Báo Tử được xác minh. Hệ thống sẽ từ chối tạo phụ lục!</span>
                 </div>
               )}
             </div>

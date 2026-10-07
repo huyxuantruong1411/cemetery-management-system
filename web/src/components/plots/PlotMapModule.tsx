@@ -21,6 +21,7 @@ import type {
   Row,
   PlotType,
 } from '../../types/plots';
+import { Pagination, usePagination } from '../common/Pagination';
 
 interface PlotMapModuleProps {
   token: string | null;
@@ -319,52 +320,118 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
 
   const filteredPlots = getFilteredPlots();
 
+  // Pagination for Grid Matrix View
+  const {
+    currentPage: gridPage,
+    pageSize: gridPageSize,
+    totalPages: gridTotalPages,
+    totalItems: gridTotalItems,
+    paginatedItems: paginatedGridPlots,
+    setCurrentPage: setGridPage,
+    setPageSize: setGridPageSize,
+    startIndex: gridStartIndex,
+    endIndex: gridEndIndex,
+  } = usePagination(filteredPlots, 24);
+
   // Helper for status badge
   const renderStatusBadge = (status: string, isKimTinh: boolean, isLocked: boolean) => {
-    let bg = 'bg-gray-100 text-gray-700 border-gray-200';
+    let bg = '#F1F5F9';
+    let color = '#475569';
+    let border = '#CBD5E1';
     let text = status;
 
     switch (status) {
       case 'EMPTY_UNSOLD':
-        bg = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        bg = '#ECFDF5';
+        color = '#047857';
+        border = '#A7F3D0';
         text = 'Đất trống chưa bán';
         break;
       case 'RESERVED':
-        bg = 'bg-amber-50 text-amber-700 border-amber-200';
+        bg = '#FEF3C7';
+        color = '#B45309';
+        border = '#FDE68A';
         text = 'Đang tạm giữ chỗ';
         break;
       case 'OWNED_EMPTY':
-        bg = 'bg-blue-50 text-blue-700 border-blue-200';
+        bg = '#EFF6FF';
+        color = '#1D4ED8';
+        border = '#BFDBFE';
         text = 'Đã có chủ (Chờ an táng)';
         break;
       case 'UNDER_CONSTRUCTION':
-        bg = 'bg-purple-50 text-purple-700 border-purple-200';
+        bg = '#FAF5FF';
+        color = '#7E22CE';
+        border = '#E9D5FF';
         text = 'Đang thi công huyệt';
         break;
       case 'OCCUPIED':
-        bg = 'bg-red-50 text-red-700 border-red-200';
+        bg = '#FEF2F2';
+        color = '#B91C1C';
+        border = '#FECACA';
         text = 'Đã an táng';
         break;
       case 'UNDER_EXHUMATION':
-        bg = 'bg-zinc-100 text-zinc-700 border-zinc-300';
+        bg = '#F4F4F5';
+        color = '#3F3F46';
+        border = '#E4E4E7';
         text = 'Đang cải táng';
         break;
     }
 
     return (
-      <div className="flex items-center gap-1.5 flex-wrap">
-        <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${bg}`}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            padding: '3px 8px',
+            borderRadius: '6px',
+            fontSize: '11px',
+            fontWeight: 600,
+            border: `1px solid ${border}`,
+            backgroundColor: bg,
+            color: color,
+          }}
+        >
           {text}
         </span>
         {isKimTinh && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-300" title="Kết cấu Kim Tĩnh kiên cố">
-            <Shield className="w-3 h-3 text-amber-600" />
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '3px 8px',
+              borderRadius: '6px',
+              fontSize: '11px',
+              fontWeight: 700,
+              backgroundColor: '#FEF3C7',
+              color: '#92400E',
+              border: '1px solid #FCD34D',
+            }}
+            title="Kết cấu Kim Tĩnh kiên cố"
+          >
+            <Shield size={12} color="#D97706" />
             Kim Tĩnh
           </span>
         )}
         {isLocked && (
-          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-bold bg-red-100 text-red-800 border border-red-300" title="Khóa vĩnh viễn (Quy tắc Kim Tĩnh)">
-            🔒 Khóa
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              padding: '3px 6px',
+              borderRadius: '6px',
+              fontSize: '11px',
+              fontWeight: 700,
+              backgroundColor: '#FEE2E2',
+              color: '#991B1B',
+              border: '1px solid #FCA5A5',
+            }}
+            title="Khóa vĩnh viễn (Quy tắc Kim Tĩnh)"
+          >
+            🔒 Khóa vĩnh viễn
           </span>
         )}
       </div>
@@ -374,17 +441,52 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
   // If not logged in
   if (!token) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-12 text-center max-w-xl mx-auto my-12 shadow-sm">
-        <div className="w-16 h-16 bg-[#24594D]/10 rounded-full flex items-center justify-center mx-auto mb-4 text-[#24594D]">
-          <MapPin className="w-8 h-8" />
+      <div
+        style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '12px',
+          border: '1px solid #E2E8F0',
+          padding: '48px 24px',
+          textAlign: 'center',
+          maxWidth: '540px',
+          margin: '48px auto',
+          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)',
+        }}
+      >
+        <div
+          style={{
+            width: '64px',
+            height: '64px',
+            borderRadius: '50%',
+            backgroundColor: '#E8F1EE',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto 16px',
+            color: '#24594D',
+          }}
+        >
+          <MapPin size={32} />
         </div>
-        <h3 className="text-xl font-bold text-gray-900 mb-2">Quản Lý Không Gian & Bản Đồ Ô Mộ</h3>
-        <p className="text-gray-600 mb-6 text-sm">
+        <h3 style={{ fontSize: '20px', fontWeight: 700, color: '#0F172A', marginBottom: '8px' }}>
+          Quản Lý Không Gian & Bản Đồ Ô Mộ
+        </h3>
+        <p style={{ color: '#64748B', fontSize: '14px', lineHeight: '1.6', marginBottom: '24px' }}>
           Vui lòng đăng nhập với tài khoản Kinh Doanh, Quản Trang hoặc Quản Trị để tra cứu bản đồ số GIS, vị trí ô mộ, kiểm tra Kim Tĩnh và thực hiện giữ chỗ độc quyền.
         </p>
         <button
           onClick={onRequireLogin}
-          className="px-6 py-2.5 bg-[#24594D] text-white rounded-lg font-medium hover:bg-[#1b433a] transition-colors shadow-sm"
+          style={{
+            padding: '10px 24px',
+            backgroundColor: '#24594D',
+            color: '#FFFFFF',
+            borderRadius: '8px',
+            border: 'none',
+            fontWeight: 600,
+            fontSize: '14px',
+            cursor: 'pointer',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+          }}
         >
           Đăng nhập ngay
         </button>
@@ -393,113 +495,199 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
   }
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* 1. Header & KPI Statistics */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+      <div
+        style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '12px',
+          padding: '20px 24px',
+          border: '1px solid #E2E8F0',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '16px',
+        }}
+      >
         <div>
-          <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-            <MapPin className="w-6 h-6 text-[#24594D]" />
-            Bản Đồ Số GIS & Quản Lý Ô Mộ
+          <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+            <MapPin size={22} color="#24594D" />
+            <span>Bản Đồ Số GIS & Quản Lý Ô Mộ</span>
           </h2>
-          <p className="text-sm text-gray-500 mt-1">
+          <p style={{ fontSize: '13px', color: '#64748B', margin: '4px 0 0 0' }}>
             Không gian thực địa, phân lô, giám sát kết cấu Kim Tĩnh kiên cố và chống tranh chấp đặt chỗ.
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button
             onClick={fetchData}
             disabled={isLoading}
-            className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 14px',
+              fontSize: '13px',
+              fontWeight: 500,
+              backgroundColor: '#F1F5F9',
+              color: '#334155',
+              borderRadius: '8px',
+              border: '1px solid #CBD5E1',
+              cursor: 'pointer',
+            }}
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin' : ''}`} />
-            Làm mới
+            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
+            <span>Làm mới</span>
           </button>
         </div>
       </div>
 
       {/* KPI Stats Ribbon */}
       {stats && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
-            <span className="text-xs font-medium text-gray-500">Tổng số ô mộ</span>
-            <div className="text-2xl font-bold text-gray-900 mt-1">{stats.total_plots}</div>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+            gap: '12px',
+          }}
+        >
+          <div style={{ backgroundColor: '#FFFFFF', padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+            <span style={{ fontSize: '12px', fontWeight: 500, color: '#64748B' }}>Tổng số ô mộ</span>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: '#0F172A', marginTop: '4px' }}>{stats.total_plots}</div>
           </div>
-          <div className="bg-emerald-50/60 p-4 rounded-xl border border-emerald-200 shadow-sm">
-            <span className="text-xs font-medium text-emerald-800">Đất trống chưa bán</span>
-            <div className="text-2xl font-bold text-emerald-700 mt-1">{stats.empty_unsold}</div>
+          <div style={{ backgroundColor: '#F0FDF4', padding: '16px', borderRadius: '10px', border: '1px solid #BBF7D0', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: '#166534' }}>Đất trống chưa bán</span>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: '#15803D', marginTop: '4px' }}>{stats.empty_unsold}</div>
           </div>
-          <div className="bg-amber-50/60 p-4 rounded-xl border border-amber-200 shadow-sm">
-            <span className="text-xs font-medium text-amber-800">Đang tạm giữ chỗ</span>
-            <div className="text-2xl font-bold text-amber-700 mt-1">{stats.reserved}</div>
+          <div style={{ backgroundColor: '#FFFBEB', padding: '16px', borderRadius: '10px', border: '1px solid #FDE68A', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: '#92400E' }}>Đang tạm giữ chỗ</span>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: '#B45309', marginTop: '4px' }}>{stats.reserved}</div>
           </div>
-          <div className="bg-red-50/60 p-4 rounded-xl border border-red-200 shadow-sm">
-            <span className="text-xs font-medium text-red-800">Đã an táng</span>
-            <div className="text-2xl font-bold text-red-700 mt-1">{stats.occupied}</div>
+          <div style={{ backgroundColor: '#FEF2F2', padding: '16px', borderRadius: '10px', border: '1px solid #FECACA', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: '#991B1B' }}>Đã an táng</span>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: '#B91C1C', marginTop: '4px' }}>{stats.occupied}</div>
           </div>
-          <div className="bg-yellow-50/60 p-4 rounded-xl border border-yellow-300 shadow-sm">
-            <span className="text-xs font-medium text-yellow-900 flex items-center gap-1">
-              <Shield className="w-3 h-3 text-yellow-600" />
+          <div style={{ backgroundColor: '#FEFCE8', padding: '16px', borderRadius: '10px', border: '1px solid #FEF08A', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: '#713F12', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Shield size={14} color="#D97706" />
               Mộ Kim Tĩnh
             </span>
-            <div className="text-2xl font-bold text-yellow-800 mt-1">{stats.kim_tinh_count}</div>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: '#A16207', marginTop: '4px' }}>{stats.kim_tinh_count}</div>
           </div>
-          <div className="bg-rose-50/60 p-4 rounded-xl border border-rose-200 shadow-sm">
-            <span className="text-xs font-medium text-rose-900 flex items-center gap-1">
-              🔒 Đã khóa vĩnh viễn
-            </span>
-            <div className="text-2xl font-bold text-rose-700 mt-1">{stats.locked_count}</div>
+          <div style={{ backgroundColor: '#FFF1F2', padding: '16px', borderRadius: '10px', border: '1px solid #FECDD3', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: '#881337' }}>🔒 Đã khóa vĩnh viễn</span>
+            <div style={{ fontSize: '24px', fontWeight: 700, color: '#BE123C', marginTop: '4px' }}>{stats.locked_count}</div>
           </div>
         </div>
       )}
 
       {/* 2. Navigation Tabs & Filters */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div className="border-b border-gray-200 px-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex gap-2">
-            <button
-              onClick={() => setActiveTab('map')}
-              className={`py-4 px-3 text-sm font-semibold border-b-2 flex items-center gap-2 transition-colors ${
-                activeTab === 'map'
-                  ? 'border-[#24594D] text-[#24594D]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <MapPin className="w-4 h-4" />
-              Bản Đồ Số GIS (Leaflet Map)
-            </button>
-            <button
-              onClick={() => setActiveTab('grid')}
-              className={`py-4 px-3 text-sm font-semibold border-b-2 flex items-center gap-2 transition-colors ${
-                activeTab === 'grid'
-                  ? 'border-[#24594D] text-[#24594D]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <Grid className="w-4 h-4" />
-              Ma Trận Phân Lô Thực Địa
-            </button>
-            <button
-              onClick={() => setActiveTab('catalog')}
-              className={`py-4 px-3 text-sm font-semibold border-b-2 flex items-center gap-2 transition-colors ${
-                activeTab === 'catalog'
-                  ? 'border-[#24594D] text-[#24594D]'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
-              }`}
-            >
-              <Layers className="w-4 h-4" />
-              Danh Mục Khu Vực & Loại Mộ
-            </button>
-          </div>
+      <div
+        style={{
+          backgroundColor: '#FFFFFF',
+          borderRadius: '12px',
+          border: '1px solid #E2E8F0',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Sub tabs */}
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '8px',
+            borderBottom: '1px solid #E2E8F0',
+            padding: '4px 16px 0',
+            backgroundColor: '#F8FAFC',
+          }}
+        >
+          <button
+            onClick={() => setActiveTab('map')}
+            style={{
+              padding: '12px 18px',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              border: 'none',
+              borderBottom: activeTab === 'map' ? '3px solid #24594D' : '3px solid transparent',
+              backgroundColor: 'transparent',
+              color: activeTab === 'map' ? '#24594D' : '#64748B',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <MapPin size={16} />
+            <span>Bản Đồ Số GIS (Leaflet Map)</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('grid')}
+            style={{
+              padding: '12px 18px',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              border: 'none',
+              borderBottom: activeTab === 'grid' ? '3px solid #24594D' : '3px solid transparent',
+              backgroundColor: 'transparent',
+              color: activeTab === 'grid' ? '#24594D' : '#64748B',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <Grid size={16} />
+            <span>Ma Trận Phân Lô Thực Địa</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('catalog')}
+            style={{
+              padding: '12px 18px',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              border: 'none',
+              borderBottom: activeTab === 'catalog' ? '3px solid #24594D' : '3px solid transparent',
+              backgroundColor: 'transparent',
+              color: activeTab === 'catalog' ? '#24594D' : '#64748B',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <Layers size={16} />
+            <span>Danh Mục Khu Vực & Loại Mộ</span>
+          </button>
         </div>
 
         {/* Global Filters Bar */}
-        <div className="p-4 bg-gray-50/50 border-b border-gray-200 flex flex-wrap items-center gap-3">
+        <div
+          style={{
+            padding: '12px 16px',
+            backgroundColor: '#FFFFFF',
+            borderBottom: '1px solid #E2E8F0',
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            gap: '10px',
+          }}
+        >
           {/* Zone filter */}
           <select
             value={selectedZoneId || ''}
             onChange={(e) => setSelectedZoneId(e.target.value ? Number(e.target.value) : null)}
-            className="px-3 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#24594D]"
+            style={{
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid #CBD5E1',
+              fontSize: '13px',
+              backgroundColor: '#FFFFFF',
+              color: '#334155',
+            }}
           >
             <option value="">-- Tất cả khu vực --</option>
             {zones.map((z) => (
@@ -513,7 +701,14 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#24594D]"
+            style={{
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid #CBD5E1',
+              fontSize: '13px',
+              backgroundColor: '#FFFFFF',
+              color: '#334155',
+            }}
           >
             <option value="">-- Tất cả trạng thái --</option>
             <option value="EMPTY_UNSOLD">Đất trống chưa bán</option>
@@ -529,7 +724,14 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
               if (e.target.value === '') setKimTinhFilter(null);
               else setKimTinhFilter(e.target.value === 'true');
             }}
-            className="px-3 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#24594D]"
+            style={{
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid #CBD5E1',
+              fontSize: '13px',
+              backgroundColor: '#FFFFFF',
+              color: '#334155',
+            }}
           >
             <option value="">-- Tất cả kết cấu --</option>
             <option value="true">Chỉ mộ Kim Tĩnh</option>
@@ -537,39 +739,63 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
           </select>
 
           {/* Search box */}
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="w-3.5 h-3.5 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+          <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
+            <Search size={15} color="#94A3B8" style={{ position: 'absolute', left: '10px', top: '10px' }} />
             <input
               type="text"
               placeholder="Tìm theo mã ô mộ (ví dụ: A-H01-01)..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#24594D]"
+              style={{
+                width: '100%',
+                padding: '8px 12px 8px 32px',
+                borderRadius: '6px',
+                border: '1px solid #CBD5E1',
+                fontSize: '13px',
+              }}
             />
           </div>
 
-          <span className="text-xs text-gray-500 font-medium">
-            Hiển thị: <b>{filteredPlots.length}</b> / {plots.length} ô
+          <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 500 }}>
+            Hiển thị: <strong style={{ color: '#0F172A' }}>{filteredPlots.length}</strong> / {plots.length} ô
           </span>
         </div>
 
         {/* 3. Main Tab Contents */}
         {isLoading && (
-          <div className="p-16 text-center">
-            <RefreshCw className="w-8 h-8 text-[#24594D] animate-spin mx-auto mb-3" />
-            <p className="text-sm text-gray-500">Đang tải dữ liệu không gian và bản đồ...</p>
+          <div style={{ padding: '64px 24px', textAlign: 'center', color: '#64748B' }}>
+            <RefreshCw size={32} color="#24594D" className="animate-spin" style={{ margin: '0 auto 12px' }} />
+            <div style={{ fontSize: '14px' }}>Đang tải dữ liệu không gian và bản đồ...</div>
           </div>
         )}
 
         {errorMessage && (
-          <div className="p-6 bg-red-50 text-red-700 border-b border-red-200 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="w-5 h-5 text-red-500" />
-              <span className="text-sm font-medium">{errorMessage}</span>
+          <div
+            style={{
+              padding: '16px 20px',
+              backgroundColor: '#FEF2F2',
+              borderBottom: '1px solid #FECACA',
+              color: '#991B1B',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <AlertCircle size={18} color="#DC2626" />
+              <span style={{ fontSize: '13px', fontWeight: 500 }}>{errorMessage}</span>
             </div>
             <button
               onClick={fetchData}
-              className="px-3 py-1 bg-red-600 text-white rounded text-xs font-medium hover:bg-red-700"
+              style={{
+                padding: '6px 12px',
+                backgroundColor: '#DC2626',
+                color: '#FFFFFF',
+                borderRadius: '6px',
+                border: 'none',
+                fontSize: '12px',
+                cursor: 'pointer',
+              }}
             >
               Thử lại
             </button>
@@ -578,18 +804,31 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
 
         {/* TAB 1: Leaflet Interactive GIS Map */}
         {activeTab === 'map' && !isLoading && (
-          <div className="relative h-[650px] w-full flex">
+          <div style={{ position: 'relative', height: '620px', width: '100%', display: 'flex' }}>
             {/* Left: Leaflet Map Container */}
-            <div ref={mapContainerRef} className="flex-1 h-full z-0" />
+            <div ref={mapContainerRef} style={{ flex: 1, height: '100%', minHeight: '620px', zIndex: 0 }} />
 
             {/* Right: Floating Plot Detail Sidebar */}
-            <div className="w-80 md:w-96 border-l border-gray-200 bg-white h-full overflow-y-auto p-5 shadow-lg z-10 flex flex-col">
+            <div
+              style={{
+                width: '380px',
+                borderLeft: '1px solid #E2E8F0',
+                backgroundColor: '#FFFFFF',
+                height: '100%',
+                overflowY: 'auto',
+                padding: '20px',
+                boxShadow: '-4px 0 12px rgba(0,0,0,0.05)',
+                zIndex: 10,
+                display: 'flex',
+                flexDirection: 'column',
+              }}
+            >
               {selectedPlotId && plotDetail ? (
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between border-b pb-3">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #E2E8F0', paddingBottom: '12px' }}>
                     <div>
-                      <h3 className="text-lg font-bold text-gray-900">{plotDetail.plot_code}</h3>
-                      <p className="text-xs text-gray-500">
+                      <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', margin: 0 }}>{plotDetail.plot_code}</h3>
+                      <p style={{ fontSize: '12px', color: '#64748B', margin: '2px 0 0 0' }}>
                         {plotDetail.zone_name} · {plotDetail.row_code}
                       </p>
                     </div>
@@ -598,53 +837,81 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                         setSelectedPlotId(null);
                         setPlotDetail(null);
                       }}
-                      className="text-gray-400 hover:text-gray-600 p-1"
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', padding: '4px' }}
                     >
-                      <X className="w-4 h-4" />
+                      <X size={18} />
                     </button>
                   </div>
 
                   {/* Status & Kim Tinh Badges */}
-                  <div>
-                    {renderStatusBadge(plotDetail.status, plotDetail.is_kim_tinh, plotDetail.is_locked)}
-                  </div>
+                  <div>{renderStatusBadge(plotDetail.status, plotDetail.is_kim_tinh, plotDetail.is_locked)}</div>
 
                   {/* Kim Tinh Warning Banner if locked */}
                   {plotDetail.is_kim_tinh && (
-                    <div className="p-3 bg-amber-50 rounded-lg border border-amber-200 text-xs text-amber-900">
-                      <div className="flex items-center gap-1.5 font-semibold text-amber-800 mb-1">
-                        <Shield className="w-4 h-4 text-amber-600" />
-                        Quy Tắc Kim Tĩnh Bất Biến
+                    <div
+                      style={{
+                        padding: '12px',
+                        backgroundColor: '#FEF3C7',
+                        borderRadius: '8px',
+                        border: '1px solid #FDE68A',
+                        fontSize: '12px',
+                        color: '#92400E',
+                        lineHeight: '1.5',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: '#B45309', marginBottom: '4px' }}>
+                        <Shield size={14} color="#D97706" />
+                        <span>Quy Tắc Kim Tĩnh Bất Biến</span>
                       </div>
                       Huyệt mộ được xây dựng kết cấu Kim Tĩnh kiên cố. Mọi can thiệp hạ cờ, cải táng hoặc mở khóa đều bị từ chối ở cấp CSDL.
                     </div>
                   )}
 
                   {/* Specs */}
-                  <div className="bg-gray-50 p-3 rounded-lg space-y-1.5 text-xs">
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Loại mộ:</span>
-                      <span className="font-semibold text-gray-800">{plotDetail.type_name}</span>
+                  <div
+                    style={{
+                      backgroundColor: '#F8FAFC',
+                      padding: '14px',
+                      borderRadius: '8px',
+                      border: '1px solid #E2E8F0',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      fontSize: '12px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#64748B' }}>Loại mộ:</span>
+                      <strong style={{ color: '#1E293B' }}>{plotDetail.type_name}</strong>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Dung lượng:</span>
-                      <span className="font-semibold text-gray-800">{plotDetail.default_slots} slot an táng</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#64748B' }}>Dung lượng:</span>
+                      <strong style={{ color: '#1E293B' }}>{plotDetail.default_slots} slot an táng</strong>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-500">Hướng phong thủy:</span>
-                      <span className="font-semibold text-gray-800">{plotDetail.orientation || 'Chưa định hướng'}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: '#64748B' }}>Hướng phong thủy:</span>
+                      <strong style={{ color: '#1E293B' }}>{plotDetail.orientation || 'Chưa định hướng'}</strong>
                     </div>
                     {plotDetail.latitude && plotDetail.longitude && (
-                      <div className="flex justify-between items-center pt-1 border-t border-gray-200">
-                        <span className="text-gray-500">Tọa độ GPS:</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '6px', borderTop: '1px solid #E2E8F0' }}>
+                        <span style={{ color: '#64748B' }}>Tọa độ GPS:</span>
                         <a
                           href={`https://www.google.com/maps?q=${plotDetail.latitude},${plotDetail.longitude}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-[#24594D] hover:underline flex items-center gap-1 font-mono text-[11px]"
+                          style={{
+                            color: '#24594D',
+                            textDecoration: 'none',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            fontWeight: 600,
+                            fontFamily: 'monospace',
+                            fontSize: '11px',
+                          }}
                         >
                           {Number(plotDetail.latitude).toFixed(6)}, {Number(plotDetail.longitude).toFixed(6)}
-                          <ExternalLink className="w-3 h-3" />
+                          <ExternalLink size={12} />
                         </a>
                       </div>
                     )}
@@ -652,25 +919,47 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
 
                   {/* Active Reservation Banner */}
                   {plotDetail.active_reservation && (
-                    <div className="p-3 bg-amber-50/80 rounded-lg border border-amber-300 text-xs space-y-1">
-                      <div className="flex items-center gap-1 text-amber-800 font-bold">
-                        <Clock className="w-3.5 h-3.5 text-amber-600" />
-                        Lệnh giữ chỗ độc quyền (ACTIVE)
+                    <div
+                      style={{
+                        padding: '12px',
+                        backgroundColor: '#FFFBEB',
+                        borderRadius: '8px',
+                        border: '1px solid #FCD34D',
+                        fontSize: '12px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#92400E', fontWeight: 700 }}>
+                        <Clock size={14} color="#D97706" />
+                        <span>Lệnh giữ chỗ độc quyền (ACTIVE)</span>
                       </div>
-                      <div className="text-gray-700">
-                        Khách hàng: <b>{plotDetail.active_reservation.customer_name || 'Khách lẻ'}</b>
+                      <div style={{ color: '#334155' }}>
+                        Khách hàng: <strong>{plotDetail.active_reservation.customer_name || 'Khách lẻ'}</strong>
                       </div>
                       {plotDetail.active_reservation.customer_phone && (
-                        <div className="text-gray-700">
-                          SĐT: <b>{plotDetail.active_reservation.customer_phone}</b>
+                        <div style={{ color: '#334155' }}>
+                          SĐT: <strong>{plotDetail.active_reservation.customer_phone}</strong>
                         </div>
                       )}
-                      <div className="text-gray-500 text-[11px]">
+                      <div style={{ color: '#64748B', fontSize: '11px' }}>
                         Hết hạn lúc: {new Date(plotDetail.active_reservation.expires_at).toLocaleString('vi-VN')}
                       </div>
                       <button
                         onClick={() => handleCancelReservation(plotDetail.plot_id)}
-                        className="mt-2 text-xs font-semibold text-red-600 hover:text-red-700 underline"
+                        style={{
+                          marginTop: '6px',
+                          border: 'none',
+                          background: 'none',
+                          color: '#DC2626',
+                          fontWeight: 600,
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          padding: 0,
+                          textDecoration: 'underline',
+                        }}
                       >
                         Hủy giữ chỗ này
                       </button>
@@ -679,22 +968,34 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
 
                   {/* Slots list */}
                   <div>
-                    <h4 className="text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">
+                    <h4 style={{ fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
                       Chi Tiết Các Huyệt / Slot ({plotDetail.slots.length})
                     </h4>
-                    <div className="space-y-1.5">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {plotDetail.slots.map((s) => (
                         <div
                           key={s.slot_id}
-                          className="flex items-center justify-between p-2 rounded border border-gray-200 bg-white text-xs"
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '8px 10px',
+                            borderRadius: '6px',
+                            border: '1px solid #E2E8F0',
+                            backgroundColor: '#FFFFFF',
+                            fontSize: '12px',
+                          }}
                         >
-                          <span className="font-semibold text-gray-800">Slot #{s.slot_number}</span>
+                          <strong style={{ color: '#1E293B' }}>Slot #{s.slot_number}</strong>
                           <span
-                            className={`px-1.5 py-0.5 rounded text-[11px] font-medium ${
-                              s.status === 'OCCUPIED'
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-emerald-100 text-emerald-700'
-                            }`}
+                            style={{
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              backgroundColor: s.status === 'OCCUPIED' ? '#FEE2E2' : '#DCFCE7',
+                              color: s.status === 'OCCUPIED' ? '#991B1B' : '#166534',
+                            }}
                           >
                             {s.status === 'OCCUPIED' ? 'Đã an táng' : 'Còn trống'}
                           </span>
@@ -704,7 +1005,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                   </div>
 
                   {/* Action Buttons */}
-                  <div className="pt-3 border-t border-gray-200 flex flex-col gap-2">
+                  <div style={{ paddingTop: '12px', borderTop: '1px solid #E2E8F0' }}>
                     {plotDetail.status === 'EMPTY_UNSOLD' && (
                       <button
                         onClick={() => {
@@ -716,18 +1017,33 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                           setReserveSuccess(null);
                           setIsReserveModalOpen(true);
                         }}
-                        className="w-full py-2 bg-[#24594D] text-white rounded-lg text-xs font-semibold hover:bg-[#1b433a] transition-colors flex items-center justify-center gap-1.5 shadow-sm"
+                        style={{
+                          width: '100%',
+                          padding: '10px',
+                          backgroundColor: '#24594D',
+                          color: '#FFFFFF',
+                          borderRadius: '8px',
+                          border: 'none',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                        }}
                       >
-                        <Clock className="w-3.5 h-3.5" />
-                        Tạm Giữ Chỗ Cho Khách (Anti-Double Booking)
+                        <Clock size={15} />
+                        <span>Tạm Giữ Chỗ Cho Khách</span>
                       </button>
                     )}
                   </div>
                 </div>
               ) : (
-                <div className="h-full flex flex-col items-center justify-center text-center p-6 text-gray-400">
-                  <MapPin className="w-10 h-10 mb-2 stroke-1 text-gray-300" />
-                  <p className="text-xs text-gray-500">
+                <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '24px', color: '#94A3B8' }}>
+                  <MapPin size={40} strokeWidth={1.5} color="#CBD5E1" style={{ marginBottom: '12px' }} />
+                  <p style={{ fontSize: '13px', color: '#64748B', lineHeight: '1.5', margin: 0 }}>
                     Nhấp vào một điểm ô mộ trên bản đồ để xem chi tiết kết cấu Kim Tĩnh, danh sách slot và thao tác giữ chỗ.
                   </p>
                 </div>
@@ -738,46 +1054,97 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
 
         {/* TAB 2: Grid Layout Matrix (Khu -> Hàng -> Ô mộ) */}
         {activeTab === 'grid' && !isLoading && (
-          <div className="p-6 space-y-6">
+          <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {filteredPlots.length === 0 ? (
-              <div className="p-12 text-center text-gray-400">
-                <Grid className="w-12 h-12 mx-auto mb-2 text-gray-300 stroke-1" />
-                <p className="text-sm">Không tìm thấy ô mộ nào thỏa mãn tiêu chí lọc.</p>
+              <div style={{ padding: '48px 20px', textAlign: 'center', color: '#94A3B8' }}>
+                <Grid size={48} strokeWidth={1} color="#CBD5E1" style={{ margin: '0 auto 10px' }} />
+                <p style={{ fontSize: '14px', color: '#64748B' }}>Không tìm thấy ô mộ nào thỏa mãn tiêu chí lọc.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                {filteredPlots.map((p) => {
-                  let statusBg = 'bg-emerald-50 border-emerald-200 hover:border-emerald-400';
-                  if (p.status === 'RESERVED') statusBg = 'bg-amber-50 border-amber-300 hover:border-amber-400';
-                  else if (p.status === 'OWNED_EMPTY') statusBg = 'bg-blue-50 border-blue-200 hover:border-blue-400';
-                  else if (p.status === 'OCCUPIED') statusBg = 'bg-red-50 border-red-200 hover:border-red-400';
+              <div>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))',
+                    gap: '12px',
+                  }}
+                >
+                  {paginatedGridPlots.map((p) => {
+                    let cardBg = '#F0FDF4';
+                    let cardBorder = '#BBF7D0';
+                    let statusLabel = 'Trống';
+                    let statusColor = '#15803D';
 
-                  const isSelected = selectedPlotId === p.plot_id;
+                    if (p.status === 'RESERVED') {
+                      cardBg = '#FFFBEB';
+                      cardBorder = '#FDE68A';
+                      statusLabel = 'Giữ chỗ';
+                      statusColor = '#B45309';
+                    } else if (p.status === 'OWNED_EMPTY') {
+                      cardBg = '#EFF6FF';
+                      cardBorder = '#BFDBFE';
+                      statusLabel = 'Đã có chủ';
+                      statusColor = '#1D4ED8';
+                    } else if (p.status === 'OCCUPIED') {
+                      cardBg = '#FEF2F2';
+                      cardBorder = '#FECACA';
+                      statusLabel = 'Đã chôn';
+                      statusColor = '#B91C1C';
+                    }
 
-                  return (
-                    <div
-                      key={p.plot_id}
-                      onClick={() => handleSelectPlot(p.plot_id)}
-                      className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${statusBg} ${
-                        isSelected ? 'ring-2 ring-[#24594D] shadow-md' : 'hover:shadow'
-                      } ${p.is_kim_tinh ? 'border-l-4 border-l-amber-500' : ''}`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold text-gray-900 text-xs">{p.plot_code}</span>
-                        {p.is_kim_tinh && <Shield className="w-3.5 h-3.5 text-amber-600" />}
+                    const isSelected = selectedPlotId === p.plot_id;
+
+                    return (
+                      <div
+                        key={p.plot_id}
+                        onClick={() => handleSelectPlot(p.plot_id)}
+                        style={{
+                          padding: '12px',
+                          borderRadius: '10px',
+                          border: isSelected ? '2px solid #24594D' : `1px solid ${cardBorder}`,
+                          borderLeft: p.is_kim_tinh ? '4px solid #D97706' : undefined,
+                          backgroundColor: cardBg,
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          transition: 'all 0.15s ease',
+                          boxShadow: isSelected ? '0 4px 6px -1px rgba(0,0,0,0.1)' : '0 1px 2px rgba(0,0,0,0.03)',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <strong style={{ fontSize: '13px', color: '#0F172A' }}>{p.plot_code}</strong>
+                          {p.is_kim_tinh && (
+                            <span title="Kim Tĩnh">
+                              <Shield size={14} color="#D97706" />
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {p.type_name}
+                        </div>
+                        <div style={{ fontSize: '10px', color: '#94A3B8', marginTop: '2px' }}>
+                          {p.zone_code} · {p.default_slots} slot
+                        </div>
+                        <div style={{ marginTop: '6px', fontSize: '11px', fontWeight: 600, color: statusColor }}>
+                          {statusLabel}
+                        </div>
                       </div>
-                      <div className="text-[11px] text-gray-500 truncate">{p.type_name}</div>
-                      <div className="text-[10px] text-gray-400 mt-1">
-                        {p.zone_code} · {p.default_slots} slot
-                      </div>
-                      <div className="mt-2 text-[10px] font-semibold">
-                        {p.status === 'EMPTY_UNSOLD' && <span className="text-emerald-700">Trống</span>}
-                        {p.status === 'RESERVED' && <span className="text-amber-700">Giữ chỗ</span>}
-                        {p.status === 'OCCUPIED' && <span className="text-red-700">Đã chôn</span>}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
+
+                <div style={{ marginTop: '16px' }}>
+                  <Pagination
+                    currentPage={gridPage}
+                    totalPages={gridTotalPages}
+                    totalItems={gridTotalItems}
+                    pageSize={gridPageSize}
+                    pageSizeOptions={[12, 24, 48, 96]}
+                    onPageChange={setGridPage}
+                    onPageSizeChange={setGridPageSize}
+                    startIndex={gridStartIndex}
+                    endIndex={gridEndIndex}
+                  />
+                </div>
               </div>
             )}
           </div>
@@ -785,33 +1152,42 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
 
         {/* TAB 3: Catalog & Specifications (Khu & Loại Mộ) */}
         {activeTab === 'catalog' && !isLoading && (
-          <div className="p-6 space-y-8">
+          <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
             {/* Zones & Rows */}
             <div>
-              <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider mb-3">
+              <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#1E293B', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '14px' }}>
                 Danh Mục Khu Vực (Zones) & Hàng Mộ (Rows)
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
                 {zones.map((z) => {
                   const zoneRows = rows.filter((r) => r.zone_id === z.zone_id);
                   return (
-                    <div key={z.zone_id} className="p-4 rounded-xl border border-gray-200 bg-gray-50/50">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold text-sm text-gray-900">{z.zone_code}</span>
-                        <span className="text-xs bg-gray-200 px-2 py-0.5 rounded font-medium text-gray-700">
+                    <div key={z.zone_id} style={{ padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                        <strong style={{ fontSize: '15px', color: '#0F172A' }}>{z.zone_code}</strong>
+                        <span style={{ fontSize: '11px', backgroundColor: '#E2E8F0', padding: '2px 8px', borderRadius: '4px', fontWeight: 600, color: '#475569' }}>
                           {zoneRows.length} hàng
                         </span>
                       </div>
-                      <div className="text-xs font-semibold text-[#24594D] mb-2">{z.zone_name}</div>
-                      <p className="text-xs text-gray-500 mb-3">{z.description || 'Không có mô tả.'}</p>
-                      <div className="space-y-1">
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#24594D', marginBottom: '8px' }}>{z.zone_name}</div>
+                      <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '12px', lineHeight: '1.4' }}>{z.description || 'Khuôn viên tiêu chuẩn.'}</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                         {zoneRows.map((r) => (
                           <div
                             key={r.row_id}
-                            className="flex justify-between items-center text-xs py-1 px-2 bg-white rounded border border-gray-200"
+                            style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              fontSize: '12px',
+                              padding: '4px 8px',
+                              backgroundColor: '#FFFFFF',
+                              borderRadius: '4px',
+                              border: '1px solid #E2E8F0',
+                            }}
                           >
-                            <span className="font-medium text-gray-700">{r.row_code}</span>
-                            <span className="text-gray-500">{r.total_plots} ô</span>
+                            <span style={{ fontWeight: 500, color: '#334155' }}>{r.row_code}</span>
+                            <span style={{ color: '#64748B' }}>{r.total_plots} ô</span>
                           </div>
                         ))}
                       </div>
@@ -823,27 +1199,23 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
 
             {/* Plot Types */}
             <div>
-              <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider mb-3">
+              <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#1E293B', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '14px' }}>
                 Quy Cách & Kích Thước Loại Mộ (Plot Types)
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
                 {plotTypes.map((pt) => (
-                  <div key={pt.type_id} className="p-4 rounded-xl border border-gray-200 bg-white shadow-sm">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="font-bold text-sm text-gray-900">{pt.type_name}</span>
-                      <span className="text-xs bg-[#24594D]/10 text-[#24594D] px-2 py-0.5 rounded font-bold">
+                  <div key={pt.type_id} style={{ padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0', backgroundColor: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <strong style={{ fontSize: '15px', color: '#0F172A' }}>{pt.type_name}</strong>
+                      <span style={{ fontSize: '11px', backgroundColor: '#E8F1EE', color: '#24594D', padding: '3px 8px', borderRadius: '4px', fontWeight: 700 }}>
                         {pt.default_slots} slot
                       </span>
                     </div>
-                    <div className="text-xs text-gray-600 mt-2 space-y-1">
-                      <div>
-                        Kích thước: <b>{pt.length}m</b> dài × <b>{pt.width}m</b> rộng
-                      </div>
-                      <div>
-                        Diện tích: <b>{(Number(pt.length) * Number(pt.width)).toFixed(2)} m²</b>
-                      </div>
-                      <p className="text-xs text-gray-500 pt-2 border-t mt-2">
-                        {pt.description || 'Quy cách mộ theo chuẩn cảnh quan.'}
+                    <div style={{ fontSize: '12px', color: '#475569', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <div>Kích thước: <strong>{pt.length}m</strong> dài × <strong>{pt.width}m</strong> rộng</div>
+                      <div>Diện tích: <strong>{(Number(pt.length) * Number(pt.width)).toFixed(2)} m²</strong></div>
+                      <p style={{ fontSize: '11px', color: '#94A3B8', paddingTop: '8px', borderTop: '1px solid #F1F5F9', marginTop: '4px' }}>
+                        {pt.description || 'Quy cách mộ tiêu chuẩn khuôn viên.'}
                       </p>
                     </div>
                   </div>
@@ -856,33 +1228,33 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
 
       {/* 4. Anti-Double Booking Reservation Modal */}
       {isReserveModalOpen && selectedPlotId && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b pb-3">
-              <div className="flex items-center gap-2">
-                <Clock className="w-5 h-5 text-[#24594D]" />
-                <h3 className="text-lg font-bold text-gray-900">Giữ Chỗ Ô Đất Độc Quyền</h3>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '14px', maxWidth: '440px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #E2E8F0', paddingBottom: '12px', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Clock size={18} color="#24594D" />
+                <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A', margin: 0 }}>Giữ Chỗ Ô Đất Độc Quyền</h3>
               </div>
-              <button onClick={() => setIsReserveModalOpen(false)} className="text-gray-400 hover:text-gray-600">
-                <X className="w-5 h-5" />
+              <button onClick={() => setIsReserveModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8' }}>
+                <X size={18} />
               </button>
             </div>
 
             {reserveError && (
-              <div className="p-3 bg-red-50 text-red-700 border border-red-200 rounded-lg text-xs font-medium">
+              <div style={{ padding: '10px 14px', backgroundColor: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '12px', marginBottom: '14px' }}>
                 {reserveError}
               </div>
             )}
 
             {reserveSuccess && (
-              <div className="p-3 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-xs font-medium">
+              <div style={{ padding: '10px 14px', backgroundColor: '#ECFDF5', color: '#047857', border: '1px solid #A7F3D0', borderRadius: '8px', fontSize: '12px', marginBottom: '14px' }}>
                 {reserveSuccess}
               </div>
             )}
 
-            <form onSubmit={handleReserveSubmit} className="space-y-3">
+            <form onSubmit={handleReserveSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
                   Họ tên khách hàng
                 </label>
                 <input
@@ -891,12 +1263,12 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                   placeholder="Ví dụ: Nguyễn Văn An"
                   value={reserveCustName}
                   onChange={(e) => setReserveCustName(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#24594D]"
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
                   Số điện thoại liên hệ
                 </label>
                 <input
@@ -905,18 +1277,18 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                   placeholder="0912345678"
                   value={reserveCustPhone}
                   onChange={(e) => setReserveCustPhone(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#24594D]"
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }}
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
                   Thời hạn giữ chỗ
                 </label>
                 <select
                   value={reserveHours}
                   onChange={(e) => setReserveHours(Number(e.target.value))}
-                  className="w-full px-3 py-2 text-xs border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#24594D]"
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px', backgroundColor: '#FFFFFF' }}
                 >
                   <option value={24}>24 giờ (1 ngày)</option>
                   <option value={48}>48 giờ (2 ngày - Tiêu chuẩn)</option>
@@ -925,7 +1297,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
                   Ghi chú giữ chỗ
                 </label>
                 <textarea
@@ -933,22 +1305,22 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                   placeholder="Ghi chú thêm về yêu cầu giữ chỗ của khách..."
                   value={reserveNotes}
                   onChange={(e) => setReserveNotes(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border rounded-lg focus:outline-none focus:ring-1 focus:ring-[#24594D]"
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }}
                 />
               </div>
 
-              <div className="pt-3 flex gap-2">
+              <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
                 <button
                   type="button"
                   onClick={() => setIsReserveModalOpen(false)}
-                  className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg text-xs font-medium hover:bg-gray-200"
+                  style={{ flex: 1, padding: '9px', backgroundColor: '#F1F5F9', color: '#334155', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}
                 >
                   Hủy bỏ
                 </button>
                 <button
                   type="submit"
                   disabled={isReserving}
-                  className="flex-1 py-2 bg-[#24594D] text-white rounded-lg text-xs font-semibold hover:bg-[#1b433a] disabled:opacity-50"
+                  style={{ flex: 1, padding: '9px', backgroundColor: '#24594D', color: '#FFFFFF', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
                 >
                   {isReserving ? 'Đang xác thực...' : 'Xác nhận giữ chỗ'}
                 </button>

@@ -20,6 +20,7 @@ import type {
   CareScheduleDetail,
   CareChecklistItemBrief,
 } from '../../types/care'
+import { Pagination, usePagination } from '../common/Pagination'
 
 export const CareModule: React.FC = () => {
   const { accessToken: token, user, hasPermission } = useAuth()
@@ -233,11 +234,10 @@ export const CareModule: React.FC = () => {
 
     try {
       setEvidenceUploading(true)
-      // Step 1: Upload file to MinIO staging
       const formData = new FormData()
       formData.append('file', evidenceFile)
 
-      const uploadRes = await fetch('/api/v1/storage/upload', {
+      const uploadRes = await fetch('/api/v1/documents/upload', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -250,7 +250,6 @@ export const CareModule: React.FC = () => {
       const uploadData = await uploadRes.json()
       const fileId = uploadData.file_id
 
-      // Step 2: Attach to care schedule evidence
       const attachRes = await fetch(`/api/v1/care/schedules/${selectedSchedule.schedule_id}/evidence`, {
         method: 'POST',
         headers: {
@@ -272,7 +271,6 @@ export const CareModule: React.FC = () => {
       setIsEvidenceModalOpen(false)
       setEvidenceFile(null)
       setEvidenceCaption('')
-      // Refresh detail
       openScheduleDetail(selectedSchedule.schedule_id)
     } catch (err: unknown) {
       showNotification(err instanceof Error ? err.message : 'Lỗi đính kèm ảnh', true)
@@ -303,7 +301,7 @@ export const CareModule: React.FC = () => {
 
       const closedSchedule: CareScheduleDetail = await res.json()
       setSelectedSchedule(closedSchedule)
-      showNotification('Đã đóng ca chăm sóc thành công (G12 gate đã xác thực)')
+      showNotification('Đã đóng ca chăm sóc và nghiệm thu thành công')
       setIsCloseModalOpen(false)
       setCloseNotes('')
       fetchSchedules()
@@ -315,7 +313,7 @@ export const CareModule: React.FC = () => {
   }
 
   // ---------------------------------------------------------------------------
-  // Filtering & KPIs
+  // Filtering & Pagination
   // ---------------------------------------------------------------------------
   const filteredSchedules = schedules.filter((s) => {
     if (!searchQuery.trim()) return true
@@ -328,6 +326,8 @@ export const CareModule: React.FC = () => {
       s.period_key?.toLowerCase().includes(q)
     )
   })
+
+  const pagination = usePagination<CareScheduleBrief>(filteredSchedules, { initialPageSize: 10 })
 
   const kpis = {
     total: schedules.length,
@@ -345,58 +345,131 @@ export const CareModule: React.FC = () => {
   // Render
   // ---------------------------------------------------------------------------
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* Toast Notification */}
       {notification && (
         <div
-          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg border text-sm flex items-center space-x-2 transition-all ${
-            notification.isError
-              ? 'bg-rose-950/90 border-rose-700 text-rose-200'
-              : 'bg-emerald-950/90 border-emerald-700 text-emerald-200'
-          }`}
+          style={{
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            zIndex: 9999,
+            padding: '12px 18px',
+            borderRadius: '8px',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.2)',
+            backgroundColor: notification.isError ? '#FEF2F2' : '#F0FDF4',
+            border: `1px solid ${notification.isError ? '#F87171' : '#86EFAC'}`,
+            color: notification.isError ? '#991B1B' : '#166534',
+            fontSize: '13px',
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+          }}
         >
           {notification.isError ? (
-            <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0" />
+            <AlertTriangle size={18} color="#DC2626" />
           ) : (
-            <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+            <CheckCircle2 size={18} color="#16A34A" />
           )}
           <span>{notification.message}</span>
         </div>
       )}
 
       {/* Header & Main Actions */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-700/60 pb-5">
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '16px',
+          backgroundColor: '#FFFFFF',
+          padding: '20px 24px',
+          borderRadius: '12px',
+          border: '1px solid #E2E8F0',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+        }}
+      >
         <div>
-          <div className="flex items-center space-x-3">
-            <h1 className="text-2xl font-semibold text-slate-100">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h1
+              style={{
+                fontSize: '22px',
+                fontWeight: 700,
+                color: 'var(--brand-secondary, #1E293B)',
+                margin: 0,
+              }}
+            >
               Quản lý Dịch vụ Chăm sóc Định kỳ
             </h1>
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-medium bg-cyan-950/80 text-cyan-300 border border-cyan-700/50">
-              M10 G12 Ready
+            <span
+              style={{
+                backgroundColor: 'rgba(36, 89, 77, 0.1)',
+                color: 'var(--brand-primary, #24594D)',
+                fontSize: '12px',
+                fontWeight: 600,
+                padding: '3px 10px',
+                borderRadius: '20px',
+                border: '1px solid rgba(36, 89, 77, 0.25)',
+              }}
+            >
+              Dịch Vụ & Thực Địa
             </span>
           </div>
-          <p className="text-sm text-slate-400 mt-1">
-            Lịch chăm sóc khuôn viên mộ, phân công ca thực địa, checklist bắt buộc và minh chứng hình ảnh
+          <p style={{ fontSize: '13px', color: '#64748B', margin: '6px 0 0 0' }}>
+            Lịch chăm sóc khuôn viên mộ, phân công ca thực địa, danh mục công việc và kiểm tra minh chứng nghiệm thu
           </p>
         </div>
 
-        <div className="flex items-center space-x-3">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <button
             onClick={() => fetchSchedules()}
             disabled={loading}
-            className="px-3 py-2 text-sm bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700 flex items-center space-x-1.5 transition-colors disabled:opacity-50"
+            style={{
+              padding: '9px 14px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #CBD5E1',
+              borderRadius: '8px',
+              color: '#334155',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'background-color 0.2s',
+            }}
             title="Làm mới danh sách"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">Làm mới</span>
+            <RefreshCw
+              size={15}
+              style={{
+                animation: loading ? 'spin 1s linear infinite' : 'none',
+              }}
+            />
+            <span>Làm mới</span>
           </button>
 
           {canManageCare && (
             <button
               onClick={() => setIsGenerateModalOpen(true)}
-              className="px-4 py-2 text-sm bg-cyan-600 hover:bg-cyan-500 text-white font-medium rounded-lg shadow-sm flex items-center space-x-2 transition-colors"
+              style={{
+                padding: '9px 16px',
+                backgroundColor: 'var(--brand-primary, #24594D)',
+                border: 'none',
+                borderRadius: '8px',
+                color: '#FFFFFF',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: '0 2px 4px rgba(36, 89, 77, 0.25)',
+              }}
             >
-              <Sparkles className="w-4 h-4" />
+              <Sparkles size={16} />
               <span>Sinh Lịch Kỳ Mới</span>
             </button>
           )}
@@ -404,206 +477,462 @@ export const CareModule: React.FC = () => {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
-        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3.5">
-          <div className="text-xs text-slate-400">Tổng ca trong kỳ</div>
-          <div className="text-2xl font-bold text-slate-100 mt-1">{kpis.total}</div>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+          gap: '12px',
+        }}
+      >
+        <div
+          style={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '10px',
+            padding: '14px 16px',
+            border: '1px solid #E2E8F0',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+          }}
+        >
+          <div style={{ fontSize: '12px', color: '#64748B', fontWeight: 500 }}>Tổng ca trong kỳ</div>
+          <div style={{ fontSize: '24px', fontWeight: 700, color: '#1E293B', marginTop: '4px' }}>
+            {kpis.total}
+          </div>
         </div>
-        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3.5">
-          <div className="text-xs text-amber-400">Chờ chỉ định</div>
-          <div className="text-2xl font-bold text-amber-300 mt-1">{kpis.scheduled}</div>
+
+        <div
+          style={{
+            backgroundColor: '#FFFBEB',
+            borderRadius: '10px',
+            padding: '14px 16px',
+            border: '1px solid #FDE68A',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+          }}
+        >
+          <div style={{ fontSize: '12px', color: '#B45309', fontWeight: 600 }}>Chờ chỉ định</div>
+          <div style={{ fontSize: '24px', fontWeight: 700, color: '#B45309', marginTop: '4px' }}>
+            {kpis.scheduled}
+          </div>
         </div>
-        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3.5">
-          <div className="text-xs text-blue-400">Đã chỉ định</div>
-          <div className="text-2xl font-bold text-blue-300 mt-1">{kpis.assigned}</div>
+
+        <div
+          style={{
+            backgroundColor: '#EFF6FF',
+            borderRadius: '10px',
+            padding: '14px 16px',
+            border: '1px solid #BFDBFE',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+          }}
+        >
+          <div style={{ fontSize: '12px', color: '#1D4ED8', fontWeight: 600 }}>Đã chỉ định</div>
+          <div style={{ fontSize: '24px', fontWeight: 700, color: '#1D4ED8', marginTop: '4px' }}>
+            {kpis.assigned}
+          </div>
         </div>
-        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3.5">
-          <div className="text-xs text-indigo-400">Đang thực hiện</div>
-          <div className="text-2xl font-bold text-indigo-300 mt-1">{kpis.inProgress}</div>
+
+        <div
+          style={{
+            backgroundColor: '#EEF2FF',
+            borderRadius: '10px',
+            padding: '14px 16px',
+            border: '1px solid #C7D2FE',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+          }}
+        >
+          <div style={{ fontSize: '12px', color: '#4338CA', fontWeight: 600 }}>Đang thực hiện</div>
+          <div style={{ fontSize: '24px', fontWeight: 700, color: '#4338CA', marginTop: '4px' }}>
+            {kpis.inProgress}
+          </div>
         </div>
-        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3.5">
-          <div className="text-xs text-emerald-400">Đã đóng ca (G12)</div>
-          <div className="text-2xl font-bold text-emerald-300 mt-1">{kpis.closed}</div>
+
+        <div
+          style={{
+            backgroundColor: '#ECFDF5',
+            borderRadius: '10px',
+            padding: '14px 16px',
+            border: '1px solid #A7F3D0',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+          }}
+        >
+          <div style={{ fontSize: '12px', color: '#047857', fontWeight: 600 }}>Đã hoàn tất / Đóng ca</div>
+          <div style={{ fontSize: '24px', fontWeight: 700, color: '#047857', marginTop: '4px' }}>
+            {kpis.closed}
+          </div>
         </div>
-        <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-3.5">
-          <div className="text-xs text-rose-400">Quá hạn</div>
-          <div className="text-2xl font-bold text-rose-300 mt-1">{kpis.overdue}</div>
+
+        <div
+          style={{
+            backgroundColor: '#FEF2F2',
+            borderRadius: '10px',
+            padding: '14px 16px',
+            border: '1px solid #FECACA',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+          }}
+        >
+          <div style={{ fontSize: '12px', color: '#B91C1C', fontWeight: 600 }}>Quá hạn</div>
+          <div style={{ fontSize: '24px', fontWeight: 700, color: '#B91C1C', marginTop: '4px' }}>
+            {kpis.overdue}
+          </div>
         </div>
       </div>
 
       {/* Filter & Period Bar */}
-      <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl p-4 flex flex-col md:flex-row gap-4 items-center justify-between">
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+      <div
+        style={{
+          backgroundColor: '#FFFFFF',
+          border: '1px solid #E2E8F0',
+          borderRadius: '12px',
+          padding: '14px 18px',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+        }}
+      >
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px' }}>
           {/* Period selector */}
-          <div className="flex items-center space-x-2 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5">
-            <Calendar className="w-4 h-4 text-slate-400" />
-            <span className="text-xs text-slate-400">Kỳ:</span>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: '#F8FAFC',
+              border: '1px solid #CBD5E1',
+              borderRadius: '8px',
+              padding: '6px 12px',
+            }}
+          >
+            <Calendar size={15} color="#64748B" />
+            <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 600 }}>Kỳ:</span>
             <input
               type="text"
               value={currentPeriod}
               onChange={(e) => setCurrentPeriod(e.target.value)}
               placeholder="YYYY-Mmm (vd: 2026-M10)"
-              className="bg-transparent text-sm text-slate-200 outline-none w-28 font-mono"
+              style={{
+                backgroundColor: 'transparent',
+                border: 'none',
+                outline: 'none',
+                fontSize: '13px',
+                fontWeight: 600,
+                color: '#1E293B',
+                width: '100px',
+                fontFamily: 'monospace',
+              }}
             />
           </div>
 
           {/* Status buttons */}
-          <div className="flex items-center bg-slate-900 p-1 rounded-lg border border-slate-700 text-xs">
-            {['ALL', 'SCHEDULED', 'ASSIGNED', 'IN_PROGRESS', 'CLOSED'].map((st) => (
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              backgroundColor: '#F1F5F9',
+              padding: '4px',
+              borderRadius: '8px',
+              border: '1px solid #E2E8F0',
+            }}
+          >
+            {[
+              { id: 'ALL', label: 'Tất cả' },
+              { id: 'SCHEDULED', label: 'Chờ chỉ định' },
+              { id: 'ASSIGNED', label: 'Đã giao' },
+              { id: 'IN_PROGRESS', label: 'Đang làm' },
+              { id: 'CLOSED', label: 'Đã đóng ca' },
+            ].map((st) => (
               <button
-                key={st}
-                onClick={() => setStatusFilter(st)}
-                className={`px-2.5 py-1 rounded-md transition-colors ${
-                  statusFilter === st
-                    ? 'bg-slate-700 text-slate-100 font-medium'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
+                key={st.id}
+                onClick={() => setStatusFilter(st.id)}
+                style={{
+                  padding: '5px 10px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  fontWeight: statusFilter === st.id ? 700 : 500,
+                  backgroundColor: statusFilter === st.id ? '#FFFFFF' : 'transparent',
+                  color: statusFilter === st.id ? 'var(--brand-primary, #24594D)' : '#64748B',
+                  boxShadow: statusFilter === st.id ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                  transition: 'all 0.15s ease',
+                }}
               >
-                {st === 'ALL'
-                  ? 'Tất cả'
-                  : st === 'SCHEDULED'
-                  ? 'Chờ chỉ định'
-                  : st === 'ASSIGNED'
-                  ? 'Đã giao'
-                  : st === 'IN_PROGRESS'
-                  ? 'Đang làm'
-                  : 'Đã đóng ca'}
+                {st.label}
               </button>
             ))}
           </div>
         </div>
 
         {/* Search */}
-        <div className="relative w-full md:w-72">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        <div style={{ position: 'relative', width: '280px' }}>
+          <Search
+            size={15}
+            color="#94A3B8"
+            style={{
+              position: 'absolute',
+              left: '10px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+            }}
+          />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Tìm mã mộ, khu, nhân viên..."
-            className="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+            style={{
+              width: '100%',
+              backgroundColor: '#F8FAFC',
+              border: '1px solid #CBD5E1',
+              borderRadius: '8px',
+              padding: '7px 12px 7px 32px',
+              fontSize: '13px',
+              color: '#1E293B',
+              outline: 'none',
+              boxSizing: 'border-box',
+            }}
           />
         </div>
       </div>
 
       {/* 4 UI States */}
       {loading ? (
-        <div className="bg-slate-800/30 border border-slate-700/60 rounded-xl p-12 text-center">
-          <RefreshCw className="w-8 h-8 text-cyan-400 animate-spin mx-auto mb-3" />
-          <div className="text-slate-300 font-medium">Đang tải lịch chăm sóc định kỳ...</div>
-          <div className="text-xs text-slate-500 mt-1">Hệ thống đang truy xuất dữ liệu từ cơ sở dữ liệu</div>
+        <div
+          style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '12px',
+            padding: '48px',
+            textAlign: 'center',
+          }}
+        >
+          <RefreshCw
+            size={32}
+            color="var(--brand-primary, #24594D)"
+            style={{ animation: 'spin 1s linear infinite', margin: '0 auto 12px' }}
+          />
+          <div style={{ fontSize: '15px', fontWeight: 600, color: '#1E293B' }}>
+            Đang tải danh sách lịch chăm sóc định kỳ...
+          </div>
+          <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>
+            Hệ thống đang đồng bộ dữ liệu từ máy chủ
+          </div>
         </div>
       ) : error ? (
-        <div className="bg-rose-950/20 border border-rose-800/50 rounded-xl p-8 text-center">
-          <AlertTriangle className="w-8 h-8 text-rose-400 mx-auto mb-2" />
-          <div className="text-rose-200 font-medium">{error}</div>
+        <div
+          style={{
+            backgroundColor: '#FEF2F2',
+            border: '1px solid #F87171',
+            borderRadius: '12px',
+            padding: '32px',
+            textAlign: 'center',
+          }}
+        >
+          <AlertTriangle size={32} color="#DC2626" style={{ margin: '0 auto 8px' }} />
+          <div style={{ fontSize: '15px', fontWeight: 600, color: '#991B1B' }}>{error}</div>
           <button
             onClick={() => fetchSchedules()}
-            className="mt-4 px-4 py-2 bg-rose-900 hover:bg-rose-800 text-rose-100 text-xs font-medium rounded-lg transition-colors"
+            style={{
+              marginTop: '14px',
+              padding: '8px 16px',
+              backgroundColor: '#DC2626',
+              color: '#FFFFFF',
+              fontSize: '12px',
+              fontWeight: 600,
+              borderRadius: '6px',
+              border: 'none',
+              cursor: 'pointer',
+            }}
           >
             Thử lại kết nối
           </button>
         </div>
       ) : filteredSchedules.length === 0 ? (
-        <div className="bg-slate-800/20 border border-dashed border-slate-700 rounded-xl p-12 text-center">
-          <Calendar className="w-10 h-10 text-slate-500 mx-auto mb-3" />
-          <div className="text-slate-300 font-medium text-base">Chưa có lịch chăm sóc trong kỳ này</div>
-          <p className="text-xs text-slate-500 max-w-md mx-auto mt-1 mb-5">
-            Không tìm thấy ca chăm sóc nào cho bộ lọc hiện tại. Quản trị viên có thể kích hoạt sinh lịch tự động dựa trên các phụ lục dịch vụ đang hiệu lực.
+        <div
+          style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px dashed #CBD5E1',
+            borderRadius: '12px',
+            padding: '48px 24px',
+            textAlign: 'center',
+          }}
+        >
+          <Calendar size={40} color="#94A3B8" style={{ margin: '0 auto 12px' }} />
+          <div style={{ fontSize: '16px', fontWeight: 600, color: '#1E293B' }}>
+            Chưa có lịch chăm sóc trong kỳ này
+          </div>
+          <p
+            style={{
+              fontSize: '13px',
+              color: '#64748B',
+              maxWidth: '460px',
+              margin: '6px auto 20px',
+            }}
+          >
+            Không tìm thấy ca chăm sóc nào cho bộ lọc hiện tại. Quản trị viên có thể kích hoạt sinh lịch tự động dựa trên các hợp đồng dịch vụ đang có hiệu lực.
           </p>
           {canManageCare && (
             <button
               onClick={() => setIsGenerateModalOpen(true)}
-              className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-medium rounded-lg shadow transition-colors inline-flex items-center space-x-2"
+              style={{
+                padding: '9px 18px',
+                backgroundColor: 'var(--brand-primary, #24594D)',
+                color: '#FFFFFF',
+                fontSize: '13px',
+                fontWeight: 600,
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+              }}
             >
-              <Sparkles className="w-4 h-4" />
+              <Sparkles size={16} />
               <span>Sinh Lịch Ngay Cho Kỳ {currentPeriod}</span>
             </button>
           )}
         </div>
       ) : (
         /* Normal Table View */
-        <div className="bg-slate-800/40 border border-slate-700/60 rounded-xl overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-sm">
+        <div
+          style={{
+            backgroundColor: '#FFFFFF',
+            border: '1px solid #E2E8F0',
+            borderRadius: '12px',
+            overflow: 'hidden',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+          }}
+        >
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
               <thead>
-                <tr className="bg-slate-900/60 border-b border-slate-700 text-xs text-slate-400 uppercase font-medium">
-                  <th className="py-3 px-4">Mã Ca / Kỳ</th>
-                  <th className="py-3 px-4">Khu / Ô Mộ</th>
-                  <th className="py-3 px-4">Gói Dịch Vụ</th>
-                  <th className="py-3 px-4">Ngày Thực Hiện</th>
-                  <th className="py-3 px-4">Người Phụ Trách</th>
-                  <th className="py-3 px-4">Tiến Độ / Ảnh</th>
-                  <th className="py-3 px-4">Trạng Thái</th>
-                  <th className="py-3 px-4 text-right">Thao Tác</th>
+                <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                  <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                    MÃ CA / KỲ
+                  </th>
+                  <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                    KHU / Ô MỘ
+                  </th>
+                  <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                    GÓI DỊCH VỤ
+                  </th>
+                  <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                    NGÀY THỰC HIỆN
+                  </th>
+                  <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                    NGƯỜI PHỤ TRÁCH
+                  </th>
+                  <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                    TIẾN ĐỘ / ẢNH
+                  </th>
+                  <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                    TRẠNG THÁI
+                  </th>
+                  <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: '#475569', textAlign: 'right' }}>
+                    THAO TÁC
+                  </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/50 text-slate-300">
-                {filteredSchedules.map((item) => (
+              <tbody>
+                {pagination.pagedItems.map((item) => (
                   <tr
                     key={item.schedule_id}
-                    className="hover:bg-slate-800/50 transition-colors cursor-pointer"
                     onClick={() => openScheduleDetail(item.schedule_id)}
+                    style={{
+                      borderBottom: '1px solid #F1F5F9',
+                      cursor: 'pointer',
+                      transition: 'background-color 0.15s ease',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
+                    onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#FFFFFF')}
                   >
-                    <td className="py-3.5 px-4 font-mono font-medium text-cyan-300">
+                    <td style={{ padding: '14px 16px', fontFamily: 'monospace', fontWeight: 600, color: 'var(--brand-primary, #24594D)' }}>
                       <div>#{item.schedule_id}</div>
-                      <div className="text-xs text-slate-500 font-sans">{item.period_key}</div>
+                      <div style={{ fontSize: '11px', color: '#94A3B8', fontFamily: 'sans-serif' }}>{item.period_key}</div>
                     </td>
-                    <td className="py-3.5 px-4">
-                      <div className="font-medium text-slate-200 flex items-center space-x-1.5">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                    <td style={{ padding: '14px 16px' }}>
+                      <div style={{ fontWeight: 600, color: '#1E293B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <MapPin size={14} color="#64748B" />
                         <span>{item.plot_code || `Plot #${item.plot_id}`}</span>
                       </div>
-                      <div className="text-xs text-slate-500">{item.zone_name || 'Khu chung'}</div>
+                      <div style={{ fontSize: '12px', color: '#64748B' }}>{item.zone_name || 'Khu chung'}</div>
                     </td>
-                    <td className="py-3.5 px-4">
-                      <div className="text-slate-200">{item.package_name || `Gói #${item.package_id}`}</div>
+                    <td style={{ padding: '14px 16px', color: '#1E293B', fontWeight: 500 }}>
+                      {item.package_name || `Gói #${item.package_id}`}
                     </td>
-                    <td className="py-3.5 px-4 text-xs font-mono">
-                      <div className="flex items-center space-x-1 text-slate-300">
-                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                    <td style={{ padding: '14px 16px', fontSize: '12px', fontFamily: 'monospace' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#334155' }}>
+                        <Calendar size={13} color="#64748B" />
                         <span>{item.scheduled_date}</span>
                       </div>
                       {item.closed_at && (
-                        <div className="text-emerald-400 text-[11px] mt-0.5">
+                        <div style={{ color: '#059669', fontSize: '11px', marginTop: '2px' }}>
                           Đóng: {new Date(item.closed_at).toLocaleDateString('vi-VN')}
                         </div>
                       )}
                     </td>
-                    <td className="py-3.5 px-4 text-xs">
+                    <td style={{ padding: '14px 16px', fontSize: '12px' }}>
                       {item.caretaker_name ? (
-                        <div className="flex items-center space-x-1 text-slate-200">
-                          <UserIcon className="w-3.5 h-3.5 text-slate-400" />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1E293B', fontWeight: 500 }}>
+                          <UserIcon size={14} color="#64748B" />
                           <span>{item.caretaker_name}</span>
                         </div>
                       ) : (
-                        <span className="text-amber-400 italic">Chưa phân công</span>
+                        <span style={{ color: '#B45309', fontStyle: 'italic', fontSize: '12px' }}>Chưa phân công</span>
                       )}
                     </td>
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-center space-x-3 text-xs">
-                        <span className="text-slate-300">
+                    <td style={{ padding: '14px 16px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '12px' }}>
+                        <span style={{ color: '#334155', fontWeight: 500 }}>
                           {item.completed_tasks_count}/{item.tasks_count} việc
                         </span>
-                        <span className="flex items-center space-x-1 text-slate-400">
-                          <Camera className="w-3.5 h-3.5" />
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#64748B' }}>
+                          <Camera size={13} />
                           <span>{item.evidence_count}</span>
                         </span>
                       </div>
                     </td>
-                    <td className="py-3.5 px-4">
+                    <td style={{ padding: '14px 16px' }}>
                       <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium border ${
-                          item.status === 'CLOSED'
-                            ? 'bg-emerald-950/60 text-emerald-300 border-emerald-700/50'
-                            : item.status === 'IN_PROGRESS'
-                            ? 'bg-indigo-950/60 text-indigo-300 border-indigo-700/50'
-                            : item.status === 'ASSIGNED'
-                            ? 'bg-blue-950/60 text-blue-300 border-blue-700/50'
-                            : item.status === 'OVERDUE'
-                            ? 'bg-rose-950/60 text-rose-300 border-rose-700/50'
-                            : 'bg-amber-950/60 text-amber-300 border-amber-700/50'
-                        }`}
+                        style={{
+                          display: 'inline-block',
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          backgroundColor:
+                            item.status === 'CLOSED'
+                              ? '#ECFDF5'
+                              : item.status === 'IN_PROGRESS'
+                              ? '#EEF2FF'
+                              : item.status === 'ASSIGNED'
+                              ? '#EFF6FF'
+                              : item.status === 'OVERDUE'
+                              ? '#FEF2F2'
+                              : '#FFFBEB',
+                          color:
+                            item.status === 'CLOSED'
+                              ? '#047857'
+                              : item.status === 'IN_PROGRESS'
+                              ? '#4338CA'
+                              : item.status === 'ASSIGNED'
+                              ? '#1D4ED8'
+                              : item.status === 'OVERDUE'
+                              ? '#B91C1C'
+                              : '#B45309',
+                          border: `1px solid ${
+                            item.status === 'CLOSED'
+                              ? '#A7F3D0'
+                              : item.status === 'IN_PROGRESS'
+                              ? '#C7D2FE'
+                              : item.status === 'ASSIGNED'
+                              ? '#BFDBFE'
+                              : item.status === 'OVERDUE'
+                              ? '#FECACA'
+                              : '#FDE68A'
+                          }`,
+                        }}
                       >
                         {item.status === 'CLOSED'
                           ? 'Đã đóng ca'
@@ -616,13 +945,22 @@ export const CareModule: React.FC = () => {
                           : 'Chờ giao'}
                       </span>
                     </td>
-                    <td className="py-3.5 px-4 text-right">
+                    <td style={{ padding: '14px 16px', textAlign: 'right' }}>
                       <button
                         onClick={(e) => {
                           e.stopPropagation()
                           openScheduleDetail(item.schedule_id)
                         }}
-                        className="px-2.5 py-1 text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 rounded transition-colors"
+                        style={{
+                          padding: '6px 12px',
+                          fontSize: '12px',
+                          backgroundColor: '#F1F5F9',
+                          color: 'var(--brand-primary, #24594D)',
+                          border: '1px solid #CBD5E1',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontWeight: 600,
+                        }}
                       >
                         Chi tiết
                       </button>
@@ -632,78 +970,175 @@ export const CareModule: React.FC = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination */}
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            pageSize={pagination.pageSize}
+            totalItems={pagination.totalItems}
+            onPageChange={pagination.handlePageChange}
+            onPageSizeChange={pagination.handlePageSizeChange}
+          />
         </div>
       )}
 
       {/* Schedule Detail Modal / Drawer */}
       {isDetailOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E2E8F0',
+              borderRadius: '12px',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)',
+              width: '100%',
+              maxWidth: '720px',
+              maxHeight: '90vh',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+            }}
+          >
             {/* Modal Header */}
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 rounded-lg bg-cyan-950/80 text-cyan-400 border border-cyan-800/60">
-                  <ListTodo className="w-5 h-5" />
+            <div
+              style={{
+                padding: '16px 20px',
+                borderBottom: '1px solid #E2E8F0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                backgroundColor: '#F8FAFC',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    padding: '8px',
+                    borderRadius: '8px',
+                    backgroundColor: 'rgba(36, 89, 77, 0.1)',
+                    color: 'var(--brand-primary, #24594D)',
+                  }}
+                >
+                  <ListTodo size={20} />
                 </div>
                 <div>
-                  <h2 className="text-base font-semibold text-slate-100 flex items-center space-x-2">
+                  <h2
+                    style={{
+                      fontSize: '16px',
+                      fontWeight: 700,
+                      color: '#1E293B',
+                      margin: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
                     <span>Ca chăm sóc #{selectedSchedule?.schedule_id}</span>
-                    <span className="text-xs font-mono text-cyan-400">({selectedSchedule?.period_key})</span>
+                    <span style={{ fontSize: '12px', color: '#64748B', fontFamily: 'monospace' }}>
+                      ({selectedSchedule?.period_key})
+                    </span>
                   </h2>
-                  <p className="text-xs text-slate-400">
+                  <p style={{ fontSize: '12px', color: '#64748B', margin: '2px 0 0 0' }}>
                     Mộ: {selectedSchedule?.plot_code} • {selectedSchedule?.package_name}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => setIsDetailOpen(false)}
-                className="text-slate-400 hover:text-slate-200 p-1.5 rounded-lg hover:bg-slate-800 transition-colors"
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#64748B',
+                  cursor: 'pointer',
+                  padding: '6px',
+                  borderRadius: '6px',
+                }}
               >
-                <X className="w-5 h-5" />
+                <X size={20} />
               </button>
             </div>
 
             {/* Modal Content */}
-            <div className="p-5 overflow-y-auto space-y-6">
+            <div style={{ padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               {detailLoading ? (
-                <div className="py-12 text-center">
-                  <RefreshCw className="w-6 h-6 text-cyan-400 animate-spin mx-auto mb-2" />
-                  <div className="text-xs text-slate-400">Đang tải chi tiết ca chăm sóc...</div>
+                <div style={{ padding: '48px 0', textAlign: 'center' }}>
+                  <RefreshCw
+                    size={28}
+                    color="var(--brand-primary, #24594D)"
+                    style={{ animation: 'spin 1s linear infinite', margin: '0 auto 8px' }}
+                  />
+                  <div style={{ fontSize: '13px', color: '#64748B' }}>Đang tải chi tiết ca chăm sóc...</div>
                 </div>
               ) : selectedSchedule ? (
                 <>
-                  {/* Status & G13 Conflict alert */}
+                  {/* Status & Conflict alert */}
                   {selectedSchedule.has_conflict && (
-                    <div className="p-3 bg-amber-950/40 border border-amber-800/60 rounded-lg flex items-start space-x-2.5">
-                      <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
-                      <div className="text-xs text-amber-200">
-                        <div className="font-semibold">Cảnh báo trùng lịch công tác (G13):</div>
+                    <div
+                      style={{
+                        padding: '12px 16px',
+                        backgroundColor: '#FFFBEB',
+                        border: '1px solid #FDE68A',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: '10px',
+                      }}
+                    >
+                      <AlertTriangle size={18} color="#D97706" style={{ marginTop: '2px', flexShrink: 0 }} />
+                      <div style={{ fontSize: '12px', color: '#92400E' }}>
+                        <div style={{ fontWeight: 700 }}>Cảnh báo trùng lịch công tác:</div>
                         <div>{selectedSchedule.conflict_reason}</div>
                       </div>
                     </div>
                   )}
 
                   {/* Summary Grid */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-800/40 p-3.5 rounded-lg border border-slate-700/60 text-xs">
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(2, 1fr)',
+                      gap: '12px',
+                      backgroundColor: '#F8FAFC',
+                      padding: '14px',
+                      borderRadius: '8px',
+                      border: '1px solid #E2E8F0',
+                      fontSize: '12px',
+                    }}
+                  >
                     <div>
-                      <span className="text-slate-400">Ngày quy định:</span>
-                      <div className="font-mono text-slate-200 font-medium mt-0.5">
+                      <span style={{ color: '#64748B' }}>Ngày quy định:</span>
+                      <div style={{ fontFamily: 'monospace', color: '#1E293B', fontWeight: 600, marginTop: '2px' }}>
                         {selectedSchedule.scheduled_date}
                       </div>
                     </div>
                     <div>
-                      <span className="text-slate-400">Trạng thái:</span>
-                      <div className="mt-0.5 font-medium text-cyan-300">{selectedSchedule.status}</div>
+                      <span style={{ color: '#64748B' }}>Trạng thái:</span>
+                      <div style={{ marginTop: '2px', fontWeight: 600, color: 'var(--brand-primary, #24594D)' }}>
+                        {selectedSchedule.status}
+                      </div>
                     </div>
                     <div>
-                      <span className="text-slate-400">Nhân viên phụ trách:</span>
-                      <div className="font-medium text-slate-200 mt-0.5">
+                      <span style={{ color: '#64748B' }}>Nhân viên phụ trách:</span>
+                      <div style={{ fontWeight: 600, color: '#1E293B', marginTop: '2px' }}>
                         {selectedSchedule.caretaker_name || 'Chưa phân công'}
                       </div>
                     </div>
                     <div>
-                      <span className="text-slate-400">Đóng ca lúc:</span>
-                      <div className="font-mono text-slate-200 mt-0.5">
+                      <span style={{ color: '#64748B' }}>Đóng ca lúc:</span>
+                      <div style={{ fontFamily: 'monospace', color: '#1E293B', marginTop: '2px' }}>
                         {selectedSchedule.closed_at
                           ? new Date(selectedSchedule.closed_at).toLocaleString('vi-VN')
                           : 'Chưa hoàn tất'}
@@ -713,25 +1148,58 @@ export const CareModule: React.FC = () => {
 
                   {/* Caretaker Assignment */}
                   {canManageCare && selectedSchedule.status !== 'CLOSED' && (
-                    <div className="bg-slate-800/30 p-3.5 rounded-lg border border-slate-700/50 flex items-center justify-between gap-3">
-                      <div className="text-xs">
-                        <span className="font-medium text-slate-200">Chỉ định / đổi nhân viên:</span>
-                        <p className="text-slate-400 text-[11px] mt-0.5">
-                          Nhập User ID nhân viên chăm sóc thực địa
-                        </p>
+                    <div
+                      style={{
+                        backgroundColor: '#F8FAFC',
+                        padding: '14px',
+                        borderRadius: '8px',
+                        border: '1px solid #E2E8F0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '12px',
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <div>
+                        <div style={{ fontSize: '13px', fontWeight: 600, color: '#1E293B' }}>
+                          Chỉ định / đổi nhân viên phụ trách:
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
+                          Nhập User ID nhân viên thực địa phụ trách ca này
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <input
                           type="number"
                           value={caretakerInputId}
                           onChange={(e) => setCaretakerInputId(e.target.value)}
                           placeholder="User ID"
-                          className="w-24 bg-slate-900 border border-slate-700 rounded px-2.5 py-1 text-xs text-slate-200 outline-none"
+                          style={{
+                            width: '100px',
+                            backgroundColor: '#FFFFFF',
+                            border: '1px solid #CBD5E1',
+                            borderRadius: '6px',
+                            padding: '6px 10px',
+                            fontSize: '12px',
+                            color: '#1E293B',
+                            outline: 'none',
+                          }}
                         />
                         <button
                           onClick={handleAssignCaretaker}
                           disabled={assignLoading || !caretakerInputId}
-                          className="px-3 py-1 bg-cyan-700 hover:bg-cyan-600 text-white text-xs font-medium rounded transition-colors disabled:opacity-50"
+                          style={{
+                            padding: '6px 14px',
+                            backgroundColor: 'var(--brand-primary, #24594D)',
+                            color: '#FFFFFF',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            borderRadius: '6px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            opacity: assignLoading || !caretakerInputId ? 0.6 : 1,
+                          }}
                         >
                           {assignLoading ? 'Lưu...' : 'Giao việc'}
                         </button>
@@ -741,47 +1209,77 @@ export const CareModule: React.FC = () => {
 
                   {/* Checklist Section */}
                   <div>
-                    <div className="flex items-center justify-between mb-2.5">
-                      <h3 className="text-sm font-semibold text-slate-200 flex items-center space-x-2">
-                        <ListTodo className="w-4 h-4 text-cyan-400" />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                      <h3
+                        style={{
+                          fontSize: '14px',
+                          fontWeight: 700,
+                          color: '#1E293B',
+                          margin: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <ListTodo size={16} color="var(--brand-primary, #24594D)" />
                         <span>Danh mục công việc (Checklist)</span>
                       </h3>
-                      <span className="text-xs text-slate-400">
+                      <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 500 }}>
                         Đã làm: {selectedSchedule.completed_tasks_count}/{selectedSchedule.checklist_items.length}
                       </span>
                     </div>
 
-                    <div className="space-y-2">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       {selectedSchedule.checklist_items.map((task) => (
                         <div
                           key={task.item_id}
-                          className={`p-3 rounded-lg border flex items-start justify-between gap-3 transition-colors ${
-                            task.is_completed
-                              ? 'bg-emerald-950/20 border-emerald-800/40 text-emerald-200'
-                              : 'bg-slate-800/40 border-slate-700/60 text-slate-300'
-                          }`}
+                          style={{
+                            padding: '12px 14px',
+                            borderRadius: '8px',
+                            border: task.is_completed ? '1px solid #A7F3D0' : '1px solid #E2E8F0',
+                            backgroundColor: task.is_completed ? '#F0FDF4' : '#FFFFFF',
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            justifyContent: 'space-between',
+                            gap: '12px',
+                          }}
                         >
-                          <div className="flex items-start space-x-3">
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                             <input
                               type="checkbox"
                               checked={task.is_completed}
                               onChange={() => handleToggleChecklistItem(task)}
                               disabled={selectedSchedule.status === 'CLOSED'}
-                              className="mt-0.5 w-4 h-4 rounded text-cyan-600 focus:ring-0 focus:ring-offset-0 bg-slate-900 border-slate-600 cursor-pointer disabled:opacity-50"
+                              style={{ marginTop: '2px', cursor: 'pointer', width: '16px', height: '16px' }}
                             />
                             <div>
-                              <div className="text-xs font-medium flex items-center space-x-2">
-                                <span className={task.is_completed ? 'line-through opacity-80' : ''}>
+                              <div style={{ fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span
+                                  style={{
+                                    textDecoration: task.is_completed ? 'line-through' : 'none',
+                                    color: task.is_completed ? '#64748B' : '#1E293B',
+                                  }}
+                                >
                                   {task.task_description}
                                 </span>
                                 {task.is_required && (
-                                  <span className="px-1.5 py-0.2 rounded text-[10px] font-semibold bg-rose-950 text-rose-300 border border-rose-800/60">
+                                  <span
+                                    style={{
+                                      padding: '2px 6px',
+                                      borderRadius: '4px',
+                                      fontSize: '10px',
+                                      fontWeight: 700,
+                                      backgroundColor: '#FEE2E2',
+                                      color: '#B91C1C',
+                                      border: '1px solid #FCA5A5',
+                                    }}
+                                  >
                                     Bắt buộc
                                   </span>
                                 )}
                               </div>
                               {task.field_notes && (
-                                <div className="text-[11px] text-slate-400 mt-1 italic">
+                                <div style={{ fontSize: '11px', color: '#64748B', marginTop: '4px', fontStyle: 'italic' }}>
                                   Ghi chú: {task.field_notes}
                                 </div>
                               )}
@@ -794,46 +1292,86 @@ export const CareModule: React.FC = () => {
 
                   {/* Photo Evidence Section */}
                   <div>
-                    <div className="flex items-center justify-between mb-2.5">
-                      <h3 className="text-sm font-semibold text-slate-200 flex items-center space-x-2">
-                        <Camera className="w-4 h-4 text-cyan-400" />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                      <h3
+                        style={{
+                          fontSize: '14px',
+                          fontWeight: 700,
+                          color: '#1E293B',
+                          margin: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <Camera size={16} color="var(--brand-primary, #24594D)" />
                         <span>Minh chứng hình ảnh ({selectedSchedule.media_evidences.length})</span>
                       </h3>
                       {selectedSchedule.status !== 'CLOSED' && (
                         <button
                           onClick={() => setIsEvidenceModalOpen(true)}
-                          className="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded flex items-center space-x-1.5 transition-colors"
+                          style={{
+                            padding: '6px 12px',
+                            fontSize: '12px',
+                            backgroundColor: '#FFFFFF',
+                            border: '1px solid #CBD5E1',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            fontWeight: 600,
+                            color: '#334155',
+                          }}
                         >
-                          <UploadCloud className="w-3.5 h-3.5 text-cyan-400" />
+                          <UploadCloud size={14} color="var(--brand-primary, #24594D)" />
                           <span>Chụp / Tải ảnh</span>
                         </button>
                       )}
                     </div>
 
                     {selectedSchedule.media_evidences.length === 0 ? (
-                      <div className="p-4 bg-slate-800/20 border border-dashed border-slate-700 rounded-lg text-center text-xs text-slate-500">
-                        Chưa có ảnh minh chứng hiện trường. Cần ít nhất 1 ảnh để đủ điều kiện đóng ca (G12).
+                      <div
+                        style={{
+                          padding: '18px',
+                          backgroundColor: '#F8FAFC',
+                          border: '1px dashed #CBD5E1',
+                          borderRadius: '8px',
+                          textAlign: 'center',
+                          fontSize: '12px',
+                          color: '#64748B',
+                        }}
+                      >
+                        Chưa có ảnh minh chứng hiện trường. Cần ít nhất 1 ảnh để đủ điều kiện đóng ca.
                       </div>
                     ) : (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
                         {selectedSchedule.media_evidences.map((ev) => (
                           <div
                             key={ev.evidence_id}
-                            className="bg-slate-800/60 border border-slate-700/60 rounded-lg overflow-hidden group"
+                            style={{
+                              backgroundColor: '#F8FAFC',
+                              border: '1px solid #E2E8F0',
+                              borderRadius: '8px',
+                              overflow: 'hidden',
+                            }}
                           >
-                            <div className="h-28 bg-slate-900 flex items-center justify-center relative">
-                              <Camera className="w-8 h-8 text-slate-600" />
-                              <div className="absolute inset-0 bg-cyan-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <span className="text-[11px] text-cyan-200 font-mono">
-                                  {ev.file_id || 'Photo'}
-                                </span>
-                              </div>
+                            <div
+                              style={{
+                                height: '110px',
+                                backgroundColor: '#E2E8F0',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                            >
+                              <Camera size={28} color="#94A3B8" />
                             </div>
-                            <div className="p-2 text-xs">
-                              <div className="font-medium text-slate-200 truncate" title={ev.caption || ''}>
+                            <div style={{ padding: '8px 10px', fontSize: '12px' }}>
+                              <div style={{ fontWeight: 600, color: '#1E293B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                 {ev.caption || 'Ảnh hiện trường'}
                               </div>
-                              <div className="text-[10px] text-slate-500 mt-0.5">
+                              <div style={{ fontSize: '10px', color: '#94A3B8', marginTop: '2px' }}>
                                 {new Date(ev.uploaded_at).toLocaleTimeString('vi-VN')}
                               </div>
                             </div>
@@ -847,10 +1385,28 @@ export const CareModule: React.FC = () => {
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between">
+            <div
+              style={{
+                padding: '14px 20px',
+                borderTop: '1px solid #E2E8F0',
+                backgroundColor: '#F8FAFC',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
               <button
                 onClick={() => setIsDetailOpen(false)}
-                className="px-4 py-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors"
+                style={{
+                  padding: '7px 14px',
+                  fontSize: '13px',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #CBD5E1',
+                  borderRadius: '6px',
+                  color: '#64748B',
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                }}
               >
                 Đóng
               </button>
@@ -858,9 +1414,22 @@ export const CareModule: React.FC = () => {
               {selectedSchedule && selectedSchedule.status !== 'CLOSED' && (
                 <button
                   onClick={() => setIsCloseModalOpen(true)}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg shadow transition-colors flex items-center space-x-1.5"
+                  style={{
+                    padding: '8px 16px',
+                    backgroundColor: '#059669',
+                    color: '#FFFFFF',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    borderRadius: '8px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    boxShadow: '0 2px 4px rgba(5, 150, 105, 0.25)',
+                  }}
                 >
-                  <ShieldCheck className="w-4 h-4" />
+                  <ShieldCheck size={16} />
                   <span>Xác nhận & Đóng ca chăm sóc</span>
                 </button>
               )}
@@ -871,67 +1440,153 @@ export const CareModule: React.FC = () => {
 
       {/* Period Generator Modal */}
       {isGenerateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+          }}
+        >
           <form
             onSubmit={handleGeneratePeriod}
-            className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
+            style={{
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E2E8F0',
+              borderRadius: '12px',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)',
+              width: '100%',
+              maxWidth: '440px',
+              overflow: 'hidden',
+            }}
           >
-            <div className="p-4 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-100 flex items-center space-x-2">
-                <Sparkles className="w-4 h-4 text-cyan-400" />
+            <div
+              style={{
+                padding: '16px 20px',
+                borderBottom: '1px solid #E2E8F0',
+                backgroundColor: '#F8FAFC',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: '15px',
+                  fontWeight: 700,
+                  color: '#1E293B',
+                  margin: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <Sparkles size={16} color="var(--brand-primary, #24594D)" />
                 <span>Sinh Lịch Chăm Sóc Định Kỳ</span>
               </h3>
               <button
                 type="button"
                 onClick={() => setIsGenerateModalOpen(false)}
-                className="text-slate-400 hover:text-slate-200"
+                style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}
               >
-                <X className="w-4 h-4" />
+                <X size={18} />
               </button>
             </div>
-            <div className="p-5 space-y-4 text-xs">
-              <p className="text-slate-400">
-                Hệ thống sẽ quét toàn bộ hợp đồng dịch vụ chăm sóc đang có hiệu lực trong tháng và tạo lịch công việc tương ứng. Áp dụng quy tắc neo ngày cuối tháng và đảm bảo tính bất biến (idempotent).
+            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px', fontSize: '13px' }}>
+              <p style={{ color: '#64748B', margin: 0, lineHeight: 1.5 }}>
+                Hệ thống sẽ quét toàn bộ hợp đồng dịch vụ chăm sóc đang có hiệu lực trong tháng và tạo lịch công việc tương ứng.
               </p>
-              <div className="grid grid-cols-2 gap-3">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1">Năm</label>
+                  <label style={{ display: 'block', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>Năm</label>
                   <input
                     type="number"
                     value={genYear}
                     onChange={(e) => setGenYear(Number(e.target.value))}
                     min={2020}
                     max={2050}
-                    className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-slate-100 font-mono"
+                    style={{
+                      width: '100%',
+                      backgroundColor: '#F8FAFC',
+                      border: '1px solid #CBD5E1',
+                      borderRadius: '6px',
+                      padding: '8px 10px',
+                      fontSize: '13px',
+                      color: '#1E293B',
+                      boxSizing: 'border-box',
+                    }}
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-slate-300 font-medium mb-1">Tháng (1 - 12)</label>
+                  <label style={{ display: 'block', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>Tháng (1 - 12)</label>
                   <input
                     type="number"
                     value={genMonth}
                     onChange={(e) => setGenMonth(Number(e.target.value))}
                     min={1}
                     max={12}
-                    className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-slate-100 font-mono"
+                    style={{
+                      width: '100%',
+                      backgroundColor: '#F8FAFC',
+                      border: '1px solid #CBD5E1',
+                      borderRadius: '6px',
+                      padding: '8px 10px',
+                      fontSize: '13px',
+                      color: '#1E293B',
+                      boxSizing: 'border-box',
+                    }}
                     required
                   />
                 </div>
               </div>
             </div>
-            <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-end space-x-2">
+            <div
+              style={{
+                padding: '14px 20px',
+                borderTop: '1px solid #E2E8F0',
+                backgroundColor: '#F8FAFC',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                gap: '8px',
+              }}
+            >
               <button
                 type="button"
                 onClick={() => setIsGenerateModalOpen(false)}
-                className="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200"
+                style={{
+                  padding: '7px 14px',
+                  fontSize: '12px',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #CBD5E1',
+                  borderRadius: '6px',
+                  color: '#64748B',
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                }}
               >
                 Hủy
               </button>
               <button
                 type="submit"
                 disabled={genLoading}
-                className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-lg shadow transition-colors disabled:opacity-50"
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: 'var(--brand-primary, #24594D)',
+                  color: '#FFFFFF',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  opacity: genLoading ? 0.6 : 1,
+                }}
               >
                 {genLoading ? 'Đang xử lý...' : 'Bắt đầu sinh lịch'}
               </button>
@@ -942,60 +1597,146 @@ export const CareModule: React.FC = () => {
 
       {/* Upload Evidence Modal */}
       {isEvidenceModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+          }}
+        >
           <form
             onSubmit={handleUploadEvidence}
-            className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
+            style={{
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E2E8F0',
+              borderRadius: '12px',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)',
+              width: '100%',
+              maxWidth: '440px',
+              overflow: 'hidden',
+            }}
           >
-            <div className="p-4 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-100 flex items-center space-x-2">
-                <Camera className="w-4 h-4 text-cyan-400" />
+            <div
+              style={{
+                padding: '16px 20px',
+                borderBottom: '1px solid #E2E8F0',
+                backgroundColor: '#F8FAFC',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: '15px',
+                  fontWeight: 700,
+                  color: '#1E293B',
+                  margin: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <Camera size={16} color="var(--brand-primary, #24594D)" />
                 <span>Đính Kèm Ảnh Hiện Trường</span>
               </h3>
               <button
                 type="button"
                 onClick={() => setIsEvidenceModalOpen(false)}
-                className="text-slate-400 hover:text-slate-200"
+                style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}
               >
-                <X className="w-4 h-4" />
+                <X size={18} />
               </button>
             </div>
-            <div className="p-5 space-y-4 text-xs">
+            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', fontSize: '13px' }}>
               <div>
-                <label className="block text-slate-300 font-medium mb-1">Chọn tệp ảnh</label>
+                <label style={{ display: 'block', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                  Chọn tệp ảnh
+                </label>
                 <input
                   type="file"
                   accept="image/*"
                   onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)}
-                  className="w-full text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-cyan-900 file:text-cyan-200 hover:file:bg-cyan-800 cursor-pointer"
+                  style={{
+                    width: '100%',
+                    fontSize: '12px',
+                    color: '#475569',
+                    boxSizing: 'border-box',
+                  }}
                   required
                 />
               </div>
               <div>
-                <label className="block text-slate-300 font-medium mb-1">Mô tả / Chú thích ảnh</label>
+                <label style={{ display: 'block', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                  Mô tả / Chú thích ảnh
+                </label>
                 <input
                   type="text"
                   value={evidenceCaption}
                   onChange={(e) => setEvidenceCaption(e.target.value)}
                   placeholder="Vd: Đã dọn cỏ và lau bia mộ tươm tất..."
-                  className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-slate-100"
+                  style={{
+                    width: '100%',
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid #CBD5E1',
+                    borderRadius: '6px',
+                    padding: '8px 10px',
+                    fontSize: '13px',
+                    color: '#1E293B',
+                    boxSizing: 'border-box',
+                  }}
                 />
               </div>
             </div>
-            <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-end space-x-2">
+            <div
+              style={{
+                padding: '14px 20px',
+                borderTop: '1px solid #E2E8F0',
+                backgroundColor: '#F8FAFC',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                gap: '8px',
+              }}
+            >
               <button
                 type="button"
                 onClick={() => setIsEvidenceModalOpen(false)}
-                className="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200"
+                style={{
+                  padding: '7px 14px',
+                  fontSize: '12px',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #CBD5E1',
+                  borderRadius: '6px',
+                  color: '#64748B',
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                }}
               >
                 Hủy
               </button>
               <button
                 type="submit"
                 disabled={evidenceUploading || !evidenceFile}
-                className="px-4 py-2 bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-semibold rounded-lg shadow transition-colors disabled:opacity-50"
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: 'var(--brand-primary, #24594D)',
+                  color: '#FFFFFF',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  opacity: evidenceUploading || !evidenceFile ? 0.6 : 1,
+                }}
               >
-                {evidenceUploading ? 'Đang tải lên...' : 'Tải lên MinIO'}
+                {evidenceUploading ? 'Đang tải lên...' : 'Tải lên ảnh'}
               </button>
             </div>
           </form>
@@ -1004,35 +1745,82 @@ export const CareModule: React.FC = () => {
 
       {/* Close Shift Modal */}
       {isCloseModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1100,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '16px',
+            backgroundColor: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+          }}
+        >
           <form
             onSubmit={handleCloseShift}
-            className="bg-slate-900 border border-slate-700 rounded-xl shadow-2xl w-full max-w-md overflow-hidden"
+            style={{
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #E2E8F0',
+              borderRadius: '12px',
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)',
+              width: '100%',
+              maxWidth: '440px',
+              overflow: 'hidden',
+            }}
           >
-            <div className="p-4 border-b border-slate-800 bg-slate-950/60 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-100 flex items-center space-x-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <div
+              style={{
+                padding: '16px 20px',
+                borderBottom: '1px solid #E2E8F0',
+                backgroundColor: '#F8FAFC',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <h3
+                style={{
+                  fontSize: '15px',
+                  fontWeight: 700,
+                  color: '#1E293B',
+                  margin: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <ShieldCheck size={16} color="#059669" />
                 <span>Nghiệm Thu & Đóng Ca Chăm Sóc</span>
               </h3>
               <button
                 type="button"
                 onClick={() => setIsCloseModalOpen(false)}
-                className="text-slate-400 hover:text-slate-200"
+                style={{ background: 'none', border: 'none', color: '#64748B', cursor: 'pointer' }}
               >
-                <X className="w-4 h-4" />
+                <X size={18} />
               </button>
             </div>
-            <div className="p-5 space-y-4 text-xs">
-              <div className="p-3 bg-cyan-950/30 border border-cyan-800/40 rounded-lg text-cyan-200">
-                <div className="font-semibold mb-1">Kiểm tra điều kiện G12:</div>
-                <ul className="list-disc pl-4 space-y-0.5 text-[11px] text-cyan-300">
+            <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', fontSize: '13px' }}>
+              <div
+                style={{
+                  padding: '12px 14px',
+                  backgroundColor: '#ECFDF5',
+                  border: '1px solid #A7F3D0',
+                  borderRadius: '8px',
+                  color: '#065F46',
+                }}
+              >
+                <div style={{ fontWeight: 700, marginBottom: '4px' }}>Điều kiện hoàn thành ca chăm sóc:</div>
+                <ul style={{ margin: 0, paddingLeft: '18px', fontSize: '12px' }}>
                   <li>Toàn bộ hạng mục đánh dấu [Bắt buộc] phải được hoàn thành.</li>
-                  <li>Phải có ít nhất 1 ảnh minh chứng trạng thái READY trong MinIO.</li>
+                  <li>Phải có ít nhất 1 ảnh minh chứng trạng thái thực địa trên hệ thống.</li>
                 </ul>
               </div>
 
               <div>
-                <label className="block text-slate-300 font-medium mb-1">
+                <label style={{ display: 'block', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
                   Nhận xét / Ghi chú đóng ca (tùy chọn)
                 </label>
                 <textarea
@@ -1040,22 +1828,60 @@ export const CareModule: React.FC = () => {
                   value={closeNotes}
                   onChange={(e) => setCloseNotes(e.target.value)}
                   placeholder="Ghi nhận hiện trạng sau khi chăm sóc, các lưu ý nếu có..."
-                  className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-slate-100 text-xs"
+                  style={{
+                    width: '100%',
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid #CBD5E1',
+                    borderRadius: '6px',
+                    padding: '8px 10px',
+                    fontSize: '12px',
+                    color: '#1E293B',
+                    boxSizing: 'border-box',
+                  }}
                 />
               </div>
             </div>
-            <div className="p-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-end space-x-2">
+            <div
+              style={{
+                padding: '14px 20px',
+                borderTop: '1px solid #E2E8F0',
+                backgroundColor: '#F8FAFC',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                gap: '8px',
+              }}
+            >
               <button
                 type="button"
                 onClick={() => setIsCloseModalOpen(false)}
-                className="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200"
+                style={{
+                  padding: '7px 14px',
+                  fontSize: '12px',
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #CBD5E1',
+                  borderRadius: '6px',
+                  color: '#64748B',
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                }}
               >
                 Hủy
               </button>
               <button
                 type="submit"
                 disabled={closingShift}
-                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-lg shadow transition-colors disabled:opacity-50"
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#059669',
+                  color: '#FFFFFF',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  borderRadius: '6px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  opacity: closingShift ? 0.6 : 1,
+                }}
               >
                 {closingShift ? 'Đang nghiệm thu...' : 'Xác nhận Đóng ca'}
               </button>

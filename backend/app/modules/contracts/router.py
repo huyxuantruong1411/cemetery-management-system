@@ -125,19 +125,23 @@ def list_contracts(
     status: Optional[str] = Query(
         None, description="Lọc theo trạng thái: DRAFT, PENDING_SIGN, ACTIVE, CANCELLED"
     ),
+    status_filter: Optional[str] = Query(
+        None, description="Bí danh lọc theo trạng thái"
+    ),
     customer_id: Optional[int] = Query(None, description="Lọc theo khách hàng"),
     search: Optional[str] = Query(
         None, description="Tìm kiếm theo mã HĐ, tên khách hàng, SĐT, mã ô mộ"
     ),
-    limit: int = Query(50, ge=1, le=200),
+    limit: int = Query(50, ge=1, le=1000),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    eff_status = status or status_filter
     return ContractService.list_contracts(
         db,
         contract_type=contract_type,
-        status_filter=status,
+        status_filter=eff_status,
         customer_id=customer_id,
         search=search,
         limit=limit,

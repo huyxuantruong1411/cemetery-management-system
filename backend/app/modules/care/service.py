@@ -376,6 +376,7 @@ class CareService:
         status: Optional[str] = None,
         from_date: Optional[date] = None,
         to_date: Optional[date] = None,
+        period_key: Optional[str] = None,
         skip: int = 0,
         limit: int = 100,
     ) -> List[CareSchedule]:
@@ -386,6 +387,8 @@ class CareService:
             query = query.filter(CareSchedule.caretaker_id == caretaker_id)
         if status and status != "ALL":
             query = query.filter(CareSchedule.status == status)
+        if period_key:
+            query = query.filter(CareSchedule.period_key == period_key)
         if from_date:
             query = query.filter(CareSchedule.scheduled_date >= from_date)
         if to_date:
@@ -497,10 +500,10 @@ class CareService:
         # Create contract annex
         base_annex = ContractAnnex(
             contract_id=data.contract_id,
-            annex_number=annex_number,
-            annex_type="MAINTENANCE",
+            annex_code=annex_number,
+            annex_type="CARE",
             status="ACTIVE",
-            total_amount=data.recurring_price,
+            additional_amount=data.recurring_price,
             valid_from=data.valid_from,
             valid_to=data.valid_to,
             notes=data.notes,

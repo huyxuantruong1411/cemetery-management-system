@@ -21,6 +21,7 @@ import type {
   PaymentRecordPayload,
   Receivable,
 } from '../../types/finance'
+import { Pagination, usePagination } from '../common/Pagination'
 
 export const FinanceModule: React.FC = () => {
   const { accessToken, hasPermission } = useAuth()
@@ -28,6 +29,7 @@ export const FinanceModule: React.FC = () => {
   // Data states
   const [summary, setSummary] = useState<FinanceSummary | null>(null)
   const [receivables, setReceivables] = useState<Receivable[]>([])
+  const pagination = usePagination<Receivable>(receivables, { initialPageSize: 10 })
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -421,7 +423,7 @@ export const FinanceModule: React.FC = () => {
       >
         <div>
           <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#1E293B', margin: 0 }}>
-            Quản Lý Công Nợ & Thu Tiền (Milestone M11)
+            Quản Lý Công Nợ & Thu Tiền
           </h2>
           <p style={{ fontSize: '13px', color: '#64748B', margin: '4px 0 0' }}>
             Kiểm soát sổ cái công nợ theo hợp đồng, chiết khấu, thu ngân tiền mặt, ngân hàng và xuất biên lai PDF chuẩn xác.
@@ -627,7 +629,7 @@ export const FinanceModule: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {receivables.map((rec) => {
+                {pagination.pagedItems.map((rec) => {
                   const isOverdue =
                     rec.status !== 'PAID' &&
                     rec.status !== 'CANCELLED' &&
@@ -770,6 +772,14 @@ export const FinanceModule: React.FC = () => {
                 })}
               </tbody>
             </table>
+            <Pagination
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              pageSize={pagination.pageSize}
+              totalItems={pagination.totalItems}
+              onPageChange={pagination.handlePageChange}
+              onPageSizeChange={pagination.handlePageSizeChange}
+            />
           </div>
         )}
       </div>

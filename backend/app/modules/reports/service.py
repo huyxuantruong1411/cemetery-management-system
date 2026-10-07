@@ -8,12 +8,10 @@ from fastapi import HTTPException, status
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
-from app.storage.minio_adapter import storage_adapter
-
 from app.modules.auth.models import User
 from app.modules.care.models import CareChecklistItem, CareMediaEvidence, CareSchedule
 from app.modules.construction.models import ConstructionOrder
-from app.modules.contracts.models import Contract, ContractAnnex, LandPurchaseContract
+from app.modules.contracts.models import Contract, ContractAnnex
 from app.modules.documents.models import FileObject
 from app.modules.finance.models import Payment
 from app.modules.plots.models import Plot, PlotSlot, Row, Zone
@@ -37,6 +35,7 @@ from app.modules.reports.schemas import (
 )
 from app.services.excel_service import ExcelService
 from app.services.pdf_service import PDFService
+from app.storage.minio_adapter import storage_adapter
 
 
 class ReportService:
@@ -371,11 +370,14 @@ class ReportService:
             cust_name = (
                 ea.contract.customer.full_name if (ea.contract and ea.contract.customer) else "N/A"
             )
-            plot_code = (
-                ea.contract.land_purchase.plot.plot_code
-                if (ea.contract and ea.contract.land_purchase and ea.contract.land_purchase.plot)
-                else "N/A"
-            )
+            plot_code = "N/A"
+            if ea.contract:
+                if ea.contract.land_purchase and ea.contract.land_purchase.plot:
+                    plot_code = ea.contract.land_purchase.plot.plot_code
+                elif ea.contract.transfer and ea.contract.transfer.plot:
+                    plot_code = ea.contract.transfer.plot.plot_code
+                elif ea.contract.exhumation and ea.contract.exhumation.plot:
+                    plot_code = ea.contract.exhumation.plot.plot_code
             days_rem = (ea.valid_to - today).days if ea.valid_to else 0
             expiring_items.append(
                 ExpiringCareItem(

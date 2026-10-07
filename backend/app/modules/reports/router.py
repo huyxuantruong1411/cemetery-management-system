@@ -1,5 +1,6 @@
 from datetime import date
 from typing import List, Optional
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
@@ -165,8 +166,10 @@ def download_report_export(
         user=current_user,
         export_id=export_id,
     )
+    safe_ascii = filename.encode("ascii", "ignore").decode() or "report.xlsx"
+    encoded_name = quote(filename)
     return Response(
         content=content,
         media_type=content_type,
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={"Content-Disposition": f"attachment; filename=\"{safe_ascii}\"; filename*=UTF-8''{encoded_name}"},
     )

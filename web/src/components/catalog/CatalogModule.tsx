@@ -12,9 +12,11 @@ import {
   Clock,
   Sparkles,
 } from 'lucide-react'
+import { useAuth } from '../../context/useAuth'
 import type { CarePackage, ContractTemplate, PriceList, PriceLookupResult } from '../../types/catalog'
 
 export const CatalogModule: React.FC = () => {
+  const { accessToken } = useAuth()
   const [subTab, setSubTab] = useState<'prices' | 'care' | 'templates' | 'simulator' | 'design'>('prices')
   const [priceLists, setPriceLists] = useState<PriceList[]>([])
   const [carePackages, setCarePackages] = useState<CarePackage[]>([])
@@ -52,14 +54,18 @@ export const CatalogModule: React.FC = () => {
   const [newPkgPrice, setNewPkgPrice] = useState('')
   const [newPkgTasks, setNewPkgTasks] = useState('Dọn cỏ, Lau bia đá, Thắp hương tuần rằm')
 
-  const getAuthToken = () => localStorage.getItem('access_token') || ''
+  const getAuthToken = () =>
+    accessToken ||
+    localStorage.getItem('access_token') ||
+    localStorage.getItem('cemetery_access_token') ||
+    ''
 
   const loadAllData = async () => {
     setLoading(true)
     setError(null)
     const token = getAuthToken()
     try {
-      const headers = { Authorization: `Bearer ${token}` }
+      const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {}
       const [plRes, careRes, tmplRes] = await Promise.all([
         fetch('/api/v1/catalog/price-lists', { headers }),
         fetch('/api/v1/catalog/care-packages', { headers }),
@@ -67,7 +73,7 @@ export const CatalogModule: React.FC = () => {
       ])
 
       if (!plRes.ok || !careRes.ok || !tmplRes.ok) {
-        throw new Error('Không thể tải danh mục cấu hình nền từ máy chủ')
+        throw new Error('Không thể tải danh mục cấu hình nền từ máy chủ. Vui lòng kiểm tra quyền truy cập.')
       }
 
       const [plData, careData, tmplData] = await Promise.all([
@@ -95,7 +101,7 @@ export const CatalogModule: React.FC = () => {
 
   useEffect(() => {
     loadAllData()
-  }, [])
+  }, [accessToken])
 
   // Price Simulation Handler
   const handleSimulatePrice = async () => {
@@ -304,10 +310,10 @@ export const CatalogModule: React.FC = () => {
             </div>
             <div>
               <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-main)', margin: 0 }}>
-                Quản Trị Cấu Hình Nền & Design System (M04)
+                Quản Trị Bảng Giá & Danh Mục Dịch Vụ
               </h2>
               <p style={{ fontSize: '13px', color: '#64748B', margin: '2px 0 0 0' }}>
-                Bảng giá không hồi tố (G03), Gói chăm sóc định kỳ, Mẫu hợp đồng 4 loại chuẩn & Thư viện thành phần
+                Bảng giá niêm yết, Gói chăm sóc định kỳ, Mẫu hợp đồng chuẩn & Thư viện thành phần
               </p>
             </div>
           </div>
@@ -619,7 +625,7 @@ export const CatalogModule: React.FC = () => {
                     <tr style={{ borderBottom: '2px solid #E2E8F0', textAlign: 'left', color: '#64748B' }}>
                       <th style={{ padding: '10px 12px' }}>Mã Khoản Mục</th>
                       <th style={{ padding: '10px 12px' }}>Tên Dịch Vụ / Hạng Mục</th>
-                      <th style={{ padding: '10px 12px' }}>Phạm Vi Scope (G03)</th>
+                      <th style={{ padding: '10px 12px' }}>Phạm Vi Áp Dụng</th>
                       <th style={{ padding: '10px 12px' }}>Đơn Giá (VNĐ)</th>
                       <th style={{ padding: '10px 12px' }}>Đơn Vị</th>
                     </tr>
@@ -788,7 +794,7 @@ export const CatalogModule: React.FC = () => {
       {!loading && !error && subTab === 'templates' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div style={{ padding: '16px 20px', backgroundColor: '#EFF6FF', borderRadius: '8px', border: '1px solid #BFDBFE', fontSize: '13px', color: '#1E40AF' }}>
-            <strong>Quy chuẩn G03 (Không hồi tố):</strong> Hệ thống hỗ trợ 4 mã loại hợp đồng chuẩn (LAND_PURCHASE, EXHUMATION, CREMATION, TRANSFER) và phụ lục an táng. Khi biên tập lại điều khoản, hệ thống tự động sinh số phiên bản mới (`v2`, `v3`) mà không làm thay đổi các hợp đồng đã ký trong quá khứ.
+            <strong>Quy định bảo toàn hợp đồng:</strong> Hệ thống hỗ trợ 4 loại hợp đồng chuẩn (Mua đất, Cải táng, Hỏa táng, Chuyển nhượng) và phụ lục an táng. Khi cập nhật mẫu, hệ thống tự động sinh phiên bản mới mà không ảnh hưởng đến các hợp đồng đã ký kết.
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '20px' }}>
@@ -1125,7 +1131,7 @@ export const CatalogModule: React.FC = () => {
       {activeModal === 'new_price_list' && (
         <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
           <div style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', maxWidth: '460px', width: '100%', padding: '24px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>Tạo Bảng Giá Mới (G03)</h3>
+            <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>Tạo Bảng Giá Mới</h3>
             <form onSubmit={handleCreatePriceList} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '4px' }}>Tên bảng giá</label>

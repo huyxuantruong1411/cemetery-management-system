@@ -16,6 +16,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await authApi.logout(storedRefresh)
       localStorage.removeItem(REFRESH_TOKEN_KEY)
     }
+    localStorage.removeItem('access_token')
+    localStorage.removeItem('cemetery_access_token')
     setUser(null)
     setAccessToken(null)
   }
@@ -26,6 +28,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const tokens = await authApi.login(username, password)
       setAccessToken(tokens.access_token)
       localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh_token)
+      localStorage.setItem('access_token', tokens.access_token)
+      localStorage.setItem('cemetery_access_token', tokens.access_token)
 
       const userInfo = await authApi.getMe(tokens.access_token)
       setUser(userInfo)
@@ -47,11 +51,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const tokens = await authApi.refreshToken(storedRefresh)
         setAccessToken(tokens.access_token)
         localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh_token)
+        localStorage.setItem('access_token', tokens.access_token)
+        localStorage.setItem('cemetery_access_token', tokens.access_token)
 
         const userInfo = await authApi.getMe(tokens.access_token)
         setUser(userInfo)
       } catch {
         localStorage.removeItem(REFRESH_TOKEN_KEY)
+        localStorage.removeItem('access_token')
+        localStorage.removeItem('cemetery_access_token')
         setUser(null)
         setAccessToken(null)
       } finally {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { ExternalLink, MapPin, Shield } from 'lucide-react';
+import { ExternalLink, MapPin, Shield, RefreshCw } from 'lucide-react';
+import { Pagination, usePagination } from '../common/Pagination';
 import type {
   Customer,
   CustomerCreate,
@@ -93,7 +94,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
     setErrorMsg(null);
     try {
       const q = customerSearch ? `?search=${encodeURIComponent(customerSearch)}` : '';
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/profiles/customers${q}`, {
+      const res = await fetch(`/api/v1/profiles/customers${q}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error('Không thể tải danh sách khách hàng');
@@ -113,7 +114,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
     setErrorMsg(null);
     try {
       const q = deceasedSearch ? `?search=${encodeURIComponent(deceasedSearch)}` : '';
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/profiles/deceased${q}`, {
+      const res = await fetch(`/api/v1/profiles/deceased${q}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error('Không thể tải danh sách người mất');
@@ -137,7 +138,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
         date_of_birth: customerForm.date_of_birth || null,
         email: customerForm.email || null,
       };
-      const res = await fetch('http://127.0.0.1:8000/api/v1/profiles/customers', {
+      const res = await fetch('/api/v1/profiles/customers', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -189,7 +190,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
         customer_id: deceasedForm.customer_id ? Number(deceasedForm.customer_id) : null,
       };
 
-      const res = await fetch('http://127.0.0.1:8000/api/v1/profiles/deceased', {
+      const res = await fetch('/api/v1/profiles/deceased', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -218,7 +219,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
     setErrorMsg(null);
     try {
       const res = await fetch(
-        `http://127.0.0.1:8000/api/v1/profiles/deceased/${selectedDeceased.deceased_id}/certificate`,
+        `/api/v1/profiles/deceased/${selectedDeceased.deceased_id}/certificate`,
         {
           method: 'POST',
           headers: {
@@ -238,7 +239,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
       setIsCertModalOpen(false);
       // Reload current deceased detail
       const updatedRes = await fetch(
-        `http://127.0.0.1:8000/api/v1/profiles/deceased/${selectedDeceased.deceased_id}`,
+        `/api/v1/profiles/deceased/${selectedDeceased.deceased_id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (updatedRes.ok) {
@@ -263,7 +264,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
       };
 
       const certId = selectedDeceased.death_certificate.cert_id;
-      const res = await fetch(`http://127.0.0.1:8000/api/v1/profiles/certificates/${certId}/verify`, {
+      const res = await fetch(`/api/v1/profiles/certificates/${certId}/verify`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -284,7 +285,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
 
       // Reload deceased
       const updatedRes = await fetch(
-        `http://127.0.0.1:8000/api/v1/profiles/deceased/${selectedDeceased.deceased_id}`,
+        `/api/v1/profiles/deceased/${selectedDeceased.deceased_id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       if (updatedRes.ok) {
@@ -297,25 +298,14 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
     }
   };
 
-  // Public Memorial search
-  const handleMemorialSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!memorialQuery.trim()) return;
-    setIsMemorialLoading(true);
-    setErrorMsg(null);
-    try {
-      const res = await fetch(
-        `http://127.0.0.1:8000/api/v1/profiles/public/memorials?q=${encodeURIComponent(memorialQuery.trim())}`
-      );
-      if (!res.ok) throw new Error('Không thể tra cứu thông tin tưởng niệm');
-      const data: DeceasedPublicLookupResponse[] = await res.json();
-      setMemorialResults(data);
-    } catch (err: unknown) {
-      setErrorMsg((err as Error).message);
-    } finally {
-      setIsMemorialLoading(false);
-    }
-  };
+  // Customer relation filter
+  const [customerFilter, setCustomerFilter] = useState<'ALL' | 'HAS_RELATIONS' | 'NO_RELATIONS'>('ALL');
+
+  const filteredCustomers = customers.filter((c) => {
+    if (customerFilter === 'HAS_RELATIONS') return c.relations && c.relations.length > 0;
+    if (customerFilter === 'NO_RELATIONS') return !c.relations || c.relations.length === 0;
+    return true;
+  });
 
   // Filtered deceased list
   const filteredDeceased = deceasedList.filter((d) => {
@@ -323,6 +313,73 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
     if (deceasedFilter === 'UNVERIFIED') return d.death_certificate?.is_verified !== true;
     return true;
   });
+
+  // Pagination for customers
+  const {
+    currentPage: custPage,
+    pageSize: custPageSize,
+    totalPages: custTotalPages,
+    totalItems: custTotalItems,
+    paginatedItems: paginatedCustomers,
+    setCurrentPage: setCustPage,
+    setPageSize: setCustPageSize,
+    startIndex: custStartIndex,
+    endIndex: custEndIndex,
+  } = usePagination(filteredCustomers, 10);
+
+  // Pagination for deceased
+  const {
+    currentPage: decPage,
+    pageSize: decPageSize,
+    totalPages: decTotalPages,
+    totalItems: decTotalItems,
+    paginatedItems: paginatedDeceased,
+    setCurrentPage: setDecPage,
+    setPageSize: setDecPageSize,
+    startIndex: decStartIndex,
+    endIndex: decEndIndex,
+  } = usePagination(filteredDeceased, 10);
+
+  // Pagination for memorial results
+  const {
+    currentPage: memPage,
+    pageSize: memPageSize,
+    totalPages: memTotalPages,
+    totalItems: memTotalItems,
+    paginatedItems: paginatedMemorial,
+    setCurrentPage: setMemPage,
+    setPageSize: setMemPageSize,
+    startIndex: memStartIndex,
+    endIndex: memEndIndex,
+  } = usePagination(memorialResults, 6);
+
+  // Debounced Live Search for Public Memorial Lookup
+  useEffect(() => {
+    if (activeTab !== 'MEMORIAL_PUBLIC') return;
+    const q = memorialQuery.trim();
+    if (q.length < 2) {
+      if (q.length === 0) setMemorialResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsMemorialLoading(true);
+      setErrorMsg(null);
+      try {
+        const res = await fetch(`/api/v1/profiles/public/memorials?q=${encodeURIComponent(q)}`);
+        if (res.ok) {
+          const data: DeceasedPublicLookupResponse[] = await res.json();
+          setMemorialResults(data);
+        }
+      } catch {
+        // ignore
+      } finally {
+        setIsMemorialLoading(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [memorialQuery, activeTab]);
 
   return (
     <div className="profile-module-container" style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
@@ -333,7 +390,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
             Hồ Sơ Khách Hàng & Người Quá Cố
           </h2>
           <p style={{ margin: '4px 0 0 0', color: '#6B7280', fontSize: '14px' }}>
-            Quản lý thân nhân, hồ sơ người mất (G07), thẩm định giấy báo tử (G08) và Cổng tra cứu tưởng niệm không rò rỉ PII
+            Quản lý thân nhân, hồ sơ người mất, thẩm định giấy báo tử và Cổng tra cứu tưởng niệm bảo vệ dữ liệu cá nhân
           </p>
         </div>
 
@@ -453,7 +510,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
               gap: '12px',
             }}
           >
-            <div style={{ display: 'flex', gap: '8px', flex: 1, maxWidth: '500px' }}>
+            <div style={{ display: 'flex', gap: '8px', flex: 1, maxWidth: '650px', alignItems: 'center' }}>
               <input
                 type="text"
                 placeholder="Tìm theo tên, mã KH, số CCCD, số điện thoại..."
@@ -483,6 +540,58 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
               >
                 Tìm Kiếm
               </button>
+
+              {/* Customer relationship filter chips */}
+              <div style={{ display: 'flex', gap: '4px', marginLeft: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setCustomerFilter('ALL')}
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: '16px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    backgroundColor: customerFilter === 'ALL' ? '#24594D' : '#F9FAFB',
+                    color: customerFilter === 'ALL' ? 'white' : '#4B5563',
+                    fontWeight: 600,
+                  }}
+                >
+                  Tất cả ({customers.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCustomerFilter('HAS_RELATIONS')}
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: '16px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    backgroundColor: customerFilter === 'HAS_RELATIONS' ? '#24594D' : '#F9FAFB',
+                    color: customerFilter === 'HAS_RELATIONS' ? 'white' : '#4B5563',
+                    fontWeight: 600,
+                  }}
+                >
+                  Có liên kết
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCustomerFilter('NO_RELATIONS')}
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: '16px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    backgroundColor: customerFilter === 'NO_RELATIONS' ? '#24594D' : '#F9FAFB',
+                    color: customerFilter === 'NO_RELATIONS' ? 'white' : '#4B5563',
+                    fontWeight: 600,
+                  }}
+                >
+                  Chưa liên kết
+                </button>
+              </div>
             </div>
 
             <button
@@ -558,7 +667,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                     <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Họ và Tên</th>
                     <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Số CCCD (Duy Nhất)</th>
                     <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Số Điện Thoại</th>
-                    <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Ngày Sinh (G07)</th>
+                    <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Ngày Sinh</th>
                     <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Địa Chỉ</th>
                     <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Người Thân Quá Cố</th>
                     <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600, textAlign: 'right' }}>
@@ -567,7 +676,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                   </tr>
                 </thead>
                 <tbody>
-                  {customers.map((c) => (
+                  {paginatedCustomers.map((c) => (
                     <tr
                       key={c.customer_id}
                       style={{ borderBottom: '1px solid #F3F4F6', transition: 'background-color 0.15s' }}
@@ -651,6 +760,16 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                   ))}
                 </tbody>
               </table>
+              <Pagination
+                currentPage={custPage}
+                totalPages={custTotalPages}
+                totalItems={custTotalItems}
+                pageSize={custPageSize}
+                onPageChange={setCustPage}
+                onPageSizeChange={setCustPageSize}
+                startIndex={custStartIndex}
+                endIndex={custEndIndex}
+              />
             </div>
           )}
         </div>
@@ -809,9 +928,9 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                     <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Mã Hồ Sơ</th>
                     <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Họ và Tên</th>
                     <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Giới Tính</th>
-                    <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Sinh - Mất (G07)</th>
+                    <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Sinh - Mất</th>
                     <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Quê Quán</th>
-                    <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Giấy Báo Tử (G08)</th>
+                    <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Giấy Báo Tử</th>
                     <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Vị Trí Mộ Phần</th>
                     <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Thân Nhân Liên Hệ</th>
                     <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600, textAlign: 'right' }}>
@@ -820,7 +939,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredDeceased.map((d) => {
+                  {paginatedDeceased.map((d) => {
                     const isCertVerified = d.death_certificate?.is_verified === true;
                     const hasCert = !!d.death_certificate;
                     return (
@@ -957,6 +1076,16 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                   })}
                 </tbody>
               </table>
+              <Pagination
+                currentPage={decPage}
+                totalPages={decTotalPages}
+                totalItems={decTotalItems}
+                pageSize={decPageSize}
+                onPageChange={setDecPage}
+                onPageSizeChange={setDecPageSize}
+                startIndex={decStartIndex}
+                endIndex={decEndIndex}
+              />
             </div>
           )}
         </div>
@@ -987,44 +1116,84 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
               Tra cứu thông tin nơi an nghỉ của người quá cố phục vụ thân nhân, người thân và khách viếng thăm tìm kiếm vị trí thực địa tại Nghĩa Trang Tư Nhân.
             </p>
 
-            <form
-              onSubmit={handleMemorialSearch}
-              style={{ display: 'flex', gap: '8px', maxWidth: '560px', margin: '0 auto' }}
-            >
-              <input
-                type="text"
-                placeholder="Nhập họ tên hoặc mã người quá cố (ví dụ: Nguyễn Văn Phúc hoặc NM-2024)..."
-                value={memorialQuery}
-                onChange={(e) => setMemorialQuery(e.target.value)}
-                style={{
-                  flex: 1,
-                  padding: '12px 18px',
-                  borderRadius: '10px',
-                  border: 'none',
-                  fontSize: '15px',
-                  color: '#111827',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                  outline: 'none',
-                }}
-              />
-              <button
-                type="submit"
-                disabled={isMemorialLoading}
-                style={{
-                  padding: '12px 24px',
-                  backgroundColor: '#EAB308',
-                  color: '#713F12',
-                  borderRadius: '10px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontWeight: 'bold',
-                  fontSize: '15px',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                }}
-              >
-                {isMemorialLoading ? 'Đang tìm...' : 'Tra Cứu'}
-              </button>
-            </form>
+            <div style={{ maxWidth: '560px', margin: '0 auto' }}>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ position: 'relative', flex: 1 }}>
+                  <input
+                    type="text"
+                    placeholder="Nhập họ tên hoặc mã người quá cố (ví dụ: Nguyễn Văn Phúc hoặc NM-2024)..."
+                    value={memorialQuery}
+                    onChange={(e) => setMemorialQuery(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '12px 18px',
+                      borderRadius: '10px',
+                      border: 'none',
+                      fontSize: '15px',
+                      color: '#111827',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      outline: 'none',
+                    }}
+                  />
+                  {isMemorialLoading && (
+                    <RefreshCw
+                      size={16}
+                      className="animate-spin"
+                      style={{ position: 'absolute', right: '14px', top: '15px', color: '#24594D' }}
+                    />
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (memorialQuery.trim()) {
+                      setIsMemorialLoading(true);
+                      fetch(`/api/v1/profiles/public/memorials?q=${encodeURIComponent(memorialQuery.trim())}`)
+                        .then(r => r.json())
+                        .then(data => setMemorialResults(data))
+                        .finally(() => setIsMemorialLoading(false));
+                    }
+                  }}
+                  style={{
+                    padding: '12px 24px',
+                    backgroundColor: '#EAB308',
+                    color: '#713F12',
+                    borderRadius: '10px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    fontSize: '15px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  }}
+                >
+                  Tìm Kiếm
+                </button>
+              </div>
+
+              {/* Quick Suggestion Chips */}
+              <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginTop: '12px', alignItems: 'center' }}>
+                <span style={{ fontSize: '12px', color: '#D1FAE5' }}>Gợi ý:</span>
+                {['Nguyễn', 'Trần', 'Lê', 'A1', 'Khu A'].map((chip) => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => setMemorialQuery(chip)}
+                    style={{
+                      background: 'rgba(255,255,255,0.18)',
+                      border: '1px solid rgba(255,255,255,0.3)',
+                      color: '#FFFFFF',
+                      borderRadius: '14px',
+                      padding: '2px 10px',
+                      fontSize: '12px',
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                    }}
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Privacy badge */}
@@ -1055,7 +1224,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 Kết quả tìm kiếm ({memorialResults.length})
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '16px' }}>
-                {memorialResults.map((item) => (
+                {paginatedMemorial.map((item) => (
                   <div
                     key={item.deceased_code}
                     style={{
@@ -1173,6 +1342,18 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                   </div>
                 ))}
               </div>
+              <div style={{ marginTop: '16px' }}>
+                <Pagination
+                  currentPage={memPage}
+                  totalPages={memTotalPages}
+                  totalItems={memTotalItems}
+                  pageSize={memPageSize}
+                  onPageChange={setMemPage}
+                  onPageSizeChange={setMemPageSize}
+                  startIndex={memStartIndex}
+                  endIndex={memEndIndex}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -1262,7 +1443,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>
-                    Ngày Sinh (G07)
+                    Ngày Sinh
                   </label>
                   <input
                     type="date"
@@ -1362,7 +1543,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
               <h3 style={{ margin: 0, color: '#24594D', fontSize: '18px', fontWeight: 'bold' }}>
-                Thêm Hồ Sơ Người Quá Cố (G07)
+                Thêm Hồ Sơ Người Quá Cố
               </h3>
               <button
                 onClick={() => setIsDeceasedModalOpen(false)}
@@ -1421,7 +1602,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                     onChange={(e) => setIsYearOnlyPrecision(e.target.checked)}
                   />
                   <label htmlFor="yearOnlyCheck" style={{ fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                    Thân nhân chỉ nhớ năm sinh (G07 Invariant - Không bịa ngày 01/01)
+                    Thân nhân chỉ nhớ năm sinh (chỉ lưu năm sinh, không bắt buộc ngày tháng)
                   </label>
                 </div>
 
@@ -1638,7 +1819,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
               <div style={{ backgroundColor: '#F9FAFB', padding: '14px', borderRadius: '10px' }}>
                 <div style={{ fontSize: '12px', color: '#6B7280', fontWeight: 600, marginBottom: '6px' }}>
-                  THÔNG TIN SINH & MẤT (G07)
+                  THÔNG TIN SINH & MẤT
                 </div>
                 <div style={{ fontSize: '14px', color: '#111827', marginBottom: '4px' }}>
                   <strong>Ngày sinh:</strong>{' '}
@@ -1711,7 +1892,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '18px' }}>📜</span>
                   <h4 style={{ margin: 0, fontSize: '15px', color: '#111827', fontWeight: 'bold' }}>
-                    Giấy Báo Tử (Căn cứ pháp lý duyệt an táng - G08)
+                    Giấy Báo Tử (Căn cứ pháp lý duyệt an táng)
                   </h4>
                 </div>
 
@@ -1961,7 +2142,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
               <h3 style={{ margin: 0, color: '#24594D', fontSize: '18px', fontWeight: 'bold' }}>
-                Đính Kèm Giấy Báo Tử (G08)
+                Đính Kèm Giấy Báo Tử
               </h3>
               <button
                 onClick={() => setIsCertModalOpen(false)}

@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from sqlalchemy.orm import Session
@@ -56,11 +57,13 @@ def download_document(
 ) -> Response:
     """Tải xuống tệp chứng từ có xác thực người dùng."""
     file_obj, content = DocumentService.get_file(db, file_id)
+    safe_ascii = file_obj.file_name.encode("ascii", "ignore").decode() or "document"
+    encoded_name = quote(file_obj.file_name)
     return Response(
         content=content,
         media_type=file_obj.mime_type,
         headers={
-            "Content-Disposition": f'attachment; filename="{file_obj.file_name}"',
+            "Content-Disposition": f"attachment; filename=\"{safe_ascii}\"; filename*=UTF-8''{encoded_name}",
             "X-SHA256": file_obj.sha256_hash,
         },
     )
@@ -77,11 +80,13 @@ def preview_document(
 ) -> Response:
     """Xem trực tiếp tệp PDF hoặc hình ảnh trên trình duyệt."""
     file_obj, content = DocumentService.get_file(db, file_id)
+    safe_ascii = file_obj.file_name.encode("ascii", "ignore").decode() or "document"
+    encoded_name = quote(file_obj.file_name)
     return Response(
         content=content,
         media_type=file_obj.mime_type,
         headers={
-            "Content-Disposition": f'inline; filename="{file_obj.file_name}"',
+            "Content-Disposition": f"inline; filename=\"{safe_ascii}\"; filename*=UTF-8''{encoded_name}",
             "X-SHA256": file_obj.sha256_hash,
         },
     )

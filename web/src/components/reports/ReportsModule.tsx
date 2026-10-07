@@ -1069,12 +1069,12 @@ export const ReportsModule: React.FC = () => {
               }}
             >
               <div style={{ fontSize: '12px', color: '#64748B', fontWeight: 600, textTransform: 'uppercase' }}>
-                Tuân Thủ Ảnh Minh Chứng (G12)
+                Tuân Thủ Ảnh Minh Chứng Hiện Trường
               </div>
               <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--brand-primary)', margin: '8px 0 4px 0' }}>
                 {formatPercent(operationsData?.care.evidence_compliance_rate)}
               </div>
-              <div style={{ fontSize: '12px', color: '#64748B' }}>Ca có tải ảnh chụp hiện trường lên MinIO</div>
+              <div style={{ fontSize: '12px', color: '#64748B' }}>Ca có đính kèm ảnh chụp hiện trường đầy đủ</div>
             </div>
           </div>
 
