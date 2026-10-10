@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
 import type { AuditLogResponse, AuditSummaryResponse } from '../../types/audit'
+import { Pagination, usePagination } from '../common/Pagination'
 
 export const AuditModule: React.FC = () => {
   const { accessToken } = useAuth()
@@ -32,6 +33,19 @@ export const AuditModule: React.FC = () => {
 
   // Detail Modal
   const [activeLog, setActiveLog] = useState<AuditLogResponse | null>(null)
+
+  // Pagination for logs
+  const {
+    currentPage: logPage,
+    pageSize: logPageSize,
+    totalPages: logTotalPages,
+    totalItems: logTotalItems,
+    paginatedItems: paginatedLogs,
+    setCurrentPage: setLogPage,
+    setPageSize: setLogPageSize,
+    startIndex: logStartIndex,
+    endIndex: logEndIndex,
+  } = usePagination(logs, 15)
 
   const fetchSummary = useCallback(async () => {
     if (!accessToken) return
@@ -537,7 +551,7 @@ export const AuditModule: React.FC = () => {
                 </tr>
               </thead>
               <tbody>
-                {logs.map((log) => (
+                {paginatedLogs.map((log) => (
                   <tr key={log.log_id} style={{ borderBottom: '1px solid #F1F5F9' }}>
                     <td style={{ padding: '12px 16px', color: '#475569', whiteSpace: 'nowrap' }}>
                       {formatTimestamp(log.timestamp)}
@@ -581,6 +595,21 @@ export const AuditModule: React.FC = () => {
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* Advanced Modern Pagination for Audit Logs */}
+          <div style={{ padding: '12px 16px', borderTop: '1px solid #E2E8F0', backgroundColor: '#FFFFFF' }}>
+            <Pagination
+              currentPage={logPage}
+              totalPages={logTotalPages}
+              totalItems={logTotalItems}
+              pageSize={logPageSize}
+              pageSizeOptions={[10, 15, 25, 50, 100]}
+              onPageChange={setLogPage}
+              onPageSizeChange={setLogPageSize}
+              startIndex={logStartIndex}
+              endIndex={logEndIndex}
+            />
           </div>
         </div>
       )}

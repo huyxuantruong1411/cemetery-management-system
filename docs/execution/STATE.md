@@ -24,9 +24,11 @@
   - MinIO Docker Container (`elestio/minio:latest`) đang chạy trên máy.
   - Bind mount trực tiếp vào `D:\work\TH-PTTK\QL-NghiaTrang\backend\runtime\minio\data` trên ổ D.
 - **Bộ công cụ & Chất lượng mã nguồn:**
-  - Backend: Python 3.12 (`uv`). 82 tests passed (9 reports/audit + 7 finance + 7 care + 7 construction + 7 lifecycle + 6 contracts + 7 profiles + 6 plots + 6 auth + 6 catalog + 6 documents + 2 jobs + 2 triggers + 4 health/storage), ruff check/format clean.
-  - Web: React 19 + TypeScript + Vite (`pnpm`). Build thành công trong 265ms, 0 lint errors.
-  - Mobile: Flutter 3.41.6 / Dart 3.11.4 Android. Analyze 0 issues, 14/14 tests passed.
+  - Backend: Python 3.12 (`uv`). 89 tests passed (7 Business Lifecycle E2E + 9 reports/audit + 7 finance + 7 care + 7 construction + 7 lifecycle + 6 contracts + 7 profiles + 6 plots + 6 auth + 6 catalog + 6 documents + 2 jobs + 2 triggers + 4 health/storage), ruff check/format clean.
+  - Web: React 19 + TypeScript + Vite (`pnpm`). Build thành công trong 281ms, 0 lint errors, đã bổ sung phân trang hiện đại cho "Danh Mục Khu Vực & Loại Mộ" và "Audit Logs".
+  - Mobile: Flutter 3.41.6 / Dart 3.11.4 Android. Analyze 0 issues, 14/14 tests passed, đồng bộ hóa ranh giới khách vãng lai chỉ xem Tra Cứu Tưởng Niệm Zero PII.
+  - CSDL & Unicode: Đã rà soát và sửa chữa 100% lỗi font tiếng Việt Mojibake trên CSDL (`repair_all_unicode.py`), `scan_corrupted_unicode.py` trả về 0 lỗi.
+  - Nghiệp vụ: Đã xây dựng tài liệu kịch bản nghiệp vụ chi tiết `docs/BUSINESS_TEST_SCENARIOS.md` và bộ kiểm thử tự động `backend/tests/test_business_lifecycle_e2e.py` theo đúng chu trình nghiệp vụ thực tế Lab 1 - Lab 4.
   - Tiêu chuẩn Quality Gate (`scripts/quality-gate.ps1`) đạt 100% trên cả 3 phân hệ.
 
 ---

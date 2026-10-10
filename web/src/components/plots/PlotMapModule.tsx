@@ -378,6 +378,19 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
     endIndex: ptEndIndex,
   } = usePagination(plotTypes, 6);
 
+  // Pagination for Zones (Tab 3)
+  const {
+    currentPage: zonePage,
+    pageSize: zonePageSize,
+    totalPages: zoneTotalPages,
+    totalItems: zoneTotalItems,
+    paginatedItems: paginatedZones,
+    setCurrentPage: setZonePage,
+    setPageSize: setZonePageSize,
+    startIndex: zoneStartIndex,
+    endIndex: zoneEndIndex,
+  } = usePagination(zones, 6);
+
   // Handle Save Zone
   const handleSaveZone = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -1664,7 +1677,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                 </h3>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
-                {zones.map((z) => {
+                {paginatedZones.map((z) => {
                   const zoneRows = rows.filter((r) => r.zone_id === z.zone_id);
                   return (
                     <div key={z.zone_id} style={{ padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
@@ -1780,6 +1793,21 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Advanced Modern Pagination for Zones */}
+              <div style={{ marginTop: '16px' }}>
+                <Pagination
+                  currentPage={zonePage}
+                  totalPages={zoneTotalPages}
+                  totalItems={zoneTotalItems}
+                  pageSize={zonePageSize}
+                  pageSizeOptions={[6, 12, 24]}
+                  onPageChange={setZonePage}
+                  onPageSizeChange={setZonePageSize}
+                  startIndex={zoneStartIndex}
+                  endIndex={zoneEndIndex}
+                />
               </div>
             </div>
 

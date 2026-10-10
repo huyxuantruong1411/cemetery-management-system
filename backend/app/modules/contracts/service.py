@@ -105,7 +105,7 @@ class ContractService:
                 detail=f"Không tìm thấy ô mộ với ID {data.plot_id}",
             )
 
-        if plot.status != "EMPTY_UNSOLD":
+        if plot.status not in ("EMPTY_UNSOLD", "RESERVED"):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"Ô mộ {plot.plot_code} hiện ở trạng thái '{plot.status}', không khả dụng để mở bán.",
@@ -120,10 +120,21 @@ class ContractService:
             .first()
         )
         if active_res:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail=f"Ô mộ {plot.plot_code} hiện đang được giữ chỗ bởi '{active_res.customer_name or 'khách hàng khác'}'.",
+            if active_res.contract_id is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Ô mộ {plot.plot_code} không khả dụng vì đã có hợp đồng đang giữ chỗ xử lý.",
+                )
+            is_matching_reservation = (
+                active_res.reserved_by == current_user_id
+                or (active_res.customer_phone and customer.phone_number and active_res.customer_phone.strip() == customer.phone_number.strip())
+                or (active_res.customer_name and customer.full_name and active_res.customer_name.strip().lower() == customer.full_name.strip().lower())
             )
+            if not is_matching_reservation:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Ô mộ {plot.plot_code} hiện đang được giữ chỗ bởi '{active_res.customer_name or 'khách hàng khác'}'.",
+                )
 
         unit_price = data.land_unit_price
         if unit_price is None or unit_price <= 0:
@@ -193,18 +204,26 @@ class ContractService:
         )
         db.add(land_sub)
 
-        reservation = PlotReservation(
-            plot_id=plot.plot_id,
-            reserved_by=current_user_id,
-            customer_name=customer.full_name,
-            customer_phone=customer.phone_number,
-            state="ACTIVE",
-            reserved_at=now,
-            expires_at=now + timedelta(days=7),
-            contract_id=contract.contract_id,
-            notes=f"Giữ chỗ theo hợp đồng mua đất {contract.contract_code}",
-        )
-        db.add(reservation)
+        if not active_res:
+            reservation = PlotReservation(
+                plot_id=plot.plot_id,
+                reserved_by=current_user_id,
+                customer_name=customer.full_name,
+                customer_phone=customer.phone_number,
+                state="ACTIVE",
+                reserved_at=now,
+                expires_at=now + timedelta(days=7),
+                contract_id=contract.contract_id,
+                notes=f"Giữ chỗ theo hợp đồng mua đất {contract.contract_code}",
+            )
+            db.add(reservation)
+        else:
+            active_res.customer_name = customer.full_name
+            active_res.customer_phone = customer.phone_number
+            active_res.contract_id = contract.contract_id
+            active_res.expires_at = now + timedelta(days=7)
+            active_res.notes = f"Chuyển từ giữ chỗ tư vấn sang hợp đồng mua đất {contract.contract_code}"
+
         plot.status = "RESERVED"
 
         audit = AuditLog(
