@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cemetery Management System - UI Prototype (Web & Mobile)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#F2F7F5',
+              100: '#E1EDE9',
+              600: '#2D6A5D',
+              700: '#24594D',
+              800: '#1C453C',
+              900: '#13302A'
+            },
+            surface: '#F7F8F5',
+            ink: '#1F2933'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .phone-mockup {
+      width: 390px;
+      height: 800px;
+      border-radius: 44px;
+      box-shadow: 0 25px 60px -15px rgba(0,0,0,0.3), 0 0 0 10px #1E293B, 0 0 0 12px #475569;
+      position: relative;
+      overflow: hidden;
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 5px; height: 5px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-800 min-h-screen flex flex-col">
+
+  <!-- ================= TOP CONTROL TOOLBAR ================= -->
+  <header class="bg-slate-950 text-white px-6 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-50 shadow-md">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center font-bold text-white shadow-inner">
+        CMS
+      </div>
+      <div>
+        <h1 class="font-bold text-base tracking-wide flex items-center gap-2">
+          Hệ Thống Quản Lý Nghĩa Trang
+          <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-700">Bản Trực Quan 2026</span>
+        </h1>
+        <p class="text-xs text-slate-400">Xem trước luồng giao diện Web & Ứng dụng Di động theo Actor</p>
+      </div>
+    </div>
+
+    <!-- Mode & Actor Controls -->
+    <div class="flex items-center gap-3 bg-slate-900 p-1.5 rounded-xl border border-slate-800">
+      <!-- Device Switcher -->
+      <div class="flex bg-slate-800 p-1 rounded-lg">
+        <button id="btn-device-web" onclick="switchDevice('web')" class="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-md bg-emerald-600 text-white transition-all shadow">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          Giao diện Web Desktop
+        </button>
+        <button id="btn-device-mobile" onclick="switchDevice('mobile')" class="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-md text-slate-300 hover:text-white transition-all">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          Giao diện Mobile App
+        </button>
+      </div>
+
+      <div class="h-6 w-px bg-slate-700"></div>
+
+      <!-- Actor Switcher -->
+      <div class="flex items-center gap-1.5 text-xs">
+        <span class="text-slate-400 font-medium">Actor:</span>
+        <select id="actor-select" onchange="switchActor(this.value)" class="bg-slate-800 text-white font-medium px-3 py-1.5 rounded-lg border border-slate-700 focus:outline-none focus:border-emerald-500">
+          <option value="public">1. Khách hàng / Thân nhân (Public Zero-PII)</option>
+          <option value="marketing">2. Nhân viên Marketing (Hợp đồng & Giấy báo tử)</option>
+          <option value="caretaker" selected>3. Quản trang (Hiện trường & Kim Tĩnh)</option>
+          <option value="accountant">4. Kế toán (Công nợ XOR & VietQR)</option>
+          <option value="admin">5. Sếp / Ban Quản trị (GIS & KPI)</option>
+        </select>
+      </div>
+    </div>
+  </header>
+
+  <!-- ================= MAIN VIEWPORT CONTAINER ================= -->
+  <main class="flex-1 flex justify-center items-start p-4 md:p-8 overflow-y-auto">
+
+    <!-- DESKTOP WEB CONTAINER -->
+    <div id="view-web" class="w-full max-w-7xl bg-surface rounded-2xl shadow-2xl border border-slate-700 overflow-hidden flex flex-col min-h-[750px]">
+      <!-- Web Shell Header -->
+      <nav class="bg-brand-700 text-white px-6 py-3 flex items-center justify-between border-b border-brand-800">
+        <div class="flex items-center gap-6">
+          <div class="flex items-center gap-2 font-bold text-lg tracking-wide">
+            <span class="w-7 h-7 rounded bg-brand-600 flex items-center justify-center text-sm shadow-inner">🏛️</span>
+            Công Viên Nghĩa Trang Vĩnh Hằng
+          </div>
+          <div id="web-nav-links" class="hidden md:flex items-center gap-2 text-sm text-brand-100">
+            <!-- Nav links generated dynamically -->
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <span id="web-user-badge" class="text-xs px-2.5 py-1 rounded-full bg-brand-800 text-emerald-200 border border-brand-600">
+            Đang truy cập: Quản trang
+          </span>
+          <button class="text-xs bg-slate-900/40 hover:bg-slate-900/60 px-3 py-1.5 rounded text-white transition">Thoát</button>
+        </div>
+      </nav>
+
+      <!-- Web Body Content -->
+      <div id="web-content" class="p-6 flex-1 overflow-y-auto custom-scrollbar">
+        <!-- Content will be injected by JavaScript -->
+      </div>
+    </div>
+
+    <!-- MOBILE PHONE CONTAINER (HIDDEN INITIALLY) -->
+    <div id="view-mobile" class="hidden flex-col items-center">
+      <div class="text-slate-400 text-xs mb-3 flex items-center gap-2">
+        <span>Khung mô phỏng điện thoại di động thông minh (390 x 800)</span>
+      </div>
+      <div class="phone-mockup bg-surface flex flex-col">
+        <!-- Phone Dynamic Island / Speaker -->
+        <div class="bg-slate-950 text-white px-7 pt-3 pb-2 flex justify-between items-center text-xs select-none">
+          <span class="font-semibold text-xs">09:41</span>
+          <div class="w-24 h-4 bg-black rounded-full mx-auto"></div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-[10px]">5G</span>
+            <div class="w-4 h-2.5 border border-white rounded-sm p-0.5"><div class="h-full bg-white w-3/4"></div></div>
+          </div>
+        </div>
+
+        <!-- Phone App Bar -->
+        <div class="bg-brand-700 text-white px-4 py-3 flex items-center justify-between shadow">
+          <div class="flex items-center gap-2">
+            <span class="text-base font-bold tracking-tight" id="mobile-appbar-title">Quản Trang Thực Địa</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="text-[11px] text-emerald-100" id="mobile-role-label">Hiện trường</span>
+          </div>
+        </div>
+
+        <!-- Phone Screen Body -->
+        <div id="mobile-content" class="flex-1 overflow-y-auto p-4 custom-scrollbar bg-slate-50 text-slate-800">
+          <!-- Dynamic mobile screen content -->
+        </div>
+
+        <!-- Phone Bottom Navigation Bar -->
+        <div id="mobile-bottom-nav" class="bg-white border-t border-slate-200 px-3 py-2 flex justify-around items-center text-[10px] text-slate-500 select-none">
+          <!-- Dynamic navigation items -->
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ================= JAVASCRIPT TEMPLATES & LOGIC ================= -->
+  <script>
+    let currentDevice = 'web';
+    let currentActor = 'caretaker';
+
+    function switchDevice(device) {
+      currentDevice = device;
+      const webView = document.getElementById('view-web');
+      const mobileView = document.getElementById('view-mobile');
+      const btnWeb = document.getElementById('btn-device-web');
+      const btnMobile = document.getElementById('btn-device-mobile');
+
+      if (device === 'web') {
+        webView.classList.remove('hidden');
+        mobileView.classList.add('hidden');
+        btnWeb.className = "flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-md bg-emerald-600 text-white transition-all shadow";
+        btnMobile.className = "flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-md text-slate-300 hover:text-white transition-all";
+      } else {
+        webView.classList.add('hidden');
+        mobileView.classList.remove('hidden');
+        btnMobile.className = "flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-md bg-emerald-600 text-white transition-all shadow";
+        btnWeb.className = "flex items-center gap-2 px-3 py-1.5 text-xs font-semibold rounded-md text-slate-300 hover:text-white transition-all";
+      }
+      render();
+    }
+
+    function switchActor(actor) {
+      currentActor = actor;
+      document.getElementById('actor-select').value = actor;
+      render();
+    }
+
+    // ================= DATA & UI RENDERERS =================
+    function render() {
+      renderWeb();
+      renderMobile();
+    }
+
+    // 1. WEB RENDERER
+    function renderWeb() {
+      const container = document.getElementById('web-content');
+      const navLinks = document.getElementById('web-nav-links');
+      const badge = document.getElementById('web-user-badge');
+
+      // Update badge
+      const roleMap = {
+        public: 'Khách vãng lai (Cổng Công Cộng)',
+        marketing: 'Nhân viên Marketing (Kinh doanh)',
+        caretaker: 'Quản trang (Vận hành hiện trường)',
+        accountant: 'Kế toán viên (Tài chính)',
+        admin: 'Sếp / Ban Giám Đốc (Quản trị)'
+      };
+      badge.textContent = `Actor: ${roleMap[currentActor]}`;
+
+      if (currentActor === 'public') {
+        navLinks.innerHTML = `
+          <a class="px-2.5 py-1 rounded bg-brand-800 text-white font-medium text-xs">Tra Cứu Phần Mộ</a>
+          <a class="px-2.5 py-1 rounded hover:bg-brand-600 text-brand-100 text-xs">Quy Định Thăm Viếng</a>
+          <a class="px-2.5 py-1 rounded hover:bg-brand-600 text-brand-100 text-xs">Liên Hệ Ban Quản Trang</a>
+        `;
+        container.innerHTML = `
+          <!-- P01 & P02 PUBLIC MEMORIAL SEARCH -->
+          <div class="max-w-4xl mx-auto space-y-6">
+            <div class="text-center space-y-2 py-6 border-b border-slate-200">
+              <span class="text-xs font-semibold uppercase tracking-widest text-brand-700 bg-brand-50 px-3 py-1 rounded-full border border-brand-100">Cổng Thông Tin Tưởng Niệm (Zero-PII)</span>
+              <h2 class="text-2xl font-bold text-slate-900">Tra Cứu Vị Trí Phần Mộ & Hướng Dẫn Thăm Viếng</h2>
+              <p class="text-sm text-slate-500">Bảo mật tuyệt đối thông tin thân nhân, số điện thoại và hợp đồng kinh tế theo quy định.</p>
+            </div>
+
+            <!-- Search Card -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="md:col-span-2">
+                  <label class="block text-xs font-semibold text-slate-600 mb-1">Họ tên người quá cố hoặc Mã ô mộ</label>
+                  <input type="text" value="Trần Thị Mai" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-brand-700 focus:outline-none" placeholder="Ví dụ: Nguyễn Văn A hoặc A-H01-05">
+                </div>
+                <div>
+                  <label class="block text-xs font-semibold text-slate-600 mb-1">Khu vực an táng</label>
+                  <select class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg bg-white">
+                    <option>Tất cả phân khu</option>
+                    <option selected>Khu A - Đồi Thông</option>
+                    <option>Khu B - Vĩnh Hằng</option>
+                    <option>Khu VIP - Gia Tộc</option>
+                  </select>
+                </div>
+              </div>
+              <div class="flex justify-between items-center pt-2">
+                <span class="text-xs text-slate-400">Tìm thấy 01 kết quả phù hợp (Độ chính xác năm sinh: Khớp năm)</span>
+                <button class="bg-brand-700 hover:bg-brand-800 text-white text-sm font-semibold px-5 py-2 rounded-lg shadow transition">Tìm Kiếm Phần Mộ</button>
+              </div>
+            </div>
+
+            <!-- P03 RESULT CARD -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div class="bg-brand-50 border-b border-brand-100 px-5 py-3 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                  <span class="text-lg">🕯️</span>
+                  <span class="font-bold text-slate-800 text-sm">Hồ Sơ Tưởng Niệm: Cụ Bà TRẦN THỊ MAI</span>
+                </div>
+                <span class="text-xs px-2.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-medium">Mộ Đã An Táng</span>
+              </div>
+              <div class="p-5 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="space-y-2 text-sm border-r border-slate-100 pr-4">
+                  <div class="flex justify-between text-xs py-1 border-b border-slate-100">
+                    <span class="text-slate-500">Năm sinh - Năm mất:</span>
+                    <span class="font-semibold text-slate-800">1945 - 2024 (Hưởng thọ 79 tuổi)</span>
+                  </div>
+                  <div class="flex justify-between text-xs py-1 border-b border-slate-100">
+                    <span class="text-slate-500">Quê quán:</span>
+                    <span class="font-semibold text-slate-800">Nam Định</span>
+                  </div>
+                  <div class="flex justify-between text-xs py-1 border-b border-slate-100">
+                    <span class="text-slate-500">Vị trí mộ:</span>
+                    <span class="font-bold text-brand-700">Khu A • Hàng 02 • Ô số 08</span>
+                  </div>
+                  <div class="flex justify-between text-xs py-1">
+                    <span class="text-slate-500">Huyệt vị (Slot):</span>
+                    <span class="font-semibold text-slate-800">Slot 1/1 (Mộ đơn tiêu chuẩn)</span>
+                  </div>
+                </div>
+
+                <!-- GPS & Directions -->
+                <div class="space-y-3">
+                  <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Định Vị & Dẫn Đường GPS</h4>
+                  <div class="bg-slate-100 rounded-lg p-3 text-xs space-y-1">
+                    <p class="text-slate-600">Tọa độ thực địa: <strong class="text-slate-800">10.762622, 106.660172</strong></p>
+                    <p class="text-slate-500">Trạng thái: <span class="text-emerald-600 font-semibold">Tọa độ đã xác minh</span></p>
+                    <p class="text-[11px] text-slate-400">Đường đi: Cổng 1 -> Trục Đại Lộ Vĩnh Hằng -> Rẽ trái Hàng 02 -> Cách ngã tư 25m.</p>
+                  </div>
+                  <button class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-2 rounded-lg flex items-center justify-center gap-1.5 shadow">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    Mở Dẫn Đường Trên Bản Đồ (Google Maps)
+                  </button>
+                </div>
+
+                <!-- Public Care Results Tab -->
+                <div class="space-y-2">
+                  <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Kết Quả Chăm Sóc Mộ Công Bố</h4>
+                  <div class="border border-slate-200 rounded-lg p-2.5 space-y-2 text-xs">
+                    <div class="flex justify-between items-center text-[11px] text-slate-500">
+                      <span>Đợt: 01/10/2026</span>
+                      <span class="text-emerald-700 font-medium bg-emerald-50 px-1.5 py-0.5 rounded">Đã nghiệm thu</span>
+                    </div>
+                    <p class="text-slate-700 text-[11px]">Đã hoàn thành: Quét dọn khuôn viên, lau rửa bia đá hoa cương, thắp hương trầm và thay hoa cúc mới.</p>
+                    <div class="flex gap-2 pt-1">
+                      <div class="w-12 h-12 bg-slate-200 rounded border border-slate-300 flex items-center justify-center text-[9px] text-slate-500">Ảnh bia</div>
+                      <div class="w-12 h-12 bg-slate-200 rounded border border-slate-300 flex items-center justify-center text-[9px] text-slate-500">Toàn cảnh</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      else if (currentActor === 'marketing') {
+        navLinks.innerHTML = `
+          <a class="px-2.5 py-1 rounded bg-brand-800 text-white font-medium text-xs">Bàn Làm Việc</a>
+          <a class="px-2.5 py-1 rounded hover:bg-brand-600 text-brand-100 text-xs">Hồ Sơ Khách Hàng</a>
+          <a class="px-2.5 py-1 rounded hover:bg-brand-600 text-brand-100 text-xs">Hồ Sơ Người Mất</a>
+          <a class="px-2.5 py-1 rounded hover:bg-brand-600 text-brand-100 text-xs">Quản Lý Hợp Đồng</a>
+        `;
+        container.innerHTML = `
+          <!-- M01 & M04 MARKETING WORKSPACE & CONTRACT WIZARD -->
+          <div class="space-y-6">
+            <!-- Header KPIs -->
+            <div class="flex justify-between items-center">
+              <div>
+                <h2 class="text-xl font-bold text-slate-900">Quản Lý Giao Dịch & Hợp Đồng Pháp Lý</h2>
+                <p class="text-xs text-slate-500">Luồng 4 loại hợp đồng: Mua Đất • Cải Táng • Hỏa Táng • Chuyển Nhượng</p>
+              </div>
+              <div class="flex gap-2">
+                <button class="bg-brand-700 hover:bg-brand-800 text-white font-semibold text-xs px-4 py-2 rounded-lg shadow flex items-center gap-1.5">
+                  <span>+</span> Lập Hợp Đồng Mới (4 Loại)
+                </button>
+                <button class="bg-white border border-slate-300 text-slate-700 font-semibold text-xs px-4 py-2 rounded-lg hover:bg-slate-50">
+                  + Tiếp Nhận Khách Hàng
+                </button>
+              </div>
+            </div>
+
+            <!-- M04 WIZARD PREVIEW: STEP 3 (CHỌN Ô MỘ & GIỮ CHỖ) -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div class="bg-slate-50 px-5 py-3 border-b border-slate-200 flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                  <span class="text-xs font-bold bg-brand-700 text-white px-2 py-0.5 rounded">BƯỚC 3 / 4</span>
+                  <span class="text-sm font-bold text-slate-800">Soạn Hợp Đồng Mua Đất An Táng (Mã: HD-MD-26-0012)</span>
+                </div>
+                <span class="text-xs text-slate-500">Khách hàng: <strong>Nguyễn Văn Chung (CCCD: 079085001234)</strong></span>
+              </div>
+
+              <div class="p-5 space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs">
+                  <div>
+                    <label class="text-slate-500 block mb-1">Phân khu chọn</label>
+                    <select class="w-full bg-white border border-slate-300 rounded p-1.5 font-medium"><option>Khu A - Đồi Thông (Mộ đơn)</option></select>
+                  </div>
+                  <div>
+                    <label class="text-slate-500 block mb-1">Hàng mộ</label>
+                    <select class="w-full bg-white border border-slate-300 rounded p-1.5 font-medium"><option>Hàng 01 (Lô giáp đường)</option></select>
+                  </div>
+                  <div>
+                    <label class="text-slate-500 block mb-1">Đơn giá đất niêm yết (Snapshot)</label>
+                    <input type="text" value="40.000.000 đ/m2" readonly class="w-full bg-slate-100 border border-slate-300 rounded p-1.5 font-bold text-brand-700">
+                  </div>
+                  <div>
+                    <label class="text-slate-500 block mb-1">Thời hạn giữ chỗ cọc</label>
+                    <input type="text" value="7 ngày (đến 17/10/2026)" readonly class="w-full bg-slate-100 border border-slate-300 rounded p-1.5 text-amber-700 font-semibold">
+                  </div>
+                </div>
+
+                <!-- Simulation Slot Selector -->
+                <div>
+                  <h4 class="text-xs font-bold text-slate-700 mb-2">Trạng thái ô đất hàng A-H01:</h4>
+                  <div class="grid grid-cols-6 gap-2 text-center text-xs">
+                    <div class="p-2.5 rounded-lg border border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed">
+                      <p class="font-bold">A-H01-01</p><span class="text-[10px]">Đã có chủ</span>
+                    </div>
+                    <div class="p-2.5 rounded-lg border border-amber-300 bg-amber-50 text-amber-800">
+                      <p class="font-bold">A-H01-02</p><span class="text-[10px]">Đang giữ chỗ</span>
+                    </div>
+                    <div class="p-2.5 rounded-lg border-2 border-brand-700 bg-brand-50 text-brand-900 font-bold shadow-sm">
+                      <p>A-H01-03</p><span class="text-[10px] text-brand-700">✓ Đang Chọn</span>
+                    </div>
+                    <div class="p-2.5 rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-800 hover:border-brand-600 cursor-pointer">
+                      <p class="font-bold">A-H01-04</p><span class="text-[10px]">Trống (Chọn)</span>
+                    </div>
+                    <div class="p-2.5 rounded-lg border border-red-300 bg-red-50 text-red-700 cursor-not-allowed">
+                      <p class="font-bold">A-H01-05</p><span class="text-[10px]">Đã an táng 🔒</span>
+                    </div>
+                    <div class="p-2.5 rounded-lg border border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed">
+                      <p class="font-bold">A-H01-06</p><span class="text-[10px]">Đã có chủ</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Legal Preview & Scan Upload (M05 & M06) -->
+                <div class="border-t border-slate-200 pt-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                  <div class="flex items-center gap-3">
+                    <button class="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5">
+                      📄 In Hợp Đồng Giấy (Ký ngoài đời)
+                    </button>
+                    <div class="text-xs text-slate-500">
+                      Đã ký giấy xong? ->
+                    </div>
+                    <button class="bg-brand-50 text-brand-800 border border-brand-300 hover:bg-brand-100 text-xs font-semibold px-3 py-2 rounded-lg flex items-center gap-1.5">
+                      📤 Đính Kèm File Scan Đã Ký (MinIO)
+                    </button>
+                  </div>
+                  <button class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-6 py-2.5 rounded-lg shadow transition">
+                    Xác Nhận Kích Hoạt Hợp Đồng (ACTIVE)
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- M03 DEATH CERTIFICATE GATE CHECK PREVIEW -->
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-3">
+              <div class="flex justify-between items-center">
+                <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <span>⚖️</span> Chốt Chặn Giấy Báo Tử (Death Certificate Gate)
+                </h3>
+                <span class="text-xs text-rose-600 bg-rose-50 px-2.5 py-1 rounded border border-rose-200 font-semibold">Bắt buộc trước khi Chôn / Hỏa táng</span>
+              </div>
+              <p class="text-xs text-slate-600 leading-relaxed">
+                Người mất chưa có Giấy báo tử ở trạng thái <strong class="text-emerald-700">VERIFIED</strong> sẽ bị hệ thống tự động khóa tính năng lập phụ lục an táng và dịch vụ hỏa táng.
+              </p>
+            </div>
+          </div>
+        `;
+      }
+
+      else if (currentActor === 'caretaker') {
+        navLinks.innerHTML = `
+          <a class="px-2.5 py-1 rounded bg-brand-800 text-white font-medium text-xs">Việc Hôm Nay</a>
+          <a class="px-2.5 py-1 rounded hover:bg-brand-600 text-brand-100 text-xs">Lệnh Thi Công</a>
+          <a class="px-2.5 py-1 rounded hover:bg-brand-600 text-brand-100 text-xs">Lịch Chăm Sóc Mộ</a>
+          <a class="px-2.5 py-1 rounded hover:bg-brand-600 text-brand-100 text-xs">Nghiệm Thu An Táng</a>
+        `;
+        container.innerHTML = `
+          <!-- Q01, Q03, Q08, Q09 CARETAKER OPERATIONS -->
+          <div class="space-y-6">
+            <div class="flex justify-between items-center">
+              <div>
+                <h2 class="text-xl font-bold text-slate-900">Bàn Điều Phối & Giám Sát Hiện Trường</h2>
+                <p class="text-xs text-slate-500">Tiếp nhận căn cứ phụ lục • Thi công checklist • Nghiệm thu đóng ca • Khóa Kim Tĩnh</p>
+              </div>
+              <div class="flex gap-2">
+                <button class="bg-brand-700 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow">+ Lập Lệnh Thi Công Mới</button>
+                <button class="bg-emerald-600 text-white text-xs font-semibold px-4 py-2 rounded-lg shadow">Sinh Lịch Chăm Sóc Tháng 10</button>
+              </div>
+            </div>
+
+            <!-- Work Basis Protection Notice -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800 flex items-center justify-between">
+              <span><strong>🛡️ Phân quyền tác nghiệp:</strong> Quản trang chỉ xem căn cứ kỹ thuật, vị trí huyệt mộ và checklist. Hệ thống đã ẩn giá trị hợp đồng, tiền bạc và số CCCD.</span>
+              <span class="font-bold text-blue-900">Căn cứ: Work-Basis DTO</span>
+            </div>
+
+            <!-- Q05 & Q03 CONSTRUCTION ORDERS & KIM TINH IMMUTABILITY -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <!-- Construction Box -->
+              <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
+                <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+                  <h3 class="font-bold text-slate-800 text-sm">Lệnh Thi Công: CT-26-004 (Xây Mộ Kim Tĩnh)</h3>
+                  <span class="text-xs px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold">Tiến độ: 75%</span>
+                </div>
+                <div class="text-xs space-y-1 text-slate-600">
+                  <p>Ô mộ: <strong class="text-slate-800">A-H01-08</strong> • Phụ lục: PL-TC-26-001</p>
+                  <p>Đầu mối thi công: <strong class="text-slate-800">Tổ Thợ Hồ 02 (Thuê ngoài - Đội Ba Hưng)</strong></p>
+                  <p>Quản trang giám sát: <strong>Võ Văn Căn (NV-04)</strong></p>
+                </div>
+
+                <!-- Checklist -->
+                <div class="space-y-1.5 pt-1">
+                  <p class="text-[11px] font-bold text-slate-500 uppercase">Hạng mục Checklist bắt buộc:</p>
+                  <div class="space-y-1 text-xs">
+                    <label class="flex items-center gap-2 p-1.5 rounded bg-slate-50 border border-slate-200">
+                      <input type="checkbox" checked disabled class="rounded text-brand-700">
+                      <span class="line-through text-slate-400">1. Đào móng hố và đổ bê tông lót (Có ảnh MinIO)</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-1.5 rounded bg-slate-50 border border-slate-200">
+                      <input type="checkbox" checked disabled class="rounded text-brand-700">
+                      <span class="line-through text-slate-400">2. Xây gạch thẻ kim tĩnh chống thấm (Có ảnh MinIO)</span>
+                    </label>
+                    <label class="flex items-center gap-2 p-1.5 rounded bg-brand-50 border border-brand-200">
+                      <input type="checkbox" class="rounded text-brand-700">
+                      <span class="font-semibold text-brand-900">3. Đổ nắp đan bê tông chịu lực (Đang làm)</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="pt-2 flex justify-between items-center">
+                  <span class="text-[11px] text-amber-700 font-medium">Chặn hoàn tất 100% nếu thiếu ảnh READY</span>
+                  <button class="bg-slate-800 hover:bg-slate-900 text-white text-xs px-3 py-1.5 rounded-lg">Cập Nhật Ảnh & Nghiệm Thu</button>
+                </div>
+              </div>
+
+              <!-- Q09 KIM TINH BURIAL LOCK CONFIRMATION -->
+              <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-3">
+                <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+                  <h3 class="font-bold text-slate-800 text-sm">Nghiệm Thu Lễ Hạ Huyệt & Khóa Mộ</h3>
+                  <span class="text-xs px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-bold flex items-center gap-1">🔒 Kim Tĩnh</span>
+                </div>
+                <div class="text-xs space-y-1.5 text-slate-600 bg-rose-50/50 p-3 rounded-lg border border-rose-100">
+                  <p class="font-bold text-rose-900">QUY TẮC BẤT BIẾN KIM TĨNH (TRIGGER LEVEL ENFORCEMENT):</p>
+                  <p class="text-[11px] text-rose-800">Khi bấm nghiệm thu an táng, ô mộ sẽ tự động kích hoạt cờ <code class="bg-rose-100 px-1 rounded font-bold">is_locked = 1</code> vĩnh viễn. CSDL sẽ chặn toàn bộ lệnh sửa đổi, đào xới, bóc mộ hoặc chuyển nhượng sau này.</p>
+                </div>
+                <div class="text-xs space-y-1 text-slate-700">
+                  <p>Người an táng: <strong>Cụ Ông Phạm Văn Đức</strong></p>
+                  <p>Vị trí ô: <strong>A-H01-08</strong> • Slot: <strong>1/1</strong></p>
+                  <p>Giấy báo tử: <strong>Số 142/UBND - Đã xác thực ✓</strong></p>
+                </div>
+                <button class="w-full bg-rose-700 hover:bg-rose-800 text-white font-bold text-xs py-2.5 rounded-lg shadow transition">
+                  Xác Nhận Đã An Táng & KHÓA VĨNH VIỄN Ô MỘ (is_locked=1)
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      else if (currentActor === 'accountant') {
+        navLinks.innerHTML = `
+          <a class="px-2.5 py-1 rounded bg-brand-800 text-white font-medium text-xs">Khoản Phải Thu</a>
+          <a class="px-2.5 py-1 rounded hover:bg-brand-600 text-brand-100 text-xs">Giao Dịch Đã Thu</a>
+          <a class="px-2.5 py-1 rounded hover:bg-brand-600 text-brand-100 text-xs">Hóa Đơn / Biên Lai</a>
+          <a class="px-2.5 py-1 rounded hover:bg-brand-600 text-brand-100 text-xs">Đối Soát Báo Cáo</a>
+        `;
+        container.innerHTML = `
+          <!-- K01, K02, K03, K05 FINANCE & VIETQR PAYMENT -->
+          <div class="space-y-6">
+            <div class="flex justify-between items-center">
+              <div>
+                <h2 class="text-xl font-bold text-slate-900">Quản Lý Công Nợ, Thu Tiền & Biên Lai PDF</h2>
+                <p class="text-xs text-slate-500">Ràng buộc XOR nguồn công nợ • Thu tiền Idempotent • Biên lai chuẩn ReportLab</p>
+              </div>
+              <div class="flex items-center gap-3">
+                <span class="text-xs font-semibold text-slate-600">Tổng thực thu tháng này: <strong class="text-brand-700 text-sm">1.450.000.000 đ</strong></span>
+              </div>
+            </div>
+
+            <!-- K02 RECEIVABLES TABLE WITH XOR SOURCE -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div class="px-5 py-3 border-b border-slate-200 bg-slate-50 flex justify-between items-center">
+                <h3 class="text-xs font-bold text-slate-700 uppercase">Danh sách khoản phải thu (Nguồn XOR: HĐ hoặc Phụ Lục)</h3>
+                <span class="text-xs text-slate-500">Lưu trữ số học: <strong>DECIMAL(15,2)</strong> (Không sai số Float)</span>
+              </div>
+              <table class="w-full text-left text-xs">
+                <thead class="bg-slate-100 text-slate-600 border-b border-slate-200">
+                  <tr>
+                    <th class="p-3">Mã Khoản Thu</th>
+                    <th class="p-3">Nguồn Nghĩa Vụ (XOR)</th>
+                    <th class="p-3">Khách Hàng</th>
+                    <th class="p-3 text-right">Số Tiền Gốc</th>
+                    <th class="p-3 text-right">Chiết Khấu</th>
+                    <th class="p-3 text-right">Đã Thu</th>
+                    <th class="p-3 text-right">Dư Nợ Còn Lại</th>
+                    <th class="p-3 text-center">Trạng Thái</th>
+                    <th class="p-3 text-center">Thao Tác</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  <tr>
+                    <td class="p-3 font-bold text-slate-800">REC-2026-001</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold border border-blue-200">HĐ: HD-MD-26-001</span></td>
+                    <td class="p-3">Trần Văn Chung (0918.765.432)</td>
+                    <td class="p-3 text-right font-medium">150.000.000 đ</td>
+                    <td class="p-3 text-right text-slate-400">0 đ</td>
+                    <td class="p-3 text-right text-emerald-600 font-semibold">50.000.000 đ</td>
+                    <td class="p-3 text-right font-bold text-rose-700">100.000.000 đ</td>
+                    <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-amber-50 text-amber-800 font-semibold text-[10px]">MỘT PHẦN</span></td>
+                    <td class="p-3 text-center">
+                      <button class="bg-brand-700 hover:bg-brand-800 text-white font-semibold px-3 py-1 rounded text-[11px] shadow">Thu Tiền</button>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="p-3 font-bold text-slate-800">REC-2026-002</td>
+                    <td class="p-3"><span class="px-2 py-0.5 rounded bg-purple-50 text-purple-700 font-semibold border border-purple-200">PL: PL-CS-26-005</span></td>
+                    <td class="p-3">Lê Thị Mai (0903.111.222)</td>
+                    <td class="p-3 text-right font-medium">2.400.000 đ</td>
+                    <td class="p-3 text-right text-slate-400">0 đ</td>
+                    <td class="p-3 text-right text-emerald-600 font-semibold">2.400.000 đ</td>
+                    <td class="p-3 text-right font-bold text-slate-400">0 đ</td>
+                    <td class="p-3 text-center"><span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 font-semibold text-[10px]">ĐÃ THU ĐỦ</span></td>
+                    <td class="p-3 text-center">
+                      <button class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-1 rounded text-[11px] border border-slate-300">Biên Lai PDF</button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <!-- K03 PAYMENT RECORDING MODAL SIMULATION (VIETQR & IDEMPOTENT) -->
+            <div class="bg-slate-50 border border-slate-300 rounded-xl p-5 grid grid-cols-1 md:grid-cols-3 gap-6 shadow-sm">
+              <div class="md:col-span-2 space-y-4">
+                <div class="flex items-center justify-between">
+                  <h3 class="font-bold text-slate-800 text-sm">Ghi Nhận Thu Tiền: Khoản REC-2026-001</h3>
+                  <span class="text-xs text-brand-700 font-semibold">Khóa chống trùng: Idempotency-Key kích hoạt</span>
+                </div>
+                <div class="grid grid-cols-2 gap-3 text-xs">
+                  <div>
+                    <label class="text-slate-600 font-medium block mb-1">Số tiền thực nhận (VNĐ)</label>
+                    <input type="text" value="50.000.000" class="w-full bg-white border border-slate-300 rounded p-2 text-sm font-bold text-slate-800">
+                    <span class="text-[11px] text-slate-500 mt-0.5 block">Bằng chữ: <em>Năm mươi triệu đồng chẵn</em></span>
+                  </div>
+                  <div>
+                    <label class="text-slate-600 font-medium block mb-1">Phương thức thanh toán</label>
+                    <select class="w-full bg-white border border-slate-300 rounded p-2 text-xs font-semibold">
+                      <option selected>Mã VietQR Ngân Hàng (Chuyển khoản)</option>
+                      <option>Tiền mặt tại quầy (CASH)</option>
+                      <option>Quẹt thẻ POS</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="flex gap-2 pt-2">
+                  <button class="bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs px-5 py-2.5 rounded-lg shadow">
+                    Xác Nhận Thu Tiền & Sinh Biên Lai PT-2026-0042
+                  </button>
+                  <button class="bg-white border border-slate-300 text-slate-700 font-semibold text-xs px-4 py-2.5 rounded-lg">
+                    Áp Dụng Chiết Khấu (Giảm giá)
+                  </button>
+                </div>
+              </div>
+
+              <!-- VIETQR SIMULATION -->
+              <div class="bg-white p-3 rounded-lg border border-slate-200 text-center space-y-2 flex flex-col items-center justify-center">
+                <span class="text-[11px] font-bold text-slate-600 uppercase">Mã VietQR Đối Soát Tức Thời</span>
+                <div class="w-28 h-28 bg-slate-100 border-2 border-dashed border-slate-300 flex items-center justify-center text-xs text-slate-400 rounded-lg">
+                  [ Mã VietQR ]
+                </div>
+                <div class="text-[10px] text-slate-500 text-left w-full space-y-0.5">
+                  <p>STK: <strong>0123456789 (Vietcombank)</strong></p>
+                  <p>Số tiền: <strong>50.000.000 đ</strong></p>
+                  <p>Nội dung: <strong>REC001 TRAN VAN CHUNG</strong></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      else if (currentActor === 'admin') {
+        navLinks.innerHTML = `
+          <a class="px-2.5 py-1 rounded bg-brand-800 text-white font-medium text-xs">Tổng Quan Điều Hành</a>
+          <a class="px-2.5 py-1 rounded hover:bg-brand-600 text-brand-100 text-xs">Sơ Đồ Mặt Bằng GIS</a>
+          <a class="px-2.5 py-1 rounded hover:bg-brand-600 text-brand-100 text-xs">Báo Cáo & Thống Kê</a>
+          <a class="px-2.5 py-1 rounded hover:bg-brand-600 text-brand-100 text-xs">Tài Khoản & RBAC</a>
+          <a class="px-2.5 py-1 rounded hover:bg-brand-600 text-brand-100 text-xs">Audit Log</a>
+        `;
+        container.innerHTML = `
+          <!-- S01 & S02 ADMIN DASHBOARD & GIS INTERACTIVE MAP -->
+          <div class="space-y-6">
+            <!-- Executive KPI Row -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <p class="text-xs text-slate-500 font-semibold uppercase">Doanh Thu Thực Thu</p>
+                <p class="text-2xl font-black text-brand-700 mt-1">18.450.000.000 đ</p>
+                <span class="text-[11px] text-emerald-600 font-medium">Tính từ giao dịch thanh toán thật</span>
+              </div>
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <p class="text-xs text-slate-500 font-semibold uppercase">Tỷ Lệ Lấp Đầy (Occupancy)</p>
+                <p class="text-2xl font-black text-slate-800 mt-1">68.4%</p>
+                <span class="text-[11px] text-slate-500">820 ô đã an táng / 1.200 ô quy hoạch</span>
+              </div>
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <p class="text-xs text-slate-500 font-semibold uppercase">Hợp Đồng Đang Hiệu Lực</p>
+                <p class="text-2xl font-black text-slate-800 mt-1">412 HĐ</p>
+                <span class="text-[11px] text-blue-600 font-medium">35 HĐ Mua đất • 18 Phụ lục thi công</span>
+              </div>
+              <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                <p class="text-xs text-slate-500 font-semibold uppercase">Hạng Mục Quá Hạn (SLA)</p>
+                <p class="text-2xl font-black text-rose-600 mt-1">03 Việc</p>
+                <span class="text-[11px] text-rose-600 font-medium">2 thi công • 1 ca chăm sóc trễ</span>
+              </div>
+            </div>
+
+            <!-- S02 GIS LEAFLET INTERACTIVE MAP SIMULATION -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+              <div class="bg-slate-50 px-5 py-3 border-b border-slate-200 flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                  <span class="font-bold text-slate-800 text-sm">🗺️ Sơ Đồ Không Gian Nghĩa Trang (Bản Đồ Số GIS)</span>
+                  <span class="text-xs bg-brand-100 text-brand-900 px-2 py-0.5 rounded font-medium">Tọa độ GPS chuẩn xác</span>
+                </div>
+                <div class="flex items-center gap-3 text-xs">
+                  <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-white border border-slate-400 inline-block"></span> Đất trống</span>
+                  <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-amber-400 inline-block"></span> Giữ chỗ</span>
+                  <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-blue-600 inline-block"></span> Đã có chủ</span>
+                  <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-rose-600 inline-block"></span> Đã an táng</span>
+                  <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-rose-950 inline-block"></span> 🔒 Kim Tĩnh</span>
+                </div>
+              </div>
+
+              <div class="p-5 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Map Simulation Grid -->
+                <div class="lg:col-span-2 bg-slate-900 rounded-xl p-4 text-white relative min-h-[300px] flex flex-col justify-between overflow-hidden">
+                  <div class="flex justify-between items-center text-xs text-slate-400 z-10">
+                    <span>Lớp bản đồ vệ tinh / Vector</span>
+                    <span>Quy mô: 12 Hecta • Tọa độ trung tâm: 10.7626° N, 106.6601° E</span>
+                  </div>
+
+                  <!-- Zone Grid -->
+                  <div class="my-4 space-y-3 z-10">
+                    <p class="text-xs font-bold text-emerald-400">KHU A (MỘ ĐƠN TIÊU CHUẨN - 500 Ô):</p>
+                    <div class="grid grid-cols-10 gap-1.5 text-center text-[10px]">
+                      <div class="p-1.5 bg-rose-950 border border-rose-500 rounded font-bold text-rose-200">A01 🔒</div>
+                      <div class="p-1.5 bg-rose-600 rounded font-bold">A02</div>
+                      <div class="p-1.5 bg-blue-600 rounded font-bold">A03</div>
+                      <div class="p-1.5 bg-amber-400 text-slate-900 rounded font-bold">A04</div>
+                      <div class="p-1.5 bg-white text-slate-900 rounded font-bold hover:bg-emerald-400 cursor-pointer">A05</div>
+                      <div class="p-1.5 bg-white text-slate-900 rounded font-bold hover:bg-emerald-400 cursor-pointer">A06</div>
+                      <div class="p-1.5 bg-rose-950 border border-rose-500 rounded font-bold text-rose-200">A07 🔒</div>
+                      <div class="p-1.5 bg-rose-600 rounded font-bold">A08</div>
+                      <div class="p-1.5 bg-blue-600 rounded font-bold">A09</div>
+                      <div class="p-1.5 bg-white text-slate-900 rounded font-bold hover:bg-emerald-400 cursor-pointer">A10</div>
+                    </div>
+                  </div>
+
+                  <div class="text-[11px] text-slate-400 flex justify-between z-10 border-t border-slate-800 pt-2">
+                    <span>Nhấp vào ô mộ trên bản đồ để xem chi tiết bên phải</span>
+                    <button class="text-emerald-400 underline">Định vị GPS thực địa</button>
+                  </div>
+                </div>
+
+                <!-- Plot Selected Drawer (S03) -->
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-3 text-xs">
+                  <div class="flex justify-between items-center pb-2 border-b border-slate-200">
+                    <span class="font-bold text-slate-800 text-sm">Chi Tiết Ô Mộ: A-H01-01</span>
+                    <span class="px-2 py-0.5 rounded bg-rose-900 text-white font-bold text-[10px]">KIM TĨNH 🔒</span>
+                  </div>
+                  <div class="space-y-1.5 text-slate-600">
+                    <p>Phân khu: <strong>Khu A - Đồi Thông</strong></p>
+                    <p>Tọa độ GPS: <strong>10.762622, 106.660172</strong></p>
+                    <p>Chủ sở hữu: <strong>Lê Văn Tám (CCCD: 079182003456)</strong></p>
+                    <p>Hợp đồng gốc: <strong>HD-MD-25-0089 (Đã kích hoạt)</strong></p>
+                  </div>
+                  <div class="p-2.5 rounded bg-white border border-slate-200 space-y-1">
+                    <p class="font-bold text-slate-700">Người đang an táng tại slot 1/1:</p>
+                    <p class="text-brand-900 font-semibold">Cụ Bà NGUYỄN THỊ HOA (1938 - 2025)</p>
+                    <p class="text-[11px] text-slate-500">Giấy báo tử: Số 89/UBND - Đã lưu MinIO</p>
+                  </div>
+                  <div class="p-2 rounded bg-rose-50 text-rose-800 text-[11px] leading-tight border border-rose-200">
+                    🛡️ Mộ xây kết cấu Kim Tĩnh kiên cố. Hệ thống đã khóa vĩnh viễn (is_locked=1), nghiêm cấm bóc dỡ hoặc chuyển nhượng.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- S09 AUDIT LOG VIEWER PREVIEW -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4 space-y-2">
+              <div class="flex justify-between items-center">
+                <h3 class="text-xs font-bold text-slate-700 uppercase">Nhật Ký Kiểm Toán Hệ Thống (Audit Log - Read Only)</h3>
+                <span class="text-xs text-slate-400">Tự động làm mờ [REDACTED] dữ liệu mật khẩu & token</span>
+              </div>
+              <div class="space-y-1 font-mono text-[11px] bg-slate-900 text-emerald-400 p-3 rounded-lg overflow-x-auto">
+                <p>[2026-10-10 08:15:22 UTC] ACTOR: ke_toan_01 | ACTION: RECORD_PAYMENT | TARGET: receivables (REC-2026-001) | IP: 192.168.1.15</p>
+                <p>[2026-10-10 07:42:10 UTC] ACTOR: quan_trang_lead | ACTION: CLOSE_CARE_SCHEDULE | TARGET: care_schedules (CS-2026-10) | PROOF: READY</p>
+                <p>[2026-10-09 16:30:05 UTC] ACTOR: sếp_admin | ACTION: BUMP_PRICE_VERSION | TARGET: price_lists (PL-2026) | NO_RETROACTIVE</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // 2. MOBILE RENDERER
+    function renderMobile() {
+      const screen = document.getElementById('mobile-content');
+      const title = document.getElementById('mobile-appbar-title');
+      const bottomNav = document.getElementById('mobile-bottom-nav');
+
+      if (currentActor === 'public') {
+        title.textContent = 'Tra Cứu Phần Mộ';
+        screen.innerHTML = `
+          <!-- MOBILE PUBLIC SCREEN -->
+          <div class="space-y-4">
+            <div class="bg-white p-3.5 rounded-2xl shadow-sm border border-slate-200 space-y-2.5">
+              <label class="text-xs font-bold text-slate-700 block">Tìm người thân hoặc Mã ô mộ</label>
+              <div class="relative">
+                <input type="text" value="Trần Thị Mai" class="w-full pl-8 pr-3 py-2 text-xs border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-700" placeholder="Nhập tên người quá cố...">
+                <span class="absolute left-2.5 top-2.5 text-xs text-slate-400">🔍</span>
+              </div>
+              <button class="w-full bg-brand-700 text-white font-bold text-xs py-2 rounded-xl shadow">Tìm Kiếm</button>
+            </div>
+
+            <!-- Memorial Card -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-3">
+              <div class="flex justify-between items-start">
+                <div>
+                  <span class="text-[10px] text-brand-700 font-bold bg-brand-50 px-2 py-0.5 rounded border border-brand-200">Ô MỘ: A-H02-08</span>
+                  <h3 class="font-bold text-slate-900 text-sm mt-1">Cụ Bà TRẦN THỊ MAI</h3>
+                  <p class="text-[11px] text-slate-500">1945 - 2024 (Hưởng thọ 79 tuổi)</p>
+                </div>
+                <span class="text-2xl">🕯️</span>
+              </div>
+
+              <div class="bg-slate-50 rounded-xl p-2.5 text-[11px] text-slate-600 space-y-1">
+                <p>📍 Phân khu: <strong>Khu A - Đồi Thông</strong></p>
+                <p>🧭 Vị trí: Hàng 02 • Ô số 08 (Huyệt 1/1)</p>
+                <p>🌐 Tọa độ GPS: 10.762622, 106.660172</p>
+              </div>
+
+              <button class="w-full bg-emerald-600 text-white font-bold text-xs py-2.5 rounded-xl flex items-center justify-center gap-1.5 shadow">
+                <span>📍</span> Mở Dẫn Đường GPS Tới Mộ
+              </button>
+
+              <div class="border-t border-slate-100 pt-2 text-[11px] text-slate-500">
+                <p class="font-semibold text-slate-700">Chăm sóc mới nhất: 01/10/2026</p>
+                <p class="text-[10px] text-slate-500">Đã dọn dẹp, thắp hương và cắm hoa đạt chuẩn.</p>
+              </div>
+            </div>
+          </div>
+        `;
+        bottomNav.innerHTML = `
+          <div class="flex flex-col items-center text-brand-700 font-bold"><span>🔍</span><span>Tra Cứu</span></div>
+          <div class="flex flex-col items-center"><span>📖</span><span>Hướng Dẫn</span></div>
+          <div class="flex flex-col items-center"><span>📞</span><span>Liên Hệ</span></div>
+        `;
+      }
+
+      else if (currentActor === 'caretaker') {
+        title.textContent = 'Quản Trang Hiện Trường';
+        screen.innerHTML = `
+          <!-- MOBILE CARETAKER SCREEN (Q08 CARE CLOSING & Q05 CONSTRUCTION) -->
+          <div class="space-y-3.5">
+            <!-- Header Task Chips -->
+            <div class="flex gap-2 text-xs overflow-x-auto pb-1">
+              <span class="px-3 py-1 bg-brand-700 text-white font-bold rounded-full whitespace-nowrap shadow-sm">Ca Trực Hôm Nay (4)</span>
+              <span class="px-3 py-1 bg-white border border-slate-300 text-slate-700 font-medium rounded-full whitespace-nowrap">Thi Công (2)</span>
+              <span class="px-3 py-1 bg-white border border-slate-300 text-slate-700 font-medium rounded-full whitespace-nowrap">Lễ An Táng (1)</span>
+            </div>
+
+            <!-- Q08 ACTIVE CARE SESSION CARD -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-3">
+              <div class="flex justify-between items-start border-b border-slate-100 pb-2">
+                <div>
+                  <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded">CA CHĂM SÓC ĐỊNH KỲ</span>
+                  <h4 class="font-bold text-slate-900 text-sm mt-1">Ô Mộ: A-H02-08 (Cụ Trần Thị Mai)</h4>
+                  <p class="text-[11px] text-slate-500">Gói: Rằm & Mùng Một (Tháng 10/2026)</p>
+                </div>
+                <span class="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded">Chưa đóng ca</span>
+              </div>
+
+              <!-- Checklist -->
+              <div class="space-y-2">
+                <p class="text-[11px] font-bold text-slate-600 uppercase">Checklist công việc ngoài trời:</p>
+                <div class="space-y-1.5 text-xs">
+                  <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-50 border border-slate-200">
+                    <input type="checkbox" checked class="w-4 h-4 rounded text-brand-700">
+                    <span class="font-medium text-slate-800">1. Dọn cỏ và quét sạch rác khuôn viên (*)</span>
+                  </label>
+                  <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-50 border border-slate-200">
+                    <input type="checkbox" checked class="w-4 h-4 rounded text-brand-700">
+                    <span class="font-medium text-slate-800">2. Lau rửa sạch sẽ bia đá hoa cương</span>
+                  </label>
+                  <label class="flex items-center gap-2 p-2 rounded-xl bg-slate-50 border border-slate-200">
+                    <input type="checkbox" checked class="w-4 h-4 rounded text-brand-700">
+                    <span class="font-medium text-slate-800">3. Thắp 3 nén hương trầm & cắm hoa mới (*)</span>
+                  </label>
+                </div>
+                <span class="text-[10px] text-slate-400">(*) Hạng mục bắt buộc phải hoàn tất</span>
+              </div>
+
+              <!-- Photo Upload Gate -->
+              <div class="space-y-1.5">
+                <p class="text-[11px] font-bold text-slate-600 uppercase">Ảnh Minh Chứng Hiện Trường (MinIO READY):</p>
+                <div class="flex gap-2">
+                  <div class="w-16 h-16 rounded-xl bg-slate-100 border-2 border-emerald-500 flex flex-col items-center justify-center text-[9px] text-emerald-700 font-bold">
+                    <span>✓ Ảnh 1</span><span>Bia Mộ</span>
+                  </div>
+                  <div class="w-16 h-16 rounded-xl bg-slate-100 border-2 border-emerald-500 flex flex-col items-center justify-center text-[9px] text-emerald-700 font-bold">
+                    <span>✓ Ảnh 2</span><span>Toàn cảnh</span>
+                  </div>
+                  <button class="w-16 h-16 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center text-[9px] text-slate-500 hover:border-brand-600">
+                    <span class="text-base">+</span><span>Chụp thêm</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Close Button -->
+              <button class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-3 rounded-xl shadow-md transition">
+                ✓ XÁC NHẬN ĐÓNG CA CHĂM SÓC (CLOSED)
+              </button>
+            </div>
+
+            <!-- Kim Tinh Notice on Mobile -->
+            <div class="bg-rose-50 border border-rose-200 rounded-xl p-3 text-[11px] text-rose-900 leading-tight">
+              🔒 <strong>Lưu ý hiện trường:</strong> Mộ Kim Tĩnh đã chôn không được bóc dỡ hoặc can thiệp cải táng dưới mọi hình thức.
+            </div>
+          </div>
+        `;
+        bottomNav.innerHTML = `
+          <div class="flex flex-col items-center text-brand-700 font-bold"><span>📋</span><span>Công Việc</span></div>
+          <div class="flex flex-col items-center"><span>🏗️</span><span>Thi Công</span></div>
+          <div class="flex flex-col items-center"><span>🗺️</span><span>Bản Đồ</span></div>
+          <div class="flex flex-col items-center"><span>👤</span><span>Cá Nhân</span></div>
+        `;
+      }
+
+      else {
+        // Fallback quick mobile card for Marketing/Finance/Admin
+        title.textContent = roleMap[currentActor].split(' ')[0] + ' Di Động';
+        screen.innerHTML = `
+          <div class="space-y-4">
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm space-y-2">
+              <span class="text-[10px] uppercase font-bold text-brand-700 bg-brand-50 px-2 py-0.5 rounded">Tác Nghiệp Di Động</span>
+              <h3 class="font-bold text-sm text-slate-900">Bảng Tóm Tắt Nhiệm Vụ (${currentActor.toUpperCase()})</h3>
+              <p class="text-xs text-slate-600">Hệ thống tối ưu hóa tác vụ văn phòng chi tiết trên Web Desktop; ứng dụng di động hỗ trợ tra cứu nhanh, kiểm tra trạng thái và duyệt lệnh khẩn cấp.</p>
+            </div>
+            <div class="bg-slate-100 rounded-2xl p-4 text-center text-xs text-slate-500">
+              Chuyển sang <strong>"Giao diện Web Desktop"</strong> ở thanh trên cùng để xem đầy đủ biểu mẫu nghiệp vụ, wizard hợp đồng và báo cáo.
+            </div>
+          </div>
+        `;
+        bottomNav.innerHTML = `
+          <div class="flex flex-col items-center text-brand-700 font-bold"><span>🏠</span><span>Tổng Quan</span></div>
+          <div class="flex flex-col items-center"><span>📊</span><span>Số Liệu</span></div>
+          <div class="flex flex-col items-center"><span>⚙️</span><span>Cài Đặt</span></div>
+        `;
+      }
+    }
+
+    // Initialize
+    render();
+  </script>
+</body>
+</html>

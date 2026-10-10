@@ -8,7 +8,8 @@
 
 ## 1. Trạng thái tổng quan
 
-- **Milestone hiện tại:** Hoàn tất **M12** (Báo cáo quản trị, cổng tra cứu thông tin công khai Zero PII & audit logs) -> Sẵn sàng khởi động **M13** (Kiểm thử hệ thống, UX toàn diện & khôi phục CSDL/S3).
+- **Milestone hiện tại:** Khởi động Đợt Cải Tiến Giao Diện Theo Actor (Kế hoạch `02_PLAN_ANTIGRAVITY_CAI_THIEN_GIAO_DIEN.md`).
+  - **UI-M00 (Baseline & Traceability):** ĐẠT (Done) -> Khởi động **UI-M01** (Ma trận capability & hợp đồng dữ liệu).
 - **Trạng thái CSDL:**
   - Máy chủ: `DESKTOP-HKIPI1M`
   - CSDL chính: `QL_NghiaTrang`
@@ -47,6 +48,22 @@
 | **M12** | Báo cáo, tra cứu công khai & audit | **ĐẠT (Done)** | `v0.13.0-feature-complete` | 4 báo cáo thống kê chuyên sâu (Doanh thu, Lấp đầy, Hợp đồng, Vận hành), phòng chống Excel Formula Injection, xuất PDF/XLSX MinIO, audit log viewer & redact sensitive secrets, tra cứu người mất công khai kèm dẫn đường Google Maps. |
 | **M13** | Kiểm thử hệ thống, UX & khôi phục | Chưa bắt đầu | `v1.0.0-rc.1` | Regression toàn diện, test tải, backup/restore CSDL + S3 đối soát. |
 | **M14** | Bàn giao và phát hành | Chưa bắt đầu | `v1.0.0` | Scripts vận hành, tài liệu bàn giao, APK thử nghiệm, release manifest. |
+
+### 2.1. Đợt Cải Tiến Giao Diện & Phân Quyền Theo Actor (UI-M00 - UI-M10)
+
+| Milestone | Tên Milestone | Trạng thái | Gợi ý Commit / Tag | Ghi chú & Bằng chứng |
+|---|---|---|---|---|
+| **UI-M00** | Baseline, 39 UC, policy, quyết định, fixture an toàn | **ĐẠT (Done)** | `docs(ui): establish lab actor traceability` | Nhánh `ui/lab-actor-alignment`, baseline.md, traceability.csv, actor-policy.md, route-inventory.md, decisions.md, api-ui-contracts.md, acceptance.md. |
+| **UI-M01** | Ma trận capability và hợp đồng dữ liệu API/File ACL | Đang thực hiện | `fix(auth): enforce actor and resource access` | Siết chặt role permissions, loại bỏ admin bypass invariant, tạo Work Basis DTO, Finance Basis DTO. |
+| **UI-M02** | Design system, routing và cổng công khai (Public Portal) | Chưa bắt đầu | `feat(ui): add public portal and role workspaces` | Cổng công khai P01-P04 Zero PII, bố cục 4 Actor workspaces, URL router. |
+| **UI-M03** | Hồ sơ, 4 loại HĐ, 3 loại phụ lục, in/ký ngoài/scan | Chưa bắt đầu | `feat(contracts): complete actor based legal journeys` | M01-M10 hoàn chỉnh luồng pháp lý. |
+| **UI-M04** | Nhiều quản trang, nhân sự đa tầng, lịch khả dụng | Chưa bắt đầu | `feat(operations): separate supervisors and executors` | Q10, phân tách supervisor vs work party, xử lý xung đột. |
+| **UI-M05** | Thi công thực địa đầy đủ checklist, bằng chứng, tiến độ | Chưa bắt đầu | `feat(construction): complete coordination workflow` | Q01-Q05, tách nghiệm thu thi công khỏi an táng. |
+| **UI-M06** | Chăm sóc mộ định kỳ, xung đột ca & kết quả công khai | Chưa bắt đầu | `feat(care): complete scheduling and public results` | Q06-Q08 -> P03, quy trình publication Zero PII. |
+| **UI-M07** | Không gian ô mộ, Kim Tĩnh & Flutter hiện trường | Chưa bắt đầu | `feat(field): align plot and mobile workflows` | S02, S03, Q09, mobile đồng bộ API thật. |
+| **UI-M08** | Sếp, tài khoản, phân quyền, bảng giá & báo cáo | Chưa bắt đầu | `feat(admin): complete management workspace` | S01-S09, A01-A03 quản trị hệ thống. |
+| **UI-M09** | Kế toán, thu tiền, biên lai, chiết khấu & báo cáo tài chính | Chưa bắt đầu | `feat(finance): complete accountant journeys` | K01-K06 kiểm soát nợ và dòng tiền. |
+| **UI-M10** | Kiểm thử chấp nhận AT01-AT30, UAT 39 UC, hoàn tất bàn giao | Chưa bắt đầu | `test(ui): verify lab actor journeys` | Nghiệm thu toàn diện 39 UC. |
 
 ---
 
