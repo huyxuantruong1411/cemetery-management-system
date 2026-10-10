@@ -12,6 +12,10 @@ import {
   RefreshCw,
   Search,
   ExternalLink,
+  Plus,
+  Edit2,
+  Trash2,
+  CheckCircle2,
 } from 'lucide-react';
 import type {
   Plot,
@@ -61,6 +65,34 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
   const [reserveError, setReserveError] = useState<string | null>(null);
   const [reserveSuccess, setReserveSuccess] = useState<string | null>(null);
   const [isReserving, setIsReserving] = useState<boolean>(false);
+
+  // CRUD Modal states
+  const [zoneModal, setZoneModal] = useState<{ isOpen: boolean; mode: 'create' | 'edit'; data?: Zone | null }>({
+    isOpen: false,
+    mode: 'create',
+    data: null,
+  });
+  const [rowModal, setRowModal] = useState<{ isOpen: boolean; mode: 'create' | 'edit'; data?: Row | null; defaultZoneId?: number }>({
+    isOpen: false,
+    mode: 'create',
+    data: null,
+  });
+  const [plotTypeModal, setPlotTypeModal] = useState<{ isOpen: boolean; mode: 'create' | 'edit'; data?: PlotType | null }>({
+    isOpen: false,
+    mode: 'create',
+    data: null,
+  });
+  const [plotModal, setPlotModal] = useState<{ isOpen: boolean; mode: 'create' | 'edit'; data?: PlotDetail | Plot | null }>({
+    isOpen: false,
+    mode: 'create',
+    data: null,
+  });
+  const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; type: 'zone' | 'row' | 'plot_type' | 'plot'; id: number; name: string } | null>(null);
+
+  // Form states
+  const [crudError, setCrudError] = useState<string | null>(null);
+  const [crudSuccess, setCrudSuccess] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Standard states: loading, error
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -332,6 +364,257 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
     startIndex: gridStartIndex,
     endIndex: gridEndIndex,
   } = usePagination(filteredPlots, 24);
+
+  // Pagination for Plot Types (Tab 3)
+  const {
+    currentPage: ptPage,
+    pageSize: ptPageSize,
+    totalPages: ptTotalPages,
+    totalItems: ptTotalItems,
+    paginatedItems: paginatedPlotTypes,
+    setCurrentPage: setPtPage,
+    setPageSize: setPtPageSize,
+    startIndex: ptStartIndex,
+    endIndex: ptEndIndex,
+  } = usePagination(plotTypes, 6);
+
+  // Handle Save Zone
+  const handleSaveZone = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!token) return;
+    const formData = new FormData(e.currentTarget);
+    const code = formData.get('zone_code')?.toString().trim();
+    const name = formData.get('zone_name')?.toString().trim();
+    const rowsCount = Number(formData.get('total_rows')) || 0;
+    const desc = formData.get('description')?.toString().trim() || undefined;
+
+    setIsSubmitting(true);
+    setCrudError(null);
+    try {
+      if (zoneModal.mode === 'create') {
+        const res = await fetch('/api/v1/plots/zones', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ zone_code: code, zone_name: name, total_rows: rowsCount, description: desc }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Không thể tạo khu vực.');
+        }
+      } else if (zoneModal.data) {
+        const res = await fetch(`/api/v1/plots/zones/${zoneModal.data.zone_id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ zone_name: name, total_rows: rowsCount, description: desc }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Không thể cập nhật khu vực.');
+        }
+      }
+      setCrudSuccess('Lưu khu vực thành công!');
+      await fetchData();
+      setZoneModal({ isOpen: false, mode: 'create', data: null });
+      setTimeout(() => setCrudSuccess(null), 3000);
+    } catch (err) {
+      setCrudError(err instanceof Error ? err.message : 'Lỗi xử lý khu vực.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle Save Row
+  const handleSaveRow = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!token) return;
+    const formData = new FormData(e.currentTarget);
+    const zoneId = Number(formData.get('zone_id'));
+    const code = formData.get('row_code')?.toString().trim();
+    const plotsCount = Number(formData.get('total_plots')) || 0;
+
+    setIsSubmitting(true);
+    setCrudError(null);
+    try {
+      if (rowModal.mode === 'create') {
+        const res = await fetch('/api/v1/plots/rows', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ zone_id: zoneId, row_code: code, total_plots: plotsCount }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Không thể tạo hàng mộ.');
+        }
+      } else if (rowModal.data) {
+        const res = await fetch(`/api/v1/plots/rows/${rowModal.data.row_id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ row_code: code, total_plots: plotsCount }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Không thể cập nhật hàng mộ.');
+        }
+      }
+      setCrudSuccess('Lưu hàng mộ thành công!');
+      await fetchData();
+      setRowModal({ isOpen: false, mode: 'create', data: null });
+      setTimeout(() => setCrudSuccess(null), 3000);
+    } catch (err) {
+      setCrudError(err instanceof Error ? err.message : 'Lỗi xử lý hàng mộ.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle Save PlotType
+  const handleSavePlotType = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!token) return;
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get('type_name')?.toString().trim();
+    const defaultSlots = Number(formData.get('default_slots'));
+    const length = Number(formData.get('length'));
+    const width = Number(formData.get('width'));
+    const desc = formData.get('description')?.toString().trim() || undefined;
+
+    setIsSubmitting(true);
+    setCrudError(null);
+    try {
+      if (plotTypeModal.mode === 'create') {
+        const res = await fetch('/api/v1/plots/types', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ type_name: name, default_slots: defaultSlots, length, width, description: desc }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Không thể tạo loại mộ.');
+        }
+      } else if (plotTypeModal.data) {
+        const res = await fetch(`/api/v1/plots/types/${plotTypeModal.data.type_id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ type_name: name, default_slots: defaultSlots, length, width, description: desc }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Không thể cập nhật loại mộ.');
+        }
+      }
+      setCrudSuccess('Lưu loại mộ thành công!');
+      await fetchData();
+      setPlotTypeModal({ isOpen: false, mode: 'create', data: null });
+      setTimeout(() => setCrudSuccess(null), 3000);
+    } catch (err) {
+      setCrudError(err instanceof Error ? err.message : 'Lỗi xử lý loại mộ.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle Save Plot
+  const handleSavePlot = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!token) return;
+    const formData = new FormData(e.currentTarget);
+    const code = formData.get('plot_code')?.toString().trim();
+    const rowId = Number(formData.get('row_id'));
+    const typeId = Number(formData.get('type_id'));
+    const orientation = formData.get('orientation')?.toString().trim() || undefined;
+    const latStr = formData.get('latitude')?.toString().trim();
+    const lngStr = formData.get('longitude')?.toString().trim();
+    const latitude = latStr ? Number(latStr) : undefined;
+    const longitude = lngStr ? Number(lngStr) : undefined;
+    const notes = formData.get('notes')?.toString().trim() || undefined;
+    const isKimTinh = formData.get('is_kim_tinh') === 'on';
+
+    setIsSubmitting(true);
+    setCrudError(null);
+    try {
+      if (plotModal.mode === 'create') {
+        const res = await fetch('/api/v1/plots', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            plot_code: code,
+            row_id: rowId,
+            type_id: typeId,
+            orientation,
+            latitude,
+            longitude,
+            notes,
+            is_kim_tinh: isKimTinh,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Không thể tạo ô mộ.');
+        }
+      } else if (plotModal.data) {
+        const pId = 'plot_id' in plotModal.data ? plotModal.data.plot_id : 0;
+        const res = await fetch(`/api/v1/plots/${pId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            orientation,
+            latitude,
+            longitude,
+            notes,
+            ...(isKimTinh ? { is_kim_tinh: true } : {}),
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || 'Không thể cập nhật ô mộ.');
+        }
+      }
+      setCrudSuccess('Lưu ô mộ thành công!');
+      await fetchData();
+      if (selectedPlotId) await fetchPlotDetail(selectedPlotId);
+      setPlotModal({ isOpen: false, mode: 'create', data: null });
+      setTimeout(() => setCrudSuccess(null), 3000);
+    } catch (err) {
+      setCrudError(err instanceof Error ? err.message : 'Lỗi xử lý ô mộ.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Handle Delete Confirmation
+  const handleConfirmDelete = async () => {
+    if (!token || !deleteModal) return;
+    setIsSubmitting(true);
+    setCrudError(null);
+    try {
+      let endpoint = '';
+      if (deleteModal.type === 'zone') endpoint = `/api/v1/plots/zones/${deleteModal.id}`;
+      else if (deleteModal.type === 'row') endpoint = `/api/v1/plots/rows/${deleteModal.id}`;
+      else if (deleteModal.type === 'plot_type') endpoint = `/api/v1/plots/types/${deleteModal.id}`;
+      else if (deleteModal.type === 'plot') endpoint = `/api/v1/plots/${deleteModal.id}`;
+
+      const res = await fetch(endpoint, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || 'Không thể xóa mục này.');
+      }
+      if (deleteModal.type === 'plot' && selectedPlotId === deleteModal.id) {
+        setSelectedPlotId(null);
+        setPlotDetail(null);
+      }
+      setCrudSuccess('Đã xóa thành công!');
+      await fetchData();
+      setDeleteModal(null);
+      setTimeout(() => setCrudSuccess(null), 3000);
+    } catch (err) {
+      setCrudError(err instanceof Error ? err.message : 'Lỗi khi xóa.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // Helper for status badge
   const renderStatusBadge = (status: string, isKimTinh: boolean, isLocked: boolean) => {
@@ -759,6 +1042,33 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
           <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 500 }}>
             Hiển thị: <strong style={{ color: '#0F172A' }}>{filteredPlots.length}</strong> / {plots.length} ô
           </span>
+
+          {token && (
+            <button
+              onClick={() => {
+                setCrudError(null);
+                setPlotModal({ isOpen: true, mode: 'create', data: null });
+              }}
+              style={{
+                marginLeft: 'auto',
+                padding: '8px 14px',
+                backgroundColor: '#24594D',
+                color: '#FFFFFF',
+                borderRadius: '6px',
+                border: 'none',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+              }}
+            >
+              <Plus size={15} />
+              <span>Thêm Ô Mộ Mới</span>
+            </button>
+          )}
         </div>
 
         {/* 3. Main Tab Contents */}
@@ -1038,6 +1348,67 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                         <span>Tạm Giữ Chỗ Cho Khách</span>
                       </button>
                     )}
+
+                    {token && (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+                        <button
+                          onClick={() => {
+                            setCrudError(null);
+                            setPlotModal({ isOpen: true, mode: 'edit', data: plotDetail });
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '9px',
+                            backgroundColor: '#F8FAFC',
+                            color: '#1E293B',
+                            borderRadius: '8px',
+                            border: '1px solid #CBD5E1',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                          }}
+                        >
+                          <Edit2 size={14} />
+                          <span>Chỉnh Sửa Thông Tin Ô Mộ</span>
+                        </button>
+
+                        {plotDetail.status === 'EMPTY_UNSOLD' && !plotDetail.is_kim_tinh && (
+                          <button
+                            onClick={() => {
+                              setCrudError(null);
+                              setDeleteModal({
+                                isOpen: true,
+                                type: 'plot',
+                                id: plotDetail.plot_id,
+                                name: plotDetail.plot_code,
+                              });
+                            }}
+                            style={{
+                              width: '100%',
+                              padding: '9px',
+                              backgroundColor: '#FEF2F2',
+                              color: '#DC2626',
+                              borderRadius: '8px',
+                              border: '1px solid #FECACA',
+                              fontSize: '13px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px',
+                            }}
+                          >
+                            <Trash2 size={14} />
+                            <span>Xóa Ô Mộ Này</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               ) : (
@@ -1153,73 +1524,333 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
         {/* TAB 3: Catalog & Specifications (Khu & Loại Mộ) */}
         {activeTab === 'catalog' && !isLoading && (
           <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
-            {/* Zones & Rows */}
+            {/* CRUD Feedback Alerts */}
+            {crudSuccess && (
+              <div
+                style={{
+                  padding: '12px 16px',
+                  backgroundColor: '#ECFDF5',
+                  color: '#047857',
+                  border: '1px solid #A7F3D0',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <CheckCircle2 size={16} />
+                <span>{crudSuccess}</span>
+              </div>
+            )}
+            {crudError && (
+              <div
+                style={{
+                  padding: '12px 16px',
+                  backgroundColor: '#FEF2F2',
+                  color: '#B91C1C',
+                  border: '1px solid #FECACA',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <AlertCircle size={16} />
+                <span>{crudError}</span>
+              </div>
+            )}
+
+            {/* Global Actions Toolbar for Tab 3 */}
+            {token && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '16px 20px',
+                  backgroundColor: '#F8FAFC',
+                  borderRadius: '12px',
+                  border: '1px solid #E2E8F0',
+                  flexWrap: 'wrap',
+                  gap: '12px',
+                }}
+              >
+                <div>
+                  <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: '#0F172A' }}>
+                    Quản Lý Quy Hoạch Không Gian & Danh Mục Kích Thước
+                  </h4>
+                  <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748B' }}>
+                    Cấu hình các phân khu an táng, số lượng hàng mộ và quy cách kích thước huyệt mộ.
+                  </p>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => {
+                      setCrudError(null);
+                      setZoneModal({ isOpen: true, mode: 'create', data: null });
+                    }}
+                    style={{
+                      padding: '8px 14px',
+                      backgroundColor: '#24594D',
+                      color: '#FFFFFF',
+                      borderRadius: '6px',
+                      border: 'none',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <Plus size={14} />
+                    <span>Thêm Khu Vực</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCrudError(null);
+                      setRowModal({ isOpen: true, mode: 'create', data: null });
+                    }}
+                    style={{
+                      padding: '8px 14px',
+                      backgroundColor: '#FFFFFF',
+                      color: '#24594D',
+                      border: '1px solid #24594D',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <Plus size={14} />
+                    <span>Thêm Hàng Mộ</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCrudError(null);
+                      setPlotTypeModal({ isOpen: true, mode: 'create', data: null });
+                    }}
+                    style={{
+                      padding: '8px 14px',
+                      backgroundColor: '#FFFFFF',
+                      color: '#24594D',
+                      border: '1px solid #24594D',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    <Plus size={14} />
+                    <span>Thêm Loại Mộ</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Zones & Rows Section */}
             <div>
-              <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#1E293B', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '14px' }}>
-                Danh Mục Khu Vực (Zones) & Hàng Mộ (Rows)
-              </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#1E293B', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>
+                  Danh Mục Khu Vực (Zones) & Hàng Mộ (Rows) ({zones.length} khu)
+                </h3>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
                 {zones.map((z) => {
                   const zoneRows = rows.filter((r) => r.zone_id === z.zone_id);
                   return (
-                    <div key={z.zone_id} style={{ padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                        <strong style={{ fontSize: '15px', color: '#0F172A' }}>{z.zone_code}</strong>
-                        <span style={{ fontSize: '11px', backgroundColor: '#E2E8F0', padding: '2px 8px', borderRadius: '4px', fontWeight: 600, color: '#475569' }}>
-                          {zoneRows.length} hàng
-                        </span>
-                      </div>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#24594D', marginBottom: '8px' }}>{z.zone_name}</div>
-                      <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '12px', lineHeight: '1.4' }}>{z.description || 'Khuôn viên tiêu chuẩn.'}</p>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                        {zoneRows.map((r) => (
-                          <div
-                            key={r.row_id}
-                            style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              fontSize: '12px',
-                              padding: '4px 8px',
-                              backgroundColor: '#FFFFFF',
-                              borderRadius: '4px',
-                              border: '1px solid #E2E8F0',
-                            }}
-                          >
-                            <span style={{ fontWeight: 500, color: '#334155' }}>{r.row_code}</span>
-                            <span style={{ color: '#64748B' }}>{r.total_plots} ô</span>
+                    <div key={z.zone_id} style={{ padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                          <strong style={{ fontSize: '15px', color: '#0F172A' }}>{z.zone_code}</strong>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '11px', backgroundColor: '#E2E8F0', padding: '2px 8px', borderRadius: '4px', fontWeight: 600, color: '#475569' }}>
+                              {zoneRows.length} hàng
+                            </span>
+                            {token && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setCrudError(null);
+                                    setZoneModal({ isOpen: true, mode: 'edit', data: z });
+                                  }}
+                                  title="Chỉnh sửa khu vực"
+                                  style={{ padding: '4px', background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}
+                                >
+                                  <Edit2 size={13} />
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setCrudError(null);
+                                    setDeleteModal({ isOpen: true, type: 'zone', id: z.zone_id, name: `${z.zone_code} - ${z.zone_name}` });
+                                  }}
+                                  title="Xóa khu vực"
+                                  style={{ padding: '4px', background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626' }}
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </>
+                            )}
                           </div>
-                        ))}
+                        </div>
+                        <div style={{ fontSize: '13px', fontWeight: 600, color: '#24594D', marginBottom: '8px' }}>{z.zone_name}</div>
+                        <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '12px', lineHeight: '1.4' }}>{z.description || 'Khuôn viên tiêu chuẩn.'}</p>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          {zoneRows.map((r) => (
+                            <div
+                              key={r.row_id}
+                              style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                fontSize: '12px',
+                                padding: '6px 10px',
+                                backgroundColor: '#FFFFFF',
+                                borderRadius: '6px',
+                                border: '1px solid #E2E8F0',
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontWeight: 600, color: '#334155' }}>{r.row_code}</span>
+                                <span style={{ color: '#94A3B8', fontSize: '11px' }}>({r.total_plots} ô)</span>
+                              </div>
+                              {token && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <button
+                                    onClick={() => {
+                                      setCrudError(null);
+                                      setRowModal({ isOpen: true, mode: 'edit', data: r });
+                                    }}
+                                    title="Sửa hàng"
+                                    style={{ padding: '2px', background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}
+                                  >
+                                    <Edit2 size={12} />
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setCrudError(null);
+                                      setDeleteModal({ isOpen: true, type: 'row', id: r.row_id, name: `${r.row_code} (${z.zone_code})` });
+                                    }}
+                                    title="Xóa hàng"
+                                    style={{ padding: '2px', background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626' }}
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
                       </div>
+                      {token && (
+                        <button
+                          onClick={() => {
+                            setCrudError(null);
+                            setRowModal({ isOpen: true, mode: 'create', data: null, defaultZoneId: z.zone_id });
+                          }}
+                          style={{
+                            marginTop: '12px',
+                            padding: '6px',
+                            width: '100%',
+                            border: '1px dashed #CBD5E1',
+                            borderRadius: '6px',
+                            backgroundColor: '#FFFFFF',
+                            color: '#475569',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          <Plus size={12} />
+                          <span>Thêm hàng vào khu này</span>
+                        </button>
+                      )}
                     </div>
                   );
                 })}
               </div>
             </div>
 
-            {/* Plot Types */}
+            {/* Plot Types Section with Pagination */}
             <div>
-              <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#1E293B', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '14px' }}>
-                Quy Cách & Kích Thước Loại Mộ (Plot Types)
-              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#1E293B', textTransform: 'uppercase', letterSpacing: '0.5px', margin: 0 }}>
+                  Quy Cách & Kích Thước Loại Mộ (Plot Types) ({plotTypes.length} loại)
+                </h3>
+              </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
-                {plotTypes.map((pt) => (
-                  <div key={pt.type_id} style={{ padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0', backgroundColor: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                      <strong style={{ fontSize: '15px', color: '#0F172A' }}>{pt.type_name}</strong>
-                      <span style={{ fontSize: '11px', backgroundColor: '#E8F1EE', color: '#24594D', padding: '3px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                        {pt.default_slots} slot
-                      </span>
-                    </div>
-                    <div style={{ fontSize: '12px', color: '#475569', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                      <div>Kích thước: <strong>{pt.length}m</strong> dài × <strong>{pt.width}m</strong> rộng</div>
-                      <div>Diện tích: <strong>{(Number(pt.length) * Number(pt.width)).toFixed(2)} m²</strong></div>
-                      <p style={{ fontSize: '11px', color: '#94A3B8', paddingTop: '8px', borderTop: '1px solid #F1F5F9', marginTop: '4px' }}>
-                        {pt.description || 'Quy cách mộ tiêu chuẩn khuôn viên.'}
-                      </p>
+                {paginatedPlotTypes.map((pt) => (
+                  <div key={pt.type_id} style={{ padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0', backgroundColor: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                        <strong style={{ fontSize: '15px', color: '#0F172A' }}>{pt.type_name}</strong>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontSize: '11px', backgroundColor: '#E8F1EE', color: '#24594D', padding: '3px 8px', borderRadius: '4px', fontWeight: 700 }}>
+                            {pt.default_slots} slot
+                          </span>
+                          {token && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setCrudError(null);
+                                  setPlotTypeModal({ isOpen: true, mode: 'edit', data: pt });
+                                }}
+                                title="Chỉnh sửa loại mộ"
+                                style={{ padding: '3px', background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}
+                              >
+                                <Edit2 size={13} />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setCrudError(null);
+                                  setDeleteModal({ isOpen: true, type: 'plot_type', id: pt.type_id, name: pt.type_name });
+                                }}
+                                title="Xóa loại mộ"
+                                style={{ padding: '3px', background: 'none', border: 'none', cursor: 'pointer', color: '#DC2626' }}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#475569', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        <div>Kích thước: <strong>{pt.length}m</strong> dài × <strong>{pt.width}m</strong> rộng</div>
+                        <div>Diện tích: <strong>{(Number(pt.length) * Number(pt.width)).toFixed(2)} m²</strong></div>
+                        <p style={{ fontSize: '11px', color: '#94A3B8', paddingTop: '8px', borderTop: '1px solid #F1F5F9', marginTop: '4px', lineHeight: '1.4' }}>
+                          {pt.description || 'Quy cách mộ tiêu chuẩn khuôn viên.'}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* Advanced Modern Pagination for Plot Types */}
+              <div style={{ marginTop: '16px' }}>
+                <Pagination
+                  currentPage={ptPage}
+                  totalPages={ptTotalPages}
+                  totalItems={ptTotalItems}
+                  pageSize={ptPageSize}
+                  pageSizeOptions={[6, 12, 24]}
+                  onPageChange={setPtPage}
+                  onPageSizeChange={setPtPageSize}
+                  startIndex={ptStartIndex}
+                  endIndex={ptEndIndex}
+                />
               </div>
             </div>
           </div>
@@ -1326,6 +1957,518 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* 5. Zone Create / Edit Modal */}
+      {zoneModal.isOpen && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '14px', maxWidth: '440px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #E2E8F0', paddingBottom: '12px', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A', margin: 0 }}>
+                {zoneModal.mode === 'create' ? 'Thêm Phân Khu Mới (Zone)' : `Chỉnh Sửa Khu ${zoneModal.data?.zone_code}`}
+              </h3>
+              <button onClick={() => setZoneModal({ isOpen: false, mode: 'create', data: null })} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {crudError && (
+              <div style={{ padding: '10px 14px', backgroundColor: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '12px', marginBottom: '14px' }}>
+                {crudError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveZone} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {zoneModal.mode === 'create' && (
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                    Mã khu vực (Zone Code) *
+                  </label>
+                  <input
+                    type="text"
+                    name="zone_code"
+                    required
+                    placeholder="Ví dụ: KHU-A, KHU-VIP"
+                    style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }}
+                  />
+                </div>
+              )}
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                  Tên phân khu *
+                </label>
+                <input
+                  type="text"
+                  name="zone_name"
+                  required
+                  defaultValue={zoneModal.data?.zone_name || ''}
+                  placeholder="Ví dụ: Khu An Lạc, Khu Vĩnh Hằng"
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                  Tổng số hàng dự kiến
+                </label>
+                <input
+                  type="number"
+                  name="total_rows"
+                  min={0}
+                  defaultValue={zoneModal.data?.total_rows || 0}
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                  Mô tả phân khu
+                </label>
+                <textarea
+                  name="description"
+                  rows={2}
+                  defaultValue={zoneModal.data?.description || ''}
+                  placeholder="Vị trí phong thủy, cảnh quan..."
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setZoneModal({ isOpen: false, mode: 'create', data: null })}
+                  style={{ flex: 1, padding: '9px', backgroundColor: '#F1F5F9', color: '#334155', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  style={{ flex: 1, padding: '9px', backgroundColor: '#24594D', color: '#FFFFFF', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  {isSubmitting ? 'Đang lưu...' : 'Lưu Khu Vực'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 6. Row Create / Edit Modal */}
+      {rowModal.isOpen && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '14px', maxWidth: '440px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #E2E8F0', paddingBottom: '12px', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A', margin: 0 }}>
+                {rowModal.mode === 'create' ? 'Thêm Hàng Mộ Mới (Row)' : `Chỉnh Sửa Hàng ${rowModal.data?.row_code}`}
+              </h3>
+              <button onClick={() => setRowModal({ isOpen: false, mode: 'create', data: null })} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {crudError && (
+              <div style={{ padding: '10px 14px', backgroundColor: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '12px', marginBottom: '14px' }}>
+                {crudError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveRow} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {rowModal.mode === 'create' ? (
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                    Thuộc khu vực (Zone) *
+                  </label>
+                  <select
+                    name="zone_id"
+                    required
+                    defaultValue={rowModal.defaultZoneId || zones[0]?.zone_id}
+                    style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px', backgroundColor: '#FFFFFF' }}
+                  >
+                    {zones.map((z) => (
+                      <option key={z.zone_id} value={z.zone_id}>
+                        {z.zone_code} - {z.zone_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                  Mã hàng mộ (Row Code) *
+                </label>
+                <input
+                  type="text"
+                  name="row_code"
+                  required
+                  defaultValue={rowModal.data?.row_code || ''}
+                  placeholder="Ví dụ: H01, H02, HANG-A"
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                  Tổng số ô mộ trong hàng
+                </label>
+                <input
+                  type="number"
+                  name="total_plots"
+                  min={0}
+                  defaultValue={rowModal.data?.total_plots || 0}
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setRowModal({ isOpen: false, mode: 'create', data: null })}
+                  style={{ flex: 1, padding: '9px', backgroundColor: '#F1F5F9', color: '#334155', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  style={{ flex: 1, padding: '9px', backgroundColor: '#24594D', color: '#FFFFFF', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  {isSubmitting ? 'Đang lưu...' : 'Lưu Hàng Mộ'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 7. Plot Type Create / Edit Modal */}
+      {plotTypeModal.isOpen && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '14px', maxWidth: '440px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #E2E8F0', paddingBottom: '12px', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A', margin: 0 }}>
+                {plotTypeModal.mode === 'create' ? 'Thêm Quy Cách Loại Mộ' : `Chỉnh Sửa Loại ${plotTypeModal.data?.type_name}`}
+              </h3>
+              <button onClick={() => setPlotTypeModal({ isOpen: false, mode: 'create', data: null })} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {crudError && (
+              <div style={{ padding: '10px 14px', backgroundColor: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '12px', marginBottom: '14px' }}>
+                {crudError}
+              </div>
+            )}
+
+            <form onSubmit={handleSavePlotType} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                  Tên loại mộ *
+                </label>
+                <input
+                  type="text"
+                  name="type_name"
+                  required
+                  defaultValue={plotTypeModal.data?.type_name || ''}
+                  placeholder="Ví dụ: Mộ đơn tiêu chuẩn, Mộ đôi gia tộc"
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                  Số slot an táng mặc định *
+                </label>
+                <input
+                  type="number"
+                  name="default_slots"
+                  min={1}
+                  required
+                  defaultValue={plotTypeModal.data?.default_slots || 1}
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                    Chiều dài (m) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="length"
+                    required
+                    defaultValue={plotTypeModal.data?.length || 2.4}
+                    style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                    Chiều rộng (m) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    name="width"
+                    required
+                    defaultValue={plotTypeModal.data?.width || 1.2}
+                    style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                  Mô tả quy cách
+                </label>
+                <textarea
+                  name="description"
+                  rows={2}
+                  defaultValue={plotTypeModal.data?.description || ''}
+                  placeholder="Đặc điểm xây dựng, loại đá hoa cương..."
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setPlotTypeModal({ isOpen: false, mode: 'create', data: null })}
+                  style={{ flex: 1, padding: '9px', backgroundColor: '#F1F5F9', color: '#334155', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  style={{ flex: 1, padding: '9px', backgroundColor: '#24594D', color: '#FFFFFF', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  {isSubmitting ? 'Đang lưu...' : 'Lưu Loại Mộ'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 8. Plot Create / Edit Modal */}
+      {plotModal.isOpen && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '14px', maxWidth: '480px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)', maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #E2E8F0', paddingBottom: '12px', marginBottom: '16px' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A', margin: 0 }}>
+                {plotModal.mode === 'create' ? 'Khởi Tạo Ô Mộ Mới' : `Chỉnh Sửa Ô Mộ ${plotModal.data?.plot_code}`}
+              </h3>
+              <button onClick={() => setPlotModal({ isOpen: false, mode: 'create', data: null })} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {crudError && (
+              <div style={{ padding: '10px 14px', backgroundColor: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '12px', marginBottom: '14px' }}>
+                {crudError}
+              </div>
+            )}
+
+            <form onSubmit={handleSavePlot} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {plotModal.mode === 'create' ? (
+                <>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                      Mã số ô mộ *
+                    </label>
+                    <input
+                      type="text"
+                      name="plot_code"
+                      required
+                      placeholder="Ví dụ: A-H01-P01"
+                      style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                      Thuộc Hàng Mộ (Row) *
+                    </label>
+                    <select
+                      name="row_id"
+                      required
+                      defaultValue={rows[0]?.row_id}
+                      style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px', backgroundColor: '#FFFFFF' }}
+                    >
+                      {rows.map((r) => {
+                        const z = zones.find((zItem) => zItem.zone_id === r.zone_id);
+                        return (
+                          <option key={r.row_id} value={r.row_id}>
+                            {z?.zone_code || 'Khu'} · {r.row_code}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+                </>
+              ) : null}
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                  Quy cách Loại Mộ *
+                </label>
+                <select
+                  name="type_id"
+                  required
+                  defaultValue={plotModal.data ? ('type_id' in plotModal.data ? plotModal.data.type_id : plotTypes[0]?.type_id) : plotTypes[0]?.type_id}
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px', backgroundColor: '#FFFFFF' }}
+                >
+                  {plotTypes.map((pt) => (
+                    <option key={pt.type_id} value={pt.type_id}>
+                      {pt.type_name} ({pt.default_slots} slot, {pt.length}m × {pt.width}m)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                  Hướng phong thủy
+                </label>
+                <select
+                  name="orientation"
+                  defaultValue={plotModal.data && 'orientation' in plotModal.data && plotModal.data.orientation ? plotModal.data.orientation : 'ĐÔNG'}
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px', backgroundColor: '#FFFFFF' }}
+                >
+                  <option value="ĐÔNG">ĐÔNG</option>
+                  <option value="TÂY">TÂY</option>
+                  <option value="NAM">NAM</option>
+                  <option value="BẮC">BẮC</option>
+                  <option value="ĐÔNG NAM">ĐÔNG NAM</option>
+                  <option value="ĐÔNG BẮC">ĐÔNG BẮC</option>
+                  <option value="TÂY NAM">TÂY NAM</option>
+                  <option value="TÂY BẮC">TÂY BẮC</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                    Vĩ độ (Latitude)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.000001"
+                    name="latitude"
+                    defaultValue={plotModal.data && 'latitude' in plotModal.data && plotModal.data.latitude ? Number(plotModal.data.latitude) : 10.925200}
+                    style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                    Kinh độ (Longitude)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.000001"
+                    name="longitude"
+                    defaultValue={plotModal.data && 'longitude' in plotModal.data && plotModal.data.longitude ? Number(plotModal.data.longitude) : 106.825200}
+                    style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }}
+                  />
+                </div>
+              </div>
+
+              {/* Kim Tĩnh Invariant Checkbox */}
+              <div style={{ padding: '10px 12px', backgroundColor: '#FEF3C7', borderRadius: '8px', border: '1px solid #FDE68A' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: 600, color: '#92400E', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    name="is_kim_tinh"
+                    defaultChecked={Boolean(plotModal.data?.is_kim_tinh)}
+                    disabled={Boolean(plotModal.data?.is_kim_tinh)}
+                  />
+                  <span>Kết cấu Kim Tĩnh kiên cố (Bất biến)</span>
+                </label>
+                <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#B45309', lineHeight: '1.4' }}>
+                  Lưu ý: Một khi đã bật cờ Kim Tĩnh, ô mộ sẽ bị khóa vĩnh viễn ở cấp CSDL, không thể hạ cờ hay xóa bỏ.
+                </p>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                  Ghi chú ô mộ
+                </label>
+                <textarea
+                  name="notes"
+                  rows={2}
+                  defaultValue={plotModal.data && 'notes' in plotModal.data && plotModal.data.notes ? plotModal.data.notes : ''}
+                  placeholder="Ghi chú thêm về vị trí, khuôn viên..."
+                  style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setPlotModal({ isOpen: false, mode: 'create', data: null })}
+                  style={{ flex: 1, padding: '9px', backgroundColor: '#F1F5F9', color: '#334155', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  style={{ flex: 1, padding: '9px', backgroundColor: '#24594D', color: '#FFFFFF', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                >
+                  {isSubmitting ? 'Đang lưu...' : 'Lưu Ô Mộ'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 9. Delete Confirmation Modal */}
+      {deleteModal && deleteModal.isOpen && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '14px', maxWidth: '420px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: '8px', backgroundColor: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Trash2 size={20} color="#DC2626" />
+              </div>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A', margin: 0 }}>
+                Xác Nhận Xóa Dữ Liệu
+              </h3>
+            </div>
+
+            {crudError && (
+              <div style={{ padding: '10px 14px', backgroundColor: '#FEF2F2', color: '#B91C1C', border: '1px solid #FECACA', borderRadius: '8px', fontSize: '12px', marginBottom: '14px' }}>
+                {crudError}
+              </div>
+            )}
+
+            <p style={{ fontSize: '13px', color: '#475569', lineHeight: '1.6', margin: '0 0 16px 0' }}>
+              Bạn có chắc chắn muốn xóa <strong>{deleteModal.name}</strong> không?
+              Hành động này không thể hoàn tác nếu mục này chưa có dữ liệu phụ thuộc hoặc hợp đồng liên kết.
+            </p>
+
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button
+                type="button"
+                onClick={() => setDeleteModal(null)}
+                style={{ flex: 1, padding: '9px', backgroundColor: '#F1F5F9', color: '#334155', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' }}
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                disabled={isSubmitting}
+                onClick={handleConfirmDelete}
+                style={{ flex: 1, padding: '9px', backgroundColor: '#DC2626', color: '#FFFFFF', border: 'none', borderRadius: '6px', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+              >
+                {isSubmitting ? 'Đang xóa...' : 'Xác Nhận Xóa'}
+              </button>
+            </div>
           </div>
         </div>
       )}

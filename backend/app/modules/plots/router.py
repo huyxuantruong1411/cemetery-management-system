@@ -10,6 +10,7 @@ from app.modules.plots.schemas import (
     PlotCreate,
     PlotDetailResponse,
     PlotListResponse,
+    PlotMessageResponse,
     PlotReservationResponse,
     PlotReserveRequest,
     PlotStatsResponse,
@@ -83,6 +84,20 @@ def update_zone(
     return PlotService.update_zone(db, zone_id, data)
 
 
+@router.delete(
+    "/zones/{zone_id}",
+    response_model=PlotMessageResponse,
+    dependencies=[Depends(require_permission("plots", "write"))],
+)
+def delete_zone(
+    zone_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Xóa khu mộ (yêu cầu quyền plots:write, chỉ xóa được khi không chứa hàng mộ)."""
+    return PlotService.delete_zone(db, zone_id)
+
+
 # =============================================================================
 # 3. Rows (Hàng Mộ)
 # =============================================================================
@@ -126,6 +141,20 @@ def update_row(
     return PlotService.update_row(db, row_id, data)
 
 
+@router.delete(
+    "/rows/{row_id}",
+    response_model=PlotMessageResponse,
+    dependencies=[Depends(require_permission("plots", "write"))],
+)
+def delete_row(
+    row_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Xóa hàng mộ (yêu cầu quyền plots:write, chỉ xóa được khi không chứa ô mộ)."""
+    return PlotService.delete_row(db, row_id)
+
+
 # =============================================================================
 # 4. Plot Types (Loại Mộ & Cấu Hình Slot)
 # =============================================================================
@@ -166,6 +195,20 @@ def update_plot_type(
 ):
     """Cập nhật thông số loại mộ."""
     return PlotService.update_plot_type(db, type_id, data)
+
+
+@router.delete(
+    "/types/{type_id}",
+    response_model=PlotMessageResponse,
+    dependencies=[Depends(require_permission("plots", "write"))],
+)
+def delete_plot_type(
+    type_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Xóa loại mộ (yêu cầu quyền plots:write, chỉ xóa được khi không có ô mộ nào sử dụng)."""
+    return PlotService.delete_plot_type(db, type_id)
 
 
 # =============================================================================
@@ -238,6 +281,20 @@ def update_plot(
 ):
     """Cập nhật tọa độ GPS, hướng mộ, ghi chú. Thực thi Quy tắc Bất biến Kim Tĩnh."""
     return PlotService.update_plot(db, plot_id, data)
+
+
+@router.delete(
+    "/{plot_id}",
+    response_model=PlotMessageResponse,
+    dependencies=[Depends(require_permission("plots", "write"))],
+)
+def delete_plot(
+    plot_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Xóa ô mộ (yêu cầu quyền plots:write, chỉ xóa được khi ô chưa bán, không có giao dịch và không phải Kim Tĩnh)."""
+    return PlotService.delete_plot(db, plot_id)
 
 
 # =============================================================================

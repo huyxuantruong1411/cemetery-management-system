@@ -283,8 +283,13 @@ class AuthService:
             user.is_active = req.is_active
             status_changed = True
 
-        # If roles changed or user disabled, bump auth_version and revoke sessions immediately
-        if roles_changed or (status_changed and not user.is_active):
+        password_changed = False
+        if req.password:
+            user.password_hash = get_password_hash(req.password)
+            password_changed = True
+
+        # If roles changed, user disabled, or password changed, bump auth_version and revoke sessions
+        if roles_changed or (status_changed and not user.is_active) or password_changed:
             user.auth_version += 1
             db.query(AuthSession).filter(
                 AuthSession.user_id == user_id,

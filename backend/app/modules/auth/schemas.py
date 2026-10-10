@@ -72,6 +72,7 @@ class UserUpdateRequest(BaseModel):
     phone_number: str | None = Field(None, max_length=20)
     is_active: bool | None = None
     role_ids: list[int] | None = None
+    password: str | None = Field(None, min_length=8)
 
 
 class ChangePasswordRequest(BaseModel):

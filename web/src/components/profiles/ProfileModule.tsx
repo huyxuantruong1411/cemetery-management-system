@@ -17,7 +17,15 @@ interface ProfileModuleProps {
 }
 
 export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUserRoles = [] }) => {
-  const [activeTab, setActiveTab] = useState<'CUSTOMERS' | 'DECEASED' | 'MEMORIAL_PUBLIC'>('CUSTOMERS');
+  const [activeTab, setActiveTab] = useState<'CUSTOMERS' | 'DECEASED' | 'MEMORIAL_PUBLIC'>(
+    token ? 'CUSTOMERS' : 'MEMORIAL_PUBLIC'
+  );
+
+  useEffect(() => {
+    if (!token && activeTab !== 'MEMORIAL_PUBLIC') {
+      setActiveTab('MEMORIAL_PUBLIC');
+    }
+  }, [token, activeTab]);
 
   // Customer states
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -384,67 +392,71 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
   return (
     <div className="profile-module-container" style={{ padding: '24px', maxWidth: '1400px', margin: '0 auto' }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h2 style={{ margin: 0, color: '#24594D', fontSize: '24px', fontWeight: 'bold' }}>
-            Hồ Sơ Khách Hàng & Người Quá Cố
+            {!token ? 'Cổng Tra Cứu Phần Mộ Tưởng Niệm (Dành Cho Thân Nhân)' : 'Hồ Sơ Khách Hàng & Người Quá Cố'}
           </h2>
           <p style={{ margin: '4px 0 0 0', color: '#6B7280', fontSize: '14px' }}>
-            Quản lý thân nhân, hồ sơ người mất, thẩm định giấy báo tử và Cổng tra cứu tưởng niệm bảo vệ dữ liệu cá nhân
+            {!token
+              ? 'Tra cứu vị trí phần mộ, phân khu và kết quả chăm sóc đã được công bố công khai (Bảo vệ thông tin cá nhân)'
+              : 'Quản lý thân nhân, hồ sơ người mất, thẩm định giấy báo tử và Cổng tra cứu tưởng niệm'}
           </p>
         </div>
 
-        {/* Global tabs */}
-        <div style={{ display: 'flex', gap: '8px', background: '#F3F4F6', padding: '4px', borderRadius: '10px' }}>
-          <button
-            onClick={() => setActiveTab('CUSTOMERS')}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '13px',
-              background: activeTab === 'CUSTOMERS' ? '#24594D' : 'transparent',
-              color: activeTab === 'CUSTOMERS' ? '#FFFFFF' : '#4B5563',
-              transition: 'all 0.2s',
-            }}
-          >
-            👥 Thân Nhân (Khách Hàng)
-          </button>
-          <button
-            onClick={() => setActiveTab('DECEASED')}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '13px',
-              background: activeTab === 'DECEASED' ? '#24594D' : 'transparent',
-              color: activeTab === 'DECEASED' ? '#FFFFFF' : '#4B5563',
-              transition: 'all 0.2s',
-            }}
-          >
-            ⚰️ Người Quá Cố & Giấy Báo Tử
-          </button>
-          <button
-            onClick={() => setActiveTab('MEMORIAL_PUBLIC')}
-            style={{
-              padding: '8px 16px',
-              borderRadius: '8px',
-              border: 'none',
-              cursor: 'pointer',
-              fontWeight: 600,
-              fontSize: '13px',
-              background: activeTab === 'MEMORIAL_PUBLIC' ? '#047857' : 'transparent',
-              color: activeTab === 'MEMORIAL_PUBLIC' ? '#FFFFFF' : '#4B5563',
-              transition: 'all 0.2s',
-            }}
-          >
-            🪷 Cổng Tra Cứu Tưởng Niệm (Công Khai)
-          </button>
-        </div>
+        {/* Global tabs - ONLY visible for authenticated staff */}
+        {token && (
+          <div style={{ display: 'flex', gap: '8px', background: '#F3F4F6', padding: '4px', borderRadius: '10px' }}>
+            <button
+              onClick={() => setActiveTab('CUSTOMERS')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '13px',
+                background: activeTab === 'CUSTOMERS' ? '#24594D' : 'transparent',
+                color: activeTab === 'CUSTOMERS' ? '#FFFFFF' : '#4B5563',
+                transition: 'all 0.2s',
+              }}
+            >
+              👥 Thân Nhân (Khách Hàng)
+            </button>
+            <button
+              onClick={() => setActiveTab('DECEASED')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '13px',
+                background: activeTab === 'DECEASED' ? '#24594D' : 'transparent',
+                color: activeTab === 'DECEASED' ? '#FFFFFF' : '#4B5563',
+                transition: 'all 0.2s',
+              }}
+            >
+              ⚰️ Người Quá Cố & Giấy Báo Tử
+            </button>
+            <button
+              onClick={() => setActiveTab('MEMORIAL_PUBLIC')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '13px',
+                background: activeTab === 'MEMORIAL_PUBLIC' ? '#047857' : 'transparent',
+                color: activeTab === 'MEMORIAL_PUBLIC' ? '#FFFFFF' : '#4B5563',
+                transition: 'all 0.2s',
+              }}
+            >
+              🪷 Cổng Tra Cứu Tưởng Niệm
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Alerts */}

@@ -47,6 +47,7 @@ class RowCreate(RowBase):
 
 
 class RowUpdate(BaseModel):
+    row_code: Optional[str] = Field(None, max_length=20)
     total_plots: Optional[int] = Field(None, ge=0)
 
 
@@ -202,3 +203,7 @@ class PlotStatsResponse(BaseModel):
     under_exhumation: int
     kim_tinh_count: int
     locked_count: int
+
+
+class PlotMessageResponse(BaseModel):
+    message: str

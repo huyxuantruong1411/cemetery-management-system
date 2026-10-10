@@ -4,7 +4,6 @@ import {
   HeartHandshake,
   FileCode,
   Calculator,
-  Palette,
   Plus,
   RefreshCw,
   CheckCircle2,
@@ -13,17 +12,26 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
+import { Pagination } from '../common/Pagination'
 import type { CarePackage, ContractTemplate, PriceList, PriceLookupResult } from '../../types/catalog'
 
 export const CatalogModule: React.FC = () => {
   const { accessToken } = useAuth()
-  const [subTab, setSubTab] = useState<'prices' | 'care' | 'templates' | 'simulator' | 'design'>('prices')
+  const [subTab, setSubTab] = useState<'prices' | 'care' | 'templates' | 'simulator'>('prices')
   const [priceLists, setPriceLists] = useState<PriceList[]>([])
   const [carePackages, setCarePackages] = useState<CarePackage[]>([])
   const [templates, setTemplates] = useState<ContractTemplate[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [statusMessage, setStatusMessage] = useState<string | null>(null)
+
+  // Pagination states
+  const [priceItemPage, setPriceItemPage] = useState<number>(1)
+  const [priceItemPageSize, setPriceItemPageSize] = useState<number>(10)
+  const [carePage, setCarePage] = useState<number>(1)
+  const [carePageSize, setCarePageSize] = useState<number>(10)
+  const [templatePage, setTemplatePage] = useState<number>(1)
+  const [templatePageSize, setTemplatePageSize] = useState<number>(10)
 
   // Simulation state
   const [simDate, setSimDate] = useState<string>('2026-10-03')
@@ -455,27 +463,6 @@ export const CatalogModule: React.FC = () => {
           <Calculator size={16} />
           <span>4. Tra Cứu Giá Tức Thời</span>
         </button>
-
-        <button
-          onClick={() => setSubTab('design')}
-          style={{
-            padding: '10px 18px',
-            borderRadius: '8px',
-            border: 'none',
-            backgroundColor: subTab === 'design' ? 'var(--brand-primary)' : 'transparent',
-            color: subTab === 'design' ? '#FFFFFF' : '#64748B',
-            fontWeight: 600,
-            fontSize: '13px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            transition: 'all 0.15s ease',
-          }}
-        >
-          <Palette size={16} />
-          <span>5. Design System Gallery</span>
-        </button>
       </div>
 
       {/* Loading & Error States */}
@@ -631,29 +618,39 @@ export const CatalogModule: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {selectedPriceList?.items.map((item) => (
-                      <tr key={item.item_id} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                        <td style={{ padding: '12px', fontFamily: 'monospace', fontWeight: 600, color: 'var(--brand-primary)' }}>
-                          {item.item_code}
-                        </td>
-                        <td style={{ padding: '12px', fontWeight: 500, color: '#1E293B' }}>{item.item_name}</td>
-                        <td style={{ padding: '12px', color: '#64748B' }}>
-                          {item.service_code ? (
-                            <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#E0F2FE', color: '#0369A1' }}>
-                              Dịch vụ: {item.service_code}
-                            </span>
-                          ) : (
-                            <span style={{ fontSize: '11px', color: '#94A3B8' }}>Toàn nghĩa trang</span>
-                          )}
-                        </td>
-                        <td style={{ padding: '12px', fontWeight: 700, color: '#0F172A' }}>
-                          {Number(item.unit_price).toLocaleString('vi-VN')} đ
-                        </td>
-                        <td style={{ padding: '12px', color: '#64748B' }}>{item.unit}</td>
-                      </tr>
-                    ))}
+                    {(selectedPriceList?.items || [])
+                      .slice((priceItemPage - 1) * priceItemPageSize, priceItemPage * priceItemPageSize)
+                      .map((item) => (
+                        <tr key={item.item_id} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                          <td style={{ padding: '12px', fontFamily: 'monospace', fontWeight: 600, color: 'var(--brand-primary)' }}>
+                            {item.item_code}
+                          </td>
+                          <td style={{ padding: '12px', fontWeight: 500, color: '#1E293B' }}>{item.item_name}</td>
+                          <td style={{ padding: '12px', color: '#64748B' }}>
+                            {item.service_code ? (
+                              <span style={{ fontSize: '11px', padding: '2px 6px', borderRadius: '4px', backgroundColor: '#E0F2FE', color: '#0369A1' }}>
+                                Dịch vụ: {item.service_code}
+                              </span>
+                            ) : (
+                              <span style={{ fontSize: '11px', color: '#94A3B8' }}>Toàn nghĩa trang</span>
+                            )}
+                          </td>
+                          <td style={{ padding: '12px', fontWeight: 700, color: '#0F172A' }}>
+                            {Number(item.unit_price).toLocaleString('vi-VN')} đ
+                          </td>
+                          <td style={{ padding: '12px', color: '#64748B' }}>{item.unit}</td>
+                        </tr>
+                      ))}
                   </tbody>
                 </table>
+                <Pagination
+                  currentPage={priceItemPage}
+                  totalItems={selectedPriceList?.items.length || 0}
+                  pageSize={priceItemPageSize}
+                  onPageChange={setPriceItemPage}
+                  onPageSizeChange={setPriceItemPageSize}
+                  pageSizeOptions={[10, 20, 50]}
+                />
               </div>
             )}
           </div>
@@ -689,7 +686,9 @@ export const CatalogModule: React.FC = () => {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
-          {carePackages.map((pkg) => {
+          {carePackages
+            .slice((carePage - 1) * carePageSize, carePage * carePageSize)
+            .map((pkg) => {
             let tasks: string[] = []
             try {
               tasks = JSON.parse(pkg.default_tasks_json)
@@ -787,6 +786,14 @@ export const CatalogModule: React.FC = () => {
             )
           })}
           </div>
+          <Pagination
+            currentPage={carePage}
+            totalItems={carePackages.length}
+            pageSize={carePageSize}
+            onPageChange={setCarePage}
+            onPageSizeChange={setCarePageSize}
+            pageSizeOptions={[6, 12, 24]}
+          />
         </div>
       )}
 
@@ -798,7 +805,9 @@ export const CatalogModule: React.FC = () => {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '20px' }}>
-            {templates.map((tmpl) => {
+            {templates
+              .slice((templatePage - 1) * templatePageSize, templatePage * templatePageSize)
+              .map((tmpl) => {
               let reqDocs: string[] = []
               try {
                 if (tmpl.required_documents_json) reqDocs = JSON.parse(tmpl.required_documents_json)
@@ -922,6 +931,14 @@ export const CatalogModule: React.FC = () => {
               )
             })}
           </div>
+          <Pagination
+            currentPage={templatePage}
+            totalItems={templates.length}
+            pageSize={templatePageSize}
+            onPageChange={setTemplatePage}
+            onPageSizeChange={setTemplatePageSize}
+            pageSizeOptions={[6, 12, 24]}
+          />
         </div>
       )}
 
@@ -1015,93 +1032,6 @@ export const CatalogModule: React.FC = () => {
               )}
             </div>
           )}
-        </div>
-      )}
-
-      {/* VIEW 5: DESIGN SYSTEM GALLERY */}
-      {!loading && !error && subTab === 'design' && (
-        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '28px' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px' }}>
-            Thư Viện Design Tokens & Thành Phần Chuẩn (Design System Gallery)
-          </h3>
-          <p style={{ fontSize: '13px', color: '#64748B', marginBottom: '24px' }}>
-            Thiết kế tôn nghiêm, độ tương phản cao, tối ưu cho điều kiện làm việc ánh sáng ngoài trời và chuẩn trợ năng WCAG.
-          </p>
-
-          {/* Color Tokens */}
-          <div style={{ marginBottom: '32px' }}>
-            <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#334155', marginBottom: '12px' }}>1. Bảng Màu Thương Hiệu (Color Tokens)</h4>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '12px' }}>
-              <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#24594D', color: '#FFFFFF' }}>
-                <div style={{ fontWeight: 600, fontSize: '13px' }}>Primary Green</div>
-                <div style={{ fontSize: '11px', opacity: 0.85 }}>#24594D</div>
-              </div>
-              <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#D4AF37', color: '#1E293B' }}>
-                <div style={{ fontWeight: 600, fontSize: '13px' }}>Accent Gold</div>
-                <div style={{ fontSize: '11px', opacity: 0.85 }}>#D4AF37</div>
-              </div>
-              <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#3E885B', color: '#FFFFFF' }}>
-                <div style={{ fontWeight: 600, fontSize: '13px' }}>Secondary Green</div>
-                <div style={{ fontSize: '11px', opacity: 0.85 }}>#3E885B</div>
-              </div>
-              <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#1F2933', color: '#FFFFFF' }}>
-                <div style={{ fontWeight: 600, fontSize: '13px' }}>Slate Main Text</div>
-                <div style={{ fontSize: '11px', opacity: 0.85 }}>#1F2933</div>
-              </div>
-              <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#DCFCE7', color: '#15803D', border: '1px solid #BBF7D0' }}>
-                <div style={{ fontWeight: 600, fontSize: '13px' }}>Success State</div>
-                <div style={{ fontSize: '11px' }}>#15803D</div>
-              </div>
-              <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#FEE2E2', color: '#DC2626', border: '1px solid #FECACA' }}>
-                <div style={{ fontWeight: 600, fontSize: '13px' }}>Danger State</div>
-                <div style={{ fontSize: '11px' }}>#DC2626</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Button Variants */}
-          <div style={{ marginBottom: '32px' }}>
-            <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#334155', marginBottom: '12px' }}>2. Các Kiểu Nút Bấm (Button Variants)</h4>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
-              <button style={{ backgroundColor: 'var(--brand-primary)', color: '#FFFFFF', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
-                Primary Solid
-              </button>
-              <button style={{ backgroundColor: '#D4AF37', color: '#1E293B', border: 'none', borderRadius: '8px', padding: '10px 20px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
-                Accent Gold Action
-              </button>
-              <button style={{ backgroundColor: '#FFFFFF', color: 'var(--brand-primary)', border: '1px solid var(--brand-primary)', borderRadius: '8px', padding: '10px 20px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
-                Outline Button
-              </button>
-              <button style={{ backgroundColor: '#F1F5F9', color: '#334155', border: '1px solid #CBD5E1', borderRadius: '8px', padding: '10px 20px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
-                Neutral Subtle
-              </button>
-              <button style={{ backgroundColor: '#FEE2E2', color: '#DC2626', border: '1px solid #FECACA', borderRadius: '8px', padding: '10px 20px', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
-                Danger Action
-              </button>
-            </div>
-          </div>
-
-          {/* Status Chips */}
-          <div>
-            <h4 style={{ fontSize: '14px', fontWeight: 600, color: '#334155', marginBottom: '12px' }}>3. Huy Hiệu Trạng Thái Ô Mộ & Hợp Đồng (Status Chips)</h4>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '12px', backgroundColor: '#DCFCE7', color: '#15803D' }}>
-                EMPTY_UNSOLD (Chưa Bán)
-              </span>
-              <span style={{ fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '12px', backgroundColor: '#FEF3C7', color: '#B45309' }}>
-                RESERVED (Đang Giữ Chỗ)
-              </span>
-              <span style={{ fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '12px', backgroundColor: '#E0F2FE', color: '#0369A1' }}>
-                OCCUPIED (Đã An Táng)
-              </span>
-              <span style={{ fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '12px', backgroundColor: '#F3E8FF', color: '#7E22CE' }}>
-                KIM_TINH_LOCKED (Khóa Bất Biến)
-              </span>
-              <span style={{ fontSize: '11px', fontWeight: 700, padding: '4px 10px', borderRadius: '12px', backgroundColor: '#FEE2E2', color: '#DC2626' }}>
-                EXHUMED (Đã Cải Táng)
-              </span>
-            </div>
-          </div>
         </div>
       )}
 

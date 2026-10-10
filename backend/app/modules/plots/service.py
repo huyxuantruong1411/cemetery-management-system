@@ -80,6 +80,24 @@ class PlotService:
         db.refresh(zone)
         return ZoneResponse.model_validate(zone)
 
+    @staticmethod
+    def delete_zone(db: Session, zone_id: int) -> dict:
+        zone = db.query(Zone).filter(Zone.zone_id == zone_id).first()
+        if not zone:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Không tìm thấy khu vực với ID {zone_id}.",
+            )
+        row_count = db.query(Row).filter(Row.zone_id == zone_id).count()
+        if row_count > 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Khu vực '{zone.zone_code}' đang chứa {row_count} hàng mộ. Vui lòng xóa các hàng mộ trước khi xóa khu vực.",
+            )
+        db.delete(zone)
+        db.commit()
+        return {"message": f"Đã xóa khu vực '{zone.zone_code}' thành công."}
+
     # =========================================================================
     # 2. Row Management
     # =========================================================================
@@ -129,11 +147,34 @@ class PlotService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Không tìm thấy hàng mộ với ID {row_id}.",
             )
+        if data.row_code is not None and data.row_code.strip():
+            row.row_code = data.row_code.strip().upper()
         if data.total_plots is not None:
             row.total_plots = data.total_plots
         db.commit()
         db.refresh(row)
         return RowResponse.model_validate(row)
+
+    @staticmethod
+    def delete_row(db: Session, row_id: int) -> dict:
+        row = db.query(Row).filter(Row.row_id == row_id).first()
+        if not row:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Không tìm thấy hàng mộ với ID {row_id}.",
+            )
+        plot_count = db.query(Plot).filter(Plot.row_id == row_id).count()
+        if plot_count > 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Hàng '{row.row_code}' đang chứa {plot_count} ô mộ. Vui lòng xóa các ô mộ trước khi xóa hàng.",
+            )
+        zone = db.query(Zone).filter(Zone.zone_id == row.zone_id).first()
+        db.delete(row)
+        if zone:
+            zone.total_rows = max(0, db.query(Row).filter(Row.zone_id == zone.zone_id).count() - 1)
+        db.commit()
+        return {"message": f"Đã xóa hàng '{row.row_code}' thành công."}
 
     # =========================================================================
     # 3. Plot Type Management
@@ -184,6 +225,24 @@ class PlotService:
         db.commit()
         db.refresh(pt)
         return PlotTypeResponse.model_validate(pt)
+
+    @staticmethod
+    def delete_plot_type(db: Session, type_id: int) -> dict:
+        pt = db.query(PlotType).filter(PlotType.type_id == type_id).first()
+        if not pt:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Không tìm thấy loại mộ với ID {type_id}.",
+            )
+        plot_count = db.query(Plot).filter(Plot.type_id == type_id).count()
+        if plot_count > 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Loại mộ '{pt.type_name}' đang được áp dụng cho {plot_count} ô mộ. Không thể xóa.",
+            )
+        db.delete(pt)
+        db.commit()
+        return {"message": f"Đã xóa loại mộ '{pt.type_name}' thành công."}
 
     # =========================================================================
     # 4. Plot & Slot Lifecycle Management
@@ -426,6 +485,57 @@ class PlotService:
         plot.updated_at = datetime.now(timezone.utc)
         db.commit()
         return PlotService.get_plot(db, plot_id)
+
+    @staticmethod
+    def delete_plot(db: Session, plot_id: int) -> dict:
+        plot = db.query(Plot).filter(Plot.plot_id == plot_id).first()
+        if not plot:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Không tìm thấy ô mộ với ID {plot_id}.",
+            )
+        # Kim Tĩnh Immutability: Once Kim Tinh, permanent
+        if plot.is_kim_tinh or plot.is_locked:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="QUY TẮC BẤT BIẾN KIM TĨNH: Ô mộ kết cấu Kim Tĩnh hoặc đã khóa không thể bị xóa!",
+            )
+        if plot.status != "EMPTY_UNSOLD":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Chỉ có thể xóa ô mộ ở trạng thái Chưa bán (EMPTY_UNSOLD). Trạng thái hiện tại: {plot.status}.",
+            )
+
+        # Active reservations check
+        active_res = (
+            db.query(PlotReservation)
+            .filter(PlotReservation.plot_id == plot_id, PlotReservation.state == "ACTIVE")
+            .first()
+        )
+        if active_res:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ô mộ đang có lệnh giữ chỗ hiệu lực, không thể xóa.",
+            )
+
+        # Contracts check
+        from app.modules.contracts.models import Contract
+        contract_count = db.query(Contract).filter(Contract.plot_id == plot_id).count()
+        if contract_count > 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Ô mộ đã gắn với {contract_count} hợp đồng giao dịch, không thể xóa.",
+            )
+
+        # Delete associated slots
+        db.query(PlotSlot).filter(PlotSlot.plot_id == plot_id).delete(synchronize_session=False)
+
+        row = db.query(Row).filter(Row.row_id == plot.row_id).first()
+        db.delete(plot)
+        if row:
+            row.total_plots = max(0, db.query(Plot).filter(Plot.row_id == row.row_id).count() - 1)
+        db.commit()
+        return {"message": f"Đã xóa ô mộ '{plot.plot_code}' thành công."}
 
     # =========================================================================
     # 5. Anti-Double Booking Reservation (G04)
