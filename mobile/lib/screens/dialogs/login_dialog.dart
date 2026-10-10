@@ -26,50 +26,6 @@ void showLoginDialog(BuildContext context) {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
-                    'Chọn nhanh vai trò kiểm thử:',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 6,
-                    children: [
-                      ActionChip(
-                        avatar: const Icon(Icons.person, size: 14),
-                        label: const Text('Quản Trang', style: TextStyle(fontSize: 11)),
-                        onPressed: () {
-                          usernameController.text = 'caretaker';
-                          passwordController.text = 'Caretaker2026!';
-                        },
-                      ),
-                      ActionChip(
-                        avatar: const Icon(Icons.campaign, size: 14),
-                        label: const Text('Kinh Doanh', style: TextStyle(fontSize: 11)),
-                        onPressed: () {
-                          usernameController.text = 'marketing';
-                          passwordController.text = 'Marketing2026!';
-                        },
-                      ),
-                      ActionChip(
-                        avatar: const Icon(Icons.admin_panel_settings, size: 14),
-                        label: const Text('Admin', style: TextStyle(fontSize: 11)),
-                        onPressed: () {
-                          usernameController.text = 'admin';
-                          passwordController.text = 'Admin2026!';
-                        },
-                      ),
-                      ActionChip(
-                        avatar: const Icon(Icons.account_balance, size: 14),
-                        label: const Text('Kế Toán', style: TextStyle(fontSize: 11)),
-                        onPressed: () {
-                          usernameController.text = 'accountant';
-                          passwordController.text = 'Accountant2026!';
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
                   TextField(
                     controller: usernameController,
                     decoration: const InputDecoration(

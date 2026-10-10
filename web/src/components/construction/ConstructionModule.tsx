@@ -1351,7 +1351,7 @@ export const ConstructionModule: React.FC = () => {
                 {selectedOrder.required_tasks > selectedOrder.completed_required_tasks && (
                   <div style={{ fontSize: '12px', color: '#B45309', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <AlertTriangle size={13} />
-                    <span>Quy tắc Gate: Cần hoàn tất 100% công việc bắt buộc (có ảnh READY) trước khi nghiệm thu đóng lệnh.</span>
+                    <span>Quy tắc nghiệm thu: Cần hoàn tất 100% công việc bắt buộc (có ảnh minh chứng đầy đủ) trước khi nghiệm thu đóng lệnh.</span>
                   </div>
                 )}
               </div>

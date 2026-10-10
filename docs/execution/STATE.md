@@ -8,8 +8,10 @@
 
 ## 1. Trạng thái tổng quan
 
-- **Milestone hiện tại:** Khởi động Đợt Cải Tiến Giao Diện Theo Actor (Kế hoạch `02_PLAN_ANTIGRAVITY_CAI_THIEN_GIAO_DIEN.md`).
-  - **UI-M00 (Baseline & Traceability):** ĐẠT (Done) -> Khởi động **UI-M01** (Ma trận capability & hợp đồng dữ liệu).
+- **Milestone hiện tại:** Đợt Cải Tiến Giao Diện Theo Actor (Kế hoạch `02_PLAN_ANTIGRAVITY_CAI_THIEN_GIAO_DIEN.md`).
+  - **UI-M00 (Baseline & Traceability):** ĐẠT (Done).
+  - **Làm sạch UI triển khai thực tế (Section 5.4):** ĐẠT (Done) -> Gỡ bỏ toàn bộ test UI, demo accounts/passwords trên web & mobile, loại bỏ dev health grid và RBAC permissions tag cloud, làm sạch worker triggers/demo PDF, chuyển đổi giao diện công khai P01 sang cổng thông tin tôn nghiêm.
+  - **UI-M01 -> UI-M10:** Đang chuẩn bị / chưa hoàn tất trọn vẹn.
 - **Trạng thái CSDL:**
   - Máy chủ: `DESKTOP-HKIPI1M`
   - CSDL chính: `QL_NghiaTrang`

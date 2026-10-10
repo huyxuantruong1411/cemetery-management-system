@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useRef } from 'react'
 import {
   FileText,
   Upload,
@@ -7,20 +7,17 @@ import {
   CheckCircle2,
   AlertTriangle,
   X,
-  Play,
-  Clock,
   Layers,
   FileCheck,
   HardDrive,
 } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
-import type { BackgroundJob, DocumentVersion, FileObject } from '../../types/document'
+import type { DocumentVersion, FileObject } from '../../types/document'
 
 export const DocumentManager: React.FC = () => {
   const { accessToken } = useAuth()
   const [files, setFiles] = useState<FileObject[]>([])
   const [versions, setVersions] = useState<DocumentVersion[]>([])
-  const [jobs, setJobs] = useState<BackgroundJob[]>([])
   const [uploading, setUploading] = useState<boolean>(false)
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
@@ -39,26 +36,7 @@ export const DocumentManager: React.FC = () => {
 
   const getAuthToken = () => accessToken || localStorage.getItem('access_token') || ''
 
-  // Load documents and jobs
-  const refreshData = async () => {
-    const token = getAuthToken()
-    try {
-      const jobRes = await fetch('/api/v1/jobs/test-list', {
-        headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => null)
 
-      if (jobRes && jobRes.ok) {
-        const jobData = await jobRes.json()
-        setJobs(jobData)
-      }
-    } catch {
-      // Ignore network errors on initial polling
-    }
-  }
-
-  useEffect(() => {
-    refreshData()
-  }, [])
 
   // Handle file upload
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -101,36 +79,7 @@ export const DocumentManager: React.FC = () => {
     }
   }
 
-  // Generate Sample Vietnamese PDF
-  const handleGenerateSamplePDF = async () => {
-    setUploading(true)
-    setUploadSuccess(null)
-    setUploadError(null)
 
-    try {
-      const res = await fetch('/api/v1/documents/sample-contract-pdf', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${getAuthToken()}`,
-        },
-      })
-
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}))
-        throw new Error(errJson.detail || `Lỗi tạo PDF: ${res.statusText}`)
-      }
-
-      const generatedFile: FileObject = await res.json()
-      setFiles((prev) => [generatedFile, ...prev])
-      setUploadSuccess(`Đã xuất PDF Tiếng Việt chuẩn MinIO: ${generatedFile.file_name}`)
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setUploadError(err.message)
-      }
-    } finally {
-      setUploading(false)
-    }
-  }
 
   // Preview file in modal
   const handlePreview = async (file: FileObject) => {
@@ -230,46 +179,7 @@ export const DocumentManager: React.FC = () => {
     }
   }
 
-  // Trigger demo background job
-  const handleEnqueueJob = async (jobType: string) => {
-    try {
-      const res = await fetch('/api/v1/jobs/enqueue', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${getAuthToken()}`,
-        },
-        body: JSON.stringify({
-          job_type: jobType,
-          payload: { target: 'contract_export', timestamp: new Date().toISOString() },
-        }),
-      })
 
-      if (!res.ok) throw new Error('Không thể thêm job vào hàng đợi')
-      const job: BackgroundJob = await res.json()
-      setJobs((prev) => [job, ...prev])
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Lỗi tạo job')
-    }
-  }
-
-  // Process a worker step
-  const handleProcessJobWorker = async () => {
-    try {
-      const res = await fetch('/api/v1/jobs/process-next', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${getAuthToken()}`,
-        },
-      })
-      if (!res.ok) throw new Error('Không thể xử lý job')
-      const result = await res.json()
-      alert(result.message || 'Worker đã chạy thành công')
-      refreshData()
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Lỗi thực thi worker')
-    }
-  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
@@ -316,7 +226,7 @@ export const DocumentManager: React.FC = () => {
 
         <div style={{ display: 'flex', gap: '10px' }}>
           <button
-            onClick={handleGenerateSamplePDF}
+            onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
             style={{
               backgroundColor: 'var(--brand-primary)',
@@ -333,30 +243,8 @@ export const DocumentManager: React.FC = () => {
               opacity: uploading ? 0.7 : 1,
             }}
           >
-            <FileText size={16} />
-            <span>Tạo PDF Mẫu Hợp Đồng Tiếng Việt</span>
-          </button>
-
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            style={{
-              backgroundColor: '#FFFFFF',
-              color: 'var(--brand-primary)',
-              border: '1px solid var(--brand-primary)',
-              borderRadius: '8px',
-              padding: '10px 18px',
-              fontSize: '13px',
-              fontWeight: 600,
-              cursor: uploading ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              opacity: uploading ? 0.7 : 1,
-            }}
-          >
             <Upload size={16} />
-            <span>Tải Lên Chứng Từ</span>
+            <span>Tải Lên Chứng Từ Mới</span>
           </button>
           <input
             ref={fileInputRef}
@@ -441,26 +329,11 @@ export const DocumentManager: React.FC = () => {
           >
             <FileText size={40} color="#94A3B8" style={{ marginBottom: '12px' }} />
             <div style={{ fontSize: '15px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-              Chưa có tệp tài liệu nào trong phiên làm việc này
+              Chưa có tệp tài liệu nào trong danh sách
             </div>
             <p style={{ fontSize: '13px', color: '#64748B', maxWidth: '420px', margin: '0 auto 16px auto' }}>
-              Nhấn "Tải Lên Chứng Từ" để tải file PDF/Ảnh hoặc nhấn "Tạo PDF Mẫu Hợp Đồng Tiếng Việt" để hệ thống tự động biên dịch văn bản UTF-8 và lưu vào MinIO.
+              Nhấn "Tải Lên Chứng Từ Mới" để lưu trữ hồ sơ pháp lý, ảnh chụp hiện trường hoặc chứng từ liên quan vào hệ thống MinIO.
             </p>
-            <button
-              onClick={handleGenerateSamplePDF}
-              style={{
-                backgroundColor: 'var(--brand-primary)',
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: '6px',
-                padding: '8px 16px',
-                fontSize: '13px',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Tạo Thử PDF Ngay
-            </button>
           </div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
@@ -643,125 +516,7 @@ export const DocumentManager: React.FC = () => {
         )}
       </div>
 
-      {/* Background Jobs & Outbox Queue Monitor */}
-      <div
-        style={{
-          backgroundColor: '#FFFFFF',
-          borderRadius: '12px',
-          border: '1px solid #E2E8F0',
-          padding: '24px',
-          boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-        }}
-      >
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Clock size={18} color="var(--brand-primary)" />
-            <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-main)', margin: 0 }}>
-              Hàng Đợi Công Việc Ngầm (Background Jobs & Outbox)
-            </h3>
-          </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              onClick={() => handleEnqueueJob('CONTRACT_PDF_GEN')}
-              style={{
-                backgroundColor: '#F1F5F9',
-                border: '1px solid #CBD5E1',
-                borderRadius: '6px',
-                padding: '6px 12px',
-                fontSize: '12px',
-                fontWeight: 600,
-                color: '#1E293B',
-                cursor: 'pointer',
-              }}
-            >
-              + Đẩy Job Mẫu (PDF Gen)
-            </button>
-            <button
-              onClick={handleProcessJobWorker}
-              style={{
-                backgroundColor: 'rgba(36, 89, 77, 0.1)',
-                border: '1px solid rgba(36, 89, 77, 0.3)',
-                borderRadius: '6px',
-                padding: '6px 12px',
-                fontSize: '12px',
-                fontWeight: 600,
-                color: 'var(--brand-primary)',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-              }}
-            >
-              <Play size={13} />
-              <span>Chạy 1 Bước Worker</span>
-            </button>
-          </div>
-        </div>
 
-        {jobs.length === 0 ? (
-          <p style={{ fontSize: '13px', color: '#64748B', margin: 0 }}>
-            Hàng đợi hiện đang trống. Chưa có tác vụ tài liệu nền cần xử lý.
-          </p>
-        ) : (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #E2E8F0', textAlign: 'left', color: '#64748B' }}>
-                  <th style={{ padding: '10px 14px' }}>Mã Job</th>
-                  <th style={{ padding: '10px 14px' }}>Loại Công Việc</th>
-                  <th style={{ padding: '10px 14px' }}>Trạng Thái</th>
-                  <th style={{ padding: '10px 14px' }}>Số Lần Thử</th>
-                  <th style={{ padding: '10px 14px' }}>Thời Điểm Khởi Tạo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {jobs.map((j) => (
-                  <tr key={j.job_id} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                    <td style={{ padding: '12px 14px', fontFamily: 'monospace', fontSize: '11px' }}>
-                      {j.job_id.substring(0, 16)}...
-                    </td>
-                    <td style={{ padding: '12px 14px', fontWeight: 600 }}>{j.job_type}</td>
-                    <td style={{ padding: '12px 14px' }}>
-                      <span
-                        style={{
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          padding: '3px 8px',
-                          borderRadius: '12px',
-                          backgroundColor:
-                            j.status === 'COMPLETED'
-                              ? '#DCFCE7'
-                              : j.status === 'CLAIMED'
-                              ? '#E0F2FE'
-                              : j.status === 'FAILED'
-                              ? '#FEE2E2'
-                              : '#FEF3C7',
-                          color:
-                            j.status === 'COMPLETED'
-                              ? '#15803D'
-                              : j.status === 'CLAIMED'
-                              ? '#0369A1'
-                              : j.status === 'FAILED'
-                              ? '#DC2626'
-                              : '#B45309',
-                        }}
-                      >
-                        {j.status}
-                      </span>
-                    </td>
-                    <td style={{ padding: '12px 14px', color: '#64748B' }}>
-                      {j.retry_count} / {j.max_retries}
-                    </td>
-                    <td style={{ padding: '12px 14px', color: '#64748B' }}>
-                      {new Date(j.created_at).toLocaleTimeString('vi-VN')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
 
       {/* Modal: Preview File */}
       {previewFile && (

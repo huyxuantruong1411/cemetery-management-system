@@ -1,20 +1,17 @@
 import { useEffect, useState } from 'react'
 import {
-  Activity,
-  AlertCircle,
   BarChart3,
+  Clock,
   Coins,
-  Database,
-  FileCheck,
+  Compass,
   FileText,
   Hammer,
-  HardDrive,
-  Key,
+  Heart,
   LogIn,
   LogOut,
   MapPin,
-  RefreshCw,
-  Server,
+  PhoneCall,
+  Search,
   Shield,
   ShieldCheck,
   Tag,
@@ -27,7 +24,6 @@ import { CatalogModule } from './components/catalog/CatalogModule'
 import { CareModule } from './components/care/CareModule'
 import { ConstructionModule } from './components/construction/ConstructionModule'
 import { ContractModule } from './components/contracts/ContractModule'
-import { DocumentManager } from './components/documents/DocumentManager'
 import { FinanceModule } from './components/finance/FinanceModule'
 import { PlotMapModule } from './components/plots/PlotMapModule'
 import { ProfileModule } from './components/profiles/ProfileModule'
@@ -35,60 +31,30 @@ import { ReportsModule } from './components/reports/ReportsModule'
 import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './context/useAuth'
 
-interface ReadinessData {
-  status: string
-  database: string
-  storage: string
-  timestamp: string
-}
-
-interface VersionData {
-  app_name: string
-  version: string
-  environment: string
-}
-
 function MainApp() {
   const { user, accessToken, logout, hasPermission } = useAuth()
-  const [readiness, setReadiness] = useState<ReadinessData | null>(null)
-  const [version, setVersion] = useState<VersionData | null>(null)
-  const [loading, setLoading] = useState<boolean>(true)
-  const [error, setError] = useState<string | null>(null)
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false)
-  const [activeTab, setActiveTab] = useState<string>('overview')
-
-  const fetchData = async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const [readyRes, verRes] = await Promise.all([
-        fetch('/api/v1/health/ready'),
-        fetch('/api/v1/version'),
-      ])
-
-      if (!readyRes.ok) {
-        throw new Error(`Mã lỗi máy chủ: ${readyRes.status} (${readyRes.statusText})`)
-      }
-
-      const readyData: ReadinessData = await readyRes.json()
-      const verData: VersionData = await verRes.json()
-
-      setReadiness(readyData)
-      setVersion(verData)
-    } catch (err: unknown) {
-      if (err instanceof Error) {
-        setError(err.message)
-      } else {
-        setError('Không thể kết nối đến máy chủ API')
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
+  const [activeTab, setActiveTab] = useState<string>('public_home')
 
   useEffect(() => {
-    fetchData()
-  }, [])
+    if (user) {
+      if (hasPermission('plots:read')) {
+        setActiveTab('plots')
+      } else if (hasPermission('care:read')) {
+        setActiveTab('care')
+      } else if (hasPermission('construction:read')) {
+        setActiveTab('construction')
+      } else if (hasPermission('finance:read')) {
+        setActiveTab('finance')
+      } else if (hasPermission('contracts:read')) {
+        setActiveTab('contracts')
+      } else {
+        setActiveTab('profiles')
+      }
+    } else {
+      setActiveTab('public_home')
+    }
+  }, [user])
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: '#F8FAFC' }}>
@@ -107,8 +73,8 @@ function MainApp() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <div
             style={{
-              width: '38px',
-              height: '38px',
+              width: '40px',
+              height: '40px',
               borderRadius: '8px',
               backgroundColor: 'rgba(255,255,255,0.15)',
               display: 'flex',
@@ -116,13 +82,15 @@ function MainApp() {
               justifyContent: 'center',
             }}
           >
-            <ShieldCheck size={22} color="#FFFFFF" />
+            <ShieldCheck size={24} color="#FFFFFF" />
           </div>
           <div>
             <h1 style={{ fontSize: '17px', fontWeight: 600, letterSpacing: '-0.02em', margin: 0 }}>
               Hệ thống Quản lý Nghĩa trang Tư nhân
             </h1>
-            <p style={{ fontSize: '12px', opacity: 0.85, margin: '2px 0 0 0' }}>Cổng Điều Hành & Quản Trị Tập Trung</p>
+            <p style={{ fontSize: '12px', opacity: 0.85, margin: '2px 0 0 0' }}>
+              {user ? 'Cổng Điều Hành & Quản Trị Tập Trung' : 'Công Viên Nghĩa Trang Sinh Thái & Dịch Vụ Tâm Linh Chu Toàn'}
+            </p>
           </div>
         </div>
 
@@ -192,7 +160,7 @@ function MainApp() {
               }}
             >
               <LogIn size={16} />
-              <span>Đăng nhập</span>
+              <span>Đăng nhập cán bộ</span>
             </button>
           )}
         </div>
@@ -207,28 +175,9 @@ function MainApp() {
             padding: '0 32px',
             display: 'flex',
             gap: '8px',
+            overflowX: 'auto',
           }}
         >
-          <button
-            onClick={() => setActiveTab('overview')}
-            style={{
-              padding: '12px 16px',
-              border: 'none',
-              borderBottom: activeTab === 'overview' ? '2px solid var(--brand-primary)' : '2px solid transparent',
-              backgroundColor: 'transparent',
-              color: activeTab === 'overview' ? 'var(--brand-primary)' : '#64748B',
-              fontWeight: activeTab === 'overview' ? 600 : 500,
-              fontSize: '13px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <Activity size={16} />
-            <span>Hạ Tầng & Trạng Thái</span>
-          </button>
-
           {hasPermission('plots:read') && (
             <button
               onClick={() => setActiveTab('plots')}
@@ -244,6 +193,7 @@ function MainApp() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
+                whiteSpace: 'nowrap',
               }}
             >
               <MapPin size={16} />
@@ -265,6 +215,7 @@ function MainApp() {
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
+              whiteSpace: 'nowrap',
             }}
           >
             <Users size={16} />
@@ -286,6 +237,7 @@ function MainApp() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
+                whiteSpace: 'nowrap',
               }}
             >
               <FileText size={16} />
@@ -293,49 +245,26 @@ function MainApp() {
             </button>
           )}
 
-          {user && (
-            <button
-              onClick={() => setActiveTab('documents')}
-              style={{
-                padding: '12px 16px',
-                border: 'none',
-                borderBottom: activeTab === 'documents' ? '2px solid var(--brand-primary)' : '2px solid transparent',
-                backgroundColor: 'transparent',
-                color: activeTab === 'documents' ? 'var(--brand-primary)' : '#64748B',
-                fontWeight: activeTab === 'documents' ? 600 : 500,
-                fontSize: '13px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-              }}
-            >
-              <FileCheck size={16} />
-              <span>Hồ Sơ Chứng Từ & MinIO</span>
-            </button>
-          )}
-
-          {user && (
-            <button
-              onClick={() => setActiveTab('catalog')}
-              style={{
-                padding: '12px 16px',
-                border: 'none',
-                borderBottom: activeTab === 'catalog' ? '2px solid var(--brand-primary)' : '2px solid transparent',
-                backgroundColor: 'transparent',
-                color: activeTab === 'catalog' ? 'var(--brand-primary)' : '#64748B',
-                fontWeight: activeTab === 'catalog' ? 600 : 500,
-                fontSize: '13px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-              }}
-            >
-              <Tag size={16} />
-              <span>Bảng Giá & Danh Mục</span>
-            </button>
-          )}
+          <button
+            onClick={() => setActiveTab('catalog')}
+            style={{
+              padding: '12px 16px',
+              border: 'none',
+              borderBottom: activeTab === 'catalog' ? '2px solid var(--brand-primary)' : '2px solid transparent',
+              backgroundColor: 'transparent',
+              color: activeTab === 'catalog' ? 'var(--brand-primary)' : '#64748B',
+              fontWeight: activeTab === 'catalog' ? 600 : 500,
+              fontSize: '13px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <Tag size={16} />
+            <span>Bảng Giá & Danh Mục</span>
+          </button>
 
           {hasPermission('finance:read') && (
             <button
@@ -352,6 +281,7 @@ function MainApp() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
+                whiteSpace: 'nowrap',
               }}
             >
               <Coins size={16} />
@@ -374,6 +304,7 @@ function MainApp() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
+                whiteSpace: 'nowrap',
               }}
             >
               <Hammer size={16} />
@@ -396,6 +327,7 @@ function MainApp() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
+                whiteSpace: 'nowrap',
               }}
             >
               <Wrench size={16} />
@@ -418,6 +350,7 @@ function MainApp() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
+                whiteSpace: 'nowrap',
               }}
             >
               <Users size={16} />
@@ -425,27 +358,26 @@ function MainApp() {
             </button>
           )}
 
-          {user && (
-            <button
-              onClick={() => setActiveTab('reports')}
-              style={{
-                padding: '12px 16px',
-                border: 'none',
-                borderBottom: activeTab === 'reports' ? '2px solid var(--brand-primary)' : '2px solid transparent',
-                backgroundColor: 'transparent',
-                color: activeTab === 'reports' ? 'var(--brand-primary)' : '#64748B',
-                fontWeight: activeTab === 'reports' ? 600 : 500,
-                fontSize: '13px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-              }}
-            >
-              <BarChart3 size={16} />
-              <span>Báo Cáo Thống Kê</span>
-            </button>
-          )}
+          <button
+            onClick={() => setActiveTab('reports')}
+            style={{
+              padding: '12px 16px',
+              border: 'none',
+              borderBottom: activeTab === 'reports' ? '2px solid var(--brand-primary)' : '2px solid transparent',
+              backgroundColor: 'transparent',
+              color: activeTab === 'reports' ? 'var(--brand-primary)' : '#64748B',
+              fontWeight: activeTab === 'reports' ? 600 : 500,
+              fontSize: '13px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <BarChart3 size={16} />
+            <span>Báo Cáo Thống Kê</span>
+          </button>
 
           {hasPermission('users:read') && (
             <button
@@ -462,6 +394,7 @@ function MainApp() {
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
+                whiteSpace: 'nowrap',
               }}
             >
               <Shield size={16} />
@@ -471,334 +404,419 @@ function MainApp() {
         </div>
       )}
 
+      {/* Public navigation if unauthenticated */}
+      {!user && (
+        <div
+          style={{
+            backgroundColor: '#FFFFFF',
+            borderBottom: '1px solid #E2E8F0',
+            padding: '0 32px',
+            display: 'flex',
+            gap: '8px',
+          }}
+        >
+          <button
+            onClick={() => setActiveTab('public_home')}
+            style={{
+              padding: '12px 18px',
+              border: 'none',
+              borderBottom: activeTab === 'public_home' ? '2px solid var(--brand-primary)' : '2px solid transparent',
+              backgroundColor: 'transparent',
+              color: activeTab === 'public_home' ? 'var(--brand-primary)' : '#64748B',
+              fontWeight: activeTab === 'public_home' ? 600 : 500,
+              fontSize: '13px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <Compass size={16} />
+            <span>Trang Chủ & Giới Thiệu</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('public_memorial')}
+            style={{
+              padding: '12px 18px',
+              border: 'none',
+              borderBottom: activeTab === 'public_memorial' ? '2px solid var(--brand-primary)' : '2px solid transparent',
+              backgroundColor: 'transparent',
+              color: activeTab === 'public_memorial' ? 'var(--brand-primary)' : '#64748B',
+              fontWeight: activeTab === 'public_memorial' ? 600 : 500,
+              fontSize: '13px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <Search size={16} />
+            <span>Tra Cứu Phần Mộ Trực Tuyến</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('public_map')}
+            style={{
+              padding: '12px 18px',
+              border: 'none',
+              borderBottom: activeTab === 'public_map' ? '2px solid var(--brand-primary)' : '2px solid transparent',
+              backgroundColor: 'transparent',
+              color: activeTab === 'public_map' ? 'var(--brand-primary)' : '#64748B',
+              fontWeight: activeTab === 'public_map' ? 600 : 500,
+              fontSize: '13px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+            }}
+          >
+            <MapPin size={16} />
+            <span>Sơ Đồ Quy Hoạch & Bản Đồ</span>
+          </button>
+        </div>
+      )}
+
       {/* Main Container */}
       <main style={{ flex: 1, padding: '32px', maxWidth: '1280px', margin: '0 auto', width: '100%' }}>
-        {/* Banner if not logged in */}
-        {!user && (
-          <div
-            style={{
-              padding: '24px 28px',
-              borderRadius: '12px',
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #E2E8F0',
-              marginBottom: '28px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-            }}
-          >
-            <div>
-              <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 4px 0' }}>
-                Chào mừng bạn đến với Cổng quản trị Nghĩa trang
-              </h2>
-              <p style={{ fontSize: '14px', color: '#64748B', margin: 0 }}>
-                Hệ thống yêu cầu xác thực người dùng để truy cập các phân hệ nghiệp vụ theo vai trò được phân quyền.
-              </p>
-            </div>
-            <button
-              onClick={() => setIsLoginOpen(true)}
-              style={{
-                backgroundColor: 'var(--brand-primary)',
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: '8px',
-                padding: '10px 22px',
-                fontSize: '14px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-              }}
-            >
-              <LogIn size={16} />
-              <span>Đăng nhập ngay</span>
-            </button>
-          </div>
-        )}
-
-        {/* User permissions badge bar if logged in */}
-        {user && (
-          <div
-            style={{
-              padding: '18px 24px',
-              borderRadius: '12px',
-              backgroundColor: '#FFFFFF',
-              border: '1px solid #E2E8F0',
-              marginBottom: '24px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
-            }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Key size={18} color="var(--brand-primary)" />
-                <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-main)' }}>
-                  Quyền Hạn Thực Tế Của Tài Khoản (RBAC Active Permissions)
-                </span>
-              </div>
-              <span style={{ fontSize: '12px', color: '#64748B' }}>
-                Mã phiên: {user.username} · Auth Version: {user.auth_version}
-              </span>
-            </div>
-
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {user.permissions.map((p) => (
-                <span
-                  key={p}
-                  style={{
-                    fontSize: '12px',
-                    fontFamily: 'monospace',
-                    padding: '3px 8px',
-                    borderRadius: '6px',
-                    backgroundColor: '#F1F5F9',
-                    color: '#334155',
-                    border: '1px solid #E2E8F0',
-                  }}
-                >
-                  {p}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Tab 1: Overview & Health */}
-        {activeTab === 'overview' && (
-          <>
+        {/* Unauthenticated View: Public Home Landing */}
+        {!user && activeTab === 'public_home' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+            {/* Hero Section */}
             <div
               style={{
+                borderRadius: '16px',
+                backgroundColor: 'var(--brand-primary, #24594D)',
+                color: '#FFFFFF',
+                padding: '48px 40px',
+                boxShadow: '0 4px 20px rgba(36, 89, 77, 0.15)',
                 display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '20px',
+                flexDirection: 'column',
+                gap: '16px',
               }}
             >
-              <div>
-                <h2 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 4px 0' }}>
-                  Hạ Tầng Kỹ Thuật & Giám Sát Kết Nối
-                </h2>
-                <p style={{ fontSize: '13px', color: '#64748B', margin: 0 }}>
-                  Kiểm tra tính sẵn sàng của máy chủ SQL Server và lưu trữ đối tượng MinIO
-                </p>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', opacity: 0.9 }}>
+                <Heart size={18} color="#FFE082" />
+                <span style={{ fontSize: '13px', letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 600 }}>
+                  Công Viên Nghĩa Trang Sinh Thái Hiện Đại
+                </span>
               </div>
-              <button
-                onClick={fetchData}
-                disabled={loading}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  backgroundColor: '#FFFFFF',
-                  border: '1px solid #CBD5E1',
-                  borderRadius: '8px',
-                  padding: '8px 16px',
-                  fontSize: '13px',
-                  fontWeight: 500,
-                  color: 'var(--text-main)',
-                  cursor: loading ? 'not-allowed' : 'pointer',
-                }}
-              >
-                <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
-                <span>Làm mới</span>
-              </button>
+              <h2 style={{ fontSize: '28px', fontWeight: 700, margin: 0, lineHeight: 1.3, letterSpacing: '-0.02em' }}>
+                Nơi An Nghỉ Vĩnh Hằng & Tôn Vinh Ký Ức Bình Yên
+              </h2>
+              <p style={{ fontSize: '15px', opacity: 0.9, margin: 0, maxWidth: '780px', lineHeight: 1.6 }}>
+                Hệ thống cung cấp dịch vụ quản lý nghĩa trang toàn diện, chăm sóc mộ phần chu toàn và cổng thông tin trực tuyến
+                giúp thân nhân tra cứu vị trí an táng, sơ đồ chỉ đường và nhật ký chăm sóc đã được công bố một cách trang nghiêm, minh bạch.
+              </p>
+              <div style={{ display: 'flex', gap: '14px', marginTop: '12px', flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => setActiveTab('public_memorial')}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    color: 'var(--brand-primary, #24594D)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '12px 24px',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                  }}
+                >
+                  <Search size={18} />
+                  <span>Tra Cứu Phần Mộ Ngay</span>
+                </button>
+                <button
+                  onClick={() => setActiveTab('public_map')}
+                  style={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                    color: '#FFFFFF',
+                    border: '1px solid rgba(255, 255, 255, 0.3)',
+                    borderRadius: '8px',
+                    padding: '12px 24px',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  <MapPin size={18} />
+                  <span>Xem Sơ Đồ Quy Hoạch</span>
+                </button>
+              </div>
             </div>
 
-            {/* Error State */}
-            {error && (
-              <div
-                style={{
-                  padding: '16px 20px',
-                  borderRadius: '12px',
-                  backgroundColor: '#FEF2F2',
-                  border: '1px solid #FECACA',
-                  color: '#991B1B',
-                  marginBottom: '24px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '12px',
-                }}
-              >
-                <AlertCircle size={20} />
-                <span style={{ fontSize: '14px', fontWeight: 500 }}>{error}</span>
-              </div>
-            )}
-
-            {/* Infrastructure Grid */}
+            {/* 3 Quick Action Cards */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
-              {/* Card 1: API */}
               <div
                 style={{
                   backgroundColor: '#FFFFFF',
                   borderRadius: '12px',
                   padding: '24px',
                   border: '1px solid #E2E8F0',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
                   <div
                     style={{
-                      width: '42px',
-                      height: '42px',
+                      width: '44px',
+                      height: '44px',
                       borderRadius: '10px',
                       backgroundColor: 'rgba(36, 89, 77, 0.1)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      marginBottom: '16px',
                     }}
                   >
-                    <Server size={22} color="var(--brand-primary)" />
+                    <Search size={22} color="var(--brand-primary, #24594D)" />
                   </div>
-                  <span
-                    style={{
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      color: '#15803D',
-                      backgroundColor: '#DCFCE7',
-                      padding: '3px 8px',
-                      borderRadius: '12px',
-                    }}
-                  >
-                    HOẠT ĐỘNG
-                  </span>
+                  <h3 style={{ fontSize: '17px', fontWeight: 600, margin: '0 0 8px 0', color: 'var(--text-main)' }}>
+                    Tra Cứu Phần Mộ Trực Tuyến
+                  </h3>
+                  <p style={{ fontSize: '13px', color: '#64748B', margin: 0, lineHeight: 1.6 }}>
+                    Dành cho thân nhân và khách thăm viếng tìm kiếm vị trí phần mộ, xem thông tin người đã khuất và lịch sử kết quả chăm sóc đã được duyệt công bố.
+                  </p>
                 </div>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, marginTop: '16px', marginBottom: '4px' }}>FastAPI Backend</h3>
-                <p style={{ fontSize: '13px', color: '#64748B', margin: 0 }}>
-                  Phiên bản: {version?.version || '0.2.0'} · Môi trường: {version?.environment || 'development'}
-                </p>
+                <button
+                  onClick={() => setActiveTab('public_memorial')}
+                  style={{
+                    marginTop: '20px',
+                    backgroundColor: 'transparent',
+                    color: 'var(--brand-primary, #24594D)',
+                    border: 'none',
+                    padding: 0,
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <span>Mở cổng tra cứu</span>
+                  <span>→</span>
+                </button>
               </div>
 
-              {/* Card 2: SQL Server */}
               <div
                 style={{
                   backgroundColor: '#FFFFFF',
                   borderRadius: '12px',
                   padding: '24px',
                   border: '1px solid #E2E8F0',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
                   <div
                     style={{
-                      width: '42px',
-                      height: '42px',
+                      width: '44px',
+                      height: '44px',
                       borderRadius: '10px',
                       backgroundColor: 'rgba(212, 175, 55, 0.15)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      marginBottom: '16px',
                     }}
                   >
-                    <Database size={22} color="#B45309" />
+                    <MapPin size={22} color="#B45309" />
                   </div>
-                  <span
-                    style={{
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      color: readiness?.database ? '#15803D' : '#DC2626',
-                      backgroundColor: readiness?.database ? '#DCFCE7' : '#FEE2E2',
-                      padding: '3px 8px',
-                      borderRadius: '12px',
-                    }}
-                  >
-                    {readiness?.database ? 'SẴN SÀNG' : 'CHƯA SẴN SÀNG'}
-                  </span>
+                  <h3 style={{ fontSize: '17px', fontWeight: 600, margin: '0 0 8px 0', color: 'var(--text-main)' }}>
+                    Bản Đồ Quy Hoạch Thực Địa
+                  </h3>
+                  <p style={{ fontSize: '13px', color: '#64748B', margin: 0, lineHeight: 1.6 }}>
+                    Quan sát tổng thể mặt bằng nghĩa trang, các phân khu an táng, hệ thống đường nội bộ, cảnh quan cây xanh và các công trình dịch vụ tâm linh.
+                  </p>
                 </div>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, marginTop: '16px', marginBottom: '4px' }}>SQL Server 2022</h3>
-                <p style={{ fontSize: '13px', color: '#64748B', margin: 0 }}>
-                  CSDL: QL_NghiaTrang · Trạng thái: {readiness?.database || 'Đang kiểm tra...'}
-                </p>
+                <button
+                  onClick={() => setActiveTab('public_map')}
+                  style={{
+                    marginTop: '20px',
+                    backgroundColor: 'transparent',
+                    color: 'var(--brand-primary, #24594D)',
+                    border: 'none',
+                    padding: 0,
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <span>Xem sơ đồ ô mộ</span>
+                  <span>→</span>
+                </button>
               </div>
 
-              {/* Card 3: MinIO Storage */}
               <div
                 style={{
                   backgroundColor: '#FFFFFF',
                   borderRadius: '12px',
                   padding: '24px',
                   border: '1px solid #E2E8F0',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
                 }}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
                   <div
                     style={{
-                      width: '42px',
-                      height: '42px',
+                      width: '44px',
+                      height: '44px',
                       borderRadius: '10px',
                       backgroundColor: 'rgba(59, 130, 246, 0.1)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
+                      marginBottom: '16px',
                     }}
                   >
-                    <HardDrive size={22} color="#2563EB" />
+                    <ShieldCheck size={22} color="#2563EB" />
                   </div>
-                  <span
-                    style={{
-                      fontSize: '12px',
-                      fontWeight: 600,
-                      color: readiness?.storage ? '#15803D' : '#DC2626',
-                      backgroundColor: readiness?.storage ? '#DCFCE7' : '#FEE2E2',
-                      padding: '3px 8px',
-                      borderRadius: '12px',
-                    }}
-                  >
-                    {readiness?.storage ? 'BỀN VỮNG' : 'CHƯA SẴN SÀNG'}
-                  </span>
+                  <h3 style={{ fontSize: '17px', fontWeight: 600, margin: '0 0 8px 0', color: 'var(--text-main)' }}>
+                    Cổng Dành Cho Cán Bộ Quản Lý
+                  </h3>
+                  <p style={{ fontSize: '13px', color: '#64748B', margin: 0, lineHeight: 1.6 }}>
+                    Dành cho cán bộ quản trang, kinh doanh, kế toán và ban quản trị đăng nhập để thực hiện tác nghiệp theo vai trò được phân quyền.
+                  </p>
                 </div>
-                <h3 style={{ fontSize: '16px', fontWeight: 600, marginTop: '16px', marginBottom: '4px' }}>MinIO Private S3</h3>
-                <p style={{ fontSize: '13px', color: '#64748B', margin: 0 }}>
-                  Lưu trữ ổ D · Trạng thái: {readiness?.storage || 'Đang kiểm tra...'}
-                </p>
+                <button
+                  onClick={() => setIsLoginOpen(true)}
+                  style={{
+                    marginTop: '20px',
+                    backgroundColor: 'transparent',
+                    color: 'var(--brand-primary, #24594D)',
+                    border: 'none',
+                    padding: 0,
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <span>Đăng nhập hệ thống</span>
+                  <span>→</span>
+                </button>
               </div>
             </div>
-          </>
+
+            {/* Public Service & Visiting Guide */}
+            <div
+              style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '12px',
+                padding: '28px',
+                border: '1px solid #E2E8F0',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+              }}
+            >
+              <h3 style={{ fontSize: '17px', fontWeight: 600, margin: '0 0 20px 0', color: 'var(--text-main)' }}>
+                Thông Tin Hướng Dẫn & Thăm Viếng
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+                <div style={{ display: 'flex', gap: '14px' }}>
+                  <div style={{ marginTop: '2px' }}>
+                    <Clock size={20} color="var(--brand-primary, #24594D)" />
+                  </div>
+                  <div>
+                    <h4 style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 4px 0', color: '#1E293B' }}>
+                      Giờ Mở Cửa Thăm Viếng
+                    </h4>
+                    <p style={{ fontSize: '13px', color: '#64748B', margin: 0, lineHeight: 1.6 }}>
+                      07:00 – 17:30 tất cả các ngày trong tuần, bao gồm cả Thứ Bảy, Chủ Nhật và các dịp Lễ, Tết.
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '14px' }}>
+                  <div style={{ marginTop: '2px' }}>
+                    <Wrench size={20} color="var(--brand-primary, #24594D)" />
+                  </div>
+                  <div>
+                    <h4 style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 4px 0', color: '#1E293B' }}>
+                      Dịch Vụ Chăm Sóc Định Kỳ
+                    </h4>
+                    <p style={{ fontSize: '13px', color: '#64748B', margin: 0, lineHeight: 1.6 }}>
+                      Lau dọn phần mộ, thắp hương ngày rằm và mùng một, chỉnh trang hoa tươi và gửi báo cáo hình ảnh cho gia đình.
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '14px' }}>
+                  <div style={{ marginTop: '2px' }}>
+                    <PhoneCall size={20} color="var(--brand-primary, #24594D)" />
+                  </div>
+                  <div>
+                    <h4 style={{ fontSize: '14px', fontWeight: 600, margin: '0 0 4px 0', color: '#1E293B' }}>
+                      Đường Dây Nóng Ban Quản Lý
+                    </h4>
+                    <p style={{ fontSize: '13px', color: '#64748B', margin: 0, lineHeight: 1.6 }}>
+                      Túc trực 24/7 tiếp nhận các yêu cầu an táng khẩn cấp, hướng dẫn thủ tục chuyển nhượng và tiếp đón thân nhân.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         )}
 
-        {/* Tab 2: Plots GIS & Mapping (M05) */}
-        {activeTab === 'plots' && (
-          <PlotMapModule
-            token={accessToken}
-            onRequireLogin={() => setIsLoginOpen(true)}
-          />
+        {/* Unauthenticated View: Public Memorial Lookup */}
+        {!user && activeTab === 'public_memorial' && (
+          <ProfileModule token={null} currentUserRoles={[]} />
         )}
 
-        {/* Tab Profiles: Customers, Deceased & Memorials (M06) */}
-        {activeTab === 'profiles' && (
+        {/* Unauthenticated View: Public Cemetery Map */}
+        {!user && activeTab === 'public_map' && (
+          <PlotMapModule token={null} onRequireLogin={() => setIsLoginOpen(true)} />
+        )}
+
+        {/* Authenticated Staff Modules */}
+        {user && activeTab === 'plots' && (
+          <PlotMapModule token={accessToken} onRequireLogin={() => setIsLoginOpen(true)} />
+        )}
+
+        {user && activeTab === 'profiles' && (
           <ProfileModule
             token={accessToken}
             currentUserRoles={user?.roles ? user.roles.map((r) => r.role_name) : []}
           />
         )}
 
-        {/* Tab 3: Contracts M07 */}
-        {activeTab === 'contracts' && (
+        {user && activeTab === 'contracts' && (
           <ContractModule
             token={accessToken}
             currentUserRoles={user?.roles ? user.roles.map((r) => r.role_name) : []}
           />
         )}
 
-        {/* Tab Documents: M03 */}
-        {activeTab === 'documents' && <DocumentManager />}
+        {user && activeTab === 'catalog' && <CatalogModule />}
 
-        {/* Tab Catalog: M04 */}
-        {activeTab === 'catalog' && <CatalogModule />}
+        {user && activeTab === 'finance' && <FinanceModule />}
 
-        {/* Tab 4: Finance M11 */}
-        {activeTab === 'finance' && <FinanceModule />}
+        {user && activeTab === 'construction' && <ConstructionModule />}
 
-        {/* Tab Construction: M09 */}
-        {activeTab === 'construction' && <ConstructionModule />}
+        {user && activeTab === 'care' && <CareModule />}
 
-        {/* Tab 5: Care M10 */}
-        {activeTab === 'care' && <CareModule />}
-
-        {/* Tab 6: Admin Users */}
-        {activeTab === 'admin_users' && (
+        {user && activeTab === 'admin_users' && (
           <div style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', padding: '32px', border: '1px solid #E2E8F0' }}>
             <h3 style={{ fontSize: '18px', fontWeight: 600, color: 'var(--text-main)' }}>Quản Trị Người Dùng & Phân Quyền (RBAC)</h3>
             <p style={{ fontSize: '14px', color: '#64748B', marginBottom: '20px' }}>
@@ -818,11 +836,9 @@ function MainApp() {
           </div>
         )}
 
-        {/* Tab 7: Reports M12 */}
-        {activeTab === 'reports' && <ReportsModule />}
+        {user && activeTab === 'reports' && <ReportsModule />}
 
-        {/* Tab 8: Audit Logs M12 */}
-        {activeTab === 'audit' && <AuditModule />}
+        {user && activeTab === 'audit' && <AuditModule />}
       </main>
 
       {/* Login Modal */}

@@ -1,42 +1,11 @@
 import React, { useState } from 'react'
-import { AlertCircle, Loader2, LogIn, ShieldCheck, UserCheck, X } from 'lucide-react'
+import { AlertCircle, Loader2, LogIn, ShieldCheck, X } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
 
 interface LoginModalProps {
   isOpen: boolean
   onClose: () => void
 }
-
-const DEMO_ROLES = [
-  {
-    role: 'ADMIN',
-    label: 'Quản Trị Viên',
-    username: 'admin',
-    password: 'Admin2026!',
-    desc: 'Toàn quyền cấu hình, quản trị người dùng & giám sát',
-  },
-  {
-    role: 'MARKETING',
-    label: 'Kinh Doanh',
-    username: 'marketing',
-    password: 'Marketing2026!',
-    desc: 'Quản lý khách hàng, tư vấn ô mộ & lập hợp đồng',
-  },
-  {
-    role: 'ACCOUNTANT',
-    label: 'Kế Toán',
-    username: 'accountant',
-    password: 'Accountant2026!',
-    desc: 'Theo dõi công nợ, thu tiền & xuất hóa đơn',
-  },
-  {
-    role: 'CARETAKER',
-    label: 'Quản Trang',
-    username: 'caretaker',
-    password: 'Caretaker2026!',
-    desc: 'Giám sát thi công, thực hiện chăm sóc & an táng',
-  },
-]
 
 export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
   const { login } = useAuth()
@@ -46,12 +15,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
   const [error, setError] = useState<string | null>(null)
 
   if (!isOpen) return null
-
-  const handleQuickSelect = (u: string, p: string) => {
-    setUsername(u)
-    setPassword(p)
-    setError(null)
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -154,54 +117,6 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
         {/* Modal Body */}
         <div style={{ padding: '24px 28px' }}>
-          {/* Quick role selection */}
-          <div style={{ marginBottom: '20px' }}>
-            <label
-              style={{
-                display: 'block',
-                fontSize: '12px',
-                fontWeight: 600,
-                color: 'var(--text-muted)',
-                marginBottom: '8px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em',
-              }}
-            >
-              Chọn nhanh vai trò kiểm thử (Demo)
-            </label>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
-                gap: '8px',
-              }}
-            >
-              {DEMO_ROLES.map((d) => (
-                <button
-                  key={d.role}
-                  type="button"
-                  onClick={() => handleQuickSelect(d.username, d.password)}
-                  style={{
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    border: username === d.username ? '2px solid var(--brand-primary)' : '1px solid #E2E8F0',
-                    backgroundColor: username === d.username ? 'rgba(36, 89, 77, 0.08)' : '#F8FAFC',
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 0.15s ease',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <UserCheck size={14} color={username === d.username ? 'var(--brand-primary)' : '#64748B'} />
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)' }}>{d.label}</span>
-                  </div>
-                  <span style={{ fontSize: '11px', color: '#64748B', display: 'block', marginTop: '2px' }}>
-                    {d.role}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* Error alert */}
           {error && (
