@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
+import { Pagination, usePagination } from '../common/Pagination'
 import type {
   ContractReportResponse,
   OccupancyReportResponse,
@@ -39,6 +40,11 @@ export const ReportsModule: React.FC = () => {
   const [contractsData, setContractsData] = useState<ContractReportResponse | null>(null)
   const [operationsData, setOperationsData] = useState<OperationsReportResponse | null>(null)
 
+  // Pagination for sub-tables
+  const revenuePagination = usePagination(revenueData?.drilldown_items || [], 10)
+  const occupancyPagination = usePagination(occupancyData?.zones || [], 10)
+  const expiringCarePagination = usePagination(contractsData?.expiring_care_annexes || [], 10)
+
   // Loading & error
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
@@ -56,6 +62,49 @@ export const ReportsModule: React.FC = () => {
 
   const formatPercent = (val: number | null | undefined): string => {
     return `${(val || 0).toFixed(1)}%`
+  }
+
+  const getContractStatusLabel = (status: string): string => {
+    switch (status?.toUpperCase()) {
+      case 'ACTIVE':
+        return 'Đang hiệu lực'
+      case 'DRAFT':
+        return 'Bản thảo (Đang lập)'
+      case 'PENDING_SIGN':
+        return 'Chờ khách ký duyệt'
+      case 'CANCELLED':
+        return 'Đã hủy bỏ'
+      case 'TERMINATED':
+        return 'Đã thanh lý / chấm dứt'
+      default:
+        return status || 'N/A'
+    }
+  }
+
+  const getAnnexTypeLabel = (type: string): string => {
+    switch (type?.toUpperCase()) {
+      case 'BURIAL':
+        return 'Phụ lục An Táng'
+      case 'CARE':
+        return 'Phụ lục Chăm Sóc'
+      case 'CONSTRUCTION':
+        return 'Phụ lục Xây Dựng'
+      default:
+        return type || 'N/A'
+    }
+  }
+
+  const getPaymentMethodLabel = (method: string): string => {
+    switch (method?.toUpperCase()) {
+      case 'BANK_TRANSFER':
+        return 'Chuyển khoản'
+      case 'CASH':
+        return 'Tiền mặt'
+      case 'CARD':
+        return 'Thẻ ngân hàng'
+      default:
+        return method || 'N/A'
+    }
   }
 
   // Fetch report data based on activeTab
@@ -575,7 +624,7 @@ export const ReportsModule: React.FC = () => {
                   }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#64748B' }}>
-                    <span style={{ fontWeight: 600 }}>{m.method}</span>
+                    <span style={{ fontWeight: 600 }}>{getPaymentMethodLabel(m.method)}</span>
                     <span>{m.percentage}%</span>
                   </div>
                   <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-main)', margin: '4px 0' }}>
@@ -615,51 +664,63 @@ export const ReportsModule: React.FC = () => {
                 <p style={{ margin: 0 }}>Chưa có giao dịch thu tiền nào phát sinh trong kỳ đã chọn.</p>
               </div>
             ) : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
-                  <thead>
-                    <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569' }}>
-                      <th style={{ padding: '12px 16px', textAlign: 'left' }}>Mã Phiếu</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'left' }}>Ngày Thu</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'left' }}>Khách Hàng</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'left' }}>Nguồn Hợp Đồng / Phụ Lục</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'left' }}>Phương Thức</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'right' }}>Số Tiền</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {revenueData.drilldown_items.map((item) => (
-                      <tr key={item.payment_id} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                        <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--brand-primary)' }}>
-                          {item.payment_no}
-                        </td>
-                        <td style={{ padding: '12px 16px', color: '#475569' }}>{item.payment_date}</td>
-                        <td style={{ padding: '12px 16px', color: 'var(--text-main)' }}>{item.customer_name || 'N/A'}</td>
-                        <td style={{ padding: '12px 16px', color: '#475569' }}>
-                          <span
-                            style={{
-                              padding: '2px 8px',
-                              borderRadius: '4px',
-                              fontSize: '11px',
-                              fontWeight: 600,
-                              backgroundColor: item.source_type === 'CONTRACT' ? '#EFF6FF' : '#F5F3FF',
-                              color: item.source_type === 'CONTRACT' ? '#1D4ED8' : '#6D28D9',
-                              marginRight: '6px',
-                            }}
-                          >
-                            {item.source_type}
-                          </span>
-                          {item.source_code}
-                        </td>
-                        <td style={{ padding: '12px 16px', color: '#475569' }}>{item.payment_method}</td>
-                        <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#16A34A' }}>
-                          {formatVND(item.amount)}
-                        </td>
+              <>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+                    <thead>
+                      <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569' }}>
+                        <th style={{ padding: '12px 16px', textAlign: 'left' }}>Mã Phiếu</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'left' }}>Ngày Thu</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'left' }}>Khách Hàng</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'left' }}>Nguồn Hợp Đồng / Phụ Lục</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'left' }}>Phương Thức</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'right' }}>Số Tiền</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {revenuePagination.paginatedItems.map((item) => (
+                        <tr key={item.payment_id} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                          <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--brand-primary)' }}>
+                            {item.payment_no}
+                          </td>
+                          <td style={{ padding: '12px 16px', color: '#475569' }}>{item.payment_date}</td>
+                          <td style={{ padding: '12px 16px', color: 'var(--text-main)' }}>{item.customer_name || 'N/A'}</td>
+                          <td style={{ padding: '12px 16px', color: '#475569' }}>
+                            <span
+                              style={{
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                fontSize: '11px',
+                                fontWeight: 600,
+                                backgroundColor: item.source_type === 'CONTRACT' ? '#EFF6FF' : '#F5F3FF',
+                                color: item.source_type === 'CONTRACT' ? '#1D4ED8' : '#6D28D9',
+                                marginRight: '6px',
+                              }}
+                            >
+                              {item.source_type === 'CONTRACT' ? 'Hợp đồng' : item.source_type === 'ANNEX' ? 'Phụ lục' : item.source_type}
+                            </span>
+                            {item.source_code}
+                          </td>
+                          <td style={{ padding: '12px 16px', color: '#475569' }}>{getPaymentMethodLabel(item.payment_method)}</td>
+                          <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#16A34A' }}>
+                            {formatVND(item.amount)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <Pagination
+                  currentPage={revenuePagination.currentPage}
+                  totalPages={revenuePagination.totalPages}
+                  pageSize={revenuePagination.pageSize}
+                  totalItems={revenuePagination.totalItems}
+                  startIndex={revenuePagination.startIndex}
+                  endIndex={revenuePagination.endIndex}
+                  onPageChange={revenuePagination.handlePageChange}
+                  onPageSizeChange={revenuePagination.handlePageSizeChange}
+                />
+              </>
             )}
           </div>
         </div>
@@ -778,7 +839,7 @@ export const ReportsModule: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {occupancyData?.zones?.map((z) => (
+                  {occupancyPagination.paginatedItems.map((z) => (
                     <tr key={z.zone_id} style={{ borderBottom: '1px solid #F1F5F9' }}>
                       <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-main)' }}>
                         <span style={{ color: 'var(--brand-primary)', marginRight: '6px' }}>{z.zone_code}</span>
@@ -810,6 +871,16 @@ export const ReportsModule: React.FC = () => {
                 </tbody>
               </table>
             </div>
+            <Pagination
+              currentPage={occupancyPagination.currentPage}
+              totalPages={occupancyPagination.totalPages}
+              pageSize={occupancyPagination.pageSize}
+              totalItems={occupancyPagination.totalItems}
+              startIndex={occupancyPagination.startIndex}
+              endIndex={occupancyPagination.endIndex}
+              onPageChange={occupancyPagination.handlePageChange}
+              onPageSizeChange={occupancyPagination.handlePageSizeChange}
+            />
           </div>
         </div>
       ) : activeTab === 'contracts' ? (
@@ -899,7 +970,7 @@ export const ReportsModule: React.FC = () => {
                     fontSize: '13px',
                   }}
                 >
-                  <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{st.status}</span>
+                  <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{getContractStatusLabel(st.status)}</span>
                   <div>
                     <span style={{ color: '#64748B', marginRight: '10px' }}>{st.count} HĐ</span>
                     <strong style={{ color: 'var(--brand-primary)' }}>{formatVND(st.total_value)}</strong>
@@ -930,7 +1001,7 @@ export const ReportsModule: React.FC = () => {
                     fontSize: '13px',
                   }}
                 >
-                  <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{an.annex_type}</span>
+                  <span style={{ fontWeight: 500, color: 'var(--text-main)' }}>{getAnnexTypeLabel(an.annex_type)}</span>
                   <div>
                     <span style={{ color: '#64748B', marginRight: '10px' }}>{an.count} phụ lục</span>
                     <strong style={{ color: '#2563EB' }}>{formatVND(an.total_value)}</strong>
@@ -978,7 +1049,7 @@ export const ReportsModule: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {contractsData.expiring_care_annexes.map((item) => (
+                    {expiringCarePagination.paginatedItems.map((item) => (
                       <tr key={item.annex_id} style={{ borderBottom: '1px solid #F1F5F9' }}>
                         <td style={{ padding: '10px 16px', fontWeight: 600, color: 'var(--brand-primary)' }}>
                           {item.annex_code}
@@ -994,6 +1065,16 @@ export const ReportsModule: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+              <Pagination
+                currentPage={expiringCarePagination.currentPage}
+                totalPages={expiringCarePagination.totalPages}
+                pageSize={expiringCarePagination.pageSize}
+                totalItems={expiringCarePagination.totalItems}
+                startIndex={expiringCarePagination.startIndex}
+                endIndex={expiringCarePagination.endIndex}
+                onPageChange={expiringCarePagination.handlePageChange}
+                onPageSizeChange={expiringCarePagination.handlePageSizeChange}
+              />
             </div>
           )}
         </div>
@@ -1246,7 +1327,7 @@ export const ReportsModule: React.FC = () => {
                   color: '#64748B',
                 }}
               >
-                Tệp xuất được gắn mã SHA-256 xác thực, lưu trữ trên MinIO và hỗ trợ tải trực tiếp về thiết bị.
+                Tệp xuất được gắn mã chứng thực điện tử SHA-256, lưu trữ an toàn trên máy chủ và hỗ trợ tải trực tiếp về thiết bị.
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>

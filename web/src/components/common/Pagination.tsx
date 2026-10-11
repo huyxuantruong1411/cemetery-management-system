@@ -118,7 +118,7 @@ export const Pagination: React.FC<PaginationProps> = ({
       }}
     >
       {/* Information & Page Size Selector */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
         <span>
           Hiển thị <strong>{startItem}</strong> - <strong>{endItem}</strong> trong tổng số{' '}
           <strong>{totalItems.toLocaleString('vi-VN')}</strong> bản ghi
@@ -155,10 +155,20 @@ export const Pagination: React.FC<PaginationProps> = ({
       </div>
 
       {/* Page Navigation Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+          maxWidth: '100%',
+        }}
+      >
         {/* First Page */}
         <button
           type="button"
+          className="desktop-only"
           disabled={currentPage <= 1}
           onClick={() => onPageChange(1)}
           title="Trang đầu"
@@ -169,7 +179,6 @@ export const Pagination: React.FC<PaginationProps> = ({
             backgroundColor: currentPage <= 1 ? '#F1F5F9' : '#FFFFFF',
             color: currentPage <= 1 ? '#94A3B8' : '#334155',
             cursor: currentPage <= 1 ? 'not-allowed' : 'pointer',
-            display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -259,6 +268,7 @@ export const Pagination: React.FC<PaginationProps> = ({
         {/* Last Page */}
         <button
           type="button"
+          className="desktop-only"
           disabled={currentPage >= totalPages}
           onClick={() => onPageChange(totalPages)}
           title="Trang cuối"
@@ -269,7 +279,6 @@ export const Pagination: React.FC<PaginationProps> = ({
             backgroundColor: currentPage >= totalPages ? '#F1F5F9' : '#FFFFFF',
             color: currentPage >= totalPages ? '#94A3B8' : '#334155',
             cursor: currentPage >= totalPages ? 'not-allowed' : 'pointer',
-            display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
           }}
@@ -281,7 +290,8 @@ export const Pagination: React.FC<PaginationProps> = ({
         {totalPages > 3 && (
           <form
             onSubmit={handleJump}
-            style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '6px' }}
+            className="desktop-only"
+            style={{ alignItems: 'center', gap: '4px', marginLeft: '6px' }}
           >
             <span style={{ fontSize: '11px', color: '#64748B' }}>Đến:</span>
             <input
