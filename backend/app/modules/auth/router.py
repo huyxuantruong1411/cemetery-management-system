@@ -10,6 +10,7 @@ from app.modules.auth.schemas import (
     MessageResponse,
     RefreshTokenRequest,
     RoleDetailResponse,
+    StaffBriefResponse,
     TokenResponse,
     UserCreateRequest,
     UserDetailResponse,
@@ -18,6 +19,29 @@ from app.modules.auth.schemas import (
 from app.modules.auth.service import AuthService
 
 router = APIRouter(prefix="/auth", tags=["Authentication & RBAC"])
+
+
+@router.get(
+    "/staff",
+    response_model=list[StaffBriefResponse],
+    summary="Danh sách nhân sự điều phối",
+)
+def list_staff(
+    db: Session = Depends(get_db),
+    _: User = Depends(get_current_user),
+) -> list[StaffBriefResponse]:
+    """Lấy danh sách nhân sự đang hoạt động để phân công ca chăm sóc, thi công."""
+    users = db.query(User).filter(User.is_active.is_(True)).all()
+    return [
+        StaffBriefResponse(
+            user_id=u.user_id,
+            username=u.username,
+            full_name=u.full_name or u.username,
+            roles=[r.role_name for r in u.roles],
+        )
+        for u in users
+    ]
+
 
 
 @router.post(

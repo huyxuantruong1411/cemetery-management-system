@@ -82,3 +82,11 @@ class ChangePasswordRequest(BaseModel):
 
 class MessageResponse(BaseModel):
     message: str
+
+
+class StaffBriefResponse(BaseModel):
+    user_id: int
+    username: str
+    full_name: str
+    roles: list[str] = []
+
