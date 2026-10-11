@@ -1386,7 +1386,7 @@ export const FinanceModule: React.FC = () => {
               {/* Receivable snapshot */}
               <div style={{ backgroundColor: '#F8FAFC', padding: '16px', borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '13px' }}>
                 <div style={{ fontWeight: 600, color: '#1E293B', marginBottom: '8px' }}>Tổng quan nghĩa vụ:</div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px' }}>
                   <div>
                     <span style={{ color: '#64748B' }}>Số tiền gốc:</span>{' '}
                     <span style={{ fontWeight: 600 }}>{formatCurrency(activeReceivable.original_amount)}</span>

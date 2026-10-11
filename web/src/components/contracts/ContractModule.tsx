@@ -2194,7 +2194,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
                   </div>
 
                   {/* Customer & Plot Grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                  <div className="responsive-form-row">
                     {/* Customer Card */}
                     <div style={{ border: '1px solid #E2E8F0', borderRadius: '8px', padding: '16px' }}>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
@@ -2466,7 +2466,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
                       <div style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A', marginBottom: '10px' }}>
                         Nghĩa Vụ Tài Chính &amp; Công Nợ (Receivable)
                       </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', fontSize: '13px' }}>
+                      <div className="responsive-metric-grid-4" style={{ fontSize: '13px' }}>
                         <div>
                           <div style={{ fontSize: '11px', color: '#64748B' }}>Số tiền phải thu</div>
                           <div style={{ fontWeight: 600 }}>{formatCurrency(contractDetail.receivable.final_payable_amount)}</div>
@@ -3360,7 +3360,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
             </div>
 
             {/* Exhumation Date & Fee */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+            <div className="responsive-form-row">
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
                   Ngày Cải Táng Dự Kiến
@@ -3737,7 +3737,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
             </div>
 
             {/* Date, Package & Fee */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+            <div className="responsive-form-row">
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
                   Ngày Hỏa Táng
@@ -3765,7 +3765,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px' }}>
+            <div className="responsive-form-row">
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
                   Tùy Chọn Lưu Tro Cốt

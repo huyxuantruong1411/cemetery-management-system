@@ -673,10 +673,30 @@ Triển khai đồng bộ mô hình Dual-View trên toàn bộ các phân hệ n
 - **`ProfileModule.tsx`:** Thẻ Card tra cứu hồ sơ khách hàng và người quá cố; giao diện Cổng tra cứu tưởng niệm công khai tối ưu hóa trải nghiệm tìm kiếm di động với nút Google Maps dẫn đường trực tiếp.
 - **`AuditModule.tsx` & `ReportsModule.tsx`:** Thẻ Card nhật ký kiểm toán với huy hiệu mã hóa màu theo hành động; thanh cuộn ngang bảng báo cáo và bộ lọc ngày tháng tối ưu cho màn hình cảm ứng.
 
-### 14.4. Kiểm Tra & Đảm Bảo Chất Lượng (Quality Gate)
-- **TypeScript & Vite:** `pnpm build` biên dịch thành công 100% trong 284ms mà không có bất kỳ lỗi kiểu dữ liệu nào.
+### 14.4. Khắc Phục Triệt Để Chèn Ép Ngang & Chuẩn Hóa Lưới Thích Ứng (Horizontal Squeeze Elimination)
+- **Cổng Thông Tin Công Khai (`App.tsx`):**
+  - Khắc phục sự cố 3 thẻ tác vụ chính ("Tra Cứu Phần Mộ Trực Tuyến", "Dịch Vụ Chăm Sóc Phần Mộ", "Cổng Dành Cho Cán Bộ Quản Lý") bị chèn ép thành 3 cột hẹp gây ngắt dòng từng chữ: chuyển sang `.portal-card-grid` (1 cột trên mobile `< 640px`, 2 cột trên tablet, 3 cột trên desktop `≥ 1024px`).
+  - Chuyển đổi khối "Thông Tin Hướng Dẫn & Thăm Viếng" sang `.portal-guide-grid` (1 cột trên mobile, 3 cột trên desktop).
+  - Biến đổi Banner Hero sang `.hero-banner-responsive` với padding và cỡ chữ co giãn động `clamp(20px, 4vw, 28px)`.
+- **Phân Hệ Quản Trị Người Dùng (`UserManagementModule.tsx`):**
+  - Tích hợp đầy đủ mô hình Dual-View: Thẻ Card di động cho từng tài khoản người dùng kèm huy hiệu trạng thái, vai trò, phiên bảo mật và các nút thao tác chạm chuẩn trên mobile; giữ bảng phân trang cuộn mượt mà trên desktop.
+  - Chuyển đổi các modal "Thêm người dùng", "Sửa tài khoản", "Đặt lại mật khẩu" sang `.responsive-modal-overlay` / `.responsive-modal-card`.
+  - Loại bỏ các lưới `1fr 1fr` cứng nhắc trong form, thay bằng `.responsive-form-row` tự chuyển 1 cột trên điện thoại.
+- **Phân Hệ Danh Mục & Đơn Giá (`CatalogModule.tsx`):**
+  - Chuyển đổi bố cục 2 cột cứng `320px 1fr` sang `.responsive-two-col` (tự động xếp chồng dọc trên màn hình hẹp, hiển thị 2 cột trên màn hình rộng `≥ 1024px`).
+  - Thay thế các giới hạn thẻ cố định `minmax(340px, 1fr)` và `minmax(360px, 1fr)` sang `.responsive-auto-cards` với quy tắc `minmax(min(100%, 280px), 1fr)` tuyệt đối không tràn màn hình.
+  - Chuẩn hóa form mô phỏng giá và modal sang `.responsive-form-row` và `.responsive-form-row-2-1`.
+- **Rà Soát & Triệt Tiêu Lưới Cứng Nhắc Trên Toàn Hệ Thống:**
+  - `ProfileModule.tsx`: Thay thế `minmax(400px, 1fr)` trên thẻ tưởng niệm bằng `.responsive-auto-cards`; chuyển toàn bộ 8 form 2 cột trong modal thân nhân và người quá cố sang `.responsive-form-row`.
+  - `ContractModule.tsx`: Thay thế khối 4 chỉ số tài chính `repeat(4, 1fr)` bằng `.responsive-metric-grid-4`; chuyển các form phụ lục/hợp đồng sang `.responsive-form-row`.
+  - `ConstructionModule.tsx`, `CareModule.tsx`, `PlotMapModule.tsx`, `FinanceModule.tsx`, `AuditModule.tsx`, `ReportsModule.tsx`: Chuyển đổi toàn bộ các lưới 2 cột cố định sang các lớp thích ứng và `repeat(auto-fit, minmax(..., 1fr))`.
+  - `DocumentManager.tsx`: Bổ sung `.table-scroll-container` và các lớp modal thích ứng.
+
+### 14.5. Kiểm Tra & Đảm Bảo Chất Lượng (Quality Gate)
+- **TypeScript & Vite:** `pnpm build` biên dịch thành công 100% trong 271ms, 0 lỗi.
 - **Linter:** `pnpm lint` 0 lỗi trên toàn bộ 31 tệp mã nguồn.
-- **Kiến trúc:** Tuân thủ triệt để Vanilla CSS (không sử dụng TailwindCSS), bảo toàn 100% các bất biến nghiệp vụ máy chủ (Kim Tĩnh, Giấy báo tử, CSDL SQL Server).
+- **Backend Quality Gate:** `uv run pytest` đạt 89/89 bài kiểm thử 100% passed.
+
 
 
 

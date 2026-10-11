@@ -1412,7 +1412,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
               <h3 style={{ margin: '0 0 16px 0', color: '#1F2937', fontSize: '18px', fontWeight: 600 }}>
                 Kết quả tìm kiếm ({memorialResults.length})
               </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: '16px' }}>
+              <div className="responsive-auto-cards">
                 {paginatedMemorial.map((item) => (
                   <div
                     key={item.deceased_code}
@@ -1602,7 +1602,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+              <div className="responsive-form-row">
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>
                     Số CCCD (Bắt buộc duy nhất) *
@@ -1631,7 +1631,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+              <div className="responsive-form-row">
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>
                     Ngày Sinh
@@ -1747,7 +1747,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
             </div>
 
             <form onSubmit={handleCreateDeceased}>
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', marginBottom: '12px' }}>
+              <div className="responsive-form-row-2-1">
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>
                     Họ và Tên Người Quá Cố *
@@ -1829,7 +1829,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 )}
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+              <div className="responsive-form-row">
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>
                     Ngày Mất *
@@ -1882,7 +1882,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 <div style={{ fontSize: '13px', fontWeight: 600, color: '#166534', marginBottom: '8px' }}>
                   Liên kết thân nhân đứng đại diện (Khách hàng):
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '8px' }}>
+                <div className="responsive-form-row-2-1">
                   <select
                     value={deceasedForm.customer_id || ''}
                     onChange={(e) =>
@@ -2011,7 +2011,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
             </div>
 
             {/* Vital stats & Grave slot */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+            <div className="responsive-form-row">
               <div style={{ backgroundColor: '#F9FAFB', padding: '14px', borderRadius: '10px' }}>
                 <div style={{ fontSize: '12px', color: '#6B7280', fontWeight: 600, marginBottom: '6px' }}>
                   THÔNG TIN SINH & MẤT
@@ -2168,7 +2168,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                   </div>
 
                   {/* Cert detail rows */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '13px' }}>
+                  <div className="responsive-form-row">
                     <div>
                       <span style={{ color: '#6B7280' }}>Số Giấy Báo Tử:</span>{' '}
                       <strong style={{ color: '#111827' }}>
@@ -2574,7 +2574,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
               </button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '13px', marginBottom: '20px' }}>
+            <div className="responsive-form-row">
               <div>
                 <span style={{ color: '#6B7280' }}>Số CCCD:</span>{' '}
                 <strong style={{ fontFamily: 'monospace' }}>{selectedCustomer.citizen_id}</strong>

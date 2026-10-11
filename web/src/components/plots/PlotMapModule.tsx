@@ -1695,7 +1695,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                   Danh Mục Khu Vực (Zones) & Hàng Mộ (Rows) ({zones.length} khu)
                 </h3>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+              <div className="responsive-auto-cards">
                 {paginatedZones.map((z) => {
                   const zoneRows = rows.filter((r) => r.zone_id === z.zone_id);
                   return (
@@ -1837,7 +1837,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                   Quy Cách & Kích Thước Loại Mộ (Plot Types) ({plotTypes.length} loại)
                 </h3>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '16px' }}>
+              <div className="responsive-auto-cards">
                 {paginatedPlotTypes.map((pt) => (
                   <div key={pt.type_id} style={{ padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0', backgroundColor: '#FFFFFF', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                     <div>
@@ -2239,7 +2239,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div className="responsive-form-row">
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
                     Chiều dài (m) *
@@ -2398,7 +2398,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                 </select>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+              <div className="responsive-form-row">
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
                     Vĩ độ (Latitude)

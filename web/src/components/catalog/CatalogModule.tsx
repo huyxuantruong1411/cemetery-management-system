@@ -501,7 +501,7 @@ export const CatalogModule: React.FC = () => {
 
       {/* VIEW 1: PRICING & PRICE ITEMS */}
       {!loading && !error && subTab === 'prices' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '20px' }}>
+        <div className="responsive-two-col">
           {/* Price Lists Sidebar */}
           <div style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '20px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -685,7 +685,7 @@ export const CatalogModule: React.FC = () => {
             </button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '20px' }}>
+          <div className="responsive-auto-cards">
           {carePackages
             .slice((carePage - 1) * carePageSize, carePage * carePageSize)
             .map((pkg) => {
@@ -804,7 +804,7 @@ export const CatalogModule: React.FC = () => {
             <strong>Quy định bảo toàn hợp đồng:</strong> Hệ thống hỗ trợ 4 loại hợp đồng chuẩn (Mua đất, Cải táng, Hỏa táng, Chuyển nhượng) và phụ lục an táng. Khi cập nhật mẫu, hệ thống tự động sinh phiên bản mới mà không ảnh hưởng đến các hợp đồng đã ký kết.
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(360px, 1fr))', gap: '20px' }}>
+          <div className="responsive-auto-cards">
             {templates
               .slice((templatePage - 1) * templatePageSize, templatePage * templatePageSize)
               .map((tmpl) => {
@@ -957,7 +957,7 @@ export const CatalogModule: React.FC = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+          <div className="responsive-form-row">
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px' }}>Ngày áp dụng định giá</label>
               <input
@@ -1037,8 +1037,8 @@ export const CatalogModule: React.FC = () => {
 
       {/* Modal: View Template HTML */}
       {activeModal === 'view_template' && selectedTemplate && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px' }}>
-          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', maxWidth: '750px', width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
+        <div className="responsive-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '24px' }}>
+          <div className="responsive-modal-card" style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', maxWidth: '750px', width: '100%', maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)', overflow: 'hidden' }}>
             <div style={{ padding: '16px 20px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
               <div style={{ fontWeight: 600, fontSize: '15px' }}>
                 {selectedTemplate.template_name} (v{selectedTemplate.version_no})
@@ -1059,8 +1059,8 @@ export const CatalogModule: React.FC = () => {
 
       {/* Modal: New Price List */}
       {activeModal === 'new_price_list' && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', maxWidth: '460px', width: '100%', padding: '24px' }}>
+        <div className="responsive-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+          <div className="responsive-modal-card" style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', maxWidth: '460px', width: '100%', padding: '24px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>Tạo Bảng Giá Mới</h3>
             <form onSubmit={handleCreatePriceList} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
@@ -1117,8 +1117,8 @@ export const CatalogModule: React.FC = () => {
 
       {/* Modal: New Price Item */}
       {activeModal === 'new_item' && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', maxWidth: '480px', width: '100%', padding: '24px' }}>
+        <div className="responsive-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+          <div className="responsive-modal-card" style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', maxWidth: '480px', width: '100%', padding: '24px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>Thêm Khoản Mục Giá Mới</h3>
             <form onSubmit={handleAddPriceItem} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
@@ -1145,7 +1145,7 @@ export const CatalogModule: React.FC = () => {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px' }}>
+              <div className="responsive-form-row-2-1">
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '4px' }}>Đơn giá (VNĐ)</label>
                   <input
@@ -1195,8 +1195,8 @@ export const CatalogModule: React.FC = () => {
 
       {/* Modal: New Care Package */}
       {activeModal === 'new_package' && (
-        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
-          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', maxWidth: '480px', width: '100%', padding: '24px' }}>
+        <div className="responsive-modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '20px' }}>
+          <div className="responsive-modal-card" style={{ backgroundColor: '#FFFFFF', borderRadius: '12px', maxWidth: '480px', width: '100%', padding: '24px' }}>
             <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '16px' }}>Thêm Gói Chăm Sóc Định Kỳ Mới</h3>
             <form onSubmit={handleCreatePackage} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
@@ -1223,7 +1223,7 @@ export const CatalogModule: React.FC = () => {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="responsive-form-row">
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '4px' }}>Chu kỳ chăm sóc</label>
                   <select

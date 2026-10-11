@@ -638,33 +638,22 @@ function MainApp() {
           {/* Unauthenticated View: Public Home Landing */}
           {!user && activeTab === 'public_home' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', maxWidth: '1200px', margin: '0 auto' }}>
-              {/* Hero Banner (Removed public_map link) */}
-              <div
-                style={{
-                  borderRadius: '16px',
-                  backgroundColor: 'var(--brand-primary, #24594D)',
-                  color: '#FFFFFF',
-                  padding: '48px 40px',
-                  boxShadow: '0 4px 20px rgba(36, 89, 77, 0.15)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '16px',
-                }}
-              >
+              {/* Hero Banner (Responsive padding and layout) */}
+              <div className="hero-banner-responsive">
                 <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', opacity: 0.9 }}>
                   <Heart size={18} color="#FFE082" />
                   <span style={{ fontSize: '13px', letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 600 }}>
                     Công Viên Nghĩa Trang Sinh Thái & Dịch Vụ Tâm Linh
                   </span>
                 </div>
-                <h2 style={{ fontSize: '28px', fontWeight: 700, margin: 0, lineHeight: 1.3, letterSpacing: '-0.02em' }}>
+                <h2 style={{ fontSize: 'clamp(20px, 4vw, 28px)', fontWeight: 700, margin: 0, lineHeight: 1.3, letterSpacing: '-0.02em' }}>
                   Nơi An Nghỉ Vĩnh Hằng & Tôn Vinh Ký Ức Bình Yên
                 </h2>
-                <p style={{ fontSize: '15px', opacity: 0.9, margin: 0, maxWidth: '780px', lineHeight: 1.6 }}>
+                <p style={{ fontSize: '14px', opacity: 0.9, margin: 0, maxWidth: '780px', lineHeight: 1.6 }}>
                   Hệ thống cung cấp dịch vụ quản lý nghĩa trang toàn diện, chăm sóc mộ phần chu toàn và cổng thông tin trực tuyến
                   giúp thân nhân tra cứu vị trí an táng, năm mất, quê quán và nhật ký chăm sóc đã được công bố một cách trang nghiêm, minh bạch.
                 </p>
-                <div style={{ display: 'flex', gap: '14px', marginTop: '12px', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: '12px', marginTop: '12px', flexWrap: 'wrap' }}>
                   <button
                     onClick={() => setActiveTab('public_memorial')}
                     style={{
@@ -672,7 +661,7 @@ function MainApp() {
                       color: 'var(--brand-primary, #24594D)',
                       border: 'none',
                       borderRadius: '8px',
-                      padding: '12px 24px',
+                      padding: '12px 20px',
                       fontSize: '14px',
                       fontWeight: 600,
                       cursor: 'pointer',
@@ -692,7 +681,7 @@ function MainApp() {
                       color: '#FFFFFF',
                       border: '1px solid rgba(255, 255, 255, 0.3)',
                       borderRadius: '8px',
-                      padding: '12px 24px',
+                      padding: '12px 20px',
                       fontSize: '14px',
                       fontWeight: 600,
                       cursor: 'pointer',
@@ -707,8 +696,8 @@ function MainApp() {
                 </div>
               </div>
 
-              {/* 3 Quick Action Cards (Public Appropriate) */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
+              {/* 3 Quick Action Cards (Responsive grid: 1 col on mobile, 2 col on tablet, 3 col on desktop) */}
+              <div className="portal-card-grid">
                 <div
                   style={{
                     backgroundColor: '#FFFFFF',
@@ -872,7 +861,7 @@ function MainApp() {
                 <h3 style={{ fontSize: '17px', fontWeight: 600, margin: '0 0 20px 0', color: 'var(--text-main)' }}>
                   Thông Tin Hướng Dẫn & Thăm Viếng
                 </h3>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+                <div className="portal-guide-grid">
                   <div style={{ display: 'flex', gap: '14px' }}>
                     <div style={{ marginTop: '2px' }}>
                       <Clock size={20} color="var(--brand-primary, #24594D)" />

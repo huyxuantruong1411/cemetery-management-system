@@ -574,8 +574,139 @@ export const UserManagementModule: React.FC = () => {
             </div>
           </div>
 
-          {/* Table */}
-          <div style={{ overflowX: 'auto' }}>
+          {/* Mobile Card View (< 1024px) */}
+          <div className="mobile-only" style={{ flexDirection: 'column', gap: '12px', padding: '12px' }}>
+            {paginatedUsers.length === 0 ? (
+              <div style={{ padding: '32px 16px', textAlign: 'center', color: '#94A3B8', backgroundColor: '#FFFFFF', borderRadius: '8px' }}>
+                Không tìm thấy tài khoản người dùng nào phù hợp với bộ lọc.
+              </div>
+            ) : (
+              paginatedUsers.map((u) => {
+                const isSelf = currentUser?.user_id === u.user_id;
+                return (
+                  <div
+                    key={u.user_id}
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '10px',
+                      border: '1px solid #E2E8F0',
+                      padding: '14px',
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontWeight: 700, fontSize: '14px', color: '#1E293B' }}>{u.full_name}</span>
+                          {isSelf && (
+                            <span style={{ fontSize: '10px', backgroundColor: '#E2E8F0', color: '#475569', padding: '1px 5px', borderRadius: '4px', fontWeight: 600 }}>
+                              Bạn
+                            </span>
+                          )}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#64748B', fontFamily: 'monospace' }}>@{u.username}</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        {u.is_active ? (
+                          <span style={{ fontSize: '11px', fontWeight: 600, color: '#15803D', backgroundColor: '#DCFCE7', padding: '2px 8px', borderRadius: '12px' }}>
+                            Hoạt động
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '11px', fontWeight: 600, color: '#DC2626', backgroundColor: '#FEE2E2', padding: '2px 8px', borderRadius: '12px' }}>
+                            Bị khóa
+                          </span>
+                        )}
+                        <span style={{ fontSize: '10px', fontFamily: 'monospace', backgroundColor: '#F1F5F9', padding: '2px 6px', borderRadius: '4px', color: '#64748B' }}>
+                          v{u.auth_version}
+                        </span>
+                      </div>
+                    </div>
+
+                    <div style={{ fontSize: '12px', color: '#475569', marginBottom: '8px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <div>✉ {u.email}</div>
+                      <div>📞 {u.phone_number || 'Chưa có SĐT'}</div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '12px' }}>
+                      {u.roles.map((r) => {
+                        let bg = '#F1F5F9';
+                        let fg = '#475569';
+                        if (r.role_name === 'ADMIN') { bg = '#FEE2E2'; fg = '#DC2626'; }
+                        else if (r.role_name === 'MARKETING') { bg = '#E0F2FE'; fg = '#0369A1'; }
+                        else if (r.role_name === 'ACCOUNTANT') { bg = '#FEF3C7'; fg = '#B45309'; }
+                        else if (r.role_name === 'CARETAKER') { bg = '#DCFCE7'; fg = '#15803D'; }
+                        return (
+                          <span key={r.role_id} style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', backgroundColor: bg, color: fg }}>
+                            {r.role_name}
+                          </span>
+                        );
+                      })}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px', paddingTop: '10px', borderTop: '1px solid #F1F5F9' }}>
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(u)}
+                        style={{
+                          flex: 1,
+                          padding: '8px',
+                          borderRadius: '6px',
+                          border: '1px solid #CBD5E1',
+                          backgroundColor: '#FFFFFF',
+                          color: '#334155',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Sửa
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setResetPwdUser(u);
+                          setAdminNewPassword('');
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '8px',
+                          borderRadius: '6px',
+                          border: '1px solid #CBD5E1',
+                          backgroundColor: '#FFFFFF',
+                          color: '#334155',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Đổi MK
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleActive(u)}
+                        disabled={isSelf}
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          backgroundColor: isSelf ? '#F1F5F9' : u.is_active ? '#FEF2F2' : '#F0FDF4',
+                          color: isSelf ? '#94A3B8' : u.is_active ? '#DC2626' : '#16A34A',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: isSelf ? 'not-allowed' : 'pointer',
+                        }}
+                      >
+                        {u.is_active ? 'Khóa' : 'Mở'}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Desktop Table View (>= 1024px) */}
+          <div className="desktop-only table-scroll-container">
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#64748B' }}>
@@ -896,6 +1027,7 @@ export const UserManagementModule: React.FC = () => {
       {/* MODAL: CREATE USER */}
       {isCreateModalOpen && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             top: 0,
@@ -911,6 +1043,7 @@ export const UserManagementModule: React.FC = () => {
           }}
         >
           <div
+            className="responsive-modal-card"
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',
@@ -965,7 +1098,7 @@ export const UserManagementModule: React.FC = () => {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="responsive-form-row">
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
                     Email công vụ *
@@ -1068,6 +1201,7 @@ export const UserManagementModule: React.FC = () => {
       {/* MODAL: EDIT USER */}
       {editUser && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             top: 0,
@@ -1083,6 +1217,7 @@ export const UserManagementModule: React.FC = () => {
           }}
         >
           <div
+            className="responsive-modal-card"
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',
@@ -1113,7 +1248,7 @@ export const UserManagementModule: React.FC = () => {
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="responsive-form-row">
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
                     Email công vụ *
@@ -1226,6 +1361,7 @@ export const UserManagementModule: React.FC = () => {
       {/* MODAL: RESET PASSWORD */}
       {resetPwdUser && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             top: 0,
@@ -1241,6 +1377,7 @@ export const UserManagementModule: React.FC = () => {
           }}
         >
           <div
+            className="responsive-modal-card"
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',

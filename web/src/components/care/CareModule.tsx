@@ -1245,7 +1245,7 @@ export const CareModule: React.FC = () => {
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(2, 1fr)',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
                       gap: '12px',
                       backgroundColor: '#F8FAFC',
                       padding: '14px',
@@ -1639,7 +1639,7 @@ export const CareModule: React.FC = () => {
               <p style={{ color: '#64748B', margin: 0, lineHeight: 1.5 }}>
                 Hệ thống sẽ quét toàn bộ hợp đồng dịch vụ chăm sóc đang có hiệu lực trong tháng và tạo lịch công việc tương ứng.
               </p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div className="responsive-form-row">
                 <div>
                   <label style={{ display: 'block', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>Năm</label>
                   <input

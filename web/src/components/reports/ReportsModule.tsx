@@ -876,7 +876,7 @@ export const ReportsModule: React.FC = () => {
           </div>
 
           {/* Breakdown grids */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '16px' }}>
             <div
               style={{
                 backgroundColor: '#FFFFFF',
@@ -1090,7 +1090,7 @@ export const ReportsModule: React.FC = () => {
             <h4 style={{ margin: '0 0 16px 0', fontSize: '16px', color: 'var(--text-main)' }}>
               Đánh Giá Tuân Thủ Tiêu Chuẩn SLA & Quy Trình Hiện Trường
             </h4>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '20px' }}>
               <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
                 <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--brand-primary)', marginBottom: '8px' }}>
                   Phân Hệ Thi Công Mộ Phần:

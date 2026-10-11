@@ -336,7 +336,7 @@ export const DocumentManager: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <div className="table-scroll-container">
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #E2E8F0', textAlign: 'left', color: '#64748B' }}>
@@ -521,6 +521,7 @@ export const DocumentManager: React.FC = () => {
       {/* Modal: Preview File */}
       {previewFile && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             top: 0,
@@ -536,6 +537,7 @@ export const DocumentManager: React.FC = () => {
           }}
         >
           <div
+            className="responsive-modal-card"
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',
@@ -640,6 +642,7 @@ export const DocumentManager: React.FC = () => {
       {/* Modal: Link Version Dialog */}
       {selectedFileForVersion && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             top: 0,
@@ -655,6 +658,7 @@ export const DocumentManager: React.FC = () => {
           }}
         >
           <div
+            className="responsive-modal-card"
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',

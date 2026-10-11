@@ -742,7 +742,7 @@ export const AuditModule: React.FC = () => {
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(2, 1fr)',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
                 gap: '12px',
                 padding: '14px',
                 backgroundColor: '#F8FAFC',
