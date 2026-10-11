@@ -313,7 +313,7 @@ export const ReportsModule: React.FC = () => {
         }}
       >
         {/* Sub-tabs */}
-        <div style={{ display: 'flex', gap: '6px' }}>
+        <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', maxWidth: '100%', whiteSpace: 'nowrap', paddingBottom: '2px' }}>
           <button
             onClick={() => setActiveTab('revenue')}
             style={{
@@ -1122,6 +1122,7 @@ export const ReportsModule: React.FC = () => {
       {/* ========================================================================= */}
       {isExportOpen && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             inset: 0,
@@ -1133,6 +1134,7 @@ export const ReportsModule: React.FC = () => {
           }}
         >
           <div
+            className="responsive-modal-card"
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',

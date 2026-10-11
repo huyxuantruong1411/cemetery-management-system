@@ -452,7 +452,7 @@ export const FinanceModule: React.FC = () => {
 
       {/* 2. KPI Summary Cards */}
       {summary && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
           <div
             style={{
               backgroundColor: '#FFFFFF',
@@ -612,7 +612,109 @@ export const FinanceModule: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div style={{ overflowX: 'auto' }}>
+          <>
+            {/* Mobile Cards View (< 1024px) */}
+            <div className="mobile-only" style={{ flexDirection: 'column', gap: '10px', padding: '12px' }}>
+              {pagination.pagedItems.map((rec) => {
+                const isOverdue =
+                  rec.status !== 'PAID' &&
+                  rec.status !== 'CANCELLED' &&
+                  new Date(rec.due_date) < new Date(new Date().setHours(0, 0, 0, 0));
+
+                return (
+                  <div
+                    key={rec.receivable_id}
+                    style={{
+                      backgroundColor: isOverdue ? '#FFFBEB' : '#FFFFFF',
+                      borderRadius: '10px',
+                      border: '1px solid #E2E8F0',
+                      padding: '14px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                      <div>
+                        <div style={{ fontWeight: 700, color: '#1E293B', fontSize: '14px' }}>
+                          #{rec.receivable_id}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
+                          {rec.contract_code ? `HĐ: ${rec.contract_code}` : `Phụ lục: ${rec.annex_code}`}
+                        </div>
+                      </div>
+                      {renderStatusBadge(rec.status)}
+                    </div>
+
+                    <div style={{ fontSize: '13px', color: '#334155' }}>
+                      Khách hàng: <strong>{rec.customer_name}</strong>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#64748B' }}>
+                      <span>Hạn nộp: <strong style={{ color: isOverdue ? '#DC2626' : '#334155' }}>{formatDate(rec.due_date)}</strong></span>
+                      <span>Đã thu: <strong style={{ color: '#10B981' }}>{formatCurrency(rec.total_paid_amount)}</strong></span>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #F1F5F9' }}>
+                      <div>
+                        <span style={{ fontSize: '11px', color: '#64748B' }}>Dư nợ: </span>
+                        <strong style={{ fontSize: '15px', color: rec.remaining_balance > 0 ? '#D97706' : '#94A3B8' }}>
+                          {formatCurrency(rec.remaining_balance)}
+                        </strong>
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        {hasPermission('finance:write') && rec.status !== 'PAID' && rec.status !== 'CANCELLED' && (
+                          <button
+                            onClick={() => handleOpenPayment(rec)}
+                            className="touch-target"
+                            style={{
+                              padding: '6px 12px',
+                              backgroundColor: 'var(--brand-primary)',
+                              color: '#FFFFFF',
+                              border: 'none',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            <CreditCard size={13} />
+                            Thu Tiền
+                          </button>
+                        )}
+                        <button
+                          onClick={() => {
+                            setActiveReceivable(rec);
+                            setIsHistoryDrawerOpen(true);
+                          }}
+                          title="Xem lịch sử thanh toán"
+                          className="touch-target"
+                          style={{
+                            padding: '6px 10px',
+                            backgroundColor: '#F1F5F9',
+                            color: '#475569',
+                            border: '1px solid #CBD5E1',
+                            borderRadius: '6px',
+                            fontSize: '12px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <Receipt size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop Table View (>= 1024px) */}
+            <div className="desktop-only table-scroll-container">
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
               <thead>
                 <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
@@ -772,16 +874,17 @@ export const FinanceModule: React.FC = () => {
                 })}
               </tbody>
             </table>
-            <Pagination
-              currentPage={pagination.currentPage}
-              totalPages={pagination.totalPages}
-              pageSize={pagination.pageSize}
-              totalItems={pagination.totalItems}
-              onPageChange={pagination.handlePageChange}
-              onPageSizeChange={pagination.handlePageSizeChange}
-            />
           </div>
-        )}
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            pageSize={pagination.pageSize}
+            totalItems={pagination.totalItems}
+            onPageChange={pagination.handlePageChange}
+            onPageSizeChange={pagination.handlePageSizeChange}
+          />
+        </>
+      )}
       </div>
 
       {/* 5. Payment Modal */}

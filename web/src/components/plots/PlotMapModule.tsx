@@ -797,30 +797,31 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
         style={{
           backgroundColor: '#FFFFFF',
           borderRadius: '12px',
-          padding: '20px 24px',
+          padding: '14px 18px',
           border: '1px solid #E2E8F0',
           boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '16px',
+          gap: '12px',
         }}
       >
-        <div>
-          <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
-            <MapPin size={22} color="#24594D" />
-            <span>Bản Đồ Số GIS & Quản Lý Ô Mộ</span>
+        <div style={{ minWidth: 0, flex: '1 1 240px' }}>
+          <h2 style={{ fontSize: 'clamp(16px, 3.5vw, 20px)', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
+            <MapPin size={22} color="#24594D" style={{ flexShrink: 0 }} />
+            <span className="text-truncate-safe">Bản Đồ Số GIS & Quản Lý Ô Mộ</span>
           </h2>
-          <p style={{ fontSize: '13px', color: '#64748B', margin: '4px 0 0 0' }}>
+          <p className="line-clamp-2-safe" style={{ fontSize: '12px', color: '#64748B', margin: '4px 0 0 0' }}>
             Không gian thực địa, phân lô, giám sát kết cấu Kim Tĩnh kiên cố và chống tranh chấp đặt chỗ.
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
           <button
             onClick={fetchData}
             disabled={isLoading}
+            className="touch-target"
             style={{
               display: 'flex',
               alignItems: 'center',
@@ -846,36 +847,36 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-            gap: '12px',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(135px, 1fr))',
+            gap: '10px',
           }}
         >
-          <div style={{ backgroundColor: '#FFFFFF', padding: '16px', borderRadius: '10px', border: '1px solid #E2E8F0', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
-            <span style={{ fontSize: '12px', fontWeight: 500, color: '#64748B' }}>Tổng số ô mộ</span>
-            <div style={{ fontSize: '24px', fontWeight: 700, color: '#0F172A', marginTop: '4px' }}>{stats.total_plots}</div>
+          <div style={{ backgroundColor: '#FFFFFF', padding: '12px 14px', borderRadius: '10px', border: '1px solid #E2E8F0', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+            <span style={{ fontSize: '11px', fontWeight: 500, color: '#64748B' }}>Tổng số ô mộ</span>
+            <div style={{ fontSize: '20px', fontWeight: 700, color: '#0F172A', marginTop: '4px' }}>{stats.total_plots}</div>
           </div>
-          <div style={{ backgroundColor: '#F0FDF4', padding: '16px', borderRadius: '10px', border: '1px solid #BBF7D0', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: '#166534' }}>Đất trống chưa bán</span>
-            <div style={{ fontSize: '24px', fontWeight: 700, color: '#15803D', marginTop: '4px' }}>{stats.empty_unsold}</div>
+          <div style={{ backgroundColor: '#F0FDF4', padding: '12px 14px', borderRadius: '10px', border: '1px solid #BBF7D0', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+            <span style={{ fontSize: '11px', fontWeight: 600, color: '#166534' }}>Đất trống chưa bán</span>
+            <div style={{ fontSize: '20px', fontWeight: 700, color: '#15803D', marginTop: '4px' }}>{stats.empty_unsold}</div>
           </div>
-          <div style={{ backgroundColor: '#FFFBEB', padding: '16px', borderRadius: '10px', border: '1px solid #FDE68A', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: '#92400E' }}>Đang tạm giữ chỗ</span>
-            <div style={{ fontSize: '24px', fontWeight: 700, color: '#B45309', marginTop: '4px' }}>{stats.reserved}</div>
+          <div style={{ backgroundColor: '#FFFBEB', padding: '12px 14px', borderRadius: '10px', border: '1px solid #FDE68A', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+            <span style={{ fontSize: '11px', fontWeight: 600, color: '#92400E' }}>Đang tạm giữ chỗ</span>
+            <div style={{ fontSize: '20px', fontWeight: 700, color: '#B45309', marginTop: '4px' }}>{stats.reserved}</div>
           </div>
-          <div style={{ backgroundColor: '#FEF2F2', padding: '16px', borderRadius: '10px', border: '1px solid #FECACA', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: '#991B1B' }}>Đã an táng</span>
-            <div style={{ fontSize: '24px', fontWeight: 700, color: '#B91C1C', marginTop: '4px' }}>{stats.occupied}</div>
+          <div style={{ backgroundColor: '#FEF2F2', padding: '12px 14px', borderRadius: '10px', border: '1px solid #FECACA', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+            <span style={{ fontSize: '11px', fontWeight: 600, color: '#991B1B' }}>Đã an táng</span>
+            <div style={{ fontSize: '20px', fontWeight: 700, color: '#B91C1C', marginTop: '4px' }}>{stats.occupied}</div>
           </div>
-          <div style={{ backgroundColor: '#FEFCE8', padding: '16px', borderRadius: '10px', border: '1px solid #FEF08A', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: '#713F12', display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <Shield size={14} color="#D97706" />
+          <div style={{ backgroundColor: '#FEFCE8', padding: '12px 14px', borderRadius: '10px', border: '1px solid #FEF08A', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+            <span style={{ fontSize: '11px', fontWeight: 600, color: '#713F12', display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <Shield size={12} color="#D97706" />
               Mộ Kim Tĩnh
             </span>
-            <div style={{ fontSize: '24px', fontWeight: 700, color: '#A16207', marginTop: '4px' }}>{stats.kim_tinh_count}</div>
+            <div style={{ fontSize: '20px', fontWeight: 700, color: '#A16207', marginTop: '4px' }}>{stats.kim_tinh_count}</div>
           </div>
-          <div style={{ backgroundColor: '#FFF1F2', padding: '16px', borderRadius: '10px', border: '1px solid #FECDD3', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: '#881337' }}>🔒 Đã khóa vĩnh viễn</span>
-            <div style={{ fontSize: '24px', fontWeight: 700, color: '#BE123C', marginTop: '4px' }}>{stats.locked_count}</div>
+          <div style={{ backgroundColor: '#FFF1F2', padding: '12px 14px', borderRadius: '10px', border: '1px solid #FECDD3', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+            <span style={{ fontSize: '11px', fontWeight: 600, color: '#881337' }}>🔒 Khóa vĩnh viễn</span>
+            <div style={{ fontSize: '20px', fontWeight: 700, color: '#BE123C', marginTop: '4px' }}>{stats.locked_count}</div>
           </div>
         </div>
       )}
@@ -1127,25 +1128,12 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
 
         {/* TAB 1: Leaflet Interactive GIS Map */}
         {activeTab === 'map' && !isLoading && (
-          <div style={{ position: 'relative', height: '620px', width: '100%', display: 'flex' }}>
+          <div className="plot-map-wrapper">
             {/* Left: Leaflet Map Container */}
-            <div ref={mapContainerRef} style={{ flex: 1, height: '100%', minHeight: '620px', zIndex: 0 }} />
+            <div ref={mapContainerRef} className="plot-map-container" />
 
-            {/* Right: Floating Plot Detail Sidebar */}
-            <div
-              style={{
-                width: '380px',
-                borderLeft: '1px solid #E2E8F0',
-                backgroundColor: '#FFFFFF',
-                height: '100%',
-                overflowY: 'auto',
-                padding: '20px',
-                boxShadow: '-4px 0 12px rgba(0,0,0,0.05)',
-                zIndex: 10,
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
+            {/* Right: Floating Plot Detail Sidebar (Responsive Drawer/Panel) */}
+            <div className="plot-detail-panel">
               {selectedPlotId && plotDetail ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #E2E8F0', paddingBottom: '12px' }}>
@@ -1329,6 +1317,37 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
 
                   {/* Action Buttons */}
                   <div style={{ paddingTop: '12px', borderTop: '1px solid #E2E8F0' }}>
+                    {plotDetail.latitude && plotDetail.longitude && (
+                      <a
+                        href={`https://www.google.com/maps?q=${plotDetail.latitude},${plotDetail.longitude}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="touch-target"
+                        style={{
+                          width: '100%',
+                          padding: '10px 14px',
+                          backgroundColor: '#EFF6FF',
+                          color: '#1D4ED8',
+                          borderRadius: '8px',
+                          border: '1px solid #BFDBFE',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          textDecoration: 'none',
+                          marginBottom: '8px',
+                          boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+                        }}
+                      >
+                        <MapPin size={15} />
+                        <span>Dẫn Đường Tới Mộ (Google Maps)</span>
+                        <ExternalLink size={13} />
+                      </a>
+                    )}
+
                     {plotDetail.status === 'EMPTY_UNSOLD' && (
                       <button
                         onClick={() => {

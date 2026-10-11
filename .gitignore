@@ -84,3 +84,6 @@ mobile/android/local.properties
 !.agents/**
 !mobile/lib/
 !mobile/lib/**
+
+# Audit and diagnostic media
+docs/ui-responsive-audit/

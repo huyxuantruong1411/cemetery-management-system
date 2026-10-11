@@ -537,7 +537,66 @@ export const AuditModule: React.FC = () => {
             overflow: 'hidden',
           }}
         >
-          <div style={{ overflowX: 'auto' }}>
+          {/* Mobile Card View (< 1024px) */}
+          <div className="mobile-only" style={{ flexDirection: 'column', gap: '10px', padding: '12px' }}>
+            {paginatedLogs.map((log) => (
+              <div
+                key={log.log_id}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span style={{ fontSize: '11px', color: '#64748B' }}>
+                    {formatTimestamp(log.timestamp)}
+                  </span>
+                  <div>{getActionBadge(log.action_type)}</div>
+                </div>
+
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#1E293B', marginBottom: '4px' }}>
+                  <span>{log.target_entity}: </span>
+                  <span style={{ color: 'var(--brand-primary)', fontFamily: 'monospace' }}>#{log.target_id}</span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#475569', marginBottom: '4px' }}>
+                  <User size={13} color="#64748B" />
+                  <span>{log.username || `User #${log.user_id || 'Sys'}`}</span>
+                  <span style={{ color: '#94A3B8' }}>· {log.ip_address || 'Internal'}</span>
+                </div>
+
+                <button
+                  onClick={() => setActiveLog(log)}
+                  className="touch-target"
+                  style={{
+                    width: '100%',
+                    marginTop: '6px',
+                    padding: '8px 12px',
+                    backgroundColor: '#F1F5F9',
+                    color: 'var(--brand-primary)',
+                    border: '1px solid #CBD5E1',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <Eye size={14} />
+                  <span>Xem Chi Tiết Sự Kiện & Diff</span>
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table View (>= 1024px) */}
+          <div className="desktop-only table-scroll-container">
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569' }}>
@@ -619,6 +678,7 @@ export const AuditModule: React.FC = () => {
       {/* ========================================================================= */}
       {activeLog && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             inset: 0,
@@ -630,6 +690,7 @@ export const AuditModule: React.FC = () => {
           }}
         >
           <div
+            className="responsive-modal-card"
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',

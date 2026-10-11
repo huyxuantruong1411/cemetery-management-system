@@ -931,8 +931,8 @@ function parseApiError(errJson: unknown, fallback: string): string {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
-          gap: '16px',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+          gap: '10px',
         }}
       >
         <div
@@ -1273,7 +1273,6 @@ function parseApiError(errJson: unknown, fallback: string): string {
           )}
         </div>
       ) : (
-        /* Contracts Table */
         <div
           style={{
             backgroundColor: '#FFFFFF',
@@ -1283,7 +1282,119 @@ function parseApiError(errJson: unknown, fallback: string): string {
             boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
           }}
         >
-          <div style={{ overflowX: 'auto' }}>
+          {/* Contracts Dual-View (Mobile Cards / Desktop Table) */}
+          {/* Mobile Card View (< 1024px) */}
+          <div className="mobile-only" style={{ flexDirection: 'column', gap: '10px', padding: '12px' }}>
+            {paginatedContracts.map((c) => {
+              const badge = getStatusBadge(c.status);
+              const tBadge = getContractTypeBadge(c.contract_type);
+              return (
+                <div
+                  key={c.contract_id}
+                  style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '10px',
+                    border: '1px solid #E2E8F0',
+                    padding: '14px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '8px',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ fontWeight: 700, color: 'var(--brand-primary)', fontSize: '14px' }}>
+                        {c.contract_code}
+                      </div>
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          padding: '2px 8px',
+                          borderRadius: '4px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          backgroundColor: tBadge.bg,
+                          color: tBadge.color,
+                          border: `1px solid ${tBadge.border}`,
+                          marginTop: '4px',
+                        }}
+                      >
+                        {tBadge.label}
+                      </span>
+                    </div>
+                    <span
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '12px',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        backgroundColor: badge.bg,
+                        color: badge.color,
+                        border: `1px solid ${badge.border}`,
+                      }}
+                    >
+                      {badge.label}
+                    </span>
+                  </div>
+
+                  <div style={{ fontSize: '13px', color: '#1E293B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <User size={14} color="#64748B" />
+                    <strong>{c.customer_name}</strong>
+                    {c.customer_phone && <span style={{ color: '#64748B', fontSize: '12px' }}>({c.customer_phone})</span>}
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#64748B' }}>
+                    <span>Ô mộ: <strong style={{ color: '#334155' }}>{c.plot_code || 'Chưa gán'}</strong></span>
+                    <span>{new Date(c.created_at).toLocaleDateString('vi-VN')}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #F1F5F9' }}>
+                    <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--brand-primary)' }}>
+                      {formatCurrency(c.total_amount)}
+                    </div>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        onClick={() => fetchContractDetail(c.contract_id)}
+                        className="touch-target"
+                        style={{
+                          padding: '6px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid #CBD5E1',
+                          backgroundColor: '#F8FAFC',
+                          color: '#334155',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Chi tiết
+                      </button>
+                      <button
+                        onClick={() => handleDownloadPDF(c.contract_id, c.contract_code)}
+                        title="Tải bản in PDF"
+                        className="touch-target"
+                        style={{
+                          padding: '6px 10px',
+                          borderRadius: '6px',
+                          border: '1px solid #CBD5E1',
+                          backgroundColor: '#FFFFFF',
+                          color: '#0284C7',
+                          fontSize: '12px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Download size={14} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop Table View (>= 1024px) */}
+          <div className="desktop-only table-scroll-container">
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
               <thead>
                 <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569' }}>
@@ -1426,6 +1537,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
       {/* ========================================================================= */}
       {isWizardOpen && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             top: 0,
@@ -1441,6 +1553,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
           }}
         >
           <div
+            className="responsive-modal-card"
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',
@@ -3140,6 +3253,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
       {/* ========================================================================= */}
       {isExhumationModalOpen && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             top: 0,
@@ -3155,6 +3269,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
           }}
         >
           <div
+            className="responsive-modal-card"
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',
@@ -3319,6 +3434,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
       {/* ========================================================================= */}
       {isTransferModalOpen && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             top: 0,
@@ -3334,6 +3450,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
           }}
         >
           <div
+            className="responsive-modal-card"
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',
@@ -3505,6 +3622,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
       {/* ========================================================================= */}
       {isCremationModalOpen && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             top: 0,
@@ -3520,6 +3638,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
           }}
         >
           <div
+            className="responsive-modal-card"
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',

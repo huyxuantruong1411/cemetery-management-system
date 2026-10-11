@@ -804,7 +804,141 @@ export const CareModule: React.FC = () => {
             boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
           }}
         >
-          <div style={{ overflowX: 'auto' }}>
+          {/* Mobile Card View (< 1024px) */}
+          <div className="mobile-only" style={{ flexDirection: 'column', gap: '10px', padding: '12px' }}>
+            {pagination.pagedItems.map((item) => (
+              <div
+                key={item.schedule_id}
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <div style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--brand-primary, #24594D)', fontSize: '14px' }}>
+                    #{item.schedule_id}{' '}
+                    <span style={{ fontSize: '11px', color: '#94A3B8', fontFamily: 'sans-serif' }}>({item.period_key})</span>
+                  </div>
+                  <span
+                    style={{
+                      display: 'inline-block',
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      backgroundColor:
+                        item.status === 'CLOSED'
+                          ? '#ECFDF5'
+                          : item.status === 'IN_PROGRESS'
+                          ? '#EEF2FF'
+                          : item.status === 'ASSIGNED'
+                          ? '#EFF6FF'
+                          : item.status === 'OVERDUE'
+                          ? '#FEF2F2'
+                          : '#FFFBEB',
+                      color:
+                        item.status === 'CLOSED'
+                          ? '#047857'
+                          : item.status === 'IN_PROGRESS'
+                          ? '#4338CA'
+                          : item.status === 'ASSIGNED'
+                          ? '#1D4ED8'
+                          : item.status === 'OVERDUE'
+                          ? '#B91C1C'
+                          : '#B45309',
+                      border: `1px solid ${
+                        item.status === 'CLOSED'
+                          ? '#A7F3D0'
+                          : item.status === 'IN_PROGRESS'
+                          ? '#C7D2FE'
+                          : item.status === 'ASSIGNED'
+                          ? '#BFDBFE'
+                          : item.status === 'OVERDUE'
+                          ? '#FECACA'
+                          : '#FDE68A'
+                      }`,
+                    }}
+                  >
+                    {item.status === 'CLOSED'
+                      ? 'Đã đóng ca'
+                      : item.status === 'IN_PROGRESS'
+                      ? 'Đang làm'
+                      : item.status === 'ASSIGNED'
+                      ? 'Đã giao việc'
+                      : item.status === 'OVERDUE'
+                      ? 'Quá hạn'
+                      : 'Chờ giao'}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, color: '#1E293B', marginBottom: '4px' }}>
+                  <MapPin size={14} color="#64748B" />
+                  <span>{item.plot_code || `Plot #${item.plot_id}`}</span>
+                  <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 400 }}>({item.zone_name || 'Khu chung'})</span>
+                </div>
+
+                <div style={{ fontSize: '12px', color: '#475569', marginBottom: '4px' }}>
+                  <strong>Gói:</strong> {item.package_name || `Gói #${item.package_id}`}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#475569', marginBottom: '4px' }}>
+                  <Calendar size={13} color="#64748B" />
+                  <span>Ngày: {item.scheduled_date}</span>
+                  {item.closed_at && (
+                    <span style={{ color: '#059669', fontSize: '11px' }}>
+                      (Đóng: {new Date(item.closed_at).toLocaleDateString('vi-VN')})
+                    </span>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#475569', marginBottom: '8px' }}>
+                  <UserIcon size={13} color="#64748B" />
+                  <span>
+                    Phụ trách: {item.caretaker_name || <em style={{ color: '#B45309' }}>Chưa phân công</em>}
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', fontSize: '12px', backgroundColor: '#F8FAFC', padding: '6px 10px', borderRadius: '6px' }}>
+                  <span style={{ color: '#334155', fontWeight: 500 }}>
+                    Tiến độ: {item.completed_tasks_count}/{item.tasks_count} việc
+                  </span>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#64748B' }}>
+                    <Camera size={13} />
+                    <span>{item.evidence_count} ảnh</span>
+                  </span>
+                </div>
+
+                <button
+                  onClick={() => openScheduleDetail(item.schedule_id)}
+                  className="touch-target"
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    backgroundColor: '#F1F5F9',
+                    color: 'var(--brand-primary, #24594D)',
+                    border: '1px solid #CBD5E1',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <ListTodo size={14} />
+                  Chi tiết ca chăm sóc
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop Table View (>= 1024px) */}
+          <div className="desktop-only table-scroll-container">
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
               <thead>
                 <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
@@ -986,6 +1120,7 @@ export const CareModule: React.FC = () => {
       {/* Schedule Detail Modal / Drawer */}
       {isDetailOpen && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             inset: 0,
@@ -999,6 +1134,7 @@ export const CareModule: React.FC = () => {
           }}
         >
           <div
+            className="responsive-modal-card"
             style={{
               backgroundColor: '#FFFFFF',
               border: '1px solid #E2E8F0',
@@ -1441,6 +1577,7 @@ export const CareModule: React.FC = () => {
       {/* Period Generator Modal */}
       {isGenerateModalOpen && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             inset: 0,
@@ -1455,6 +1592,7 @@ export const CareModule: React.FC = () => {
         >
           <form
             onSubmit={handleGeneratePeriod}
+            className="responsive-modal-card"
             style={{
               backgroundColor: '#FFFFFF',
               border: '1px solid #E2E8F0',
@@ -1598,6 +1736,7 @@ export const CareModule: React.FC = () => {
       {/* Upload Evidence Modal */}
       {isEvidenceModalOpen && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             inset: 0,
@@ -1612,6 +1751,7 @@ export const CareModule: React.FC = () => {
         >
           <form
             onSubmit={handleUploadEvidence}
+            className="responsive-modal-card"
             style={{
               backgroundColor: '#FFFFFF',
               border: '1px solid #E2E8F0',
@@ -1746,6 +1886,7 @@ export const CareModule: React.FC = () => {
       {/* Close Shift Modal */}
       {isCloseModalOpen && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             inset: 0,
@@ -1760,6 +1901,7 @@ export const CareModule: React.FC = () => {
         >
           <form
             onSubmit={handleCloseShift}
+            className="responsive-modal-card"
             style={{
               backgroundColor: '#FFFFFF',
               border: '1px solid #E2E8F0',

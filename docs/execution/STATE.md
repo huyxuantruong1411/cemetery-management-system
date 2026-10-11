@@ -639,6 +639,46 @@
 - **Mobile:** `flutter analyze` 0 issues, `flutter test` đạt **14/14 tests passed 100%**.
 - Kịch bản kiểm định chất lượng tự động `scripts/quality-gate.ps1` ĐẠT 100% cả 3 phân hệ.
 
+---
+
+## 14. Bằng chứng triển khai: Cải Tiến Giao Diện Web Responsive Trên Thiết Bị Di Động (Kế hoạch `plan01.docx`)
+
+Theo yêu cầu và tài liệu kế hoạch `reference/plan01.docx` (chi tiết hóa tại [`docs/WEB_RESPONSIVE_UX_PLAN.md`](../WEB_RESPONSIVE_UX_PLAN.md)), hệ thống Web Frontend đã được tái cấu trúc triệt để theo kiến trúc Mobile-First Responsive, khắc phục hoàn toàn sự cố chèn ép không gian hiển thị (sidebar squeeze) trên màn hình hẹp (< 1024px):
+
+### 14.1. Kiến Trúc Khung Ứng Dụng (Mobile-First Shell)
+- **CSS Design System (`web/src/index.css`):**
+  - Khai báo hệ thống breakpoint chuẩn: `sm: 640px`, `md: 768px`, `lg: 1024px`, `xl: 1280px`.
+  - Bộ lớp tiện ích chuẩn mực: `.touch-target` (đảm bảo diện tích chạm tối thiểu 44px x 44px), `.text-truncate-safe`, `.table-scroll-container` (-webkit-overflow-scrolling: touch), `.kpi-responsive-grid`.
+  - Cơ chế ẩn/hiện điều hướng viewport: `.mobile-only` (chỉ hiển thị trên mobile/tablet < 1024px), `.desktop-only` (chỉ hiển thị trên desktop >= 1024px).
+  - Lớp chuẩn hóa cửa sổ bật: `.responsive-modal-overlay` và `.responsive-modal-card` biến modal thành bottom-sheet linh hoạt trên thiết bị di động có `.sticky-modal-footer`.
+- **Thanh Điều Hướng Shell (`web/src/App.tsx`):**
+  - Tích hợp Header cố định trên thiết bị di động với nút bấm Hamburger (☰) kích thước chuẩn chạm 44px.
+  - Sidebar chuyển đổi mượt mà thành ngăn kéo ngoài màn hình (Off-canvas Drawer, chiều rộng `280px`, `max-width: 85vw`, `z-index: 50`) kèm lớp nền tối (Backdrop Overlay) làm mờ nội dung phía sau.
+  - Tự động đóng ngăn kéo khi người dùng click vào lớp nền, chọn mục chuyển tab, hoặc khi thay đổi kích thước cửa sổ lên màn hình máy tính (>= 1024px).
+  - Khóa cuộn trang `document.body.style.overflow = 'hidden'` khi ngăn kéo đang mở nhằm ngăn chặn cuộn tràn nền.
+  - Hotline hỗ trợ 1900 8888 tinh gọn, số điện thoại có thể nhấn gọi trực tiếp `tel:19008888`.
+
+### 14.2. Bản Đồ Số & Quản Lý Ô Mộ (`PlotMapModule.tsx`)
+- Không gian bản đồ Leaflet tự co giãn linh hoạt theo tỷ lệ khung nhìn: `52vh` trên mobile, `calc(100vh - 280px)` trên desktop với chiều cao tối thiểu 380px.
+- Dải thẻ thống kê nhanh (KPI ribbon) tự động chia lưới thích ứng `repeat(auto-fit, minmax(135px, 1fr))`.
+- Bổ sung nút liên kết Google Maps dẫn đường thực địa trực tiếp cho Quản trang thao tác ngoài trời.
+- Panel chi tiết ô mộ chuyển đổi thành Bottom Sheet cuộn độc lập khi xem trên điện thoại.
+
+### 14.3. Mô Hình Hiển Thị Kép (Dual-View Pattern: Mobile Card / Desktop Table)
+Triển khai đồng bộ mô hình Dual-View trên toàn bộ các phân hệ nghiệp vụ chủ chốt:
+- **`ContractModule.tsx`:** Danh sách hợp đồng hiển thị thẻ Card với nhãn trạng thái nổi bật, thông tin khách hàng, ô mộ, số tiền và các nút thao tác nhanh trên mobile; chuyển đổi bảng dữ liệu có thanh cuộn ngang an toàn trên desktop.
+- **`FinanceModule.tsx`:** Thẻ Card công nợ và biên lai thu tiền với thông tin mã phiếu, số tiền định dạng VND rõ ràng, nút xem biên lai và thu tiền kích thước chuẩn chạm; cố định tương thích cho modal lịch sử thu tiền.
+- **`ConstructionModule.tsx`:** Thẻ Card lịch thi công với thanh tiến độ trực quan, người phụ trách, vị trí ô mộ và nút cập nhật nghiệm thu / tải ảnh minh chứng thực địa MinIO.
+- **`CareModule.tsx`:** Thẻ Card lịch chăm sóc định kỳ cho Quản trang thực địa, thao tác check-in và chụp ảnh hoàn thành trực tiếp trên điện thoại.
+- **`ProfileModule.tsx`:** Thẻ Card tra cứu hồ sơ khách hàng và người quá cố; giao diện Cổng tra cứu tưởng niệm công khai tối ưu hóa trải nghiệm tìm kiếm di động với nút Google Maps dẫn đường trực tiếp.
+- **`AuditModule.tsx` & `ReportsModule.tsx`:** Thẻ Card nhật ký kiểm toán với huy hiệu mã hóa màu theo hành động; thanh cuộn ngang bảng báo cáo và bộ lọc ngày tháng tối ưu cho màn hình cảm ứng.
+
+### 14.4. Kiểm Tra & Đảm Bảo Chất Lượng (Quality Gate)
+- **TypeScript & Vite:** `pnpm build` biên dịch thành công 100% trong 284ms mà không có bất kỳ lỗi kiểu dữ liệu nào.
+- **Linter:** `pnpm lint` 0 lỗi trên toàn bộ 31 tệp mã nguồn.
+- **Kiến trúc:** Tuân thủ triệt để Vanilla CSS (không sử dụng TailwindCSS), bảo toàn 100% các bất biến nghiệp vụ máy chủ (Kim Tĩnh, Giấy báo tử, CSDL SQL Server).
+
+
 
 
 

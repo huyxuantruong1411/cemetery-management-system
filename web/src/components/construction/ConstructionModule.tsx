@@ -566,6 +566,8 @@ export const ConstructionModule: React.FC = () => {
           justifyContent: 'space-between',
           alignItems: 'flex-start',
           marginBottom: '24px',
+          flexWrap: 'wrap',
+          gap: '12px',
         }}
       >
         <div>
@@ -594,7 +596,7 @@ export const ConstructionModule: React.FC = () => {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px' }}>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
           <button
             onClick={() => {
               fetchOrders()
@@ -650,6 +652,9 @@ export const ConstructionModule: React.FC = () => {
           gap: '8px',
           borderBottom: '1px solid #E2E8F0',
           marginBottom: '20px',
+          overflowX: 'auto',
+          whiteSpace: 'nowrap',
+          paddingBottom: '2px',
         }}
       >
         <button
@@ -666,6 +671,7 @@ export const ConstructionModule: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
+            flexShrink: 0,
           }}
         >
           <Hammer size={16} />
@@ -686,6 +692,7 @@ export const ConstructionModule: React.FC = () => {
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
+            flexShrink: 0,
           }}
         >
           <Calendar size={16} />
@@ -700,7 +707,7 @@ export const ConstructionModule: React.FC = () => {
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(5, 1fr)',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
               gap: '14px',
               marginBottom: '24px',
             }}
@@ -875,9 +882,10 @@ export const ConstructionModule: React.FC = () => {
               justifyContent: 'space-between',
               alignItems: 'center',
               gap: '16px',
+              flexWrap: 'wrap',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>Lọc trạng thái:</span>
               {(['ALL', 'PENDING', 'IN_PROGRESS', 'COMPLETED', 'OVERDUE'] as const).map((s) => (
                 <button
@@ -907,7 +915,7 @@ export const ConstructionModule: React.FC = () => {
               ))}
             </div>
 
-            <div style={{ position: 'relative', width: '280px' }}>
+            <div style={{ position: 'relative', width: '100%', maxWidth: '280px' }}>
               <Search
                 size={16}
                 color="#94A3B8"
@@ -925,6 +933,7 @@ export const ConstructionModule: React.FC = () => {
                   border: '1px solid #CBD5E1',
                   fontSize: '13px',
                   outline: 'none',
+                  boxSizing: 'border-box',
                 }}
               />
             </div>
@@ -1026,7 +1035,7 @@ export const ConstructionModule: React.FC = () => {
             </div>
           )}
 
-          {/* Normal Table State */}
+          {/* Normal Table State / Dual-View */}
           {!loading && !error && filteredOrders.length > 0 && (
             <div
               style={{
@@ -1036,128 +1045,219 @@ export const ConstructionModule: React.FC = () => {
                 overflow: 'hidden',
               }}
             >
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
-                    <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
-                      MÃ LỆNH
-                    </th>
-                    <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
-                      Ô MỘ / KHU VỰC
-                    </th>
-                    <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
-                      GIÁM SÁT VIÊN
-                    </th>
-                    <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
-                      THỜI GIAN THI CÔNG
-                    </th>
-                    <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
-                      TIẾN ĐỘ THỰC TẾ
-                    </th>
-                    <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
-                      TRẠNG THÁI
-                    </th>
-                    <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: '#475569', textAlign: 'right' }}>
-                      THAO TÁC
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {ordersPagination.pagedItems.map((order) => {
-                    const progressNum = parseFloat(order.overall_progress.toString())
-                    return (
-                      <tr
-                        key={order.order_id}
-                        style={{
-                          borderBottom: '1px solid #F1F5F9',
-                          transition: 'background-color 0.15s ease',
-                        }}
-                      >
-                        <td style={{ padding: '14px 16px', fontSize: '13px', fontWeight: 700, color: 'var(--brand-primary)' }}>
+              {/* Mobile Card View (< 1024px) */}
+              <div className="mobile-only" style={{ flexDirection: 'column', gap: '10px', padding: '12px' }}>
+                {ordersPagination.pagedItems.map((order) => {
+                  const progressNum = parseFloat(order.overall_progress.toString())
+                  return (
+                    <div
+                      key={order.order_id}
+                      style={{
+                        backgroundColor: '#FFFFFF',
+                        border: '1px solid #E2E8F0',
+                        borderRadius: '8px',
+                        padding: '12px',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--brand-primary)' }}>
                           #TC-{order.order_id.toString().padStart(4, '0')}
-                        </td>
-                        <td style={{ padding: '14px 16px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <MapPin size={14} color="#64748B" />
-                            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--brand-secondary)' }}>
-                              {order.plot_code || `Plot #${order.plot_id}`}
-                            </span>
-                          </div>
-                          {order.zone_name && (
-                            <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
-                              {order.zone_name}
-                            </div>
-                          )}
-                        </td>
-                        <td style={{ padding: '14px 16px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <UserIcon size={14} color="#64748B" />
-                            <span style={{ fontSize: '13px', color: '#1E293B' }}>
-                              {order.supervisor_name || `ID ${order.supervisor_id}`}
-                            </span>
-                          </div>
-                        </td>
-                        <td style={{ padding: '14px 16px', fontSize: '12px', color: '#475569' }}>
-                          <div>Bắt đầu: {order.start_date || 'Chưa định'}</div>
-                          <div style={{ color: order.is_overdue ? '#DC2626' : '#64748B', fontWeight: order.is_overdue ? 600 : 400 }}>
-                            Hạn chót: {order.expected_end_date}
-                          </div>
-                        </td>
-                        <td style={{ padding: '14px 16px', width: '180px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
-                            <span style={{ fontWeight: 600, color: '#1E293B' }}>{progressNum}%</span>
-                            <span style={{ color: '#64748B' }}>
-                              {order.completed_tasks}/{order.total_tasks} việc
-                            </span>
-                          </div>
+                        </div>
+                        <div>{renderStatusBadge(order.status, order.is_overdue)}</div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--brand-secondary)', fontWeight: 600, marginBottom: '4px' }}>
+                        <MapPin size={14} color="#64748B" />
+                        <span>{order.plot_code || `Plot #${order.plot_id}`}</span>
+                        {order.zone_name && <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 400 }}>({order.zone_name})</span>}
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#475569', marginBottom: '6px' }}>
+                        <UserIcon size={13} color="#64748B" />
+                        <span>Giám sát: {order.supervisor_name || `ID ${order.supervisor_id}`}</span>
+                      </div>
+
+                      <div style={{ fontSize: '12px', color: '#64748B', marginBottom: '8px' }}>
+                        <span>Bắt đầu: {order.start_date || 'Chưa định'}</span> |{' '}
+                        <span style={{ color: order.is_overdue ? '#DC2626' : '#64748B', fontWeight: order.is_overdue ? 600 : 400 }}>
+                          Hạn: {order.expected_end_date}
+                        </span>
+                      </div>
+
+                      {/* Progress bar */}
+                      <div style={{ marginBottom: '10px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '3px' }}>
+                          <span style={{ fontWeight: 600, color: '#1E293B' }}>Tiến độ: {progressNum}%</span>
+                          <span style={{ color: '#64748B' }}>{order.completed_tasks}/{order.total_tasks} việc</span>
+                        </div>
+                        <div style={{ width: '100%', height: '6px', backgroundColor: '#E2E8F0', borderRadius: '3px', overflow: 'hidden' }}>
                           <div
                             style={{
-                              width: '100%',
-                              height: '8px',
-                              backgroundColor: '#E2E8F0',
-                              borderRadius: '4px',
-                              overflow: 'hidden',
+                              width: `${progressNum}%`,
+                              height: '100%',
+                              backgroundColor: progressNum === 100 ? '#059669' : 'var(--brand-primary)',
+                              borderRadius: '3px',
                             }}
-                          >
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => {
+                          setSelectedOrder(order)
+                          setIsDetailModalOpen(true)
+                        }}
+                        className="touch-target"
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          backgroundColor: '#F1F5F9',
+                          border: '1px solid #CBD5E1',
+                          borderRadius: '6px',
+                          color: 'var(--brand-primary)',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <Hammer size={14} />
+                        Chi Tiết & Checklist
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Desktop Table View (>= 1024px) */}
+              <div className="desktop-only table-scroll-container">
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0' }}>
+                      <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                        MÃ LỆNH
+                      </th>
+                      <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                        Ô MỘ / KHU VỰC
+                      </th>
+                      <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                        GIÁM SÁT VIÊN
+                      </th>
+                      <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                        THỜI GIAN THI CÔNG
+                      </th>
+                      <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                        TIẾN ĐỘ THỰC TẾ
+                      </th>
+                      <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                        TRẠNG THÁI
+                      </th>
+                      <th style={{ padding: '12px 16px', fontSize: '12px', fontWeight: 600, color: '#475569', textAlign: 'right' }}>
+                        THAO TÁC
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ordersPagination.pagedItems.map((order) => {
+                      const progressNum = parseFloat(order.overall_progress.toString())
+                      return (
+                        <tr
+                          key={order.order_id}
+                          style={{
+                            borderBottom: '1px solid #F1F5F9',
+                            transition: 'background-color 0.15s ease',
+                          }}
+                        >
+                          <td style={{ padding: '14px 16px', fontSize: '13px', fontWeight: 700, color: 'var(--brand-primary)' }}>
+                            #TC-{order.order_id.toString().padStart(4, '0')}
+                          </td>
+                          <td style={{ padding: '14px 16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <MapPin size={14} color="#64748B" />
+                              <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--brand-secondary)' }}>
+                                {order.plot_code || `Plot #${order.plot_id}`}
+                              </span>
+                            </div>
+                            {order.zone_name && (
+                              <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
+                                {order.zone_name}
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ padding: '14px 16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <UserIcon size={14} color="#64748B" />
+                              <span style={{ fontSize: '13px', color: '#1E293B' }}>
+                                {order.supervisor_name || `ID ${order.supervisor_id}`}
+                              </span>
+                            </div>
+                          </td>
+                          <td style={{ padding: '14px 16px', fontSize: '12px', color: '#475569' }}>
+                            <div>Bắt đầu: {order.start_date || 'Chưa định'}</div>
+                            <div style={{ color: order.is_overdue ? '#DC2626' : '#64748B', fontWeight: order.is_overdue ? 600 : 400 }}>
+                              Hạn chót: {order.expected_end_date}
+                            </div>
+                          </td>
+                          <td style={{ padding: '14px 16px', width: '180px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
+                              <span style={{ fontWeight: 600, color: '#1E293B' }}>{progressNum}%</span>
+                              <span style={{ color: '#64748B' }}>
+                                {order.completed_tasks}/{order.total_tasks} việc
+                              </span>
+                            </div>
                             <div
                               style={{
-                                width: `${progressNum}%`,
-                                height: '100%',
-                                backgroundColor: progressNum === 100 ? '#059669' : 'var(--brand-primary)',
+                                width: '100%',
+                                height: '8px',
+                                backgroundColor: '#E2E8F0',
                                 borderRadius: '4px',
-                                transition: 'width 0.3s ease',
+                                overflow: 'hidden',
                               }}
-                            />
-                          </div>
-                        </td>
-                        <td style={{ padding: '14px 16px' }}>
-                          {renderStatusBadge(order.status, order.is_overdue)}
-                        </td>
-                        <td style={{ padding: '14px 16px', textAlign: 'right' }}>
-                          <button
-                            onClick={() => {
-                              setSelectedOrder(order)
-                              setIsDetailModalOpen(true)
-                            }}
-                            style={{
-                              padding: '6px 14px',
-                              backgroundColor: '#F1F5F9',
-                              border: '1px solid #CBD5E1',
-                              borderRadius: '6px',
-                              color: 'var(--brand-primary)',
-                              fontSize: '12px',
-                              fontWeight: 600,
-                              cursor: 'pointer',
-                            }}
-                          >
-                            Chi Tiết & Checklist
-                          </button>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+                            >
+                              <div
+                                style={{
+                                  width: `${progressNum}%`,
+                                  height: '100%',
+                                  backgroundColor: progressNum === 100 ? '#059669' : 'var(--brand-primary)',
+                                  borderRadius: '4px',
+                                  transition: 'width 0.3s ease',
+                                }}
+                              />
+                            </div>
+                          </td>
+                          <td style={{ padding: '14px 16px' }}>
+                            {renderStatusBadge(order.status, order.is_overdue)}
+                          </td>
+                          <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                            <button
+                              onClick={() => {
+                                setSelectedOrder(order)
+                                setIsDetailModalOpen(true)
+                              }}
+                              style={{
+                                padding: '6px 14px',
+                                backgroundColor: '#F1F5F9',
+                                border: '1px solid #CBD5E1',
+                                borderRadius: '6px',
+                                color: 'var(--brand-primary)',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Chi Tiết & Checklist
+                            </button>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
               <Pagination
                 currentPage={ordersPagination.currentPage}
                 totalPages={ordersPagination.totalPages}
@@ -1261,6 +1361,7 @@ export const ConstructionModule: React.FC = () => {
       {/* ------------------------------------------------------------------- */}
       {isDetailModalOpen && selectedOrder && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             inset: 0,
@@ -1273,6 +1374,7 @@ export const ConstructionModule: React.FC = () => {
           }}
         >
           <div
+            className="responsive-modal-card"
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',
@@ -1647,6 +1749,7 @@ export const ConstructionModule: React.FC = () => {
       {/* ------------------------------------------------------------------- */}
       {isCreateModalOpen && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             inset: 0,
@@ -1659,6 +1762,7 @@ export const ConstructionModule: React.FC = () => {
           }}
         >
           <div
+            className="responsive-modal-card"
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',
@@ -1826,6 +1930,7 @@ export const ConstructionModule: React.FC = () => {
       {/* ------------------------------------------------------------------- */}
       {isEvidenceModalOpen && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             inset: 0,
@@ -1838,6 +1943,7 @@ export const ConstructionModule: React.FC = () => {
           }}
         >
           <div
+            className="responsive-modal-card"
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',
@@ -1941,6 +2047,7 @@ export const ConstructionModule: React.FC = () => {
       {/* ------------------------------------------------------------------- */}
       {isUnavailModalOpen && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             inset: 0,
@@ -1953,6 +2060,7 @@ export const ConstructionModule: React.FC = () => {
           }}
         >
           <div
+            className="responsive-modal-card"
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',

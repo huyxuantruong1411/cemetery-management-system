@@ -41,6 +41,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <div
+      className="responsive-modal-overlay"
       style={{
         position: 'fixed',
         inset: 0,
@@ -55,6 +56,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
       onClick={onClose}
     >
       <div
+        className="responsive-modal-card"
         style={{
           backgroundColor: '#FFFFFF',
           borderRadius: '16px',

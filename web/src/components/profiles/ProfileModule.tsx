@@ -672,7 +672,84 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
               }}
             >
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+              {/* Mobile Card View (< 1024px) */}
+              <div className="mobile-only" style={{ flexDirection: 'column', gap: '10px', padding: '12px' }}>
+                {paginatedCustomers.map((c) => (
+                  <div
+                    key={c.customer_id}
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '8px',
+                      padding: '12px',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                      <div style={{ fontWeight: 700, color: '#24594D', fontSize: '13px' }}>{c.customer_code}</div>
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          padding: '2px 8px',
+                          borderRadius: '12px',
+                          backgroundColor: (c.relations?.length || 0) > 0 ? '#DCFCE7' : '#F3F4F6',
+                          color: (c.relations?.length || 0) > 0 ? '#15803D' : '#6B7280',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {(c.relations?.length || 0) > 0 ? `Liên kết: ${c.relations?.length} người` : 'Chưa liên kết'}
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827', marginBottom: '4px' }}>
+                      {c.full_name}
+                    </div>
+
+                    <div style={{ fontSize: '12px', color: '#4B5563', marginBottom: '2px' }}>
+                      <span>CCCD: </span>
+                      <code style={{ fontFamily: 'monospace', backgroundColor: '#F3F4F6', padding: '1px 4px', borderRadius: '4px' }}>
+                        {c.citizen_id}
+                      </code>
+                    </div>
+
+                    <div style={{ fontSize: '12px', color: '#4B5563', marginBottom: '2px' }}>
+                      <span>SĐT: </span>
+                      <strong>{c.phone_number}</strong>
+                    </div>
+
+                    {c.address && (
+                      <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '8px' }}>
+                        Địa chỉ: {c.address}
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => setSelectedCustomer(c)}
+                      className="touch-target"
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        backgroundColor: '#F3F4F6',
+                        color: '#374151',
+                        borderRadius: '6px',
+                        border: '1px solid #D1D5DB',
+                        cursor: 'pointer',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                      }}
+                    >
+                      Xem chi tiết hồ sơ
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View (>= 1024px) */}
+              <div className="desktop-only table-scroll-container">
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
                 <thead style={{ backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
                   <tr>
                     <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Mã KH</th>
@@ -772,6 +849,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                   ))}
                 </tbody>
               </table>
+              </div>
               <Pagination
                 currentPage={custPage}
                 totalPages={custTotalPages}
@@ -934,7 +1012,105 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
               }}
             >
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+              {/* Mobile Card View (< 1024px) */}
+              <div className="mobile-only" style={{ flexDirection: 'column', gap: '10px', padding: '12px' }}>
+                {paginatedDeceased.map((d) => {
+                  const isCertVerified = d.death_certificate?.is_verified === true;
+                  const hasCert = !!d.death_certificate;
+                  return (
+                    <div
+                      key={d.deceased_id}
+                      style={{
+                        backgroundColor: '#FFFFFF',
+                        border: '1px solid #E5E7EB',
+                        borderRadius: '8px',
+                        padding: '12px',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                        <div style={{ fontWeight: 700, color: '#24594D', fontSize: '13px' }}>{d.deceased_code}</div>
+                        {hasCert ? (
+                          isCertVerified ? (
+                            <span style={{ fontSize: '11px', padding: '2px 8px', backgroundColor: '#DCFCE7', color: '#15803D', borderRadius: '6px', fontWeight: 600 }}>
+                              ✓ Đã thẩm định
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '11px', padding: '2px 8px', backgroundColor: '#FEF3C7', color: '#92400E', borderRadius: '6px', fontWeight: 600 }}>
+                              ⏳ Chờ thẩm định
+                            </span>
+                          )
+                        ) : (
+                          <span style={{ fontSize: '11px', padding: '2px 8px', backgroundColor: '#FEE2E2', color: '#991B1B', borderRadius: '6px', fontWeight: 500 }}>
+                            Chưa nộp GBT
+                          </span>
+                        )}
+                      </div>
+
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: '#111827', marginBottom: '4px' }}>
+                        {d.full_name} ({d.gender === 'MALE' ? 'Nam' : d.gender === 'FEMALE' ? 'Nữ' : 'Khác'})
+                      </div>
+
+                      <div style={{ fontSize: '12px', color: '#4B5563', marginBottom: '4px' }}>
+                        Sinh:{' '}
+                        <strong>
+                          {d.birth_date_precision === 'YEAR_ONLY'
+                            ? `Năm ${d.birth_year}`
+                            : d.date_of_birth
+                            ? new Date(d.date_of_birth).toLocaleDateString('vi-VN')
+                            : '—'}
+                        </strong>{' '}
+                        · Mất:{' '}
+                        <strong style={{ color: '#DC2626' }}>
+                          {d.date_of_death ? new Date(d.date_of_death).toLocaleDateString('vi-VN') : '—'}
+                        </strong>
+                      </div>
+
+                      <div style={{ fontSize: '12px', color: '#4B5563', marginBottom: '4px' }}>
+                        Vị trí:{' '}
+                        {d.burial_slot ? (
+                          <strong style={{ color: 'var(--brand-primary)' }}>
+                            {d.burial_slot.plot_code} ({d.burial_slot.zone_name})
+                          </strong>
+                        ) : (
+                          <span style={{ color: '#9CA3AF' }}>Chưa an táng thực địa</span>
+                        )}
+                      </div>
+
+                      {d.relations && d.relations.length > 0 && (
+                        <div style={{ fontSize: '12px', color: '#6B7280', marginBottom: '8px' }}>
+                          Thân nhân: {d.relations[0].customer_full_name} ({d.relations[0].relationship_type})
+                        </div>
+                      )}
+
+                      <button
+                        onClick={() => setSelectedDeceased(d)}
+                        className="touch-target"
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          backgroundColor: '#F3F4F6',
+                          color: '#374151',
+                          borderRadius: '6px',
+                          border: '1px solid #D1D5DB',
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        Xem hồ sơ chi tiết & Giấy báo tử
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop Table View (>= 1024px) */}
+              <div className="desktop-only table-scroll-container">
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
                 <thead style={{ backgroundColor: '#F9FAFB', borderBottom: '1px solid #E5E7EB' }}>
                   <tr>
                     <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Mã Hồ Sơ</th>
@@ -1088,6 +1264,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                   })}
                 </tbody>
               </table>
+              </div>
               <Pagination
                 currentPage={decPage}
                 totalPages={decTotalPages}
@@ -1376,6 +1553,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
       {/* ========================================================================= */}
       {isCustomerModalOpen && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             inset: 0,
@@ -1387,6 +1565,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
           }}
         >
           <div
+            className="responsive-modal-card"
             style={{
               backgroundColor: 'white',
               borderRadius: '14px',
@@ -1531,6 +1710,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
       {/* ========================================================================= */}
       {isDeceasedModalOpen && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             inset: 0,
@@ -1542,6 +1722,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
           }}
         >
           <div
+            className="responsive-modal-card"
             style={{
               backgroundColor: 'white',
               borderRadius: '14px',
@@ -1765,6 +1946,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
       {/* ========================================================================= */}
       {selectedDeceased && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             inset: 0,
@@ -1776,6 +1958,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
           }}
         >
           <div
+            className="responsive-modal-card"
             style={{
               backgroundColor: 'white',
               borderRadius: '16px',
@@ -2132,6 +2315,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
       {/* ========================================================================= */}
       {isCertModalOpen && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             inset: 0,
@@ -2143,6 +2327,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
           }}
         >
           <div
+            className="responsive-modal-card"
             style={{
               backgroundColor: 'white',
               borderRadius: '14px',
@@ -2258,6 +2443,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
       {/* ========================================================================= */}
       {isRejectModalOpen && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             inset: 0,
@@ -2269,6 +2455,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
           }}
         >
           <div
+            className="responsive-modal-card"
             style={{
               backgroundColor: 'white',
               borderRadius: '14px',
@@ -2330,6 +2517,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
       {/* MODAL: CUSTOMER DETAIL */}
       {selectedCustomer && (
         <div
+          className="responsive-modal-overlay"
           style={{
             position: 'fixed',
             inset: 0,
@@ -2341,6 +2529,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
           }}
         >
           <div
+            className="responsive-modal-card"
             style={{
               backgroundColor: 'white',
               borderRadius: '16px',

@@ -10,6 +10,7 @@ import {
   LogIn,
   LogOut,
   MapPin,
+  Menu,
   PhoneCall,
   Search,
   Shield,
@@ -18,6 +19,7 @@ import {
   UserCog,
   Users,
   Wrench,
+  X,
 } from 'lucide-react'
 import { UserManagementModule } from './components/admin/UserManagementModule'
 import { AuditModule } from './components/audit/AuditModule'
@@ -104,6 +106,35 @@ function MainApp() {
   const { user, accessToken, logout, hasPermission } = useAuth()
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false)
   const [activeTab, setActiveTab] = useState<string>('public_home')
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false)
+
+  // Auto-close mobile drawer when viewport expands to desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setIsMobileMenuOpen(false)
+      }
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [isMobileMenuOpen])
+
+  const handleSelectTab = (tab: string) => {
+    setActiveTab(tab)
+    setIsMobileMenuOpen(false)
+  }
 
   useEffect(() => {
     if (user) {
@@ -157,53 +188,66 @@ function MainApp() {
   }
 
   return (
-    <div style={{ display: 'flex', height: '100vh', width: '100vw', overflow: 'hidden', backgroundColor: '#F8FAFC' }}>
-      {/* 1. LEFT SIDEBAR NAVIGATION */}
-      <aside
-        style={{
-          width: '260px',
-          height: '100%',
-          backgroundColor: '#163830',
-          color: '#FFFFFF',
-          display: 'flex',
-          flexDirection: 'column',
-          flexShrink: 0,
-          borderRight: '1px solid rgba(255, 255, 255, 0.08)',
-          zIndex: 20,
-        }}
-      >
+    <div className="app-shell">
+      {/* Mobile Drawer Backdrop */}
+      {isMobileMenuOpen && (
+        <div
+          className="app-backdrop"
+          onClick={() => setIsMobileMenuOpen(false)}
+          aria-label="Đóng danh mục điều hướng"
+        />
+      )}
+
+      {/* 1. LEFT SIDEBAR NAVIGATION (Desktop Fixed / Mobile Drawer) */}
+      <aside className={`app-sidebar ${isMobileMenuOpen ? 'sidebar-open' : ''}`}>
         {/* Brand Header */}
         <div
           style={{
-            padding: '20px 18px',
+            padding: '16px 18px',
             borderBottom: '1px solid rgba(255,255,255,0.08)',
             display: 'flex',
             alignItems: 'center',
-            gap: '12px',
+            justifyContent: 'space-between',
           }}
         >
-          <div
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div
+              style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '10px',
+                backgroundColor: 'rgba(212, 175, 55, 0.2)',
+                border: '1px solid rgba(212, 175, 55, 0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <ShieldCheck size={22} color="#FFE082" />
+            </div>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '0.02em', color: '#FFFFFF', textTransform: 'uppercase' }}>
+                QL Nghĩa Trang
+              </div>
+              <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '1px' }}>
+                {user ? 'Điều Hành Nội Bộ' : 'Công Viên Tâm Linh'}
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="mobile-only touch-target"
             style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '10px',
-              backgroundColor: 'rgba(212, 175, 55, 0.2)',
-              border: '1px solid rgba(212, 175, 55, 0.4)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              background: 'none',
+              border: 'none',
+              color: '#94A3B8',
+              cursor: 'pointer',
+              padding: '6px',
             }}
+            aria-label="Đóng danh mục"
           >
-            <ShieldCheck size={22} color="#FFE082" />
-          </div>
-          <div>
-            <div style={{ fontSize: '13px', fontWeight: 700, letterSpacing: '0.02em', color: '#FFFFFF', textTransform: 'uppercase' }}>
-              QL Nghĩa Trang
-            </div>
-            <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '1px' }}>
-              {user ? 'Điều Hành Nội Bộ' : 'Công Viên Tâm Linh'}
-            </div>
-          </div>
+            <X size={20} />
+          </button>
         </div>
 
         {/* Menu Navigation Area (Auto-hiding scrollbar) */}
@@ -238,14 +282,14 @@ function MainApp() {
                   label="Trang Chủ & Giới Thiệu"
                   icon={<Compass size={17} />}
                   isActive={activeTab === 'public_home'}
-                  onClick={() => setActiveTab('public_home')}
+                  onClick={() => handleSelectTab('public_home')}
                 />
                 <SidebarNavItem
                   id="public_memorial"
                   label="Tra Cứu Phần Mộ"
                   icon={<Search size={17} />}
                   isActive={activeTab === 'public_memorial'}
-                  onClick={() => setActiveTab('public_memorial')}
+                  onClick={() => handleSelectTab('public_memorial')}
                 />
               </div>
             </div>
@@ -275,7 +319,7 @@ function MainApp() {
                       label="Sơ Đồ Ô Mộ & Bản Đồ"
                       icon={<MapPin size={17} />}
                       isActive={activeTab === 'plots'}
-                      onClick={() => setActiveTab('plots')}
+                      onClick={() => handleSelectTab('plots')}
                     />
                   )}
                   <SidebarNavItem
@@ -283,7 +327,7 @@ function MainApp() {
                     label="Thân Nhân & Người Mất"
                     icon={<Users size={17} />}
                     isActive={activeTab === 'profiles'}
-                    onClick={() => setActiveTab('profiles')}
+                    onClick={() => handleSelectTab('profiles')}
                   />
                   {hasPermission('contracts:read') && (
                     <SidebarNavItem
@@ -291,7 +335,7 @@ function MainApp() {
                       label="Hợp Đồng & Khách Hàng"
                       icon={<FileText size={17} />}
                       isActive={activeTab === 'contracts'}
-                      onClick={() => setActiveTab('contracts')}
+                      onClick={() => handleSelectTab('contracts')}
                     />
                   )}
                   {hasPermission('care:read') && (
@@ -300,7 +344,7 @@ function MainApp() {
                       label="Chăm Sóc Mộ Phần"
                       icon={<Wrench size={17} />}
                       isActive={activeTab === 'care'}
-                      onClick={() => setActiveTab('care')}
+                      onClick={() => handleSelectTab('care')}
                     />
                   )}
                   {hasPermission('construction:read') && (
@@ -309,7 +353,7 @@ function MainApp() {
                       label="Thi Công Thực Địa"
                       icon={<Hammer size={17} />}
                       isActive={activeTab === 'construction'}
-                      onClick={() => setActiveTab('construction')}
+                      onClick={() => handleSelectTab('construction')}
                     />
                   )}
                 </div>
@@ -336,7 +380,7 @@ function MainApp() {
                       label="Công Nợ & Thu Tiền"
                       icon={<Coins size={17} />}
                       isActive={activeTab === 'finance'}
-                      onClick={() => setActiveTab('finance')}
+                      onClick={() => handleSelectTab('finance')}
                     />
                   )}
                   <SidebarNavItem
@@ -344,7 +388,7 @@ function MainApp() {
                     label="Bảng Giá & Gói Dịch Vụ"
                     icon={<Tag size={17} />}
                     isActive={activeTab === 'catalog'}
-                    onClick={() => setActiveTab('catalog')}
+                    onClick={() => handleSelectTab('catalog')}
                   />
                 </div>
               </div>
@@ -370,7 +414,7 @@ function MainApp() {
                       label="Quản Trị Người Dùng"
                       icon={<UserCog size={17} />}
                       isActive={activeTab === 'admin_users'}
-                      onClick={() => setActiveTab('admin_users')}
+                      onClick={() => handleSelectTab('admin_users')}
                     />
                   )}
                   <SidebarNavItem
@@ -378,7 +422,7 @@ function MainApp() {
                     label="Báo Cáo Thống Kê"
                     icon={<BarChart3 size={17} />}
                     isActive={activeTab === 'reports'}
-                    onClick={() => setActiveTab('reports')}
+                    onClick={() => handleSelectTab('reports')}
                   />
                   {hasPermission('users:read') && (
                     <SidebarNavItem
@@ -386,7 +430,7 @@ function MainApp() {
                       label="Nhật Ký Kiểm Toán"
                       icon={<Shield size={17} />}
                       isActive={activeTab === 'audit'}
-                      onClick={() => setActiveTab('audit')}
+                      onClick={() => handleSelectTab('audit')}
                     />
                   )}
                 </div>
@@ -500,44 +544,78 @@ function MainApp() {
       </aside>
 
       {/* 2. MAIN APPLICATION CONTENT AREA */}
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          height: '100%',
-          minWidth: 0,
-          overflow: 'hidden',
-        }}
-      >
+      <div className="app-main-content">
         {/* App Topbar */}
         <header
           style={{
             height: '56px',
             backgroundColor: '#FFFFFF',
             borderBottom: '1px solid #E2E8F0',
-            padding: '0 28px',
+            padding: '0 16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
             flexShrink: 0,
+            gap: '12px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: 700, color: '#0F172A', margin: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flex: 1 }}>
+            {/* Hamburger Button on Mobile */}
+            <button
+              onClick={() => setIsMobileMenuOpen(true)}
+              className="mobile-only touch-target"
+              style={{
+                background: 'none',
+                border: '1px solid #E2E8F0',
+                borderRadius: '8px',
+                color: '#24594D',
+                cursor: 'pointer',
+                padding: '8px',
+                flexShrink: 0,
+              }}
+              aria-label="Mở danh mục điều hướng"
+            >
+              <Menu size={20} />
+            </button>
+
+            <h2
+              className="text-truncate-safe"
+              style={{
+                fontSize: 'clamp(14px, 2.5vw, 16px)',
+                fontWeight: 700,
+                color: '#0F172A',
+                margin: 0,
+                minWidth: 0,
+              }}
+            >
               {getPageTitle(activeTab)}
             </h2>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#64748B' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+            <a
+              href="tel:19008888"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '12px',
+                color: '#24594D',
+                textDecoration: 'none',
+                padding: '6px 10px',
+                borderRadius: '8px',
+                backgroundColor: '#F0FDF4',
+                border: '1px solid #DCFCE7',
+              }}
+              title="Hotline 24/7: 1900 8888"
+            >
               <PhoneCall size={14} color="#24594D" />
-              <span>Hotline 24/7: <strong>1900 8888</strong></span>
-            </div>
+              <span className="desktop-only">Hotline 24/7: <strong>1900 8888</strong></span>
+            </a>
             {user && (
               <div
+                className="desktop-only"
                 style={{
-                  display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
                   fontSize: '12px',
@@ -556,13 +634,7 @@ function MainApp() {
         </header>
 
         {/* Scrollable Main Area (Auto-hiding Scrollbar) */}
-        <main
-          style={{
-            flex: 1,
-            overflowY: 'auto',
-            padding: '24px 28px',
-          }}
-        >
+        <main className="app-main-scroll">
           {/* Unauthenticated View: Public Home Landing */}
           {!user && activeTab === 'public_home' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '28px', maxWidth: '1200px', margin: '0 auto' }}>
