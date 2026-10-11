@@ -13,8 +13,9 @@ def repair():
         print("Fixing care_packages...")
         conn.execute(text("""
             UPDATE care_packages
-            SET default_tasks_json = N'["Dọn dẹp khuôn viên", "Lau chùi bia mộ", "Thắp hương ngày rằm"]'
-            WHERE default_tasks_json LIKE N'%khuôn viên%' 
+            SET default_tasks_json = N'["Dọn cỏ dại quanh khuôn viên", "Lau sạch bia mộ", "Thắp hương ngày rằm"]'
+            WHERE package_code = 'GOI-CS-THANG'
+               OR default_tasks_json LIKE N'%khuôn viên%' 
                OR default_tasks_json LIKE N'%khun%' 
                OR CHARINDEX('?', default_tasks_json) > 0
         """))
