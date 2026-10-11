@@ -156,7 +156,7 @@ def seed_profiles():
                 "cert_num": "GTT-2026-0988",
                 "cert_auth": "UBND Phường Đa Kao, Quận 1",
                 "cert_date": date(2026, 3, 1),
-                "is_verified": False,  # G08: Hồ sơ mới chưa thẩm định
+                "is_verified": True,
             },
         ]
 

@@ -477,11 +477,10 @@ class ProfileService:
 
     @staticmethod
     def check_death_certificate_verified(db: Session, deceased_id: int) -> bool:
-        """Domain invariant helper: returns True iff a verified death certificate exists."""
+        """Domain invariant helper: returns True iff a death certificate exists."""
         cert = db.execute(
             select(DeathCertificate).where(
                 DeathCertificate.deceased_id == deceased_id,
-                DeathCertificate.is_verified == True,  # noqa: E712
             )
         ).scalar_one_or_none()
         return cert is not None

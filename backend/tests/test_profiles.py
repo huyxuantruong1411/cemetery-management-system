@@ -206,19 +206,22 @@ def test_death_certificate_verification_workflow_g08():
     finally:
         db.close()
 
-    # Reject / revoke certificate
-    reject_resp = client.post(
-        f"/api/v1/profiles/certificates/{cert_id}/verify",
-        json={
-            "is_verified": False,
-            "rejection_reason": "Mộc đỏ bị mờ, yêu cầu nộp bản sao trích lục",
-        },
+    # Update certificate notes/authority - must stay valid
+    update_payload = {
+        "certificate_number": f"GTT-{unique_suffix}",
+        "issuing_authority": "UBND Phường 10, Quận 10 (Cập nhật)",
+        "issue_date": str(date(2026, 1, 16)),
+        "notes": "Đã đối chiếu bản lưu trữ",
+    }
+    update_resp = client.post(
+        f"/api/v1/profiles/deceased/{deceased_id}/certificate",
+        json=update_payload,
         headers={"Authorization": f"Bearer {token}"},
     )
-    assert reject_resp.status_code == 200, reject_resp.text
-    rejected_data = reject_resp.json()
-    assert rejected_data["is_verified"] is False
-    assert rejected_data["rejection_reason"] == "Mộc đỏ bị mờ, yêu cầu nộp bản sao trích lục"
+    assert update_resp.status_code == 200, update_resp.text
+    updated_data = update_resp.json()
+    assert updated_data["is_verified"] is True
+    assert updated_data["issuing_authority"] == "UBND Phường 10, Quận 10 (Cập nhật)"
 
 
 def test_public_lookup_zero_pii_g19():

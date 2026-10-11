@@ -3037,7 +3037,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
                           color: d.has_death_certificate ? '#166534' : '#991B1B',
                         }}
                       >
-                        {d.has_death_certificate ? 'Đã duyệt GBT' : 'Chưa có GBT'}
+                        {d.has_death_certificate ? 'Đã có GBT' : 'Chưa có GBT'}
                       </span>
                     </div>
                   );
@@ -3046,7 +3046,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
               {selectedDeceased && !selectedDeceased.has_death_certificate && (
                 <div style={{ marginTop: '6px', fontSize: '12px', color: '#DC2626', display: 'flex', alignItems: 'center', gap: '4px' }}>
                   <ShieldAlert size={14} />
-                  <span>Cảnh báo: Người này chưa có Giấy Báo Tử được xác minh. Hệ thống sẽ từ chối tạo phụ lục!</span>
+                  <span>Cảnh báo: Người này chưa có Giấy Báo Tử trong hồ sơ. Vui lòng bổ sung giấy báo tử trước khi tạo phụ lục!</span>
                 </div>
               )}
             </div>

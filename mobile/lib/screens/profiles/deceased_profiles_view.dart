@@ -190,55 +190,31 @@ class _DeceasedProfilesViewState extends ConsumerState<DeceasedProfilesView> {
                               decoration: BoxDecoration(
                                 color: cert == null
                                     ? const Color(0xFFF3F4F6)
-                                    : cert.isVerified
-                                        ? const Color(0xFFF0FDF4)
-                                        : (cert.rejectionReason != null
-                                            ? const Color(0xFFFEF2F2)
-                                            : const Color(0xFFFFFBEB)),
+                                    : const Color(0xFFF0FDF4),
                                 borderRadius: BorderRadius.circular(8),
                                 border: Border.all(
                                   color: cert == null
                                       ? const Color(0xFFE5E7EB)
-                                      : cert.isVerified
-                                          ? const Color(0xFFBBF7D0)
-                                          : (cert.rejectionReason != null
-                                              ? const Color(0xFFFECACA)
-                                              : const Color(0xFFFDE68A)),
+                                      : const Color(0xFFBBF7D0),
                                 ),
                               ),
                               child: Row(
                                 children: [
                                   Icon(
-                                    cert == null
-                                        ? Icons.info_outline
-                                        : cert.isVerified
-                                            ? Icons.check_circle
-                                            : (cert.rejectionReason != null ? Icons.cancel : Icons.pending),
+                                    cert == null ? Icons.info_outline : Icons.check_circle,
                                     size: 16,
-                                    color: cert == null
-                                        ? Colors.grey
-                                        : cert.isVerified
-                                            ? const Color(0xFF16A34A)
-                                            : (cert.rejectionReason != null ? Colors.red : const Color(0xFFD97706)),
+                                    color: cert == null ? Colors.grey : const Color(0xFF16A34A),
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Text(
                                       cert == null
                                           ? 'Chưa nộp giấy báo tử (Yêu cầu bổ sung trước khi an táng)'
-                                          : cert.isVerified
-                                              ? 'Giấy báo tử ĐÃ XÁC THỰC: Số ${cert.certificateNumber} (${cert.issuingAuthority})'
-                                              : (cert.rejectionReason != null
-                                                  ? 'Giấy báo tử BỊ TỪ CHỐI: ${cert.rejectionReason}'
-                                                  : 'Giấy báo tử CHỜ DUYỆT: Số ${cert.certificateNumber}'),
+                                          : 'Giấy báo tử: Số ${cert.certificateNumber} (${cert.issuingAuthority})',
                                       style: TextStyle(
                                         fontSize: 11.5,
                                         fontWeight: FontWeight.w600,
-                                        color: cert == null
-                                            ? Colors.black54
-                                            : cert.isVerified
-                                                ? const Color(0xFF15803D)
-                                                : (cert.rejectionReason != null ? Colors.red : const Color(0xFFB45309)),
+                                        color: cert == null ? Colors.black54 : const Color(0xFF15803D),
                                       ),
                                     ),
                                   ),

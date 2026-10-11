@@ -388,7 +388,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
         throw new Error(errData.detail || 'Không thể cập nhật giấy báo tử');
       }
 
-      setSuccessMsg('Đính kèm giấy báo tử thành công (Trạng thái: Chờ thẩm định)!');
+      setSuccessMsg('Đã lưu thông tin giấy báo tử thành công!');
       setIsCertModalOpen(false);
       // Reload current deceased detail
       const updatedRes = await fetch(
@@ -520,7 +520,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
           <p style={{ margin: '4px 0 0 0', color: '#6B7280', fontSize: '14px' }}>
             {!token
               ? 'Tra cứu vị trí phần mộ, phân khu và kết quả chăm sóc đã được công bố công khai (Bảo vệ thông tin cá nhân)'
-              : 'Quản lý thân nhân, hồ sơ người mất, thẩm định giấy báo tử và Cổng tra cứu tưởng niệm'}
+              : 'Quản lý thân nhân, hồ sơ người mất, giấy báo tử và Cổng tra cứu tưởng niệm'}
           </p>
         </div>
 
@@ -1315,7 +1315,6 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
               {/* Mobile Card View (< 1024px) */}
               <div className="mobile-only" style={{ flexDirection: 'column', gap: '10px', padding: '12px' }}>
                 {paginatedDeceased.map((d) => {
-                  const isCertVerified = d.death_certificate?.is_verified === true;
                   const hasCert = !!d.death_certificate;
                   return (
                     <div
@@ -1331,18 +1330,12 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                         <div style={{ fontWeight: 700, color: '#24594D', fontSize: '13px' }}>{d.deceased_code}</div>
                         {hasCert ? (
-                          isCertVerified ? (
-                            <span style={{ fontSize: '11px', padding: '2px 8px', backgroundColor: '#DCFCE7', color: '#15803D', borderRadius: '6px', fontWeight: 600 }}>
-                              ✓ Đã thẩm định
-                            </span>
-                          ) : (
-                            <span style={{ fontSize: '11px', padding: '2px 8px', backgroundColor: '#FEF3C7', color: '#92400E', borderRadius: '6px', fontWeight: 600 }}>
-                              ⏳ Chờ thẩm định
-                            </span>
-                          )
+                          <span style={{ fontSize: '11px', padding: '2px 8px', backgroundColor: '#DCFCE7', color: '#15803D', borderRadius: '6px', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                            ✓ Đã có GBT
+                          </span>
                         ) : (
-                          <span style={{ fontSize: '11px', padding: '2px 8px', backgroundColor: '#FEE2E2', color: '#991B1B', borderRadius: '6px', fontWeight: 500 }}>
-                            Chưa nộp GBT
+                          <span style={{ fontSize: '11px', padding: '2px 8px', backgroundColor: '#FEE2E2', color: '#991B1B', borderRadius: '6px', fontWeight: 500, whiteSpace: 'nowrap' }}>
+                            Chưa có GBT
                           </span>
                         )}
                       </div>
@@ -1449,7 +1442,6 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 </thead>
                 <tbody>
                   {paginatedDeceased.map((d) => {
-                    const isCertVerified = d.death_certificate?.is_verified === true;
                     const hasCert = !!d.death_certificate;
                     return (
                       <tr
@@ -1481,51 +1473,37 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                         <td style={{ padding: '12px 16px', color: '#6B7280' }}>{d.hometown || '—'}</td>
                         <td style={{ padding: '12px 16px' }}>
                           {hasCert ? (
-                            isCertVerified ? (
-                              <span
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '4px',
-                                  fontSize: '11px',
-                                  padding: '3px 8px',
-                                  backgroundColor: '#DCFCE7',
-                                  color: '#15803D',
-                                  borderRadius: '6px',
-                                  fontWeight: 600,
-                                }}
-                              >
-                                ✓ Đã thẩm định
-                              </span>
-                            ) : (
-                              <span
-                                style={{
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '4px',
-                                  fontSize: '11px',
-                                  padding: '3px 8px',
-                                  backgroundColor: '#FEF3C7',
-                                  color: '#92400E',
-                                  borderRadius: '6px',
-                                  fontWeight: 600,
-                                }}
-                              >
-                                ⏳ Chờ thẩm định
-                              </span>
-                            )
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontSize: '11px',
+                                padding: '3px 8px',
+                                backgroundColor: '#DCFCE7',
+                                color: '#15803D',
+                                borderRadius: '6px',
+                                fontWeight: 600,
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              ✓ Đã có GBT
+                            </span>
                           ) : (
                             <span
                               style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
                                 fontSize: '11px',
                                 padding: '3px 8px',
                                 backgroundColor: '#FEE2E2',
                                 color: '#991B1B',
                                 borderRadius: '6px',
                                 fontWeight: 500,
+                                whiteSpace: 'nowrap',
                               }}
                             >
-                              Chưa nộp
+                              Chưa có GBT
                             </span>
                           )}
                         </td>
@@ -2856,7 +2834,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                   </div>
                 ) : (
                   <div style={{ fontSize: '13px', color: '#6B7280' }}>
-                    Chưa an táng vào ô mộ. Có thể mua đất và lập phụ lục an táng sau khi giấy báo tử được thẩm định.
+                    Chưa an táng vào ô mộ. Có thể mua đất và lập phụ lục an táng sau khi bổ sung giấy báo tử.
                   </div>
                 )}
               </div>
