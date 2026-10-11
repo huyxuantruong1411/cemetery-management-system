@@ -238,3 +238,22 @@ class RelationCreate(BaseModel):
     deceased_id: int
     relationship_type: str = Field(..., min_length=1, max_length=50)
     is_primary_contact: bool = False
+
+
+class RelationDetailResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    relation_id: int
+    customer_id: int
+    customer_code: str
+    customer_name: str
+    citizen_id: str
+    phone_number: str
+    deceased_id: int
+    deceased_code: str
+    deceased_name: str
+    date_of_death: date
+    relationship_type: str
+    is_primary_contact: bool
+    slot_info: str | None = None
+

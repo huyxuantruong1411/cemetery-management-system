@@ -27,6 +27,7 @@ from app.modules.profiles.schemas import (
     DeceasedPublicLookupResponse,
     DeceasedRelationBrief,
     RelationCreate,
+    RelationDetailResponse,
 )
 
 
@@ -645,6 +646,58 @@ class ProfileService:
             )
         db.delete(rel)
         db.commit()
+
+    @staticmethod
+    def list_relations(
+        db: Session, search: str | None = None, limit: int = 200
+    ) -> list[RelationDetailResponse]:
+        query = (
+            select(CustomerDeceasedRelation)
+            .join(Customer, CustomerDeceasedRelation.customer_id == Customer.customer_id)
+            .join(DeceasedProfile, CustomerDeceasedRelation.deceased_id == DeceasedProfile.deceased_id)
+            .options(
+                joinedload(CustomerDeceasedRelation.customer),
+                joinedload(CustomerDeceasedRelation.deceased).joinedload(DeceasedProfile.current_slot).joinedload(PlotSlot.plot),
+            )
+            .order_by(CustomerDeceasedRelation.relation_id.desc())
+        )
+        if search:
+            s = f"%{search.strip()}%"
+            query = query.where(
+                or_(
+                    Customer.full_name.ilike(s),
+                    Customer.customer_code.ilike(s),
+                    Customer.citizen_id.ilike(s),
+                    Customer.phone_number.ilike(s),
+                    DeceasedProfile.full_name.ilike(s),
+                    DeceasedProfile.deceased_code.ilike(s),
+                    CustomerDeceasedRelation.relationship_type.ilike(s),
+                )
+            )
+        relations = db.execute(query.limit(limit)).scalars().all()
+        results: list[RelationDetailResponse] = []
+        for r in relations:
+            slot_info = None
+            if r.deceased and r.deceased.current_slot and r.deceased.current_slot.plot:
+                slot_info = f"Ô {r.deceased.current_slot.plot.plot_code} (Huyệt #{r.deceased.current_slot.slot_number})"
+            results.append(
+                RelationDetailResponse(
+                    relation_id=r.relation_id,
+                    customer_id=r.customer.customer_id,
+                    customer_code=r.customer.customer_code,
+                    customer_name=r.customer.full_name,
+                    citizen_id=r.customer.citizen_id,
+                    phone_number=r.customer.phone_number,
+                    deceased_id=r.deceased.deceased_id,
+                    deceased_code=r.deceased.deceased_code,
+                    deceased_name=r.deceased.full_name,
+                    date_of_death=r.deceased.date_of_death,
+                    relationship_type=r.relationship_type,
+                    is_primary_contact=r.is_primary_contact,
+                    slot_info=slot_info,
+                )
+            )
+        return results
 
     # ==========================================================================
     # DTO Mappers

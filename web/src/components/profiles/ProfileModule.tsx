@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ExternalLink, MapPin, Shield, RefreshCw } from 'lucide-react';
+import { ExternalLink, MapPin, Shield, RefreshCw, Link2, Trash2 } from 'lucide-react';
 import { Pagination, usePagination } from '../common/Pagination';
 import type {
   Customer,
@@ -9,6 +9,8 @@ import type {
   DeathCertificateCreate,
   DeathCertificateVerifyRequest,
   DeceasedPublicLookupResponse,
+  RelationDetail,
+  RelationCreate,
 } from '../../types/profiles';
 
 interface ProfileModuleProps {
@@ -17,7 +19,7 @@ interface ProfileModuleProps {
 }
 
 export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUserRoles = [] }) => {
-  const [activeTab, setActiveTab] = useState<'CUSTOMERS' | 'DECEASED' | 'MEMORIAL_PUBLIC'>(
+  const [activeTab, setActiveTab] = useState<'CUSTOMERS' | 'DECEASED' | 'RELATIONS' | 'MEMORIAL_PUBLIC'>(
     token ? 'CUSTOMERS' : 'MEMORIAL_PUBLIC'
   );
 
@@ -78,6 +80,24 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
   const [memorialResults, setMemorialResults] = useState<DeceasedPublicLookupResponse[]>([]);
   const [isMemorialLoading, setIsMemorialLoading] = useState(false);
 
+  // Relations states
+  const [relationsList, setRelationsList] = useState<RelationDetail[]>([]);
+  const [relationSearch, setRelationSearch] = useState('');
+  const [relationFilter, setRelationFilter] = useState<'ALL' | 'PRIMARY' | 'OTHER'>('ALL');
+  const [isRelationModalOpen, setIsRelationModalOpen] = useState(false);
+  const [relationForm, setRelationForm] = useState<{
+    customer_id: number | '';
+    deceased_id: number | '';
+    relationship_type: string;
+    is_primary_contact: boolean;
+  }>({
+    customer_id: '',
+    deceased_id: '',
+    relationship_type: 'Con',
+    is_primary_contact: true,
+  });
+  const [relationSubmitting, setRelationSubmitting] = useState(false);
+
   // Common states
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -92,6 +112,10 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
       loadCustomers();
     } else if (activeTab === 'DECEASED' && token) {
       loadDeceased();
+    } else if (activeTab === 'RELATIONS' && token) {
+      loadRelations();
+      if (customers.length === 0) loadCustomers();
+      if (deceasedList.length === 0) loadDeceased();
     }
   }, [activeTab, token]);
 
@@ -132,6 +156,132 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
       setErrorMsg((err as Error).message || 'Lỗi kết nối máy chủ');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Load Relations
+  const loadRelations = async () => {
+    if (!token) return;
+    setLoading(true);
+    setErrorMsg(null);
+    try {
+      const q = relationSearch ? `?search=${encodeURIComponent(relationSearch)}` : '';
+      const res = await fetch(`/api/v1/profiles/relations${q}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Không thể tải danh sách liên kết hồ sơ');
+      const data: RelationDetail[] = await res.json();
+      setRelationsList(data);
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message || 'Lỗi kết nối máy chủ');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Open Relation Modal
+  const handleOpenRelationModal = (customerId?: number, deceasedId?: number) => {
+    if (customers.length === 0) loadCustomers();
+    if (deceasedList.length === 0) loadDeceased();
+    setRelationForm({
+      customer_id: customerId !== undefined ? customerId : (customers[0]?.customer_id || ''),
+      deceased_id: deceasedId !== undefined ? deceasedId : (deceasedList[0]?.deceased_id || ''),
+      relationship_type: 'Con',
+      is_primary_contact: true,
+    });
+    setIsRelationModalOpen(true);
+  };
+
+  // Save Relation
+  const handleSaveRelation = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!token) return;
+    if (!relationForm.customer_id || !relationForm.deceased_id) {
+      setErrorMsg('Vui lòng chọn cả Khách hàng và Người mất để thiết lập liên kết');
+      return;
+    }
+    if (!relationForm.relationship_type.trim()) {
+      setErrorMsg('Vui lòng nhập hoặc chọn mối quan hệ thân nhân');
+      return;
+    }
+    setRelationSubmitting(true);
+    setErrorMsg(null);
+    try {
+      const payload: RelationCreate = {
+        customer_id: Number(relationForm.customer_id),
+        deceased_id: Number(relationForm.deceased_id),
+        relationship_type: relationForm.relationship_type.trim(),
+        is_primary_contact: relationForm.is_primary_contact,
+      };
+      const res = await fetch('/api/v1/profiles/relations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || 'Không thể thiết lập liên kết');
+      }
+      setSuccessMsg('Thiết lập liên kết hồ sơ thành công!');
+      setIsRelationModalOpen(false);
+      loadCustomers();
+      loadDeceased();
+      loadRelations();
+      if (selectedCustomer && selectedCustomer.customer_id === Number(relationForm.customer_id)) {
+        const cRes = await fetch(`/api/v1/profiles/customers/${selectedCustomer.customer_id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (cRes.ok) setSelectedCustomer(await cRes.json());
+      }
+      if (selectedDeceased && selectedDeceased.deceased_id === Number(relationForm.deceased_id)) {
+        const dRes = await fetch(`/api/v1/profiles/deceased/${selectedDeceased.deceased_id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (dRes.ok) setSelectedDeceased(await dRes.json());
+      }
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message || 'Lỗi thiết lập liên kết');
+    } finally {
+      setRelationSubmitting(false);
+    }
+  };
+
+  // Delete Relation
+  const handleDeleteRelation = async (relationId: number) => {
+    if (!token) return;
+    if (!window.confirm('Bạn có chắc chắn muốn gỡ bỏ mối liên kết hồ sơ này?')) {
+      return;
+    }
+    setErrorMsg(null);
+    try {
+      const res = await fetch(`/api/v1/profiles/relations/${relationId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok && res.status !== 204) {
+        throw new Error('Không thể gỡ bỏ liên kết');
+      }
+      setSuccessMsg('Đã gỡ bỏ mối liên kết thành công!');
+      loadCustomers();
+      loadDeceased();
+      loadRelations();
+      if (selectedCustomer) {
+        const cRes = await fetch(`/api/v1/profiles/customers/${selectedCustomer.customer_id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (cRes.ok) setSelectedCustomer(await cRes.json());
+      }
+      if (selectedDeceased) {
+        const dRes = await fetch(`/api/v1/profiles/deceased/${selectedDeceased.deceased_id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (dRes.ok) setSelectedDeceased(await dRes.json());
+      }
+    } catch (err: unknown) {
+      setErrorMsg((err as Error).message || 'Lỗi gỡ bỏ liên kết');
     }
   };
 
@@ -361,6 +511,26 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
     endIndex: memEndIndex,
   } = usePagination(memorialResults, 6);
 
+  // Filtered relations list
+  const filteredRelations = relationsList.filter((r) => {
+    if (relationFilter === 'PRIMARY') return r.is_primary_contact;
+    if (relationFilter === 'OTHER') return !r.is_primary_contact;
+    return true;
+  });
+
+  // Pagination for relations
+  const {
+    currentPage: relPage,
+    pageSize: relPageSize,
+    totalPages: relTotalPages,
+    totalItems: relTotalItems,
+    paginatedItems: paginatedRelations,
+    setCurrentPage: setRelPage,
+    setPageSize: setRelPageSize,
+    startIndex: relStartIndex,
+    endIndex: relEndIndex,
+  } = usePagination(filteredRelations, 10);
+
   // Debounced Live Search for Public Memorial Lookup
   useEffect(() => {
     if (activeTab !== 'MEMORIAL_PUBLIC') return;
@@ -453,6 +623,24 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
               }}
             >
               ⚰️ Người Quá Cố & Giấy Báo Tử
+            </button>
+            <button
+              onClick={() => setActiveTab('RELATIONS')}
+              style={{
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: 'none',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '13px',
+                background: activeTab === 'RELATIONS' ? '#24594D' : 'transparent',
+                color: activeTab === 'RELATIONS' ? '#FFFFFF' : '#4B5563',
+                transition: 'all 0.2s',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
+              }}
+            >
+              🔗 Liên Kết Hồ Sơ
             </button>
             <button
               onClick={() => setActiveTab('MEMORIAL_PUBLIC')}
@@ -651,26 +839,49 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 </button>
               </div>
 
-              <button
-                onClick={() => setIsCustomerModalOpen(true)}
-                style={{
-                  padding: '9px 16px',
-                  backgroundColor: '#047857',
-                  color: 'white',
-                  borderRadius: '8px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: '13px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                }}
-              >
-                <span>+</span> Thêm Khách Hàng Thân Nhân
-              </button>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => handleOpenRelationModal()}
+                  style={{
+                    padding: '9px 14px',
+                    backgroundColor: '#EFF6FF',
+                    color: '#1D4ED8',
+                    border: '1px solid #BFDBFE',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Link2 size={15} /> Thiết Lập Liên Kết Hồ Sơ
+                </button>
+                <button
+                  onClick={() => setIsCustomerModalOpen(true)}
+                  style={{
+                    padding: '9px 16px',
+                    backgroundColor: '#047857',
+                    color: 'white',
+                    borderRadius: '8px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                  }}
+                >
+                  <span>+</span> Thêm Khách Hàng Thân Nhân
+                </button>
+              </div>
             </div>
           </div>
 
@@ -771,26 +982,47 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                       </div>
                     )}
 
-                    <button
-                      onClick={() => setSelectedCustomer(c)}
-                      className="touch-target"
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        backgroundColor: '#F3F4F6',
-                        color: '#374151',
-                        borderRadius: '6px',
-                        border: '1px solid #D1D5DB',
-                        cursor: 'pointer',
-                        fontSize: '13px',
-                        fontWeight: 600,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      Xem chi tiết hồ sơ
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        onClick={() => setSelectedCustomer(c)}
+                        className="touch-target"
+                        style={{
+                          flex: 1,
+                          padding: '8px 12px',
+                          backgroundColor: '#F3F4F6',
+                          color: '#374151',
+                          borderRadius: '6px',
+                          border: '1px solid #D1D5DB',
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        Chi tiết
+                      </button>
+                      <button
+                        onClick={() => handleOpenRelationModal(c.customer_id, undefined)}
+                        className="touch-target"
+                        style={{
+                          padding: '8px 12px',
+                          backgroundColor: '#EFF6FF',
+                          color: '#1D4ED8',
+                          borderRadius: '6px',
+                          border: '1px solid #BFDBFE',
+                          cursor: 'pointer',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
+                        <Link2 size={13} /> Gắn kết
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -876,7 +1108,23 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                           <span style={{ color: '#9CA3AF', fontSize: '12px' }}>Chưa liên kết</span>
                         )}
                       </td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                      <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        <button
+                          onClick={() => handleOpenRelationModal(c.customer_id, undefined)}
+                          style={{
+                            padding: '5px 10px',
+                            backgroundColor: '#EFF6FF',
+                            color: '#1D4ED8',
+                            borderRadius: '6px',
+                            border: '1px solid #BFDBFE',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            marginRight: '6px',
+                          }}
+                        >
+                          + Gắn kết
+                        </button>
                         <button
                           onClick={() => setSelectedCustomer(c)}
                           style={{
@@ -1037,26 +1285,49 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 </button>
               </div>
 
-              <button
-                onClick={() => setIsDeceasedModalOpen(true)}
-                style={{
-                  padding: '9px 16px',
-                  backgroundColor: '#047857',
-                  color: 'white',
-                  borderRadius: '8px',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: '13px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  whiteSpace: 'nowrap',
-                  flexShrink: 0,
-                }}
-              >
-                <span>+</span> Thêm Hồ Sơ Người Mất
-              </button>
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => handleOpenRelationModal()}
+                  style={{
+                    padding: '9px 14px',
+                    backgroundColor: '#EFF6FF',
+                    color: '#1D4ED8',
+                    border: '1px solid #BFDBFE',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                  }}
+                >
+                  <Link2 size={15} /> Thiết Lập Liên Kết Hồ Sơ
+                </button>
+                <button
+                  onClick={() => setIsDeceasedModalOpen(true)}
+                  style={{
+                    padding: '9px 16px',
+                    backgroundColor: '#047857',
+                    color: 'white',
+                    borderRadius: '8px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                  }}
+                >
+                  <span>+</span> Thêm Hồ Sơ Người Mất
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1162,26 +1433,47 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                         </div>
                       )}
 
-                      <button
-                        onClick={() => setSelectedDeceased(d)}
-                        className="touch-target"
-                        style={{
-                          width: '100%',
-                          padding: '8px 12px',
-                          backgroundColor: '#F3F4F6',
-                          color: '#374151',
-                          borderRadius: '6px',
-                          border: '1px solid #D1D5DB',
-                          cursor: 'pointer',
-                          fontSize: '13px',
-                          fontWeight: 600,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        Xem hồ sơ chi tiết & Giấy báo tử
-                      </button>
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          onClick={() => setSelectedDeceased(d)}
+                          className="touch-target"
+                          style={{
+                            flex: 1,
+                            padding: '8px 12px',
+                            backgroundColor: '#F3F4F6',
+                            color: '#374151',
+                            borderRadius: '6px',
+                            border: '1px solid #D1D5DB',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          Chi tiết hồ sơ
+                        </button>
+                        <button
+                          onClick={() => handleOpenRelationModal(undefined, d.deceased_id)}
+                          className="touch-target"
+                          style={{
+                            padding: '8px 12px',
+                            backgroundColor: '#EFF6FF',
+                            color: '#1D4ED8',
+                            borderRadius: '6px',
+                            border: '1px solid #BFDBFE',
+                            cursor: 'pointer',
+                            fontSize: '13px',
+                            fontWeight: 600,
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          <Link2 size={13} /> Gắn thân nhân
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -1321,7 +1613,23 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                             <span style={{ color: '#9CA3AF', fontSize: '12px' }}>Chưa gán</span>
                           )}
                         </td>
-                        <td style={{ padding: '12px 16px', textAlign: 'right' }}>
+                        <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <button
+                            onClick={() => handleOpenRelationModal(undefined, d.deceased_id)}
+                            style={{
+                              padding: '5px 10px',
+                              backgroundColor: '#EFF6FF',
+                              color: '#1D4ED8',
+                              borderRadius: '6px',
+                              border: '1px solid #BFDBFE',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              marginRight: '6px',
+                            }}
+                          >
+                            + Thân nhân
+                          </button>
                           <button
                             onClick={() => setSelectedDeceased(d)}
                             style={{
@@ -1360,7 +1668,437 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 3: PUBLIC MEMORIAL PORTAL (ZERO PII - G19 & ADR-001) */}
+      {/* TAB 3: RELATIONS (LIÊN KẾT HỒ SƠ) */}
+      {/* ========================================================================= */}
+      {activeTab === 'RELATIONS' && (
+        <div>
+          {/* Action bar */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '12px',
+              marginBottom: '16px',
+            }}
+          >
+            {/* Row 1: Search bar */}
+            <div style={{ display: 'flex', gap: '8px', width: '100%', alignItems: 'center' }}>
+              <input
+                type="text"
+                placeholder="Tìm theo tên khách, tên người mất, CCCD, SĐT..."
+                value={relationSearch}
+                onChange={(e) => setRelationSearch(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && loadRelations()}
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  padding: '9px 14px',
+                  borderRadius: '8px',
+                  border: '1px solid #D1D5DB',
+                  fontSize: '14px',
+                }}
+              />
+              <button
+                type="button"
+                onClick={loadRelations}
+                style={{
+                  padding: '9px 18px',
+                  backgroundColor: '#24594D',
+                  color: 'white',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+              >
+                Tìm Kiếm
+              </button>
+            </div>
+
+            {/* Row 2: Filter chips on left, Add Relation button on right */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '10px',
+                flexWrap: 'wrap',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '6px',
+                  alignItems: 'center',
+                  overflowX: 'auto',
+                  WebkitOverflowScrolling: 'touch',
+                  paddingBottom: '2px',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setRelationFilter('ALL')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '16px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    backgroundColor: relationFilter === 'ALL' ? '#24594D' : '#F9FAFB',
+                    color: relationFilter === 'ALL' ? 'white' : '#4B5563',
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                  }}
+                >
+                  Tất cả ({relationsList.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRelationFilter('PRIMARY')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '16px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    backgroundColor: relationFilter === 'PRIMARY' ? '#24594D' : '#F9FAFB',
+                    color: relationFilter === 'PRIMARY' ? 'white' : '#4B5563',
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                  }}
+                >
+                  ★ Đại diện chính
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRelationFilter('OTHER')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '16px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                    backgroundColor: relationFilter === 'OTHER' ? '#24594D' : '#F9FAFB',
+                    color: relationFilter === 'OTHER' ? 'white' : '#4B5563',
+                    fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                  }}
+                >
+                  Thân nhân khác
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => handleOpenRelationModal()}
+                style={{
+                  padding: '9px 16px',
+                  backgroundColor: '#047857',
+                  color: 'white',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+              >
+                <Link2 size={15} /> Thiết Lập Liên Kết Mới
+              </button>
+            </div>
+          </div>
+
+          {/* Table / Cards */}
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '60px 0', color: '#6B7280' }}>
+              <div style={{ fontSize: '20px', marginBottom: '8px' }}>⏳ Đang tải dữ liệu liên kết hồ sơ...</div>
+            </div>
+          ) : filteredRelations.length === 0 ? (
+            <div
+              style={{
+                textAlign: 'center',
+                padding: '60px 20px',
+                backgroundColor: '#F9FAFB',
+                borderRadius: '12px',
+                border: '1px dashed #D1D5DB',
+              }}
+            >
+              <div style={{ fontSize: '36px', marginBottom: '12px' }}>🔗</div>
+              <h3 style={{ margin: '0 0 6px 0', color: '#374151' }}>Chưa có mối liên kết hồ sơ nào phù hợp</h3>
+              <p style={{ margin: '0 0 16px 0', color: '#6B7280', fontSize: '14px' }}>
+                Thiết lập liên kết giữa khách hàng thân nhân và hồ sơ người mất để phân công quản lý và an táng.
+              </p>
+              <button
+                type="button"
+                onClick={() => handleOpenRelationModal()}
+                style={{
+                  padding: '8px 16px',
+                  backgroundColor: '#24594D',
+                  color: 'white',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                }}
+              >
+                + Thiết lập liên kết đầu tiên
+              </button>
+            </div>
+          ) : (
+            <div
+              style={{
+                backgroundColor: 'white',
+                borderRadius: '12px',
+                border: '1px solid #E5E7EB',
+                overflow: 'hidden',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+              }}
+            >
+              {/* Mobile Card View (< 1024px) */}
+              <div className="mobile-only" style={{ flexDirection: 'column', gap: '10px', padding: '12px' }}>
+                {paginatedRelations.map((r) => (
+                  <div
+                    key={r.relation_id}
+                    style={{
+                      backgroundColor: '#FFFFFF',
+                      border: '1px solid #E5E7EB',
+                      borderRadius: '8px',
+                      padding: '12px',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          backgroundColor: '#E0E7FF',
+                          color: '#3730A3',
+                          fontWeight: 600,
+                        }}
+                      >
+                        Quan hệ: {r.relationship_type}
+                      </span>
+                      {r.is_primary_contact && (
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                            backgroundColor: '#FEF3C7',
+                            color: '#92400E',
+                            fontWeight: 700,
+                          }}
+                        >
+                          ★ Đại diện chính
+                        </span>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px', marginBottom: '10px' }}>
+                      <div style={{ padding: '8px', backgroundColor: '#F9FAFB', borderRadius: '6px' }}>
+                        <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: 600 }}>KHÁCH HÀNG THÂN NHÂN:</div>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#111827' }}>
+                          {r.customer_name} <span style={{ color: '#24594D', fontSize: '12px' }}>({r.customer_code})</span>
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#4B5563' }}>
+                          SĐT: {r.phone_number} · CCCD: <code>{r.citizen_id}</code>
+                        </div>
+                      </div>
+
+                      <div style={{ padding: '8px', backgroundColor: '#F9FAFB', borderRadius: '6px' }}>
+                        <div style={{ fontSize: '11px', color: '#6B7280', fontWeight: 600 }}>NGƯỜI THÂN QUÁ CỐ:</div>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: '#111827' }}>
+                          {r.deceased_name} <span style={{ color: '#6B7280', fontSize: '12px' }}>({r.deceased_code})</span>
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#4B5563' }}>
+                          Mất ngày: {new Date(r.date_of_death).toLocaleDateString('vi-VN')} · {r.slot_info ? <strong style={{ color: '#047857' }}>{r.slot_info}</strong> : <span style={{ color: '#9CA3AF' }}>Chưa an táng</span>}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                      <button
+                        type="button"
+                        onClick={() => handleOpenRelationModal(r.customer_id, r.deceased_id)}
+                        style={{
+                          padding: '6px 12px',
+                          backgroundColor: '#EFF6FF',
+                          color: '#1D4ED8',
+                          border: '1px solid #BFDBFE',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                        }}
+                      >
+                        Sửa quan hệ
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteRelation(r.relation_id)}
+                        style={{
+                          padding: '6px 12px',
+                          backgroundColor: '#FEE2E2',
+                          color: '#DC2626',
+                          border: '1px solid #FCA5A5',
+                          borderRadius: '6px',
+                          cursor: 'pointer',
+                          fontSize: '12px',
+                          fontWeight: 600,
+                        }}
+                      >
+                        Gỡ liên kết
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Desktop Table View (>= 1024px) */}
+              <div className="desktop-only table-scroll-container">
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569' }}>
+                      <th style={{ padding: '12px 16px' }}>Khách Hàng Thân Nhân</th>
+                      <th style={{ padding: '12px 16px' }}>Mối Quan Hệ</th>
+                      <th style={{ padding: '12px 16px' }}>Người Quá Cố</th>
+                      <th style={{ padding: '12px 16px' }}>Vị Trí Mộ Phần</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'right' }}>Thao Tác</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {paginatedRelations.map((r) => (
+                      <tr key={r.relation_id} style={{ borderBottom: '1px solid #F1F5F9' }}>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ fontWeight: 600, color: '#111827' }}>
+                            {r.customer_name}
+                            <span style={{ marginLeft: '6px', fontSize: '11px', color: '#24594D', fontWeight: 700 }}>
+                              {r.customer_code}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#6B7280' }}>
+                            SĐT: {r.phone_number} · CCCD: <code>{r.citizen_id}</code>
+                          </div>
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <span
+                            style={{
+                              fontSize: '12px',
+                              padding: '2px 8px',
+                              backgroundColor: '#E0E7FF',
+                              color: '#3730A3',
+                              borderRadius: '6px',
+                              fontWeight: 600,
+                              marginRight: '6px',
+                            }}
+                          >
+                            {r.relationship_type}
+                          </span>
+                          {r.is_primary_contact && (
+                            <span
+                              style={{
+                                fontSize: '11px',
+                                padding: '2px 6px',
+                                backgroundColor: '#FEF3C7',
+                                color: '#92400E',
+                                borderRadius: '4px',
+                                fontWeight: 700,
+                              }}
+                            >
+                              ★ Đại diện chính
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <div style={{ fontWeight: 600, color: '#111827' }}>
+                            {r.deceased_name}
+                            <span style={{ marginLeft: '6px', fontSize: '11px', color: '#6B7280' }}>
+                              ({r.deceased_code})
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#6B7280' }}>
+                            Mất ngày: {new Date(r.date_of_death).toLocaleDateString('vi-VN')}
+                          </div>
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          {r.slot_info ? (
+                            <span style={{ fontWeight: 600, color: '#047857' }}>{r.slot_info}</span>
+                          ) : (
+                            <span style={{ color: '#9CA3AF' }}>Chưa an táng</span>
+                          )}
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenRelationModal(r.customer_id, r.deceased_id)}
+                            style={{
+                              padding: '5px 10px',
+                              backgroundColor: '#EFF6FF',
+                              color: '#1D4ED8',
+                              borderRadius: '6px',
+                              border: '1px solid #BFDBFE',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              marginRight: '6px',
+                            }}
+                          >
+                            Sửa
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteRelation(r.relation_id)}
+                            style={{
+                              padding: '5px 10px',
+                              backgroundColor: '#FEE2E2',
+                              color: '#DC2626',
+                              borderRadius: '6px',
+                              border: '1px solid #FCA5A5',
+                              cursor: 'pointer',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                            }}
+                          >
+                            Gỡ bỏ
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Pagination */}
+              <Pagination
+                currentPage={relPage}
+                totalPages={relTotalPages}
+                pageSize={relPageSize}
+                totalItems={relTotalItems}
+                startIndex={relStartIndex}
+                endIndex={relEndIndex}
+                onPageChange={setRelPage}
+                onPageSizeChange={setRelPageSize}
+              />
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* TAB 4: PUBLIC MEMORIAL PORTAL (ZERO PII - G19 & ADR-001) */}
       {/* ========================================================================= */}
       {activeTab === 'MEMORIAL_PUBLIC' && (
         <div style={{ maxWidth: '900px', margin: '0 auto', padding: '10px 0' }}>
@@ -2339,9 +3077,32 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
 
             {/* Relatives List */}
             <div>
-              <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#111827', fontWeight: 'bold' }}>
-                Thân Nhân Có Trách Nhiệm Liên Hệ
-              </h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <h4 style={{ margin: 0, fontSize: '14px', color: '#111827', fontWeight: 'bold' }}>
+                  Thân Nhân Có Trách Nhiệm Liên Hệ
+                </h4>
+                {token && (
+                  <button
+                    onClick={() => handleOpenRelationModal(undefined, selectedDeceased.deceased_id)}
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: '12px',
+                      backgroundColor: '#EEF2FF',
+                      color: '#4F46E5',
+                      border: '1px solid #C7D2FE',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <Link2 size={13} />
+                    + Thêm Thân Nhân
+                  </button>
+                )}
+              </div>
               {selectedDeceased.relations.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {selectedDeceased.relations.map((r) => (
@@ -2375,8 +3136,32 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                           </span>
                         )}
                       </div>
-                      <div style={{ color: '#4B5563' }}>
-                        SĐT: <strong>{r.phone_number}</strong> · CCCD: <code>{r.citizen_id}</code>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ color: '#4B5563' }}>
+                          SĐT: <strong>{r.phone_number}</strong> · CCCD: <code>{r.citizen_id}</code>
+                        </div>
+                        {token && (
+                          <button
+                            onClick={() => handleDeleteRelation(r.relation_id)}
+                            title="Gỡ liên kết"
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              border: '1px solid #FECACA',
+                              backgroundColor: '#FEF2F2',
+                              color: '#DC2626',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                            }}
+                          >
+                            <Trash2 size={12} />
+                            Gỡ
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -2681,9 +3466,32 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
             </div>
 
             <div>
-              <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#111827', fontWeight: 'bold' }}>
-                Danh Sách Người Thân Quá Cố Đã Gắn Kết
-              </h4>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <h4 style={{ margin: 0, fontSize: '14px', color: '#111827', fontWeight: 'bold' }}>
+                  Danh Sách Người Thân Quá Cố Đã Gắn Kết
+                </h4>
+                {token && (
+                  <button
+                    onClick={() => handleOpenRelationModal(selectedCustomer.customer_id, undefined)}
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: '12px',
+                      backgroundColor: '#EEF2FF',
+                      color: '#4F46E5',
+                      border: '1px solid #C7D2FE',
+                      borderRadius: '6px',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <Link2 size={13} />
+                    + Gắn Kết Người Mất
+                  </button>
+                )}
+              </div>
               {selectedCustomer.relations.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {selectedCustomer.relations.map((r) => (
@@ -2702,7 +3510,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                       <div>
                         <strong>{r.deceased_full_name}</strong> ({r.deceased_code})
                       </div>
-                      <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <span
                           style={{
                             fontSize: '11px',
@@ -2724,11 +3532,33 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                               padding: '2px 8px',
                               borderRadius: '4px',
                               fontWeight: 'bold',
-                              marginLeft: '6px',
                             }}
                           >
                             ★ Đại diện chính
                           </span>
+                        )}
+                        {token && (
+                          <button
+                            onClick={() => handleDeleteRelation(r.relation_id)}
+                            title="Gỡ liên kết"
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: '4px',
+                              border: '1px solid #FECACA',
+                              backgroundColor: '#FEF2F2',
+                              color: '#DC2626',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              marginLeft: '4px',
+                            }}
+                          >
+                            <Trash2 size={12} />
+                            Gỡ
+                          </button>
                         )}
                       </div>
                     </div>
@@ -2755,6 +3585,283 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 }}
               >
                 Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* MODAL: ESTABLISH PROFILE RELATION (LIÊN KẾT HỒ SƠ) */}
+      {/* ========================================================================= */}
+      {isRelationModalOpen && (
+        <div
+          className="responsive-modal-overlay"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1100,
+            padding: '16px',
+          }}
+        >
+          <div
+            className="responsive-modal-card"
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '16px',
+              width: '560px',
+              maxWidth: '100%',
+              maxHeight: 'min(90vh, 640px)',
+              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              padding: 0,
+            }}
+          >
+            {/* Header */}
+            <div
+              style={{
+                flexShrink: 0,
+                padding: '20px 24px',
+                borderBottom: '1px solid #E5E7EB',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+              }}
+            >
+              <div>
+                <h3
+                  style={{
+                    margin: 0,
+                    color: '#24594D',
+                    fontSize: '18px',
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  <Link2 size={20} color="#24594D" />
+                  Thiết Lập Liên Kết Hồ Sơ
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#6B7280' }}>
+                  Gắn kết quan hệ giữa Khách hàng (Thân nhân) và Người quá cố (Huyệt mộ)
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsRelationModalOpen(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '20px',
+                  color: '#9CA3AF',
+                  cursor: 'pointer',
+                  padding: '4px',
+                  lineHeight: 1,
+                }}
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Form Body */}
+            <form
+              id="relation-form"
+              onSubmit={handleSaveRelation}
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: 'auto',
+                padding: '20px 24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '16px',
+              }}
+            >
+              {/* Customer Select */}
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
+                  Khách Hàng (Thân nhân) <span style={{ color: '#DC2626' }}>*</span>
+                </label>
+                <select
+                  required
+                  value={relationForm.customer_id}
+                  onChange={(e) => setRelationForm({ ...relationForm, customer_id: Number(e.target.value) })}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '14px',
+                    backgroundColor: 'white',
+                    color: '#111827',
+                    outline: 'none',
+                  }}
+                >
+                  <option value="">-- Chọn khách hàng / thân nhân --</option>
+                  {customers.map((c) => (
+                    <option key={c.customer_id} value={c.customer_id}>
+                      [{c.customer_code}] {c.full_name} · SĐT: {c.phone_number} (CCCD: {c.citizen_id})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Deceased Select */}
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
+                  Người Quá Cố (Hồ sơ an táng) <span style={{ color: '#DC2626' }}>*</span>
+                </label>
+                <select
+                  required
+                  value={relationForm.deceased_id}
+                  onChange={(e) => setRelationForm({ ...relationForm, deceased_id: Number(e.target.value) })}
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '14px',
+                    backgroundColor: 'white',
+                    color: '#111827',
+                    outline: 'none',
+                  }}
+                >
+                  <option value="">-- Chọn hồ sơ người mất --</option>
+                  {deceasedList.map((d) => (
+                    <option key={d.deceased_id} value={d.deceased_id}>
+                      [{d.deceased_code}] {d.full_name} (Mất: {new Date(d.date_of_death).getFullYear()}) {d.burial_slot?.plot_code ? `· Mộ: ${d.burial_slot.plot_code}` : '· Chưa xếp mộ'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Relationship Type with Quick Chips */}
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
+                  Mối Quan Hệ Thân Nhân <span style={{ color: '#DC2626' }}>*</span>
+                </label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                  {['Con', 'Vợ', 'Chồng', 'Bố', 'Mẹ', 'Anh', 'Chị', 'Em', 'Cháu', 'Người thừa kế', 'Người giám hộ'].map((rel) => (
+                    <button
+                      type="button"
+                      key={rel}
+                      onClick={() => setRelationForm({ ...relationForm, relationship_type: rel })}
+                      style={{
+                        padding: '4px 10px',
+                        fontSize: '12px',
+                        borderRadius: '16px',
+                        border: relationForm.relationship_type === rel ? '1px solid #24594D' : '1px solid #E5E7EB',
+                        backgroundColor: relationForm.relationship_type === rel ? '#ECFDF5' : '#F9FAFB',
+                        color: relationForm.relationship_type === rel ? '#065F46' : '#4B5563',
+                        fontWeight: relationForm.relationship_type === rel ? 'bold' : 'normal',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {rel}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="text"
+                  required
+                  value={relationForm.relationship_type}
+                  onChange={(e) => setRelationForm({ ...relationForm, relationship_type: e.target.value })}
+                  placeholder="Nhập hoặc bấm chọn quan hệ ở trên (ví dụ: Con trai cả, Em gái,...)"
+                  style={{
+                    width: '100%',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '14px',
+                    outline: 'none',
+                  }}
+                />
+              </div>
+
+              {/* Is Primary Contact Checkbox */}
+              <div
+                style={{
+                  backgroundColor: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '8px',
+                  padding: '12px 14px',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '12px',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  id="relation-primary-contact"
+                  checked={relationForm.is_primary_contact}
+                  onChange={(e) => setRelationForm({ ...relationForm, is_primary_contact: e.target.checked })}
+                  style={{ marginTop: '3px', width: '16px', height: '16px', cursor: 'pointer' }}
+                />
+                <label htmlFor="relation-primary-contact" style={{ fontSize: '13px', color: '#1F2937', cursor: 'pointer' }}>
+                  <strong style={{ display: 'block', color: '#0F172A', marginBottom: '2px' }}>
+                    Đại diện liên hệ chính (★)
+                  </strong>
+                  Khách hàng này sẽ là người tiếp nhận các thông báo hạn chăm sóc mộ phần, lễ giỗ thường niên, thủ tục gia hạn và dịch vụ liên quan.
+                </label>
+              </div>
+            </form>
+
+            {/* Footer */}
+            <div
+              style={{
+                flexShrink: 0,
+                padding: '16px 24px',
+                backgroundColor: '#F8FAFC',
+                borderTop: '1px solid #E5E7EB',
+                display: 'flex',
+                justifyContent: 'flex-end',
+                gap: '10px',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setIsRelationModalOpen(false)}
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: '8px',
+                  border: '1px solid #D1D5DB',
+                  backgroundColor: 'white',
+                  color: '#374151',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="submit"
+                form="relation-form"
+                disabled={relationSubmitting}
+                style={{
+                  padding: '9px 20px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#24594D',
+                  color: 'white',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: relationSubmitting ? 'not-allowed' : 'pointer',
+                  opacity: relationSubmitting ? 0.7 : 1,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <Link2 size={16} />
+                {relationSubmitting ? 'Đang lưu...' : 'Xác Nhận Liên Kết'}
               </button>
             </div>
           </div>

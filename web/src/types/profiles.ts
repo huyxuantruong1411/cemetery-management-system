@@ -7,6 +7,29 @@ export interface CustomerRelationBrief {
   is_primary_contact: boolean;
 }
 
+export interface RelationDetail {
+  relation_id: number;
+  customer_id: number;
+  customer_code: string;
+  customer_name: string;
+  citizen_id: string;
+  phone_number: string;
+  deceased_id: number;
+  deceased_code: string;
+  deceased_name: string;
+  date_of_death: string;
+  relationship_type: string;
+  is_primary_contact: boolean;
+  slot_info: string | null;
+}
+
+export interface RelationCreate {
+  customer_id: number;
+  deceased_id: number;
+  relationship_type: string;
+  is_primary_contact: boolean;
+}
+
 export interface DeceasedRelationBrief {
   relation_id: number;
   customer_id: number;

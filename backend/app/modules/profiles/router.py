@@ -19,6 +19,7 @@ from app.modules.profiles.schemas import (
     DeceasedProfileUpdate,
     DeceasedPublicLookupResponse,
     RelationCreate,
+    RelationDetailResponse,
 )
 from app.modules.profiles.service import ProfileService
 
@@ -179,6 +180,17 @@ def verify_death_certificate(
 # =============================================================================
 # 5. Customer - Deceased Relations
 # =============================================================================
+@router.get("/relations", response_model=List[RelationDetailResponse])
+def list_relations(
+    search: Optional[str] = Query(None, description="Tìm theo tên khách, tên người mất, CCCD, SĐT"),
+    limit: int = Query(200, ge=1, le=500),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Danh sách các mối liên kết thân nhân - người mất trong hệ thống."""
+    return ProfileService.list_relations(db, search=search, limit=limit)
+
+
 @router.post(
     "/relations", response_model=CustomerRelationBrief, status_code=status.HTTP_201_CREATED
 )
@@ -200,3 +212,4 @@ def remove_customer_deceased_relation(
     """Xóa liên kết thân nhân."""
     ProfileService.remove_relation(db, relation_id)
     return None
+
