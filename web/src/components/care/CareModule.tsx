@@ -63,6 +63,7 @@ export const CareModule: React.FC = () => {
   // Assign caretaker form
   const [caretakerInputId, setCaretakerInputId] = useState<string>('')
   const [assignLoading, setAssignLoading] = useState<boolean>(false)
+  const [staffList, setStaffList] = useState<Array<{ user_id: number; username: string; full_name: string; roles: string[] }>>([])
 
   // Notifications
   const [notification, setNotification] = useState<{ message: string; isError: boolean } | null>(null)
@@ -102,6 +103,16 @@ export const CareModule: React.FC = () => {
   useEffect(() => {
     fetchSchedules()
   }, [fetchSchedules])
+
+  useEffect(() => {
+    if (!token) return
+    fetch('/api/v1/auth/staff', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setStaffList(data))
+      .catch(() => {})
+  }, [token])
 
   const openScheduleDetail = async (scheduleId: number) => {
     if (!token) return
@@ -480,21 +491,23 @@ export const CareModule: React.FC = () => {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
-          gap: '12px',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))',
+          gap: '10px',
         }}
       >
         <div
           style={{
             backgroundColor: '#FFFFFF',
             borderRadius: '10px',
-            padding: '14px 16px',
+            padding: '12px 14px',
             border: '1px solid #E2E8F0',
             boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+            minWidth: 0,
+            overflow: 'hidden',
           }}
         >
           <div style={{ fontSize: '12px', color: '#64748B', fontWeight: 500 }}>Tổng ca trong kỳ</div>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#1E293B', marginTop: '4px' }}>
+          <div style={{ fontSize: 'clamp(18px, 4.5vw, 24px)', fontWeight: 700, color: '#1E293B', marginTop: '4px', wordBreak: 'break-word' }}>
             {kpis.total}
           </div>
         </div>
@@ -503,13 +516,15 @@ export const CareModule: React.FC = () => {
           style={{
             backgroundColor: '#FFFBEB',
             borderRadius: '10px',
-            padding: '14px 16px',
+            padding: '12px 14px',
             border: '1px solid #FDE68A',
             boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+            minWidth: 0,
+            overflow: 'hidden',
           }}
         >
           <div style={{ fontSize: '12px', color: '#B45309', fontWeight: 600 }}>Chờ chỉ định</div>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#B45309', marginTop: '4px' }}>
+          <div style={{ fontSize: 'clamp(18px, 4.5vw, 24px)', fontWeight: 700, color: '#B45309', marginTop: '4px', wordBreak: 'break-word' }}>
             {kpis.scheduled}
           </div>
         </div>
@@ -518,13 +533,15 @@ export const CareModule: React.FC = () => {
           style={{
             backgroundColor: '#EFF6FF',
             borderRadius: '10px',
-            padding: '14px 16px',
+            padding: '12px 14px',
             border: '1px solid #BFDBFE',
             boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+            minWidth: 0,
+            overflow: 'hidden',
           }}
         >
           <div style={{ fontSize: '12px', color: '#1D4ED8', fontWeight: 600 }}>Đã chỉ định</div>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#1D4ED8', marginTop: '4px' }}>
+          <div style={{ fontSize: 'clamp(18px, 4.5vw, 24px)', fontWeight: 700, color: '#1D4ED8', marginTop: '4px', wordBreak: 'break-word' }}>
             {kpis.assigned}
           </div>
         </div>
@@ -533,13 +550,15 @@ export const CareModule: React.FC = () => {
           style={{
             backgroundColor: '#EEF2FF',
             borderRadius: '10px',
-            padding: '14px 16px',
+            padding: '12px 14px',
             border: '1px solid #C7D2FE',
             boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+            minWidth: 0,
+            overflow: 'hidden',
           }}
         >
           <div style={{ fontSize: '12px', color: '#4338CA', fontWeight: 600 }}>Đang thực hiện</div>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#4338CA', marginTop: '4px' }}>
+          <div style={{ fontSize: 'clamp(18px, 4.5vw, 24px)', fontWeight: 700, color: '#4338CA', marginTop: '4px', wordBreak: 'break-word' }}>
             {kpis.inProgress}
           </div>
         </div>
@@ -548,13 +567,15 @@ export const CareModule: React.FC = () => {
           style={{
             backgroundColor: '#ECFDF5',
             borderRadius: '10px',
-            padding: '14px 16px',
+            padding: '12px 14px',
             border: '1px solid #A7F3D0',
             boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+            minWidth: 0,
+            overflow: 'hidden',
           }}
         >
           <div style={{ fontSize: '12px', color: '#047857', fontWeight: 600 }}>Đã hoàn tất / Đóng ca</div>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#047857', marginTop: '4px' }}>
+          <div style={{ fontSize: 'clamp(18px, 4.5vw, 24px)', fontWeight: 700, color: '#047857', marginTop: '4px', wordBreak: 'break-word' }}>
             {kpis.closed}
           </div>
         </div>
@@ -563,13 +584,15 @@ export const CareModule: React.FC = () => {
           style={{
             backgroundColor: '#FEF2F2',
             borderRadius: '10px',
-            padding: '14px 16px',
+            padding: '12px 14px',
             border: '1px solid #FECACA',
             boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+            minWidth: 0,
+            overflow: 'hidden',
           }}
         >
           <div style={{ fontSize: '12px', color: '#B91C1C', fontWeight: 600 }}>Quá hạn</div>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#B91C1C', marginTop: '4px' }}>
+          <div style={{ fontSize: 'clamp(18px, 4.5vw, 24px)', fontWeight: 700, color: '#B91C1C', marginTop: '4px', wordBreak: 'break-word' }}>
             {kpis.overdue}
           </div>
         </div>
@@ -1302,17 +1325,16 @@ export const CareModule: React.FC = () => {
                           Chỉ định / đổi nhân viên phụ trách:
                         </div>
                         <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
-                          Nhập User ID nhân viên thực địa phụ trách ca này
+                          Chọn nhân viên thực địa phụ trách ca này
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <input
-                          type="number"
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                        <select
                           value={caretakerInputId}
                           onChange={(e) => setCaretakerInputId(e.target.value)}
-                          placeholder="User ID"
                           style={{
-                            width: '100px',
+                            minWidth: '180px',
+                            maxWidth: '260px',
                             backgroundColor: '#FFFFFF',
                             border: '1px solid #CBD5E1',
                             borderRadius: '6px',
@@ -1321,7 +1343,14 @@ export const CareModule: React.FC = () => {
                             color: '#1E293B',
                             outline: 'none',
                           }}
-                        />
+                        >
+                          <option value="">-- Chọn nhân viên phụ trách --</option>
+                          {staffList.map((s) => (
+                            <option key={s.user_id} value={s.user_id}>
+                              {s.full_name} ({s.roles.join(', ') || 'Nhân viên'})
+                            </option>
+                          ))}
+                        </select>
                         <button
                           onClick={handleAssignCaretaker}
                           disabled={assignLoading || !caretakerInputId}
@@ -1333,7 +1362,7 @@ export const CareModule: React.FC = () => {
                             fontWeight: 600,
                             borderRadius: '6px',
                             border: 'none',
-                            cursor: 'pointer',
+                            cursor: assignLoading || !caretakerInputId ? 'not-allowed' : 'pointer',
                             opacity: assignLoading || !caretakerInputId ? 0.6 : 1,
                           }}
                         >

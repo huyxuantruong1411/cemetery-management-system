@@ -313,7 +313,7 @@ export const DocumentManager: React.FC = () => {
             </h3>
           </div>
           <span style={{ fontSize: '12px', color: '#64748B' }}>
-            Lưu trữ: MinIO S3 (Bucket: ql-nghiatrang-documents / drive D:)
+            Kho lưu trữ số hóa hồ sơ an toàn
           </span>
         </div>
 
@@ -332,7 +332,7 @@ export const DocumentManager: React.FC = () => {
               Chưa có tệp tài liệu nào trong danh sách
             </div>
             <p style={{ fontSize: '13px', color: '#64748B', maxWidth: '420px', margin: '0 auto 16px auto' }}>
-              Nhấn "Tải Lên Chứng Từ Mới" để lưu trữ hồ sơ pháp lý, ảnh chụp hiện trường hoặc chứng từ liên quan vào hệ thống MinIO.
+              Nhấn "Tải Lên Chứng Từ Mới" để lưu trữ hồ sơ pháp lý, ảnh chụp hiện trường hoặc chứng từ liên quan vào hệ thống lưu trữ số hóa.
             </p>
           </div>
         ) : (

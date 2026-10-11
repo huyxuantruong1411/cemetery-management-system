@@ -452,24 +452,26 @@ export const FinanceModule: React.FC = () => {
 
       {/* 2. KPI Summary Cards */}
       {summary && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '10px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '10px' }}>
           <div
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '10px',
-              padding: '18px 20px',
+              padding: '12px 14px',
               border: '1px solid #E2E8F0',
               borderLeft: '4px solid #3B82F6',
+              minWidth: 0,
+              overflow: 'hidden',
             }}
           >
-            <div style={{ fontSize: '12px', color: '#64748B', fontWeight: 600, textTransform: 'uppercase' }}>
+            <div style={{ fontSize: '11px', color: '#64748B', fontWeight: 600, textTransform: 'uppercase' }}>
               Tổng Nghĩa Vụ Phải Thu
             </div>
-            <div style={{ fontSize: '20px', fontWeight: 700, color: '#1E293B', marginTop: '6px' }}>
+            <div style={{ fontSize: 'clamp(13px, 3.2vw, 18px)', fontWeight: 700, color: '#1E293B', marginTop: '6px', wordBreak: 'break-word', overflowWrap: 'anywhere', lineHeight: 1.25 }}>
               {formatCurrency(summary.total_receivables_amount)}
             </div>
-            <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>
-              Tổng số khoản thu: {summary.count_unpaid + summary.count_partially_paid + summary.count_paid}
+            <div style={{ fontSize: '11px', color: '#64748B', marginTop: '4px' }}>
+              Tổng: {summary.count_unpaid + summary.count_partially_paid + summary.count_paid} khoản
             </div>
           </div>
 
@@ -477,19 +479,21 @@ export const FinanceModule: React.FC = () => {
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '10px',
-              padding: '18px 20px',
+              padding: '12px 14px',
               border: '1px solid #E2E8F0',
               borderLeft: '4px solid #10B981',
+              minWidth: 0,
+              overflow: 'hidden',
             }}
           >
-            <div style={{ fontSize: '12px', color: '#64748B', fontWeight: 600, textTransform: 'uppercase' }}>
+            <div style={{ fontSize: '11px', color: '#64748B', fontWeight: 600, textTransform: 'uppercase' }}>
               Đã Thực Thu (Đã Nộp)
             </div>
-            <div style={{ fontSize: '20px', fontWeight: 700, color: '#10B981', marginTop: '6px' }}>
+            <div style={{ fontSize: 'clamp(13px, 3.2vw, 18px)', fontWeight: 700, color: '#10B981', marginTop: '6px', wordBreak: 'break-word', overflowWrap: 'anywhere', lineHeight: 1.25 }}>
               {formatCurrency(summary.total_collected_amount)}
             </div>
-            <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>
-              {summary.count_paid} khoản đã hoàn tất 100%
+            <div style={{ fontSize: '11px', color: '#64748B', marginTop: '4px' }}>
+              {summary.count_paid} khoản hoàn tất
             </div>
           </div>
 
@@ -497,19 +501,21 @@ export const FinanceModule: React.FC = () => {
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '10px',
-              padding: '18px 20px',
+              padding: '12px 14px',
               border: '1px solid #E2E8F0',
               borderLeft: '4px solid #F59E0B',
+              minWidth: 0,
+              overflow: 'hidden',
             }}
           >
-            <div style={{ fontSize: '12px', color: '#64748B', fontWeight: 600, textTransform: 'uppercase' }}>
+            <div style={{ fontSize: '11px', color: '#64748B', fontWeight: 600, textTransform: 'uppercase' }}>
               Dư Nợ Còn Lại Cần Thu
             </div>
-            <div style={{ fontSize: '20px', fontWeight: 700, color: '#D97706', marginTop: '6px' }}>
+            <div style={{ fontSize: 'clamp(13px, 3.2vw, 18px)', fontWeight: 700, color: '#D97706', marginTop: '6px', wordBreak: 'break-word', overflowWrap: 'anywhere', lineHeight: 1.25 }}>
               {formatCurrency(summary.total_outstanding_amount)}
             </div>
-            <div style={{ fontSize: '12px', color: '#DC2626', marginTop: '4px', fontWeight: 600 }}>
-              {summary.count_overdue} khoản đã quá hạn thanh toán
+            <div style={{ fontSize: '11px', color: '#DC2626', marginTop: '4px', fontWeight: 600 }}>
+              {summary.count_overdue} khoản quá hạn
             </div>
           </div>
 
@@ -517,18 +523,20 @@ export const FinanceModule: React.FC = () => {
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '10px',
-              padding: '18px 20px',
+              padding: '12px 14px',
               border: '1px solid #E2E8F0',
               borderLeft: '4px solid #8B5CF6',
+              minWidth: 0,
+              overflow: 'hidden',
             }}
           >
-            <div style={{ fontSize: '12px', color: '#64748B', fontWeight: 600, textTransform: 'uppercase' }}>
+            <div style={{ fontSize: '11px', color: '#64748B', fontWeight: 600, textTransform: 'uppercase' }}>
               Tổng Chiết Khấu Đã Duyệt
             </div>
-            <div style={{ fontSize: '20px', fontWeight: 700, color: '#7C3AED', marginTop: '6px' }}>
+            <div style={{ fontSize: 'clamp(13px, 3.2vw, 18px)', fontWeight: 700, color: '#7C3AED', marginTop: '6px', wordBreak: 'break-word', overflowWrap: 'anywhere', lineHeight: 1.25 }}>
               {formatCurrency(summary.total_discounts_amount)}
             </div>
-            <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>
+            <div style={{ fontSize: '11px', color: '#64748B', marginTop: '4px' }}>
               Chính sách ưu đãi và miễn giảm
             </div>
           </div>

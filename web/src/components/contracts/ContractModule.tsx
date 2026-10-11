@@ -40,6 +40,20 @@ interface ContractModuleProps {
   currentUserRoles?: string[];
 }
 
+const getCremationPackageName = (code?: string): string => {
+  if (!code) return 'Gói Tiêu Chuẩn';
+  switch (code) {
+    case 'HOA_TANG_VIP':
+      return 'Gói VIP Nghi Lễ';
+    case 'HOA_TANG_CAO_CAP':
+      return 'Gói Cao Cấp Trọn Gói';
+    case 'HOA_TANG_TIEU_CHUAN':
+      return 'Gói Tiêu Chuẩn';
+    default:
+      return code.replace(/_/g, ' ');
+  }
+};
+
 export const ContractModule: React.FC<ContractModuleProps> = ({ token, currentUserRoles = [] }) => {
   // Master List State
   const [contracts, setContracts] = useState<ContractBriefResponse[]>([]);
@@ -376,7 +390,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
       });
       if (!upRes.ok) {
         const upErr = await upRes.json().catch(() => ({}));
-        throw new Error(upErr.detail || 'Tải file scan lên MinIO thất bại');
+        throw new Error(upErr.detail || 'Tải tệp scan lên máy chủ thất bại');
       }
       const upData = await upRes.json();
       const fileId = upData.file_id;
@@ -578,7 +592,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
       });
       if (!upRes.ok) {
         const upErr = await upRes.json().catch(() => ({}));
-        throw new Error(upErr.detail || 'Tải file scan lên MinIO thất bại');
+        throw new Error(upErr.detail || 'Tải tệp scan lên máy chủ thất bại');
       }
       const upData = await upRes.json();
       const fileId = upData.file_id;
@@ -931,7 +945,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))',
           gap: '10px',
         }}
       >
@@ -939,48 +953,54 @@ function parseApiError(errJson: unknown, fallback: string): string {
           style={{
             backgroundColor: '#FFFFFF',
             borderRadius: '10px',
-            padding: '16px 20px',
+            padding: '12px 14px',
             border: '1px solid #E2E8F0',
             boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            minWidth: 0,
+            overflow: 'hidden',
           }}
         >
-          <div style={{ fontSize: '13px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <FileText size={16} color="#0284C7" />
+          <div style={{ fontSize: '12px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <FileText size={15} color="#0284C7" />
             <span>Tổng Hợp Đồng</span>
           </div>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#0F172A', marginTop: '6px' }}>{totalCount}</div>
+          <div style={{ fontSize: 'clamp(18px, 4.5vw, 24px)', fontWeight: 700, color: '#0F172A', marginTop: '6px', wordBreak: 'break-word' }}>{totalCount}</div>
         </div>
 
         <div
           style={{
             backgroundColor: '#FFFFFF',
             borderRadius: '10px',
-            padding: '16px 20px',
+            padding: '12px 14px',
             border: '1px solid #E2E8F0',
             boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            minWidth: 0,
+            overflow: 'hidden',
           }}
         >
-          <div style={{ fontSize: '13px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <CheckCircle size={16} color="#16A34A" />
+          <div style={{ fontSize: '12px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <CheckCircle size={15} color="#16A34A" />
             <span>Đang Hiệu Lực</span>
           </div>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#16A34A', marginTop: '6px' }}>{activeCount}</div>
+          <div style={{ fontSize: 'clamp(18px, 4.5vw, 24px)', fontWeight: 700, color: '#16A34A', marginTop: '6px', wordBreak: 'break-word' }}>{activeCount}</div>
         </div>
 
         <div
           style={{
             backgroundColor: '#FFFFFF',
             borderRadius: '10px',
-            padding: '16px 20px',
+            padding: '12px 14px',
             border: '1px solid #E2E8F0',
             boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            minWidth: 0,
+            overflow: 'hidden',
           }}
         >
-          <div style={{ fontSize: '13px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Clock size={16} color="#D97706" />
+          <div style={{ fontSize: '12px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Clock size={15} color="#D97706" />
             <span>Chờ Ký / Dự Thảo</span>
           </div>
-          <div style={{ fontSize: '24px', fontWeight: 700, color: '#D97706', marginTop: '6px' }}>
+          <div style={{ fontSize: 'clamp(18px, 4.5vw, 24px)', fontWeight: 700, color: '#D97706', marginTop: '6px', wordBreak: 'break-word' }}>
             {pendingCount + draftCount}
           </div>
         </div>
@@ -989,16 +1009,28 @@ function parseApiError(errJson: unknown, fallback: string): string {
           style={{
             backgroundColor: '#FFFFFF',
             borderRadius: '10px',
-            padding: '16px 20px',
+            padding: '12px 14px',
             border: '1px solid #E2E8F0',
             boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+            minWidth: 0,
+            overflow: 'hidden',
           }}
         >
-          <div style={{ fontSize: '13px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Building size={16} color="#4F46E5" />
+          <div style={{ fontSize: '12px', color: '#64748B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Building size={15} color="#4F46E5" />
             <span>Doanh Thu Hiệu Lực</span>
           </div>
-          <div style={{ fontSize: '20px', fontWeight: 700, color: '#4F46E5', marginTop: '6px' }}>
+          <div
+            style={{
+              fontSize: 'clamp(13px, 3.2vw, 18px)',
+              fontWeight: 700,
+              color: '#4F46E5',
+              marginTop: '6px',
+              wordBreak: 'break-word',
+              overflowWrap: 'anywhere',
+              lineHeight: 1.25,
+            }}
+          >
             {formatCurrency(totalValue)}
           </div>
         </div>
@@ -1978,8 +2010,8 @@ function parseApiError(errJson: unknown, fallback: string): string {
                       color: '#92400E',
                     }}
                   >
-                    <strong>Lưu ý nghiệp vụ:</strong> Sau khi tạo, hợp đồng sẽ ở trạng thái <code>DRAFT</code> và ô mộ{' '}
-                    <code>{wizardPlot?.plot_code}</code> sẽ được tạm khóa giữ chỗ (RESERVED) để nhân viên in ấn gửi thân nhân ký duyệt.
+                    <strong>Lưu ý nghiệp vụ:</strong> Sau khi tạo, hợp đồng sẽ ở trạng thái Dự Thảo và ô mộ{' '}
+                    <code>{wizardPlot?.plot_code}</code> sẽ được tạm giữ chỗ để nhân viên gửi thân nhân ký duyệt.
                   </div>
                 </div>
               )}
@@ -2231,7 +2263,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
                     <div style={{ border: '1px solid #FDE68A', borderRadius: '8px', padding: '16px', backgroundColor: '#FFFBEB' }}>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: '#B45309', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
                         <ArrowRightLeft size={16} />
-                        <span>Hồ Sơ Cải Táng (Exhumation)</span>
+                        <span>Hồ Sơ Cải Táng</span>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', fontSize: '13px' }}>
                         <div><strong>Người quá cố:</strong> {contractDetail.exhumation.deceased_name || `ID #${contractDetail.exhumation.current_deceased_id}`}</div>
@@ -2247,7 +2279,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
                     <div style={{ border: '1px solid #C7D2FE', borderRadius: '8px', padding: '16px', backgroundColor: '#EEF2FF' }}>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: '#4338CA', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
                         <ArrowRightLeft size={16} />
-                        <span>Hợp Đồng Chuyển Nhượng Quyền Sử Dụng (Ownership Transfer)</span>
+                        <span>Hợp Đồng Chuyển Nhượng Quyền Sử Dụng</span>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', fontSize: '13px' }}>
                         <div><strong>Bên chuyển nhượng:</strong> {contractDetail.transfer.seller_name || `ID #${contractDetail.transfer.seller_id}`}</div>
@@ -2263,12 +2295,12 @@ function parseApiError(errJson: unknown, fallback: string): string {
                     <div style={{ border: '1px solid #FED7AA', borderRadius: '8px', padding: '16px', backgroundColor: '#FFF7ED' }}>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: '#C2410C', display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
                         <Flame size={16} />
-                        <span>Hợp Đồng Hỏa Táng Trọn Gói (Cremation)</span>
+                        <span>Hợp Đồng Hỏa Táng Trọn Gói</span>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', fontSize: '13px' }}>
                         <div><strong>Người quá cố:</strong> {contractDetail.cremation.deceased_name || `ID #${contractDetail.cremation.deceased_id}`}</div>
                         <div><strong>Ngày hỏa táng:</strong> {contractDetail.cremation.cremation_date}</div>
-                        <div><strong>Gói dịch vụ:</strong> {contractDetail.cremation.package_service_code}</div>
+                        <div><strong>Gói dịch vụ:</strong> {getCremationPackageName(contractDetail.cremation.package_service_code)}</div>
                         <div><strong>Lưu trữ tro cốt:</strong> {contractDetail.cremation.urn_storage_option || 'Gia đình mang về'}</div>
                         <div><strong>Phí dịch vụ:</strong> {formatCurrency(contractDetail.cremation.service_fee)}</div>
                       </div>
@@ -2277,7 +2309,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
 
                   {/* Annexes Section */}
                   <div style={{ border: '1px solid #E2E8F0', borderRadius: '8px', padding: '16px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
                       <div style={{ fontSize: '14px', fontWeight: 600, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <Layers size={16} color="var(--brand-primary)" />
                         <span>Phụ Lục Hợp Đồng ({contractDetail.annexes?.length || 0})</span>
@@ -2297,6 +2329,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
                             display: 'flex',
                             alignItems: 'center',
                             gap: '4px',
+                            whiteSpace: 'nowrap',
                           }}
                         >
                           <Plus size={14} />
@@ -2313,6 +2346,13 @@ function parseApiError(errJson: unknown, fallback: string): string {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {contractDetail.annexes.map((annex) => {
                           const aBadge = getAnnexStatusBadge(annex.status);
+                          const annexTypeLabel = annex.annex_type === 'BURIAL' 
+                            ? 'An Táng' 
+                            : annex.annex_type === 'CARE' 
+                            ? 'Chăm Sóc' 
+                            : annex.annex_type === 'CONSTRUCTION' 
+                            ? 'Xây Dựng' 
+                            : (annex.annex_type || 'Phụ Lục');
                           return (
                             <div
                               key={annex.annex_id}
@@ -2324,11 +2364,11 @@ function parseApiError(errJson: unknown, fallback: string): string {
                                 fontSize: '13px',
                               }}
                             >
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px', marginBottom: '8px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                                   <span style={{ fontWeight: 700, color: 'var(--brand-primary)' }}>{annex.annex_code}</span>
-                                  <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: 600, backgroundColor: '#E2E8F0', color: '#334155' }}>
-                                    {annex.annex_type === 'BURIAL' ? 'Phụ Lục An Táng' : annex.annex_type}
+                                  <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: 600, backgroundColor: '#E2E8F0', color: '#334155', whiteSpace: 'nowrap' }}>
+                                    {annexTypeLabel}
                                   </span>
                                   <span
                                     style={{
@@ -2339,12 +2379,13 @@ function parseApiError(errJson: unknown, fallback: string): string {
                                       backgroundColor: aBadge.bg,
                                       color: aBadge.color,
                                       border: `1px solid ${aBadge.border}`,
+                                      whiteSpace: 'nowrap',
                                     }}
                                   >
                                     {aBadge.label}
                                   </span>
                                 </div>
-                                <div style={{ fontWeight: 600, color: '#0F172A' }}>
+                                <div style={{ fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap' }}>
                                   {formatCurrency(annex.additional_amount)}
                                 </div>
                               </div>
@@ -2714,7 +2755,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
                   }}
                 />
                 <div style={{ fontSize: '11px', color: '#64748B', marginTop: '4px' }}>
-                  Hỗ trợ định dạng PDF, JPG, PNG. File sẽ được lưu trữ an toàn trên MinIO.
+                  Hỗ trợ định dạng PDF, JPG, PNG. Tệp sẽ được lưu trữ an toàn và bảo mật trên hệ thống.
                 </div>
               </div>
 
@@ -2839,7 +2880,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
             </div>
 
             <p style={{ fontSize: '13px', color: '#64748B', marginBottom: '14px' }}>
-              Thao tác này sẽ hủy bỏ hợp đồng và <strong>giải phóng ô mộ trở lại trạng thái Trống Chưa Bán (EMPTY_UNSOLD)</strong>.
+              Thao tác này sẽ hủy bỏ hợp đồng và <strong>giải phóng ô mộ trở lại trạng thái Trống Chưa Bán</strong>.
             </p>
 
             <div>
@@ -3051,11 +3092,11 @@ function parseApiError(errJson: unknown, fallback: string): string {
                   onChange={(e) => setBurialIsKimTinh(e.target.checked)}
                   style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                 />
-                <span>An Táng Hình Thức Kim Tĩnh (Quy tắc bất biến)</span>
+                <span>Kim tĩnh</span>
               </label>
               {burialIsKimTinh && (
                 <div style={{ marginTop: '8px', fontSize: '12px', color: '#991B1B', lineHeight: '1.4' }}>
-                  <strong>🔒 BẢO VỆ MỨC SERVER & CSDL:</strong> Khi kích hoạt phụ lục này, ô mộ sẽ bị KHÓA VĨNH VIỄN (Trigger CSDL ngăn chặn tuyệt đối lệnh mở khóa và chặn lệnh cải táng). Thao tác này không thể hoàn tác!
+                  <strong>🔒 LƯU Ý BẢO LƯU:</strong> Ô mộ Kim tĩnh sẽ được bảo lưu cố định vĩnh viễn, không áp dụng cải táng hoặc chuyển nhượng sau khi an táng.
                 </div>
               )}
             </div>
@@ -3516,7 +3557,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
             {/* Select Plot owned by seller */}
             <div style={{ marginBottom: '12px' }}>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                2. Ô Mộ Chuyển Nhượng (Chỉ ô OWNED_EMPTY, không có hài cốt) (*)
+                2. Ô Mộ Chuyển Nhượng (không có hài cốt) (*)
               </label>
               <select
                 value={selectedTransferPlot?.plot_id || ''}

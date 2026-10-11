@@ -34,6 +34,7 @@ export const ConstructionModule: React.FC = () => {
   const [unavailabilities, setUnavailabilities] = useState<StaffUnavailabilityResponse[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
+  const [staffList, setStaffList] = useState<Array<{ user_id: number; username: string; full_name: string; roles: string[] }>>([])
 
   // Sub-view and filters
   const [activeSubView, setActiveSubView] = useState<'ORDERS' | 'SCHEDULING'>('ORDERS')
@@ -130,6 +131,16 @@ export const ConstructionModule: React.FC = () => {
     fetchOrders()
     fetchUnavailabilities()
   }, [fetchOrders, fetchUnavailabilities])
+
+  useEffect(() => {
+    if (!token) return
+    fetch('/api/v1/auth/staff', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setStaffList(data))
+      .catch(() => {})
+  }, [token])
 
   // Check conflict when creating order
   useEffect(() => {
@@ -237,7 +248,7 @@ export const ConstructionModule: React.FC = () => {
       })
       if (!uploadRes.ok) {
         const errJson = await uploadRes.json().catch(() => ({}))
-        throw new Error(errJson.detail || 'Tải tệp lên MinIO thất bại')
+        throw new Error(errJson.detail || 'Tải tệp lên máy chủ thất bại')
       }
       const fileData = await uploadRes.json()
       const fileId = fileData.file_id
@@ -592,7 +603,7 @@ export const ConstructionModule: React.FC = () => {
             Quản Lý Thi Công Thực Địa
           </h2>
           <p style={{ fontSize: '13px', color: '#64748B', margin: '4px 0 0 0' }}>
-            Điều phối kế hoạch, phân công giám sát, checklist từng bước và lưu trữ bằng chứng ảnh MinIO
+            Điều phối kế hoạch, phân công giám sát, checklist từng bước và lưu trữ bằng chứng ảnh nghiệm thu thực địa
           </p>
         </div>
 
@@ -1483,11 +1494,11 @@ export const ConstructionModule: React.FC = () => {
                           backgroundColor: task.status === 'DONE' ? '#F0FDF4' : '#FFFFFF',
                         }}
                       >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                           <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                             {/* Sort Controls */}
                             {hasPermission('construction:write') && selectedOrder.status !== 'COMPLETED' && (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '2px' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '2px', flexShrink: 0 }}>
                                 <button
                                   disabled={idx === 0}
                                   onClick={() => handleReorderTasks(idx, 'UP')}
@@ -1517,8 +1528,8 @@ export const ConstructionModule: React.FC = () => {
                               </div>
                             )}
 
-                            <div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                                 <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--brand-secondary)' }}>
                                   {task.sort_order}. {task.task_name}
                                 </span>
@@ -1531,6 +1542,7 @@ export const ConstructionModule: React.FC = () => {
                                       borderRadius: '4px',
                                       backgroundColor: '#FEE2E2',
                                       color: '#DC2626',
+                                      whiteSpace: 'nowrap',
                                     }}
                                   >
                                     BẮT BUỘC
@@ -1544,6 +1556,7 @@ export const ConstructionModule: React.FC = () => {
                                       borderRadius: '4px',
                                       backgroundColor: '#F1F5F9',
                                       color: '#64748B',
+                                      whiteSpace: 'nowrap',
                                     }}
                                   >
                                     TÙY CHỌN
@@ -1558,13 +1571,14 @@ export const ConstructionModule: React.FC = () => {
                                       fontSize: '11px',
                                       fontWeight: 600,
                                       color: '#059669',
+                                      whiteSpace: 'nowrap',
                                     }}
                                   >
                                     <CheckCircle2 size={13} />
                                     Đã Xong
                                   </span>
                                 ) : (
-                                  <span style={{ fontSize: '11px', color: '#D97706', fontWeight: 600 }}>
+                                  <span style={{ fontSize: '11px', color: '#D97706', fontWeight: 600, whiteSpace: 'nowrap' }}>
                                     Chưa Xong
                                   </span>
                                 )}
@@ -1579,54 +1593,58 @@ export const ConstructionModule: React.FC = () => {
                           </div>
 
                           {/* Task Action Buttons */}
-                          <div style={{ display: 'flex', gap: '8px' }}>
-                            {hasPermission('construction:write') && task.status !== 'DONE' && (
-                              <button
-                                onClick={() => {
-                                  setEvidenceTaskId(task.task_id)
-                                  setIsEvidenceModalOpen(true)
-                                }}
-                                style={{
-                                  padding: '5px 10px',
-                                  backgroundColor: '#EFF6FF',
-                                  border: '1px solid #BFDBFE',
-                                  borderRadius: '6px',
-                                  color: '#2563EB',
-                                  fontSize: '12px',
-                                  fontWeight: 600,
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '4px',
-                                }}
-                              >
-                                <UploadCloud size={13} />
-                                <span>+ Đính Ảnh MinIO</span>
-                              </button>
-                            )}
+                          {task.status !== 'DONE' && (hasPermission('construction:write') || hasPermission('construction:execute')) && (
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end', paddingTop: '6px', borderTop: '1px dashed #E2E8F0' }}>
+                              {hasPermission('construction:write') && (
+                                <button
+                                  onClick={() => {
+                                    setEvidenceTaskId(task.task_id)
+                                    setIsEvidenceModalOpen(true)
+                                  }}
+                                  style={{
+                                    padding: '6px 12px',
+                                    backgroundColor: '#EFF6FF',
+                                    border: '1px solid #BFDBFE',
+                                    borderRadius: '6px',
+                                    color: '#2563EB',
+                                    fontSize: '12px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  <UploadCloud size={13} />
+                                  <span>+ Đính kèm ảnh</span>
+                                </button>
+                              )}
 
-                            {hasPermission('construction:execute') && task.status !== 'DONE' && (
-                              <button
-                                onClick={() => handleCompleteTask(task)}
-                                style={{
-                                  padding: '5px 12px',
-                                  backgroundColor: 'var(--brand-primary)',
-                                  border: 'none',
-                                  borderRadius: '6px',
-                                  color: '#FFFFFF',
-                                  fontSize: '12px',
-                                  fontWeight: 600,
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '4px',
-                                }}
-                              >
-                                <CheckCircle2 size={13} />
-                                <span>Hoàn Tất</span>
-                              </button>
-                            )}
-                          </div>
+                              {hasPermission('construction:execute') && (
+                                <button
+                                  onClick={() => handleCompleteTask(task)}
+                                  style={{
+                                    padding: '6px 14px',
+                                    backgroundColor: 'var(--brand-primary)',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    color: '#FFFFFF',
+                                    fontSize: '12px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    whiteSpace: 'nowrap',
+                                  }}
+                                >
+                                  <CheckCircle2 size={13} />
+                                  <span>Hoàn Tất</span>
+                                </button>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         {/* Evidences Attached to this Task */}
@@ -1642,7 +1660,7 @@ export const ConstructionModule: React.FC = () => {
                             }}
                           >
                             <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', alignSelf: 'center' }}>
-                              Bằng chứng MinIO ({task.evidences.length}):
+                              Hình ảnh minh chứng ({task.evidences.length}):
                             </span>
                             {task.evidences.map((ev) => (
                               <a
@@ -1821,7 +1839,7 @@ export const ConstructionModule: React.FC = () => {
               <div className="responsive-form-row">
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                    Mã Phụ Lục Hợp Đồng (ACTIVE) *
+                    Mã Phụ Lục Hợp Đồng Đang Hiệu Lực *
                   </label>
                   <input
                     type="number"
@@ -1850,15 +1868,21 @@ export const ConstructionModule: React.FC = () => {
 
               <div style={{ marginBottom: '14px' }}>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                  Giám Sát Viên Chịu Trách Nhiệm (User ID) *
+                  Giám Sát Viên Chịu Trách Nhiệm *
                 </label>
-                <input
-                  type="number"
+                <select
                   required
                   value={createForm.supervisor_id}
                   onChange={(e) => setCreateForm({ ...createForm, supervisor_id: e.target.value })}
-                  style={{ width: '100%', padding: '8px 10px', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px' }}
-                />
+                  style={{ width: '100%', padding: '8px 10px', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#FFFFFF' }}
+                >
+                  <option value="">-- Chọn giám sát viên --</option>
+                  {staffList.map((s) => (
+                    <option key={s.user_id} value={s.user_id}>
+                      {s.full_name} ({s.roles.join(', ') || 'Nhân sự'})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="responsive-form-row">
@@ -1964,7 +1988,7 @@ export const ConstructionModule: React.FC = () => {
               }}
             >
               <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--brand-secondary)' }}>
-                Tải Lên Bằng Chứng Ảnh Nghiệm Thu (MinIO)
+                Tải Lên Bằng Chứng Ảnh Nghiệm Thu
               </h3>
               <button
                 onClick={() => setIsEvidenceModalOpen(false)}
@@ -2094,15 +2118,21 @@ export const ConstructionModule: React.FC = () => {
             <form onSubmit={handleCreateUnavailability} style={{ padding: '20px' }}>
               <div style={{ marginBottom: '14px' }}>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                  Mã Nhân Viên (User ID) *
+                  Nhân Viên Đăng Ký Vắng Mặt *
                 </label>
-                <input
-                  type="number"
+                <select
                   required
                   value={unavailForm.user_id}
                   onChange={(e) => setUnavailForm({ ...unavailForm, user_id: e.target.value })}
-                  style={{ width: '100%', padding: '8px 10px', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px' }}
-                />
+                  style={{ width: '100%', padding: '8px 10px', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#FFFFFF' }}
+                >
+                  <option value="">-- Chọn nhân viên --</option>
+                  {staffList.map((s) => (
+                    <option key={s.user_id} value={s.user_id}>
+                      {s.full_name} ({s.roles.join(', ') || 'Nhân sự'})
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="responsive-form-row">
