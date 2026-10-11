@@ -85,7 +85,7 @@ class DeathCertificate(Base):
     file_id = Column(
         String(64), ForeignKey("file_objects.file_id", ondelete="SET NULL"), nullable=True
     )
-    is_verified = Column(Boolean, nullable=False, default=False)
+    is_verified = Column(Boolean, nullable=False, default=True)
     verified_at = Column(DateTime, nullable=True)
     verified_by = Column(Integer, ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
     rejection_reason = Column(Unicode(255), nullable=True)

@@ -7,7 +7,6 @@ import type {
   DeceasedProfile,
   DeceasedProfileCreate,
   DeathCertificateCreate,
-  DeathCertificateVerifyRequest,
   DeceasedPublicLookupResponse,
   RelationDetail,
   RelationCreate,
@@ -18,7 +17,7 @@ interface ProfileModuleProps {
   currentUserRoles?: string[];
 }
 
-export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUserRoles = [] }) => {
+export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUserRoles: _currentUserRoles = [] }) => {
   const [activeTab, setActiveTab] = useState<'CUSTOMERS' | 'DECEASED' | 'RELATIONS' | 'MEMORIAL_PUBLIC'>(
     token ? 'CUSTOMERS' : 'MEMORIAL_PUBLIC'
   );
@@ -72,8 +71,6 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
     issue_date: new Date().toISOString().split('T')[0],
     notes: '',
   });
-  const [rejectReason, setRejectReason] = useState('');
-  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
 
   // Public Memorial search states
   const [memorialQuery, setMemorialQuery] = useState('');
@@ -103,9 +100,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const isStaff = currentUserRoles.some((r) =>
-    ['ADMIN', 'QUAN_TRANG', 'MARKETING', 'ACCOUNTANT'].includes(r.toUpperCase())
-  );
+
 
   useEffect(() => {
     if (activeTab === 'CUSTOMERS' && token) {
@@ -410,51 +405,6 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
     }
   };
 
-  // Verify / Reject Certificate (G08)
-  const handleVerifyCertificate = async (isVerified: boolean, reason?: string) => {
-    if (!token || !selectedDeceased || !selectedDeceased.death_certificate) return;
-    setErrorMsg(null);
-    try {
-      const payload: DeathCertificateVerifyRequest = {
-        is_verified: isVerified,
-        rejection_reason: reason || null,
-        notes: isVerified ? 'Đã đối chiếu bản gốc hợp lệ' : 'Hồ sơ chưa đủ điều kiện',
-      };
-
-      const certId = selectedDeceased.death_certificate.cert_id;
-      const res = await fetch(`/api/v1/profiles/certificates/${certId}/verify`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.detail || 'Không thể cập nhật thẩm định');
-      }
-
-      setSuccessMsg(
-        isVerified ? 'Xác minh giấy báo tử thành công! Đủ điều kiện an táng.' : 'Đã từ chối giấy báo tử.'
-      );
-      setIsRejectModalOpen(false);
-
-      // Reload deceased
-      const updatedRes = await fetch(
-        `/api/v1/profiles/deceased/${selectedDeceased.deceased_id}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      if (updatedRes.ok) {
-        const updated = await updatedRes.json();
-        setSelectedDeceased(updated);
-      }
-      loadDeceased();
-    } catch (err: unknown) {
-      setErrorMsg((err as Error).message);
-    }
-  };
 
   // Customer relation filter
   const [customerFilter, setCustomerFilter] = useState<'ALL' | 'HAS_RELATIONS' | 'NO_RELATIONS'>('ALL');
@@ -467,8 +417,8 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
 
   // Filtered deceased list
   const filteredDeceased = deceasedList.filter((d) => {
-    if (deceasedFilter === 'VERIFIED') return d.death_certificate?.is_verified === true;
-    if (deceasedFilter === 'UNVERIFIED') return d.death_certificate?.is_verified !== true;
+    if (deceasedFilter === 'VERIFIED') return !!d.death_certificate;
+    if (deceasedFilter === 'UNVERIFIED') return !d.death_certificate;
     return true;
   });
 
@@ -1264,7 +1214,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                     flexShrink: 0,
                   }}
                 >
-                  ✓ Đã xác minh
+                  ✓ Đã có giấy báo tử
                 </button>
                 <button
                   onClick={() => setDeceasedFilter('UNVERIFIED')}
@@ -1281,7 +1231,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                     flexShrink: 0,
                   }}
                 >
-                  ⏳ Chưa xác minh
+                  Chưa có giấy báo tử
                 </button>
               </div>
 
@@ -2779,23 +2729,25 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
             style={{
               backgroundColor: 'white',
               borderRadius: '16px',
-              padding: '28px',
-              width: '700px',
-              maxWidth: '92%',
-              maxHeight: '90vh',
-              overflowY: 'auto',
+              width: '680px',
+              maxWidth: '100%',
+              maxHeight: 'min(90vh, 720px)',
               boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              padding: 0,
             }}
           >
-            {/* Header */}
+            {/* Header (fixed) */}
             <div
               style={{
+                flexShrink: 0,
+                padding: '18px 24px',
+                borderBottom: '1px solid #E5E7EB',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'flex-start',
-                borderBottom: '1px solid #E5E7EB',
-                paddingBottom: '14px',
-                marginBottom: '18px',
               }}
             >
               <div>
@@ -2811,7 +2763,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 >
                   {selectedDeceased.deceased_code}
                 </span>
-                <h3 style={{ margin: '8px 0 2px 0', fontSize: '22px', color: '#111827' }}>
+                <h3 style={{ margin: '8px 0 2px 0', fontSize: '20px', color: '#111827', fontWeight: 'bold' }}>
                   {selectedDeceased.full_name}
                 </h3>
                 <span style={{ fontSize: '13px', color: '#6B7280' }}>
@@ -2821,14 +2773,34 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
               </div>
               <button
                 onClick={() => setSelectedDeceased(null)}
-                style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#9CA3AF' }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '20px',
+                  cursor: 'pointer',
+                  color: '#9CA3AF',
+                  padding: '4px',
+                  lineHeight: 1,
+                }}
               >
                 ✕
               </button>
             </div>
 
-            {/* Vital stats & Grave slot */}
-            <div className="responsive-form-row">
+            {/* Body (scrollable) */}
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: 'auto',
+                padding: '20px 24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '20px',
+              }}
+            >
+              {/* Vital stats & Grave slot */}
+              <div className="responsive-form-row">
               <div style={{ backgroundColor: '#F9FAFB', padding: '14px', borderRadius: '10px' }}>
                 <div style={{ fontSize: '12px', color: '#6B7280', fontWeight: 600, marginBottom: '6px' }}>
                   THÔNG TIN SINH & MẤT
@@ -2890,21 +2862,29 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
               </div>
             </div>
 
-            {/* Death Certificate Section (G08) */}
+            {/* Death Certificate Section */}
             <div
               style={{
                 backgroundColor: '#FFFFFF',
                 borderRadius: '12px',
                 border: '1px solid #E5E7EB',
                 padding: '18px',
-                marginBottom: '20px',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                  marginBottom: '12px',
+                }}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '18px' }}>📜</span>
                   <h4 style={{ margin: 0, fontSize: '15px', color: '#111827', fontWeight: 'bold' }}>
-                    Giấy Báo Tử (Căn cứ pháp lý duyệt an táng)
+                    Hồ Sơ Giấy Báo Tử (Căn cứ pháp lý an táng)
                   </h4>
                 </div>
 
@@ -2912,7 +2892,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                   <button
                     onClick={() => setIsCertModalOpen(true)}
                     style={{
-                      padding: '5px 12px',
+                      padding: '6px 12px',
                       backgroundColor: '#24594D',
                       color: 'white',
                       borderRadius: '6px',
@@ -2920,6 +2900,8 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                       cursor: 'pointer',
                       fontSize: '12px',
                       fontWeight: 600,
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
                     }}
                   >
                     + Đính kèm giấy báo tử
@@ -2938,31 +2920,19 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      backgroundColor: selectedDeceased.death_certificate.is_verified ? '#DCFCE7' : '#FEF3C7',
-                      color: selectedDeceased.death_certificate.is_verified ? '#15803D' : '#92400E',
+                      backgroundColor: '#DCFCE7',
+                      color: '#15803D',
+                      flexWrap: 'wrap',
+                      gap: '8px',
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '16px' }}>
-                        {selectedDeceased.death_certificate.is_verified ? '✓' : '⏳'}
-                      </span>
+                      <span style={{ fontSize: '16px' }}>✓</span>
                       <div>
-                        <strong>
-                          {selectedDeceased.death_certificate.is_verified
-                            ? 'ĐÃ ĐƯỢC THẨM ĐỊNH & PHÊ DUYỆT HỢP LỆ'
-                            : 'ĐANG CHỜ NHÂN VIÊN CÓ THẨM QUYỀN THẨM ĐỊNH'}
-                        </strong>
-                        {selectedDeceased.death_certificate.verifier_name && (
-                          <div style={{ fontSize: '11px', marginTop: '2px' }}>
-                            Người xác minh: {selectedDeceased.death_certificate.verifier_name} · Ngày:{' '}
-                            {selectedDeceased.death_certificate.verified_at
-                              ? new Date(selectedDeceased.death_certificate.verified_at).toLocaleString('vi-VN')
-                              : ''}
-                          </div>
-                        )}
-                        {selectedDeceased.death_certificate.rejection_reason && (
-                          <div style={{ fontSize: '12px', color: '#B91C1C', marginTop: '2px' }}>
-                            Lý do từ chối: {selectedDeceased.death_certificate.rejection_reason}
+                        <strong>HỒ SƠ GIẤY BÁO TỬ ĐÃ LƯU TRỮ HỢP LỆ</strong>
+                        {selectedDeceased.death_certificate.verified_at && (
+                          <div style={{ fontSize: '11px', marginTop: '2px', color: '#166534' }}>
+                            Ngày lưu: {new Date(selectedDeceased.death_certificate.verified_at).toLocaleDateString('vi-VN')}
                           </div>
                         )}
                       </div>
@@ -2973,11 +2943,14 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                       style={{
                         padding: '4px 10px',
                         backgroundColor: 'white',
-                        border: '1px solid #D1D5DB',
+                        border: '1px solid #86EFAC',
                         borderRadius: '6px',
                         cursor: 'pointer',
                         fontSize: '12px',
-                        color: '#374151',
+                        color: '#15803D',
+                        fontWeight: 600,
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
                       }}
                     >
                       Sửa thông tin
@@ -3002,71 +2975,13 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                       <span style={{ color: '#6B7280' }}>Cơ Quan Cấp:</span>{' '}
                       <strong>{selectedDeceased.death_certificate.issuing_authority}</strong>
                     </div>
+                    {selectedDeceased.death_certificate.notes && (
+                      <div style={{ gridColumn: 'span 2' }}>
+                        <span style={{ color: '#6B7280' }}>Ghi chú:</span>{' '}
+                        <span>{selectedDeceased.death_certificate.notes}</span>
+                      </div>
+                    )}
                   </div>
-
-                  {/* Verification action buttons for staff */}
-                  {isStaff && (
-                    <div
-                      style={{
-                        marginTop: '16px',
-                        paddingTop: '14px',
-                        borderTop: '1px solid #E5E7EB',
-                        display: 'flex',
-                        justifyContent: 'flex-end',
-                        gap: '10px',
-                      }}
-                    >
-                      {!selectedDeceased.death_certificate.is_verified ? (
-                        <>
-                          <button
-                            onClick={() => setIsRejectModalOpen(true)}
-                            style={{
-                              padding: '7px 14px',
-                              backgroundColor: '#FEE2E2',
-                              color: '#991B1B',
-                              borderRadius: '6px',
-                              border: 'none',
-                              cursor: 'pointer',
-                              fontWeight: 600,
-                              fontSize: '12px',
-                            }}
-                          >
-                            Từ Chối Giấy Báo Tử
-                          </button>
-                          <button
-                            onClick={() => handleVerifyCertificate(true)}
-                            style={{
-                              padding: '7px 16px',
-                              backgroundColor: '#16A34A',
-                              color: 'white',
-                              borderRadius: '6px',
-                              border: 'none',
-                              cursor: 'pointer',
-                              fontWeight: 600,
-                              fontSize: '12px',
-                            }}
-                          >
-                            ✓ Thẩm Định & Phê Duyệt An Táng
-                          </button>
-                        </>
-                      ) : (
-                        <button
-                          onClick={() => setIsRejectModalOpen(true)}
-                          style={{
-                            padding: '6px 14px',
-                            backgroundColor: '#FEF3C7',
-                            color: '#92400E',
-                            borderRadius: '6px',
-                            border: '1px solid #FCD34D',
-                            cursor: 'pointer',
-                            fontSize: '12px',
-                          }}
-                        >
-                          Thu hồi xác minh
-                        </button>
-                      )}
-                    </div>
-                  )}
                 </div>
               ) : (
                 <div style={{ color: '#6B7280', fontSize: '13px' }}>
@@ -3077,7 +2992,16 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
 
             {/* Relatives List */}
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: '8px',
+                  marginBottom: '12px',
+                }}
+              >
                 <h4 style={{ margin: 0, fontSize: '14px', color: '#111827', fontWeight: 'bold' }}>
                   Thân Nhân Có Trách Nhiệm Liên Hệ
                 </h4>
@@ -3085,7 +3009,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                   <button
                     onClick={() => handleOpenRelationModal(undefined, selectedDeceased.deceased_id)}
                     style={{
-                      padding: '4px 10px',
+                      padding: '6px 12px',
                       fontSize: '12px',
                       backgroundColor: '#EEF2FF',
                       color: '#4F46E5',
@@ -3095,58 +3019,43 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                       fontWeight: 600,
                       display: 'inline-flex',
                       alignItems: 'center',
-                      gap: '4px',
+                      gap: '5px',
+                      whiteSpace: 'nowrap',
+                      flexShrink: 0,
                     }}
                   >
-                    <Link2 size={13} />
+                    <Link2 size={14} />
                     + Thêm Thân Nhân
                   </button>
                 )}
               </div>
               {selectedDeceased.relations.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {selectedDeceased.relations.map((r) => (
                     <div
                       key={r.relation_id}
                       style={{
-                        padding: '10px 14px',
+                        padding: '12px 14px',
                         backgroundColor: '#F9FAFB',
-                        borderRadius: '8px',
+                        border: '1px solid #E5E7EB',
+                        borderRadius: '10px',
                         display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
+                        flexDirection: 'column',
+                        gap: '8px',
                         fontSize: '13px',
                       }}
                     >
-                      <div>
-                        <strong>{r.customer_full_name}</strong> · Quan hệ: <em>{r.relationship_type}</em>{' '}
-                        {r.is_primary_contact && (
-                          <span
-                            style={{
-                              fontSize: '11px',
-                              backgroundColor: '#FEF3C7',
-                              color: '#92400E',
-                              padding: '1px 6px',
-                              borderRadius: '4px',
-                              fontWeight: 'bold',
-                              marginLeft: '4px',
-                            }}
-                          >
-                            ★ Đại diện chính
-                          </span>
-                        )}
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ color: '#4B5563' }}>
-                          SĐT: <strong>{r.phone_number}</strong> · CCCD: <code>{r.citizen_id}</code>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ fontWeight: 600, color: '#111827', fontSize: '13.5px', wordBreak: 'break-word' }}>
+                          {r.customer_full_name}
                         </div>
                         {token && (
                           <button
                             onClick={() => handleDeleteRelation(r.relation_id)}
                             title="Gỡ liên kết"
                             style={{
-                              padding: '4px 8px',
-                              borderRadius: '4px',
+                              padding: '4px 10px',
+                              borderRadius: '6px',
                               border: '1px solid #FECACA',
                               backgroundColor: '#FEF2F2',
                               color: '#DC2626',
@@ -3154,14 +3063,54 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                               display: 'inline-flex',
                               alignItems: 'center',
                               gap: '4px',
-                              fontSize: '11px',
+                              fontSize: '12px',
                               fontWeight: 600,
+                              whiteSpace: 'nowrap',
+                              flexShrink: 0,
                             }}
                           >
-                            <Trash2 size={12} />
+                            <Trash2 size={13} />
                             Gỡ
                           </button>
                         )}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            backgroundColor: '#EEF2FF',
+                            color: '#3730A3',
+                            border: '1px solid #C7D2FE',
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            fontWeight: 600,
+                            whiteSpace: 'nowrap',
+                            flexShrink: 0,
+                          }}
+                        >
+                          Quan hệ: {r.relationship_type}
+                        </span>
+                        {r.is_primary_contact && (
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              backgroundColor: '#FEF3C7',
+                              color: '#92400E',
+                              border: '1px solid #FDE68A',
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              fontWeight: 'bold',
+                              whiteSpace: 'nowrap',
+                              flexShrink: 0,
+                            }}
+                          >
+                            ★ Đại diện chính
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#4B5563', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                        <span>SĐT: <strong style={{ color: '#111827' }}>{r.phone_number}</strong></span>
+                        <span>CCCD: <code style={{ color: '#111827', backgroundColor: '#F3F4F6', padding: '1px 4px', borderRadius: '4px' }}>{r.citizen_id}</code></span>
                       </div>
                     </div>
                   ))}
@@ -3171,8 +3120,37 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
               )}
             </div>
           </div>
+
+          {/* Footer (fixed) */}
+          <div
+            style={{
+              flexShrink: 0,
+              padding: '16px 24px',
+              backgroundColor: '#F8FAFC',
+              borderTop: '1px solid #E5E7EB',
+              display: 'flex',
+              justifyContent: 'flex-end',
+            }}
+          >
+            <button
+              onClick={() => setSelectedDeceased(null)}
+              style={{
+                padding: '8px 20px',
+                borderRadius: '8px',
+                border: '1px solid #D1D5DB',
+                backgroundColor: 'white',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '13px',
+                color: '#374151',
+              }}
+            >
+              Đóng
+            </button>
+          </div>
         </div>
-      )}
+      </div>
+    )}
 
       {/* ========================================================================= */}
       {/* MODAL: ATTACH DEATH CERTIFICATE */}
@@ -3294,7 +3272,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                     cursor: 'pointer',
                   }}
                 >
-                  Lưu & Gửi Thẩm Định
+                  Lưu Hồ Sơ Giấy Báo Tử
                 </button>
               </div>
             </form>
@@ -3302,81 +3280,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
         </div>
       )}
 
-      {/* ========================================================================= */}
-      {/* MODAL: REJECT CERTIFICATE */}
-      {/* ========================================================================= */}
-      {isRejectModalOpen && (
-        <div
-          className="responsive-modal-overlay"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1100,
-          }}
-        >
-          <div
-            className="responsive-modal-card"
-            style={{
-              backgroundColor: 'white',
-              borderRadius: '14px',
-              padding: '24px',
-              width: '450px',
-              maxWidth: '90%',
-            }}
-          >
-            <h3 style={{ margin: '0 0 12px 0', color: '#991B1B', fontSize: '18px', fontWeight: 'bold' }}>
-              Từ Chối Giấy Báo Tử
-            </h3>
-            <p style={{ margin: '0 0 14px 0', fontSize: '13px', color: '#4B5563' }}>
-              Vui lòng nhập lý do từ chối để thân nhân có căn cứ bổ sung hồ sơ hợp lệ:
-            </p>
 
-            <textarea
-              rows={3}
-              required
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Ví dụ: Bản chụp mờ không rõ số quyết định, yêu cầu bản sao có chứng thực..."
-              style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #D1D5DB', marginBottom: '16px' }}
-            />
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-              <button
-                type="button"
-                onClick={() => setIsRejectModalOpen(false)}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: '6px',
-                  border: '1px solid #D1D5DB',
-                  backgroundColor: 'white',
-                  cursor: 'pointer',
-                }}
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={() => handleVerifyCertificate(false, rejectReason)}
-                style={{
-                  padding: '8px 18px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  backgroundColor: '#DC2626',
-                  color: 'white',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                Xác Nhận Từ Chối
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* MODAL: CUSTOMER DETAIL */}
       {selectedCustomer && (
@@ -3397,20 +3301,25 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
             style={{
               backgroundColor: 'white',
               borderRadius: '16px',
-              padding: '28px',
               width: '560px',
-              maxWidth: '92%',
+              maxWidth: '100%',
+              maxHeight: 'min(90vh, 680px)',
               boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
+              padding: 0,
             }}
           >
+            {/* Header (fixed) */}
             <div
               style={{
+                flexShrink: 0,
+                padding: '18px 24px',
+                borderBottom: '1px solid #E5E7EB',
                 display: 'flex',
                 justifyContent: 'space-between',
                 alignItems: 'flex-start',
-                borderBottom: '1px solid #E5E7EB',
-                paddingBottom: '14px',
-                marginBottom: '16px',
               }}
             >
               <div>
@@ -3426,162 +3335,218 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 >
                   {selectedCustomer.customer_code}
                 </span>
-                <h3 style={{ margin: '8px 0 2px 0', fontSize: '20px', color: '#111827' }}>
+                <h3 style={{ margin: '8px 0 2px 0', fontSize: '20px', color: '#111827', fontWeight: 'bold' }}>
                   {selectedCustomer.full_name}
                 </h3>
               </div>
               <button
                 onClick={() => setSelectedCustomer(null)}
-                style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: '#9CA3AF' }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '20px',
+                  cursor: 'pointer',
+                  color: '#9CA3AF',
+                  padding: '4px',
+                  lineHeight: 1,
+                }}
               >
                 ✕
               </button>
             </div>
 
-            <div className="responsive-form-row">
-              <div>
-                <span style={{ color: '#6B7280' }}>Số CCCD:</span>{' '}
-                <strong style={{ fontFamily: 'monospace' }}>{selectedCustomer.citizen_id}</strong>
+            {/* Body (scrollable) */}
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: 'auto',
+                padding: '20px 24px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '20px',
+              }}
+            >
+              <div className="responsive-form-row">
+                <div>
+                  <span style={{ color: '#6B7280' }}>Số CCCD:</span>{' '}
+                  <strong style={{ fontFamily: 'monospace' }}>{selectedCustomer.citizen_id}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#6B7280' }}>Số điện thoại:</span>{' '}
+                  <strong>{selectedCustomer.phone_number}</strong>
+                </div>
+                <div>
+                  <span style={{ color: '#6B7280' }}>Ngày sinh:</span>{' '}
+                  <strong>
+                    {selectedCustomer.date_of_birth
+                      ? new Date(selectedCustomer.date_of_birth).toLocaleDateString('vi-VN')
+                      : '—'}
+                  </strong>
+                </div>
+                <div>
+                  <span style={{ color: '#6B7280' }}>Email:</span>{' '}
+                  <strong>{selectedCustomer.email || '—'}</strong>
+                </div>
+                <div style={{ gridColumn: 'span 2' }}>
+                  <span style={{ color: '#6B7280' }}>Địa chỉ:</span>{' '}
+                  <strong>{selectedCustomer.address}</strong>
+                </div>
               </div>
-              <div>
-                <span style={{ color: '#6B7280' }}>Số điện thoại:</span>{' '}
-                <strong>{selectedCustomer.phone_number}</strong>
-              </div>
-              <div>
-                <span style={{ color: '#6B7280' }}>Ngày sinh:</span>{' '}
-                <strong>
-                  {selectedCustomer.date_of_birth
-                    ? new Date(selectedCustomer.date_of_birth).toLocaleDateString('vi-VN')
-                    : '—'}
-                </strong>
-              </div>
-              <div>
-                <span style={{ color: '#6B7280' }}>Email:</span>{' '}
-                <strong>{selectedCustomer.email || '—'}</strong>
-              </div>
-              <div style={{ gridColumn: 'span 2' }}>
-                <span style={{ color: '#6B7280' }}>Địa chỉ:</span>{' '}
-                <strong>{selectedCustomer.address}</strong>
-              </div>
-            </div>
 
-            <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                <h4 style={{ margin: 0, fontSize: '14px', color: '#111827', fontWeight: 'bold' }}>
-                  Danh Sách Người Thân Quá Cố Đã Gắn Kết
-                </h4>
-                {token && (
-                  <button
-                    onClick={() => handleOpenRelationModal(selectedCustomer.customer_id, undefined)}
-                    style={{
-                      padding: '4px 10px',
-                      fontSize: '12px',
-                      backgroundColor: '#EEF2FF',
-                      color: '#4F46E5',
-                      border: '1px solid #C7D2FE',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontWeight: 600,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '4px',
-                    }}
-                  >
-                    <Link2 size={13} />
-                    + Gắn Kết Người Mất
-                  </button>
-                )}
-              </div>
-              {selectedCustomer.relations.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {selectedCustomer.relations.map((r) => (
-                    <div
-                      key={r.relation_id}
+              <div>
+                <div
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    flexWrap: 'wrap',
+                    gap: '8px',
+                    marginBottom: '12px',
+                  }}
+                >
+                  <h4 style={{ margin: 0, fontSize: '14px', color: '#111827', fontWeight: 'bold' }}>
+                    Danh Sách Người Thân Quá Cố Đã Gắn Kết
+                  </h4>
+                  {token && (
+                    <button
+                      onClick={() => handleOpenRelationModal(selectedCustomer.customer_id, undefined)}
                       style={{
-                        padding: '10px 14px',
-                        backgroundColor: '#F9FAFB',
-                        borderRadius: '8px',
-                        display: 'flex',
-                        justifyContent: 'space-between',
+                        padding: '6px 12px',
+                        fontSize: '12px',
+                        backgroundColor: '#EEF2FF',
+                        color: '#4F46E5',
+                        border: '1px solid #C7D2FE',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        display: 'inline-flex',
                         alignItems: 'center',
-                        fontSize: '13px',
+                        gap: '5px',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
                       }}
                     >
-                      <div>
-                        <strong>{r.deceased_full_name}</strong> ({r.deceased_code})
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span
-                          style={{
-                            fontSize: '11px',
-                            backgroundColor: '#E0E7FF',
-                            color: '#3730A3',
-                            padding: '2px 8px',
-                            borderRadius: '4px',
-                            fontWeight: 600,
-                          }}
-                        >
-                          Quan hệ: {r.relationship_type}
-                        </span>
-                        {r.is_primary_contact && (
+                      <Link2 size={14} />
+                      + Gắn Kết Người Mất
+                    </button>
+                  )}
+                </div>
+                {selectedCustomer.relations.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    {selectedCustomer.relations.map((r) => (
+                      <div
+                        key={r.relation_id}
+                        style={{
+                          padding: '12px 14px',
+                          backgroundColor: '#F9FAFB',
+                          border: '1px solid #E5E7EB',
+                          borderRadius: '10px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '8px',
+                          fontSize: '13px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                          <div style={{ fontWeight: 600, color: '#111827', fontSize: '13.5px', wordBreak: 'break-word' }}>
+                            {r.deceased_full_name}{' '}
+                            <span style={{ color: '#6B7280', fontSize: '12px', fontWeight: 'normal' }}>
+                              ({r.deceased_code})
+                            </span>
+                          </div>
+                          {token && (
+                            <button
+                              onClick={() => handleDeleteRelation(r.relation_id)}
+                              title="Gỡ liên kết"
+                              style={{
+                                padding: '4px 10px',
+                                borderRadius: '6px',
+                                border: '1px solid #FECACA',
+                                backgroundColor: '#FEF2F2',
+                                color: '#DC2626',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
+                              }}
+                            >
+                              <Trash2 size={13} />
+                              Gỡ
+                            </button>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
                           <span
                             style={{
                               fontSize: '11px',
-                              backgroundColor: '#FEF3C7',
-                              color: '#92400E',
+                              backgroundColor: '#EEF2FF',
+                              color: '#3730A3',
+                              border: '1px solid #C7D2FE',
                               padding: '2px 8px',
                               borderRadius: '4px',
-                              fontWeight: 'bold',
-                            }}
-                          >
-                            ★ Đại diện chính
-                          </span>
-                        )}
-                        {token && (
-                          <button
-                            onClick={() => handleDeleteRelation(r.relation_id)}
-                            title="Gỡ liên kết"
-                            style={{
-                              padding: '4px 8px',
-                              borderRadius: '4px',
-                              border: '1px solid #FECACA',
-                              backgroundColor: '#FEF2F2',
-                              color: '#DC2626',
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              fontSize: '11px',
                               fontWeight: 600,
-                              marginLeft: '4px',
+                              whiteSpace: 'nowrap',
+                              flexShrink: 0,
                             }}
                           >
-                            <Trash2 size={12} />
-                            Gỡ
-                          </button>
-                        )}
+                            Quan hệ: {r.relationship_type}
+                          </span>
+                          {r.is_primary_contact && (
+                            <span
+                              style={{
+                                fontSize: '11px',
+                                backgroundColor: '#FEF3C7',
+                                color: '#92400E',
+                                border: '1px solid #FDE68A',
+                                padding: '2px 8px',
+                                borderRadius: '4px',
+                                fontWeight: 'bold',
+                                whiteSpace: 'nowrap',
+                                flexShrink: 0,
+                              }}
+                            >
+                              ★ Đại diện chính
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div style={{ color: '#9CA3AF', fontSize: '13px', padding: '12px 0' }}>
-                  Chưa có người thân quá cố nào liên kết với khách hàng này.
-                </div>
-              )}
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ color: '#9CA3AF', fontSize: '13px', padding: '12px 0' }}>
+                    Chưa có người thân quá cố nào liên kết với khách hàng này.
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
+            {/* Footer (fixed) */}
+            <div
+              style={{
+                flexShrink: 0,
+                padding: '16px 24px',
+                backgroundColor: '#F8FAFC',
+                borderTop: '1px solid #E5E7EB',
+                display: 'flex',
+                justifyContent: 'flex-end',
+              }}
+            >
               <button
                 onClick={() => setSelectedCustomer(null)}
                 style={{
-                  padding: '8px 18px',
-                  borderRadius: '6px',
+                  padding: '8px 20px',
+                  borderRadius: '8px',
                   border: '1px solid #D1D5DB',
                   backgroundColor: 'white',
                   cursor: 'pointer',
                   fontWeight: 600,
                   fontSize: '13px',
+                  color: '#374151',
                 }}
               >
                 Đóng

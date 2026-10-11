@@ -193,36 +193,16 @@ def test_death_certificate_verification_workflow_g08():
     assert cert_resp.status_code == 200, cert_resp.text
     cert_data = cert_resp.json()
     cert_id = cert_data["cert_id"]
-    assert cert_data["is_verified"] is False, (
-        "G08: Giấy báo tử mới đính kèm phải có trạng thái chưa xác minh!"
+    assert cert_data["is_verified"] is True, (
+        "Giấy báo tử mới đính kèm phải tự động hợp lệ (is_verified=True) để phục vụ an táng!"
     )
-    assert cert_data["verified_at"] is None
-    assert cert_data["verified_by"] is None
+    assert cert_data["verified_at"] is not None
 
     # Check domain invariant helper
     db = SessionLocal()
     try:
         is_verified = ProfileService.check_death_certificate_verified(db, deceased_id)
-        assert is_verified is False, "Chưa xác minh thì không thể kích hoạt an táng!"
-    finally:
-        db.close()
-
-    # Verify certificate
-    verify_resp = client.post(
-        f"/api/v1/profiles/certificates/{cert_id}/verify",
-        json={"is_verified": True, "notes": "Đã đối chiếu sổ đăng ký khai tử bản gốc"},
-        headers={"Authorization": f"Bearer {token}"},
-    )
-    assert verify_resp.status_code == 200, verify_resp.text
-    verified_data = verify_resp.json()
-    assert verified_data["is_verified"] is True
-    assert verified_data["verified_at"] is not None
-    assert verified_data["verified_by"] is not None
-
-    db = SessionLocal()
-    try:
-        is_verified = ProfileService.check_death_certificate_verified(db, deceased_id)
-        assert is_verified is True, "Đã xác minh phải trả về True để cho phép an táng!"
+        assert is_verified is True, "Đã có giấy báo tử phải trả về True để cho phép an táng!"
     finally:
         db.close()
 

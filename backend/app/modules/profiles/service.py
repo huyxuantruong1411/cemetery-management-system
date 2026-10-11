@@ -230,7 +230,7 @@ class ProfileService:
             )
             db.add(rel)
 
-        # Create death certificate record if provided (G08: default is_verified=False)
+        # Create death certificate record if provided (auto-verified upon archiving)
         if data.death_certificate:
             cert = DeathCertificate(
                 deceased_id=profile.deceased_id,
@@ -240,11 +240,12 @@ class ProfileService:
                 scan_file_url=data.death_certificate.scan_file_url,
                 file_id=data.death_certificate.file_id,
                 notes=data.death_certificate.notes,
-                is_verified=False,
-                verified_at=None,
+                is_verified=True,
+                verified_at=datetime.now(timezone.utc),
                 verified_by=None,
             )
             db.add(cert)
+            profile.has_death_certificate = True
 
         db.commit()
         return ProfileService.get_deceased_profile(db, profile.deceased_id)
@@ -408,10 +409,8 @@ class ProfileService:
                 cert.file_id = data.file_id
             if data.notes:
                 cert.notes = data.notes
-            # Modification resets verification for safety
-            cert.is_verified = False
-            cert.verified_at = None
-            cert.verified_by = None
+            cert.is_verified = True
+            cert.verified_at = datetime.now(timezone.utc)
             cert.rejection_reason = None
         else:
             cert = DeathCertificate(
@@ -422,8 +421,8 @@ class ProfileService:
                 scan_file_url=data.scan_file_url,
                 file_id=data.file_id,
                 notes=data.notes,
-                is_verified=False,
-                verified_at=None,
+                is_verified=True,
+                verified_at=datetime.now(timezone.utc),
                 verified_by=None,
             )
             db.add(cert)
