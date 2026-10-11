@@ -406,7 +406,18 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
 
         {/* Global tabs - ONLY visible for authenticated staff */}
         {token && (
-          <div style={{ display: 'flex', gap: '8px', background: '#F3F4F6', padding: '4px', borderRadius: '10px' }}>
+          <div
+            style={{
+              display: 'flex',
+              gap: '8px',
+              background: '#F3F4F6',
+              padding: '4px',
+              borderRadius: '10px',
+              overflowX: 'auto',
+              WebkitOverflowScrolling: 'touch',
+              maxWidth: '100%',
+            }}
+          >
             <button
               onClick={() => setActiveTab('CUSTOMERS')}
               style={{
@@ -419,6 +430,8 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 background: activeTab === 'CUSTOMERS' ? '#24594D' : 'transparent',
                 color: activeTab === 'CUSTOMERS' ? '#FFFFFF' : '#4B5563',
                 transition: 'all 0.2s',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
               }}
             >
               👥 Thân Nhân (Khách Hàng)
@@ -435,6 +448,8 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 background: activeTab === 'DECEASED' ? '#24594D' : 'transparent',
                 color: activeTab === 'DECEASED' ? '#FFFFFF' : '#4B5563',
                 transition: 'all 0.2s',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
               }}
             >
               ⚰️ Người Quá Cố & Giấy Báo Tử
@@ -451,6 +466,8 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 background: activeTab === 'MEMORIAL_PUBLIC' ? '#047857' : 'transparent',
                 color: activeTab === 'MEMORIAL_PUBLIC' ? '#FFFFFF' : '#4B5563',
                 transition: 'all 0.2s',
+                whiteSpace: 'nowrap',
+                flexShrink: 0,
               }}
             >
               🪷 Cổng Tra Cứu Tưởng Niệm
@@ -516,21 +533,22 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
           <div
             style={{
               display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '16px',
+              flexDirection: 'column',
               gap: '12px',
+              marginBottom: '16px',
             }}
           >
-            <div style={{ display: 'flex', gap: '8px', flex: 1, maxWidth: '650px', alignItems: 'center' }}>
+            {/* Row 1: Full-width search bar */}
+            <div style={{ display: 'flex', gap: '8px', width: '100%', alignItems: 'center' }}>
               <input
                 type="text"
-                placeholder="Tìm theo tên, mã KH, số CCCD, số điện thoại..."
+                placeholder="Tìm tên, mã KH, số CCCD, SĐT..."
                 value={customerSearch}
                 onChange={(e) => setCustomerSearch(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && loadCustomers()}
                 style={{
                   flex: 1,
+                  minWidth: 0,
                   padding: '9px 14px',
                   borderRadius: '8px',
                   border: '1px solid #D1D5DB',
@@ -548,18 +566,40 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                   cursor: 'pointer',
                   fontWeight: 600,
                   fontSize: '13px',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                 }}
               >
                 Tìm Kiếm
               </button>
+            </div>
 
+            {/* Row 2: Filter chips on left, Add Customer button on right */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '10px',
+                flexWrap: 'wrap',
+              }}
+            >
               {/* Customer relationship filter chips */}
-              <div style={{ display: 'flex', gap: '4px', marginLeft: '6px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '6px',
+                  alignItems: 'center',
+                  overflowX: 'auto',
+                  WebkitOverflowScrolling: 'touch',
+                  paddingBottom: '2px',
+                }}
+              >
                 <button
                   type="button"
                   onClick={() => setCustomerFilter('ALL')}
                   style={{
-                    padding: '6px 10px',
+                    padding: '6px 12px',
                     borderRadius: '16px',
                     border: '1px solid #D1D5DB',
                     fontSize: '12px',
@@ -567,6 +607,8 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                     backgroundColor: customerFilter === 'ALL' ? '#24594D' : '#F9FAFB',
                     color: customerFilter === 'ALL' ? 'white' : '#4B5563',
                     fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
                   }}
                 >
                   Tất cả ({customers.length})
@@ -575,7 +617,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                   type="button"
                   onClick={() => setCustomerFilter('HAS_RELATIONS')}
                   style={{
-                    padding: '6px 10px',
+                    padding: '6px 12px',
                     borderRadius: '16px',
                     border: '1px solid #D1D5DB',
                     fontSize: '12px',
@@ -583,6 +625,8 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                     backgroundColor: customerFilter === 'HAS_RELATIONS' ? '#24594D' : '#F9FAFB',
                     color: customerFilter === 'HAS_RELATIONS' ? 'white' : '#4B5563',
                     fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
                   }}
                 >
                   Có liên kết
@@ -591,7 +635,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                   type="button"
                   onClick={() => setCustomerFilter('NO_RELATIONS')}
                   style={{
-                    padding: '6px 10px',
+                    padding: '6px 12px',
                     borderRadius: '16px',
                     border: '1px solid #D1D5DB',
                     fontSize: '12px',
@@ -599,31 +643,35 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                     backgroundColor: customerFilter === 'NO_RELATIONS' ? '#24594D' : '#F9FAFB',
                     color: customerFilter === 'NO_RELATIONS' ? 'white' : '#4B5563',
                     fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
                   }}
                 >
                   Chưa liên kết
                 </button>
               </div>
-            </div>
 
-            <button
-              onClick={() => setIsCustomerModalOpen(true)}
-              style={{
-                padding: '9px 18px',
-                backgroundColor: '#047857',
-                color: 'white',
-                borderRadius: '8px',
-                border: 'none',
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: '13px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-              }}
-            >
-              <span>+</span> Thêm Khách Hàng Thân Nhân
-            </button>
+              <button
+                onClick={() => setIsCustomerModalOpen(true)}
+                style={{
+                  padding: '9px 16px',
+                  backgroundColor: '#047857',
+                  color: 'white',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+              >
+                <span>+</span> Thêm Khách Hàng Thân Nhân
+              </button>
+            </div>
           </div>
 
           {/* Table */}
@@ -874,13 +922,13 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
           <div
             style={{
               display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '16px',
+              flexDirection: 'column',
               gap: '12px',
+              marginBottom: '16px',
             }}
           >
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flex: 1 }}>
+            {/* Row 1: Full-width search bar */}
+            <div style={{ display: 'flex', gap: '8px', width: '100%', alignItems: 'center' }}>
               <input
                 type="text"
                 placeholder="Tìm theo họ tên, mã người mất, quê quán..."
@@ -888,17 +936,18 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 onChange={(e) => setDeceasedSearch(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && loadDeceased()}
                 style={{
+                  flex: 1,
+                  minWidth: 0,
                   padding: '9px 14px',
                   borderRadius: '8px',
                   border: '1px solid #D1D5DB',
                   fontSize: '14px',
-                  width: '320px',
                 }}
               />
               <button
                 onClick={loadDeceased}
                 style={{
-                  padding: '9px 16px',
+                  padding: '9px 18px',
                   backgroundColor: '#24594D',
                   color: 'white',
                   borderRadius: '8px',
@@ -906,13 +955,35 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                   cursor: 'pointer',
                   fontWeight: 600,
                   fontSize: '13px',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
                 }}
               >
                 Tìm Kiếm
               </button>
+            </div>
 
+            {/* Row 2: Filter chips on left, Add Deceased button on right */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '10px',
+                flexWrap: 'wrap',
+              }}
+            >
               {/* Filter chips */}
-              <div style={{ display: 'flex', gap: '6px', marginLeft: '12px' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '6px',
+                  alignItems: 'center',
+                  overflowX: 'auto',
+                  WebkitOverflowScrolling: 'touch',
+                  paddingBottom: '2px',
+                }}
+              >
                 <button
                   onClick={() => setDeceasedFilter('ALL')}
                   style={{
@@ -924,6 +995,8 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                     backgroundColor: deceasedFilter === 'ALL' ? '#24594D' : '#F9FAFB',
                     color: deceasedFilter === 'ALL' ? 'white' : '#4B5563',
                     fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
                   }}
                 >
                   Tất cả ({deceasedList.length})
@@ -939,9 +1012,11 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                     backgroundColor: deceasedFilter === 'VERIFIED' ? '#16A34A' : '#F0FDF4',
                     color: deceasedFilter === 'VERIFIED' ? 'white' : '#15803D',
                     fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
                   }}
                 >
-                  ✓ Đã xác minh giấy tờ
+                  ✓ Đã xác minh
                 </button>
                 <button
                   onClick={() => setDeceasedFilter('UNVERIFIED')}
@@ -954,31 +1029,35 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                     backgroundColor: deceasedFilter === 'UNVERIFIED' ? '#D97706' : '#FEF3C7',
                     color: deceasedFilter === 'UNVERIFIED' ? 'white' : '#92400E',
                     fontWeight: 600,
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
                   }}
                 >
-                  ⏳ Chờ / Chưa xác minh
+                  ⏳ Chưa xác minh
                 </button>
               </div>
-            </div>
 
-            <button
-              onClick={() => setIsDeceasedModalOpen(true)}
-              style={{
-                padding: '9px 18px',
-                backgroundColor: '#047857',
-                color: 'white',
-                borderRadius: '8px',
-                border: 'none',
-                cursor: 'pointer',
-                fontWeight: 600,
-                fontSize: '13px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-              }}
-            >
-              <span>+</span> Thêm Hồ Sơ Người Mất
-            </button>
+              <button
+                onClick={() => setIsDeceasedModalOpen(true)}
+                style={{
+                  padding: '9px 16px',
+                  backgroundColor: '#047857',
+                  color: 'white',
+                  borderRadius: '8px',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontWeight: 600,
+                  fontSize: '13px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  whiteSpace: 'nowrap',
+                  flexShrink: 0,
+                }}
+              >
+                <span>+</span> Thêm Hồ Sơ Người Mất
+              </button>
+            </div>
           </div>
 
           {/* Table */}

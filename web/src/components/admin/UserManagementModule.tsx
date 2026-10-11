@@ -1030,141 +1030,201 @@ export const UserManagementModule: React.FC = () => {
           className="responsive-modal-overlay"
           style={{
             position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
+            inset: 0,
             backgroundColor: 'rgba(0,0,0,0.5)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 1000,
-            padding: '20px',
+            padding: '16px',
           }}
         >
           <div
             className="responsive-modal-card"
             style={{
               backgroundColor: '#FFFFFF',
-              borderRadius: '12px',
+              borderRadius: '16px',
               maxWidth: '520px',
               width: '100%',
-              padding: '24px',
+              maxHeight: 'min(90vh, 680px)',
               boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
             }}
           >
-            <h3 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '16px' }}>Thêm Tài Khoản Người Dùng Mới</h3>
-            <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
-                  Tên đăng nhập (Username) *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: nv_kinhdoanh_01"
-                  value={newUsername}
-                  onChange={(e) => setNewUsername(e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
-                />
-              </div>
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: '18px 24px',
+                borderBottom: '1px solid #E2E8F0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexShrink: 0,
+              }}
+            >
+              <h3 style={{ fontSize: '17px', fontWeight: 700, margin: 0 }}>Thêm Tài Khoản Người Dùng Mới</h3>
+              <button
+                type="button"
+                onClick={() => setIsCreateModalOpen(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  color: '#94A3B8',
+                  padding: '4px',
+                }}
+              >
+                ✕
+              </button>
+            </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
-                  Mật khẩu khởi tạo * (tối thiểu 8 ký tự)
-                </label>
-                <input
-                  type="password"
-                  required
-                  minLength={8}
-                  placeholder="Nhập mật khẩu..."
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
-                  Họ và tên cán bộ nhân viên *
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ví dụ: Nguyễn Văn Hoàng"
-                  value={newFullName}
-                  onChange={(e) => setNewFullName(e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
-                />
-              </div>
-
-              <div className="responsive-form-row">
+            {/* Form wrapping body and fixed footer */}
+            <form
+              onSubmit={handleCreateUser}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                flex: 1,
+                minHeight: 0,
+                overflow: 'hidden',
+              }}
+            >
+              {/* Scrollable Form Body */}
+              <div
+                style={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  padding: '20px 24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px',
+                }}
+              >
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
-                    Email công vụ *
+                    Tên đăng nhập (Username) *
                   </label>
                   <input
-                    type="email"
+                    type="text"
                     required
-                    placeholder="hoangnv@nghiatrang.vn"
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
+                    placeholder="Ví dụ: nv_kinhdoanh_01"
+                    value={newUsername}
+                    onChange={(e) => setNewUsername(e.target.value)}
                     style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
                   />
                 </div>
+
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
-                    Số điện thoại
+                    Mật khẩu khởi tạo * (tối thiểu 8 ký tự)
                   </label>
                   <input
-                    type="tel"
-                    placeholder="0912345678"
-                    value={newPhone}
-                    onChange={(e) => setNewPhone(e.target.value)}
+                    type="password"
+                    required
+                    minLength={8}
+                    placeholder="Nhập mật khẩu..."
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
                     style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
                   />
                 </div>
-              </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>
-                  Gán vai trò hệ thống (Roles)
-                </label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {roles.map((r) => {
-                    const isChecked = newRoleIds.includes(r.role_id)
-                    return (
-                      <label
-                        key={r.role_id}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          fontSize: '13px',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setNewRoleIds([...newRoleIds, r.role_id])
-                            } else {
-                              setNewRoleIds(newRoleIds.filter((id) => id !== r.role_id))
-                            }
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
+                    Họ và tên cán bộ nhân viên *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ví dụ: Nguyễn Văn Hoàng"
+                    value={newFullName}
+                    onChange={(e) => setNewFullName(e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                  />
+                </div>
+
+                <div className="responsive-form-row">
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
+                      Email công vụ *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="hoangnv@nghiatrang.vn"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
+                      Số điện thoại
+                    </label>
+                    <input
+                      type="tel"
+                      placeholder="0912345678"
+                      value={newPhone}
+                      onChange={(e) => setNewPhone(e.target.value)}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>
+                    Gán vai trò hệ thống (Roles)
+                  </label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {roles.map((r) => {
+                      const isChecked = newRoleIds.includes(r.role_id)
+                      return (
+                        <label
+                          key={r.role_id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontSize: '13px',
+                            cursor: 'pointer',
                           }}
-                        />
-                        <span>
-                          <strong>{r.role_name}</strong> - {r.description}
-                        </span>
-                      </label>
-                    )
-                  })}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setNewRoleIds([...newRoleIds, r.role_id])
+                              } else {
+                                setNewRoleIds(newRoleIds.filter((id) => id !== r.role_id))
+                              }
+                            }}
+                          />
+                          <span>
+                            <strong>{r.role_name}</strong> - {r.description}
+                          </span>
+                        </label>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
+              {/* Dedicated Fixed Footer */}
+              <div
+                style={{
+                  padding: '14px 24px',
+                  borderTop: '1px solid #E2E8F0',
+                  backgroundColor: '#F8FAFC',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '10px',
+                  flexShrink: 0,
+                }}
+              >
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
@@ -1172,8 +1232,11 @@ export const UserManagementModule: React.FC = () => {
                     padding: '8px 16px',
                     borderRadius: '6px',
                     border: '1px solid #CBD5E1',
-                    backgroundColor: '#F1F5F9',
+                    backgroundColor: '#FFFFFF',
+                    color: '#475569',
                     fontSize: '13px',
+                    cursor: 'pointer',
+                    fontWeight: 500,
                   }}
                 >
                   Hủy
@@ -1188,6 +1251,7 @@ export const UserManagementModule: React.FC = () => {
                     color: '#FFFFFF',
                     fontWeight: 600,
                     fontSize: '13px',
+                    cursor: 'pointer',
                   }}
                 >
                   Tạo Tài Khoản
@@ -1204,127 +1268,188 @@ export const UserManagementModule: React.FC = () => {
           className="responsive-modal-overlay"
           style={{
             position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
+            inset: 0,
             backgroundColor: 'rgba(0,0,0,0.5)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 1000,
-            padding: '20px',
+            padding: '16px',
           }}
         >
           <div
             className="responsive-modal-card"
             style={{
               backgroundColor: '#FFFFFF',
-              borderRadius: '12px',
+              borderRadius: '16px',
               maxWidth: '520px',
               width: '100%',
-              padding: '24px',
+              maxHeight: 'min(90vh, 680px)',
               boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
             }}
           >
-            <h3 style={{ fontSize: '17px', fontWeight: 700, marginBottom: '6px' }}>
-              Cập Nhật Tài Khoản: @{editUser.username}
-            </h3>
-            <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '16px' }}>
-              Nếu thay đổi vai trò hoặc khóa tài khoản, phiên làm việc hiện tại của nhân viên sẽ tự động thu hồi ngay lập tức.
-            </p>
-
-            <form onSubmit={handleUpdateUser} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: '18px 24px',
+                borderBottom: '1px solid #E2E8F0',
+                display: 'flex',
+                alignItems: 'flex-start',
+                justifyContent: 'space-between',
+                flexShrink: 0,
+              }}
+            >
               <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
-                  Họ và tên cán bộ nhân viên *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={editFullName}
-                  onChange={(e) => setEditFullName(e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
-                />
+                <h3 style={{ fontSize: '17px', fontWeight: 700, margin: '0 0 4px 0' }}>
+                  Cập Nhật Tài Khoản: @{editUser.username}
+                </h3>
+                <p style={{ fontSize: '12px', color: '#64748B', margin: 0 }}>
+                  Nếu thay đổi vai trò hoặc khóa tài khoản, phiên làm việc của nhân viên sẽ tự động thu hồi ngay lập tức.
+                </p>
               </div>
+              <button
+                type="button"
+                onClick={() => setEditUser(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  color: '#94A3B8',
+                  padding: '4px',
+                }}
+              >
+                ✕
+              </button>
+            </div>
 
-              <div className="responsive-form-row">
+            {/* Form */}
+            <form
+              onSubmit={handleUpdateUser}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                flex: 1,
+                minHeight: 0,
+                overflow: 'hidden',
+              }}
+            >
+              {/* Scrollable Body */}
+              <div
+                style={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  padding: '20px 24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px',
+                }}
+              >
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
-                    Email công vụ *
+                    Họ và tên cán bộ nhân viên *
                   </label>
                   <input
-                    type="email"
+                    type="text"
                     required
-                    value={editEmail}
-                    onChange={(e) => setEditEmail(e.target.value)}
+                    value={editFullName}
+                    onChange={(e) => setEditFullName(e.target.value)}
                     style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
                   />
                 </div>
+
+                <div className="responsive-form-row">
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
+                      Email công vụ *
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={editEmail}
+                      onChange={(e) => setEditEmail(e.target.value)}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
+                      Số điện thoại
+                    </label>
+                    <input
+                      type="tel"
+                      value={editPhone}
+                      onChange={(e) => setEditPhone(e.target.value)}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
-                    Số điện thoại
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>
+                    Vai trò được gán (Roles)
                   </label>
-                  <input
-                    type="tel"
-                    value={editPhone}
-                    onChange={(e) => setEditPhone(e.target.value)}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '6px' }}>
-                  Vai trò được gán (Roles)
-                </label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {roles.map((r) => {
-                    const isChecked = editRoleIds.includes(r.role_id)
-                    return (
-                      <label
-                        key={r.role_id}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '8px',
-                          fontSize: '13px',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isChecked}
-                          onChange={(e) => {
-                            if (e.target.checked) {
-                              setEditRoleIds([...editRoleIds, r.role_id])
-                            } else {
-                              setEditRoleIds(editRoleIds.filter((id) => id !== r.role_id))
-                            }
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {roles.map((r) => {
+                      const isChecked = editRoleIds.includes(r.role_id)
+                      return (
+                        <label
+                          key={r.role_id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            fontSize: '13px',
+                            cursor: 'pointer',
                           }}
-                        />
-                        <span>
-                          <strong>{r.role_name}</strong> - {r.description}
-                        </span>
-                      </label>
-                    )
-                  })}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setEditRoleIds([...editRoleIds, r.role_id])
+                              } else {
+                                setEditRoleIds(editRoleIds.filter((id) => id !== r.role_id))
+                              }
+                            }}
+                          />
+                          <span>
+                            <strong>{r.role_name}</strong> - {r.description}
+                          </span>
+                        </label>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+                  <input
+                    type="checkbox"
+                    id="edit_is_active"
+                    checked={editIsActive}
+                    onChange={(e) => setEditIsActive(e.target.checked)}
+                  />
+                  <label htmlFor="edit_is_active" style={{ fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
+                    Tài khoản đang hoạt động (Bỏ chọn để khóa tài khoản)
+                  </label>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
-                <input
-                  type="checkbox"
-                  id="edit_is_active"
-                  checked={editIsActive}
-                  onChange={(e) => setEditIsActive(e.target.checked)}
-                />
-                <label htmlFor="edit_is_active" style={{ fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}>
-                  Tài khoản đang hoạt động (Bỏ chọn để khóa tài khoản)
-                </label>
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '12px' }}>
+              {/* Dedicated Fixed Footer */}
+              <div
+                style={{
+                  padding: '14px 24px',
+                  borderTop: '1px solid #E2E8F0',
+                  backgroundColor: '#F8FAFC',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '10px',
+                  flexShrink: 0,
+                }}
+              >
                 <button
                   type="button"
                   onClick={() => setEditUser(null)}
@@ -1332,8 +1457,11 @@ export const UserManagementModule: React.FC = () => {
                     padding: '8px 16px',
                     borderRadius: '6px',
                     border: '1px solid #CBD5E1',
-                    backgroundColor: '#F1F5F9',
+                    backgroundColor: '#FFFFFF',
+                    color: '#475569',
                     fontSize: '13px',
+                    cursor: 'pointer',
+                    fontWeight: 500,
                   }}
                 >
                   Hủy
@@ -1348,6 +1476,7 @@ export const UserManagementModule: React.FC = () => {
                     color: '#FFFFFF',
                     fontWeight: 600,
                     fontSize: '13px',
+                    cursor: 'pointer',
                   }}
                 >
                   Lưu Thay Đổi
@@ -1364,56 +1493,116 @@ export const UserManagementModule: React.FC = () => {
           className="responsive-modal-overlay"
           style={{
             position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
+            inset: 0,
             backgroundColor: 'rgba(0,0,0,0.5)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 1000,
-            padding: '20px',
+            padding: '16px',
           }}
         >
           <div
             className="responsive-modal-card"
             style={{
               backgroundColor: '#FFFFFF',
-              borderRadius: '12px',
-              maxWidth: '440px',
+              borderRadius: '16px',
+              maxWidth: '460px',
               width: '100%',
-              padding: '24px',
+              maxHeight: 'min(90vh, 520px)',
               boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
+              display: 'flex',
+              flexDirection: 'column',
+              overflow: 'hidden',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-              <KeyRound size={22} color="var(--brand-primary)" />
-              <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>
-                Đặt Lại Mật Khẩu: @{resetPwdUser.username}
-              </h3>
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: '18px 24px',
+                borderBottom: '1px solid #E2E8F0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexShrink: 0,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <KeyRound size={20} color="var(--brand-primary)" />
+                <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>
+                  Đặt Lại Mật Khẩu: @{resetPwdUser.username}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setResetPwdUser(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontSize: '18px',
+                  color: '#94A3B8',
+                  padding: '4px',
+                }}
+              >
+                ✕
+              </button>
             </div>
-            <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '16px' }}>
-              Sau khi đổi mật khẩu, toàn bộ token và phiên đăng nhập hiện tại của người dùng này sẽ bị hủy ngay lập tức.
-            </p>
 
-            <form onSubmit={handleResetPassword} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
-                  Mật khẩu mới * (tối thiểu 8 ký tự)
-                </label>
-                <input
-                  type="password"
-                  required
-                  minLength={8}
-                  placeholder="Nhập mật khẩu mới..."
-                  value={adminNewPassword}
-                  onChange={(e) => setAdminNewPassword(e.target.value)}
-                  style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
-                />
+            {/* Form */}
+            <form
+              onSubmit={handleResetPassword}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                flex: 1,
+                minHeight: 0,
+                overflow: 'hidden',
+              }}
+            >
+              {/* Scrollable Body */}
+              <div
+                style={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  padding: '20px 24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px',
+                }}
+              >
+                <p style={{ fontSize: '12px', color: '#64748B', margin: 0, lineHeight: 1.5 }}>
+                  Sau khi đổi mật khẩu, toàn bộ token và phiên đăng nhập hiện tại của người dùng này sẽ bị hủy ngay lập tức.
+                </p>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>
+                    Mật khẩu mới * (tối thiểu 8 ký tự)
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    minLength={8}
+                    placeholder="Nhập mật khẩu mới..."
+                    value={adminNewPassword}
+                    onChange={(e) => setAdminNewPassword(e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                  />
+                </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>
+              {/* Dedicated Fixed Footer */}
+              <div
+                style={{
+                  padding: '14px 24px',
+                  borderTop: '1px solid #E2E8F0',
+                  backgroundColor: '#F8FAFC',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '10px',
+                  flexShrink: 0,
+                }}
+              >
                 <button
                   type="button"
                   onClick={() => setResetPwdUser(null)}
@@ -1421,8 +1610,11 @@ export const UserManagementModule: React.FC = () => {
                     padding: '8px 16px',
                     borderRadius: '6px',
                     border: '1px solid #CBD5E1',
-                    backgroundColor: '#F1F5F9',
+                    backgroundColor: '#FFFFFF',
+                    color: '#475569',
                     fontSize: '13px',
+                    cursor: 'pointer',
+                    fontWeight: 500,
                   }}
                 >
                   Hủy
@@ -1437,6 +1629,7 @@ export const UserManagementModule: React.FC = () => {
                     color: '#FFFFFF',
                     fontWeight: 600,
                     fontSize: '13px',
+                    cursor: 'pointer',
                   }}
                 >
                   Xác Nhận Đổi Mật Khẩu
