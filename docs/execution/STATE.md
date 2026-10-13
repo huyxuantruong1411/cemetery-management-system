@@ -64,7 +64,7 @@
 | Milestone | Tên Milestone | Trạng thái | Gợi ý Commit / Tag | Ghi chú & Bằng chứng |
 |---|---|---|---|---|
 | **UI-M00** | Baseline, 39 UC, policy, quyết định, fixture an toàn | **ĐẠT (Done)** | `docs(ui): establish lab actor traceability` | Nhánh `ui/lab-actor-alignment`, baseline.md, traceability.csv, actor-policy.md, route-inventory.md, decisions.md, api-ui-contracts.md, acceptance.md. |
-| **UI-M01** | Ma trận capability và hợp đồng dữ liệu API/File ACL | Đang thực hiện | `fix(auth): enforce actor and resource access` | Siết chặt role permissions, loại bỏ admin bypass invariant, tạo Work Basis DTO, Finance Basis DTO. |
+| **UI-M01** | Ma trận capability và hợp đồng dữ liệu API/File ACL | **ĐẠT (Done)** | `fix(auth): enforce actor and resource access` | Siết chặt role permissions, loại bỏ admin bypass invariant, hoàn thành kiểm toán nghiệp vụ actor-business-audit. |
 | **UI-M02** | Design system, routing và cổng công khai (Public Portal) | Chưa bắt đầu | `feat(ui): add public portal and role workspaces` | Cổng công khai P01-P04 Zero PII, bố cục 4 Actor workspaces, URL router. |
 | **UI-M03** | Hồ sơ, 4 loại HĐ, 3 loại phụ lục, in/ký ngoài/scan | Chưa bắt đầu | `feat(contracts): complete actor based legal journeys` | M01-M10 hoàn chỉnh luồng pháp lý. |
 | **UI-M04** | Nhiều quản trang, nhân sự đa tầng, lịch khả dụng | Chưa bắt đầu | `feat(operations): separate supervisors and executors` | Q10, phân tách supervisor vs work party, xử lý xung đột. |
@@ -74,6 +74,44 @@
 | **UI-M08** | Sếp, tài khoản, phân quyền, bảng giá & báo cáo | Chưa bắt đầu | `feat(admin): complete management workspace` | S01-S09, A01-A03 quản trị hệ thống. |
 | **UI-M09** | Kế toán, thu tiền, biên lai, chiết khấu & báo cáo tài chính | Chưa bắt đầu | `feat(finance): complete accountant journeys` | K01-K06 kiểm soát nợ và dòng tiền. |
 | **UI-M10** | Kiểm thử chấp nhận AT01-AT30, UAT 39 UC, hoàn tất bàn giao | Chưa bắt đầu | `test(ui): verify lab actor journeys` | Nghiệm thu toàn diện 39 UC. |
+
+---
+
+### 2.2. Bằng chứng nghiệm thu Rà soát Nghiệp vụ & Khắc phục Toàn diện (Actor & Business Audit - 13/10/2026)
+
+- **Bảo toàn CSDL & Safety Guard:** Thiết lập cơ chế autouse session fixture trong `backend/tests/conftest.py` ngăn chặn 100% việc chạy test hoặc thao tác ngoài ý muốn lên CSDL chính `QL_NghiaTrang`. Toàn bộ test suite chạy trên `QL_NghiaTrang_Test`.
+- **Cú pháp SQL Server T-SQL:** Chuyển đổi toàn bộ biểu thức bit boolean sang `== True` (tránh pyodbc biên dịch thành `IS 1` gây lỗi cú pháp T-SQL).
+- **Hồ sơ & Bảo mật thông tin (Profiles & Documents):**
+  - Siết chặt quyền `customers:read`/`write`, `deceased:read`/`write`. Bổ sung ghi `AuditLog` cho các hành động cập nhật hồ sơ thân nhân và người mất.
+  - Chặn đính kèm file chưa hoàn tất (`READY`) vào giấy báo tử.
+  - Mở rộng tra cứu mộ phần công khai Zero PII cho phép tìm kiếm theo cả mã ô mộ và mã hàng mộ.
+  - Phân quyền tải file theo thực thể cha (ngăn chặn vai trò không thuộc tài chính tải hóa đơn biên lai và báo cáo doanh thu).
+- **Không gian & Ô mộ (Plots):**
+  - Bổ sung kiểm tra phụ thuộc đa hình và phụ lục khi xóa ô mộ (`delete_plot` kiểm tra cả hợp đồng mua đất, cải táng, chuyển nhượng và phụ lục an táng, thi công).
+- **Hợp đồng & Bảng giá (Contracts & Catalog):**
+  - Loại bỏ fallback giá tùy tiện (50,000,000 VND), tra cứu bảng giá niêm yết theo số lượng slot tiêu chuẩn của loại mộ (`GIA-DAT-DON`, `GIA-DAT-DOI`, `GIA-DAT-GIA-TOC`).
+  - Che giấu số CCCD của khách hàng đối với vai trò Quản trang (`CARETAKER`).
+  - Chuẩn hóa quyền hợp đồng (`contracts:write`, `contracts:activate`, `contracts:read`).
+- **Chăm sóc định kỳ (Care):**
+  - Hỗ trợ cả `POST` và `PATCH` cho endpoint `/schedules/{id}/assign`.
+  - Cảnh báo xung đột lịch nghỉ/bận nhân viên phụ trách mà không làm gián đoạn điều phối.
+  - Chặn chỉnh sửa checklist và ảnh minh chứng khi ca chăm sóc đã đóng (`CLOSED`).
+- **Thi công công trình (Construction):**
+  - Kiểm tra tính hợp lệ của phụ lục thi công/an táng, kiểm tra khớp ô mộ và kiểm tra lịch khả dụng của giám sát viên.
+  - Chặn sửa lệnh thi công đã hoàn tất (`COMPLETED`).
+  - Ràng buộc hoàn tất lệnh thi công phải có đủ công việc và ảnh minh chứng ở trạng thái `READY`.
+- **Tài chính & Thu tiền (Finance):**
+  - Kiểm tra tính bất biến và chống trùng lặp idempotency theo `request_hash` (trả về 409 Conflict nếu cùng key nhưng khác dữ liệu).
+  - Cô lập lỗi sinh hóa đơn/biên lai PDF không làm gián đoạn việc ghi nhận thanh toán vào sổ cái (giao dịch thanh toán commit thành công, hỗ trợ tạo lại biên lai qua `POST /payments/{id}/regenerate-invoice`).
+- **Giao diện Web (Frontend):**
+  - Tạo `ErrorBoundary` bảo vệ ứng dụng, hỗ trợ giao diện lỗi tôn nghiêm và nút khôi phục/tải lại trang.
+  - Sửa lỗi tra cứu công khai khi máy chủ trả về thông báo lỗi, tránh render crash.
+  - Tối ưu `LoginModal`: chiều cao co giãn responsive, hỗ trợ cuộn khi viewport thấp và đóng nhanh bằng phím Escape.
+  - Dọn dẹp trọn vẹn vòng đời Leaflet map trong `PlotMapModule` khi chuyển tab hoặc unmount.
+  - Cập nhật điều kiện quyền hạn module Chăm sóc (`CareModule`) cho phép vai trò Quản trang thao tác đầy đủ.
+- **Chỉ số Quality Gates:**
+  - Backend: `uv run pytest` đạt **89/89 passed (100%)**, `uv run ruff check` đạt **0 errors**.
+  - Frontend: `pnpm build` thành công trong 294ms, `pnpm lint` đạt **0 errors**.
 
 ---
 

@@ -1,0 +1,236 @@
+{
+  "db": "QL_NghiaTrang",
+  "revision": [
+    "0012_g17_report_exports"
+  ],
+  "roles": [
+    {
+      "role_name": "ACCOUNTANT",
+      "permission_code": "contracts:read"
+    },
+    {
+      "role_name": "ACCOUNTANT",
+      "permission_code": "customers:read"
+    },
+    {
+      "role_name": "ACCOUNTANT",
+      "permission_code": "finance:collect"
+    },
+    {
+      "role_name": "ACCOUNTANT",
+      "permission_code": "finance:read"
+    },
+    {
+      "role_name": "ACCOUNTANT",
+      "permission_code": "finance:write"
+    },
+    {
+      "role_name": "ACCOUNTANT",
+      "permission_code": "reports:read"
+    },
+    {
+      "role_name": "ADMIN",
+      "permission_code": "audit:read"
+    },
+    {
+      "role_name": "ADMIN",
+      "permission_code": "care:execute"
+    },
+    {
+      "role_name": "ADMIN",
+      "permission_code": "care:read"
+    },
+    {
+      "role_name": "ADMIN",
+      "permission_code": "care:write"
+    },
+    {
+      "role_name": "ADMIN",
+      "permission_code": "construction:execute"
+    },
+    {
+      "role_name": "ADMIN",
+      "permission_code": "construction:read"
+    },
+    {
+      "role_name": "ADMIN",
+      "permission_code": "construction:write"
+    },
+    {
+      "role_name": "ADMIN",
+      "permission_code": "contracts:activate"
+    },
+    {
+      "role_name": "ADMIN",
+      "permission_code": "contracts:read"
+    },
+    {
+      "role_name": "ADMIN",
+      "permission_code": "contracts:write"
+    },
+    {
+      "role_name": "ADMIN",
+      "permission_code": "customers:read"
+    },
+    {
+      "role_name": "ADMIN",
+      "permission_code": "customers:write"
+    },
+    {
+      "role_name": "ADMIN",
+      "permission_code": "finance:collect"
+    },
+    {
+      "role_name": "ADMIN",
+      "permission_code": "finance:read"
+    },
+    {
+      "role_name": "ADMIN",
+      "permission_code": "finance:write"
+    },
+    {
+      "role_name": "ADMIN",
+      "permission_code": "plots:lock"
+    },
+    {
+      "role_name": "ADMIN",
+      "permission_code": "plots:read"
+    },
+    {
+      "role_name": "ADMIN",
+      "permission_code": "plots:write"
+    },
+    {
+      "role_name": "ADMIN",
+      "permission_code": "reports:read"
+    },
+    {
+      "role_name": "ADMIN",
+      "permission_code": "users:read"
+    },
+    {
+      "role_name": "ADMIN",
+      "permission_code": "users:write"
+    },
+    {
+      "role_name": "CARETAKER",
+      "permission_code": "care:execute"
+    },
+    {
+      "role_name": "CARETAKER",
+      "permission_code": "care:read"
+    },
+    {
+      "role_name": "CARETAKER",
+      "permission_code": "care:write"
+    },
+    {
+      "role_name": "CARETAKER",
+      "permission_code": "construction:execute"
+    },
+    {
+      "role_name": "CARETAKER",
+      "permission_code": "construction:read"
+    },
+    {
+      "role_name": "CARETAKER",
+      "permission_code": "construction:write"
+    },
+    {
+      "role_name": "CARETAKER",
+      "permission_code": "contracts:read"
+    },
+    {
+      "role_name": "CARETAKER",
+      "permission_code": "customers:read"
+    },
+    {
+      "role_name": "CARETAKER",
+      "permission_code": "plots:lock"
+    },
+    {
+      "role_name": "CARETAKER",
+      "permission_code": "plots:read"
+    },
+    {
+      "role_name": "MARKETING",
+      "permission_code": "care:read"
+    },
+    {
+      "role_name": "MARKETING",
+      "permission_code": "care:write"
+    },
+    {
+      "role_name": "MARKETING",
+      "permission_code": "construction:read"
+    },
+    {
+      "role_name": "MARKETING",
+      "permission_code": "contracts:activate"
+    },
+    {
+      "role_name": "MARKETING",
+      "permission_code": "contracts:read"
+    },
+    {
+      "role_name": "MARKETING",
+      "permission_code": "contracts:write"
+    },
+    {
+      "role_name": "MARKETING",
+      "permission_code": "customers:read"
+    },
+    {
+      "role_name": "MARKETING",
+      "permission_code": "customers:write"
+    },
+    {
+      "role_name": "MARKETING",
+      "permission_code": "finance:read"
+    },
+    {
+      "role_name": "MARKETING",
+      "permission_code": "plots:read"
+    },
+    {
+      "role_name": "MARKETING",
+      "permission_code": "plots:write"
+    },
+    {
+      "role_name": "MARKETING",
+      "permission_code": "reports:read"
+    }
+  ],
+  "demo_users": [
+    {
+      "username": "admin",
+      "is_active": true,
+      "role_name": "ADMIN"
+    },
+    {
+      "username": "marketing",
+      "is_active": true,
+      "role_name": "MARKETING"
+    },
+    {
+      "username": "accountant",
+      "is_active": true,
+      "role_name": "ACCOUNTANT"
+    },
+    {
+      "username": "caretaker",
+      "is_active": true,
+      "role_name": "CARETAKER"
+    }
+  ],
+  "counts": {
+    "customers": 1081,
+    "deceased_profiles": 707,
+    "contracts": 928,
+    "plots": 1027,
+    "care_schedules": 311,
+    "construction_orders": 141,
+    "payments": 30,
+    "receivables": 403
+  }
+}

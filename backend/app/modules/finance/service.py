@@ -434,6 +434,11 @@ class FinanceService:
                 .first()
             )
             if existing_req:
+                if existing_req.request_hash and existing_req.request_hash != req_hash:
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail="Xung đột khóa chống trùng: Tham số thanh toán không khớp với yêu cầu trước đó sử dụng cùng Idempotency Key.",
+                    )
                 if existing_req.status == "COMPLETED" and existing_req.response_body:
                     cached_data = json.loads(existing_req.response_body)
                     return PaymentResponse(**cached_data)
@@ -522,79 +527,85 @@ class FinanceService:
         # Refresh receivable to see trigger changes
         db.refresh(receivable)
 
-        # 2. Auto-generate receipt / invoice PDF
-        invoice_number = cls._generate_receipt_number(db)
-        amount_words = number_to_vietnamese_words(payload.paid_amount)
-
-        # Generate receipt PDF
-        source_code = (
-            receivable.contract.contract_code
-            if receivable.contract
-            else (
-                receivable.annex.annex_code
-                if receivable.annex
-                else f"REC-{receivable.receivable_id}"
-            )
-        )
-        reason_content = f"Thanh toán đợt {receivable.installment_no} - " + (
-            "Hợp đồng mua đất" if receivable.contract else "Phụ lục dịch vụ nghĩa trang"
-        )
         recorder = db.query(User).filter(User.user_id == user_id).first()
         recorder_name = recorder.full_name if recorder else "Nhân viên thu ngân"
 
-        method_labels = {
-            "CASH": "Tiền mặt",
-            "BANK_TRANSFER": "Chuyển khoản ngân hàng",
-            "VIET_QR": "Mã QR / VietQR",
-        }
+        # 2. Auto-generate receipt / invoice PDF (Fault isolated)
+        inv_res = None
+        invoice_number = None
+        try:
+            invoice_number = cls._generate_receipt_number(db)
+            amount_words = number_to_vietnamese_words(payload.paid_amount)
 
-        pdf_bytes = PDFService.generate_receipt_pdf(
-            invoice_number=invoice_number,
-            customer_name=receivable.customer.full_name,
-            customer_phone=receivable.customer.phone_number,
-            customer_address=receivable.customer.address or "",
-            reason_content=reason_content,
-            source_code=source_code,
-            paid_amount_str=f"{payload.paid_amount:,.0f} VNĐ",
-            total_amount_in_words=amount_words,
-            payment_method_str=method_labels.get(payload.payment_method, payload.payment_method),
-            transaction_reference=payload.transaction_reference,
-            recorder_name=recorder_name,
-            issued_date=now,
-        )
+            source_code = (
+                receivable.contract.contract_code
+                if receivable.contract
+                else (
+                    receivable.annex.annex_code
+                    if receivable.annex
+                    else f"REC-{receivable.receivable_id}"
+                )
+            )
+            reason_content = f"Thanh toán đợt {receivable.installment_no} - " + (
+                "Hợp đồng mua đất" if receivable.contract else "Phụ lục dịch vụ nghĩa trang"
+            )
 
-        file_obj = DocumentService.upload_file(
-            db=db,
-            file_name=f"BienLai_{invoice_number}.pdf",
-            content=pdf_bytes,
-            user_id=user_id,
-        )
+            method_labels = {
+                "CASH": "Tiền mặt",
+                "BANK_TRANSFER": "Chuyển khoản ngân hàng",
+                "VIET_QR": "Mã QR / VietQR",
+            }
 
-        invoice = Invoice(
-            invoice_number=invoice_number,
-            payment_id=payment_id,
-            issued_date=now,
-            total_amount_in_words=amount_words,
-            pdf_file_url=f"/api/v1/documents/{file_obj.file_id}/download",
-            file_id=file_obj.file_id,
-            created_by_user_id=user_id,
-        )
-        db.add(invoice)
-        db.commit()
-        db.refresh(invoice)
+            pdf_bytes = PDFService.generate_receipt_pdf(
+                invoice_number=invoice_number,
+                customer_name=receivable.customer.full_name,
+                customer_phone=receivable.customer.phone_number,
+                customer_address=receivable.customer.address or "",
+                reason_content=reason_content,
+                source_code=source_code,
+                paid_amount_str=f"{payload.paid_amount:,.0f} VNĐ",
+                total_amount_in_words=amount_words,
+                payment_method_str=method_labels.get(payload.payment_method, payload.payment_method),
+                transaction_reference=payload.transaction_reference,
+                recorder_name=recorder_name,
+                issued_date=now,
+            )
+
+            file_obj = DocumentService.upload_file(
+                db=db,
+                file_name=f"BienLai_{invoice_number}.pdf",
+                content=pdf_bytes,
+                user_id=user_id,
+            )
+
+            invoice = Invoice(
+                invoice_number=invoice_number,
+                payment_id=payment_id,
+                issued_date=now,
+                total_amount_in_words=amount_words,
+                pdf_file_url=f"/api/v1/documents/{file_obj.file_id}/download",
+                file_id=file_obj.file_id,
+                created_by_user_id=user_id,
+            )
+            db.add(invoice)
+            db.commit()
+            db.refresh(invoice)
+
+            inv_res = InvoiceResponse(
+                invoice_id=invoice.invoice_id,
+                invoice_number=invoice.invoice_number,
+                payment_id=invoice.payment_id,
+                issued_date=invoice.issued_date,
+                total_amount_in_words=invoice.total_amount_in_words,
+                pdf_file_url=invoice.pdf_file_url,
+                file_id=invoice.file_id,
+                notes=invoice.notes,
+            )
+        except Exception:
+            db.rollback()
+            inv_res = None
 
         # 3. Construct response
-        inv_res = InvoiceResponse(
-            invoice_id=invoice.invoice_id,
-            invoice_number=invoice.invoice_number,
-            payment_id=invoice.payment_id,
-            issued_date=invoice.issued_date,
-            total_amount_in_words=invoice.total_amount_in_words,
-            pdf_file_url=invoice.pdf_file_url,
-            file_id=invoice.file_id,
-            notes=invoice.notes,
-        )
-
         response = PaymentResponse(
             payment_id=payment_id,
             receivable_id=receivable.receivable_id,
@@ -723,4 +734,98 @@ class FinanceService:
             count_partially_paid=count_partially,
             count_paid=count_paid,
             count_overdue=count_overdue,
+        )
+
+    @classmethod
+    def regenerate_invoice(
+        cls, db: Session, payment_id: int, user_id: int
+    ) -> InvoiceResponse:
+        payment = db.query(Payment).filter(Payment.payment_id == payment_id).first()
+        if not payment:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Không tìm thấy giao dịch thanh toán {payment_id}",
+            )
+        if payment.invoice:
+            inv = payment.invoice
+            return InvoiceResponse(
+                invoice_id=inv.invoice_id,
+                invoice_number=inv.invoice_number,
+                payment_id=inv.payment_id,
+                issued_date=inv.issued_date,
+                total_amount_in_words=inv.total_amount_in_words,
+                pdf_file_url=inv.pdf_file_url,
+                file_id=inv.file_id,
+                notes=inv.notes,
+            )
+
+        receivable = payment.receivable
+        now = _utc_now_naive()
+        invoice_number = cls._generate_receipt_number(db)
+        amount_words = number_to_vietnamese_words(payment.paid_amount)
+        source_code = (
+            receivable.contract.contract_code
+            if receivable.contract
+            else (
+                receivable.annex.annex_code
+                if receivable.annex
+                else f"REC-{receivable.receivable_id}"
+            )
+        )
+        reason_content = f"Thanh toán đợt {receivable.installment_no} - " + (
+            "Hợp đồng mua đất" if receivable.contract else "Phụ lục dịch vụ nghĩa trang"
+        )
+        recorder = db.query(User).filter(User.user_id == user_id).first()
+        recorder_name = recorder.full_name if recorder else "Nhân viên thu ngân"
+
+        method_labels = {
+            "CASH": "Tiền mặt",
+            "BANK_TRANSFER": "Chuyển khoản ngân hàng",
+            "VIET_QR": "Mã QR / VietQR",
+        }
+
+        pdf_bytes = PDFService.generate_receipt_pdf(
+            invoice_number=invoice_number,
+            customer_name=receivable.customer.full_name,
+            customer_phone=receivable.customer.phone_number,
+            customer_address=receivable.customer.address or "",
+            reason_content=reason_content,
+            source_code=source_code,
+            paid_amount_str=f"{payment.paid_amount:,.0f} VNĐ",
+            total_amount_in_words=amount_words,
+            payment_method_str=method_labels.get(payment.payment_method, payment.payment_method),
+            transaction_reference=payment.transaction_reference,
+            recorder_name=recorder_name,
+            issued_date=now,
+        )
+
+        file_obj = DocumentService.upload_file(
+            db=db,
+            file_name=f"BienLai_{invoice_number}.pdf",
+            content=pdf_bytes,
+            user_id=user_id,
+        )
+
+        invoice = Invoice(
+            invoice_number=invoice_number,
+            payment_id=payment.payment_id,
+            issued_date=now,
+            total_amount_in_words=amount_words,
+            pdf_file_url=f"/api/v1/documents/{file_obj.file_id}/download",
+            file_id=file_obj.file_id,
+            created_by_user_id=user_id,
+        )
+        db.add(invoice)
+        db.commit()
+        db.refresh(invoice)
+
+        return InvoiceResponse(
+            invoice_id=invoice.invoice_id,
+            invoice_number=invoice.invoice_number,
+            payment_id=invoice.payment_id,
+            issued_date=invoice.issued_date,
+            total_amount_in_words=invoice.total_amount_in_words,
+            pdf_file_url=invoice.pdf_file_url,
+            file_id=invoice.file_id,
+            notes=invoice.notes,
         )

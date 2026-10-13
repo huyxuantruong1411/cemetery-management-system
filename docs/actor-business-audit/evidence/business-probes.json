@@ -1,0 +1,160 @@
+{
+  "fixture": "SYNTHETIC; Test DB; commits converted to flush inside outer rollback; READY file metadata fixture, no storage upload",
+  "steps": [
+    {
+      "label": "/profiles/customers",
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/profiles/customers",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "/profiles/deceased",
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/profiles/deceased",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "Create burial annex without certificate file",
+      "actor": "marketing",
+      "layer": "service",
+      "created": true
+    },
+    {
+      "label": "Register care without signed scan",
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/care/annexes",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "/care/schedules/generate",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/care/schedules/generate",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "Assign despite leave conflict",
+      "actor": "caretaker",
+      "method": "PATCH",
+      "path": "/care/schedules/3/assign",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "/care/checklist-items/3",
+      "actor": "caretaker",
+      "method": "PATCH",
+      "path": "/care/checklist-items/3",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "Positive control: no evidence must block close",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/care/schedules/3/close",
+      "status": 400,
+      "detail": "Không thể đóng ca: Bắt buộc phải có ít nhất 1 ảnh minh chứng hiện trường hợp lệ (READY)"
+    },
+    {
+      "label": "Evidence without uploaded file",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/care/schedules/3/evidence",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "Close with nonexistent URL evidence",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/care/schedules/3/close",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "Change mandatory checklist after CLOSED",
+      "actor": "caretaker",
+      "method": "PATCH",
+      "path": "/care/checklist-items/3",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "Construction on CARE annex and different plot",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/construction/orders",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "Bypass completion gate with general update",
+      "actor": "caretaker",
+      "method": "PUT",
+      "path": "/construction/orders/2",
+      "status": 200,
+      "detail": null
+    }
+  ],
+  "certificate_gate_without_file": true,
+  "burial_after_legal_activation": {
+    "layer": "service",
+    "annex_status": "ACTIVE",
+    "slot_status": "OCCUPIED",
+    "plot_status": "OCCUPIED",
+    "future_burial_date": "2026-11-12"
+  },
+  "care_register_response": {
+    "annex_id": 8,
+    "contract_id": 6,
+    "annex_number": "AUDIT-3bdc65b-CS02",
+    "package_id": 6,
+    "package_name": "SYNTHETIC QUARTERLY",
+    "cycle_months": 12,
+    "recurring_price": "0.00",
+    "status": "ACTIVE",
+    "valid_from": "2026-10-01",
+    "valid_to": "2027-10-01"
+  },
+  "conflict_assignment": {
+    "status_code": 200,
+    "has_conflict": true,
+    "caretaker_id_persisted": 4,
+    "schedule_status": "SCHEDULED"
+  },
+  "no_evidence_guard_status": 400,
+  "close_without_ready_file": {
+    "status_code": 200,
+    "state": "CLOSED"
+  },
+  "change_closed_checklist": {
+    "status_code": 200,
+    "is_completed": false
+  },
+  "wrong_construction_basis": {
+    "status_code": 201,
+    "created": true,
+    "task_count": 5
+  },
+  "completion_bypass": {
+    "status_code": 200,
+    "status": "COMPLETED",
+    "progress": "0.00",
+    "task_states": [
+      "TODO",
+      "TODO",
+      "TODO",
+      "TODO",
+      "TODO"
+    ]
+  },
+  "rollback": "completed"
+}

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.modules.auth.dependencies import get_current_user
+from app.modules.auth.dependencies import require_permission
 from app.modules.auth.models import User
 from app.modules.contracts.schemas import (
     AnnexActivateRequest,
@@ -37,7 +37,7 @@ router = APIRouter(prefix="/contracts", tags=["Contracts: Land Purchase & Lifecy
 def create_land_purchase_contract(
     data: LandPurchaseContractCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("contracts", "write")),
 ):
     """
     Tạo hợp đồng mua đất nghĩa trang mới.
@@ -45,7 +45,7 @@ def create_land_purchase_contract(
     và snapshot đơn giá đất từ bảng giá niêm yết hiện hành.
     """
     contract = ContractService.create_land_purchase_contract(db, data, current_user.user_id)
-    return ContractService.get_contract_detail_dto(db, contract.contract_id)
+    return ContractService.get_contract_detail_dto(db, contract.contract_id, current_user=current_user)
 
 
 @router.post(
@@ -57,7 +57,7 @@ def create_land_purchase_contract(
 def create_exhumation_contract(
     data: ExhumationContractCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("contracts", "write")),
 ):
     """
     Lập hợp đồng cải táng / cất bốc di cốt:
@@ -66,7 +66,7 @@ def create_exhumation_contract(
     - Kiểm tra slot huyệt và thông tin người quá cố chính xác.
     """
     contract = ContractService.create_exhumation_contract(db, data, current_user.user_id)
-    return ContractService.get_contract_detail_dto(db, contract.contract_id)
+    return ContractService.get_contract_detail_dto(db, contract.contract_id, current_user=current_user)
 
 
 @router.post(
@@ -78,7 +78,7 @@ def create_exhumation_contract(
 def create_transfer_contract(
     data: TransferContractCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("contracts", "write")),
 ):
     """
     Lập hợp đồng chuyển nhượng quyền sử dụng đất nghĩa trang:
@@ -87,7 +87,7 @@ def create_transfer_contract(
     - Chặn tuyệt đối chuyển nhượng ô mộ Kim Tĩnh đã khóa vĩnh viễn.
     """
     contract = ContractService.create_transfer_contract(db, data, current_user.user_id)
-    return ContractService.get_contract_detail_dto(db, contract.contract_id)
+    return ContractService.get_contract_detail_dto(db, contract.contract_id, current_user=current_user)
 
 
 @router.post(
@@ -99,7 +99,7 @@ def create_transfer_contract(
 def create_cremation_contract(
     data: CremationContractCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("contracts", "write")),
 ):
     """
     Lập hợp đồng dịch vụ hỏa táng độc lập:
@@ -107,7 +107,7 @@ def create_cremation_contract(
     - Thiết lập ngày thực hiện, gói dịch vụ và tùy chọn lưu tro cốt.
     """
     contract = ContractService.create_cremation_contract(db, data, current_user.user_id)
-    return ContractService.get_contract_detail_dto(db, contract.contract_id)
+    return ContractService.get_contract_detail_dto(db, contract.contract_id, current_user=current_user)
 
 
 # ==============================================================================
@@ -135,7 +135,7 @@ def list_contracts(
     limit: int = Query(50, ge=1, le=1000),
     offset: int = Query(0, ge=0),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("contracts", "read")),
 ):
     eff_status = status or status_filter
     return ContractService.list_contracts(
@@ -157,9 +157,9 @@ def list_contracts(
 def get_contract_detail(
     contract_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("contracts", "read")),
 ):
-    return ContractService.get_contract_detail_dto(db, contract_id)
+    return ContractService.get_contract_detail_dto(db, contract_id, current_user=current_user)
 
 
 # ==============================================================================
@@ -174,12 +174,12 @@ def submit_contract_for_signing(
     contract_id: int,
     data: Optional[ContractSubmitSigningRequest] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("contracts", "write")),
 ):
     template_id = data.template_id if data else None
     notes = data.notes if data else None
     ContractService.submit_for_signing(db, contract_id, template_id, notes, current_user.user_id)
-    return ContractService.get_contract_detail_dto(db, contract_id)
+    return ContractService.get_contract_detail_dto(db, contract_id, current_user=current_user)
 
 
 @router.post(
@@ -191,7 +191,7 @@ def activate_contract(
     contract_id: int,
     data: ContractActivateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("contracts", "activate")),
 ):
     """
     Kích hoạt hợp đồng toàn vẹn ACID:
@@ -203,7 +203,7 @@ def activate_contract(
     - Tự động sinh nghĩa vụ công nợ và phát sinh Transactional Outbox Event.
     """
     ContractService.activate_contract(db, contract_id, data, current_user.user_id)
-    return ContractService.get_contract_detail_dto(db, contract_id)
+    return ContractService.get_contract_detail_dto(db, contract_id, current_user=current_user)
 
 
 @router.post(
@@ -215,10 +215,10 @@ def cancel_contract(
     contract_id: int,
     data: ContractCancelRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("contracts", "write")),
 ):
     ContractService.cancel_contract(db, contract_id, data.reason, current_user.user_id)
-    return ContractService.get_contract_detail_dto(db, contract_id)
+    return ContractService.get_contract_detail_dto(db, contract_id, current_user=current_user)
 
 
 @router.get(
@@ -228,7 +228,7 @@ def cancel_contract(
 def download_contract_pdf(
     contract_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("contracts", "read")),
 ):
     pdf_bytes = ContractService.generate_contract_pdf(db, contract_id)
     contract = ContractService.get_contract(db, contract_id)
@@ -254,7 +254,7 @@ def create_burial_annex(
     contract_id: int,
     data: BurialAnnexCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("contracts", "write")),
 ):
     """
     Lập phụ lục an táng cho hợp đồng mua đất:
@@ -264,7 +264,7 @@ def create_burial_annex(
     - Kiểm tra ô mộ không bị khóa vĩnh viễn (Kim Tĩnh Immutability).
     """
     ContractService.create_burial_annex(db, contract_id, data, current_user.user_id)
-    return ContractService.get_contract_detail_dto(db, contract_id)
+    return ContractService.get_contract_detail_dto(db, contract_id, current_user=current_user)
 
 
 @router.post(
@@ -275,11 +275,11 @@ def submit_annex_for_signing(
     annex_id: int,
     data: Optional[AnnexSubmitSigningRequest] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("contracts", "write")),
 ):
     notes = data.notes if data else None
     annex = ContractService.submit_annex_for_signing(db, annex_id, notes, current_user.user_id)
-    return ContractService.get_contract_detail_dto(db, annex.contract_id)
+    return ContractService.get_contract_detail_dto(db, annex.contract_id, current_user=current_user)
 
 
 @router.post(
@@ -290,7 +290,7 @@ def activate_burial_annex(
     annex_id: int,
     data: AnnexActivateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("contracts", "activate")),
 ):
     """
     Kích hoạt phụ lục an táng toàn vẹn ACID:
@@ -301,4 +301,4 @@ def activate_burial_annex(
     - Tự động sinh công nợ phát sinh và phát sinh Transactional Outbox Event.
     """
     annex = ContractService.activate_burial_annex(db, annex_id, data, current_user.user_id)
-    return ContractService.get_contract_detail_dto(db, annex.contract_id)
+    return ContractService.get_contract_detail_dto(db, annex.contract_id, current_user=current_user)

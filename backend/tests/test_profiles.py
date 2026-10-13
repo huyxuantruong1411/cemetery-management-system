@@ -192,7 +192,7 @@ def test_death_certificate_verification_workflow_g08():
     )
     assert cert_resp.status_code == 200, cert_resp.text
     cert_data = cert_resp.json()
-    cert_id = cert_data["cert_id"]
+    assert cert_data["cert_id"] > 0
     assert cert_data["is_verified"] is True, (
         "Giấy báo tử mới đính kèm phải tự động hợp lệ (is_verified=True) để phục vụ an táng!"
     )

@@ -550,6 +550,28 @@ class ReportService:
                 detail=f"Định dạng xuất không hợp lệ: {rformat}",
             )
 
+        # Enforce report type authorization (BA-03)
+        if rtype == "REVENUE":
+            is_allowed = (
+                any(r.role_name.upper() in ("ADMIN", "ACCOUNTANT") for r in user.roles)
+                or any(p.resource == "finance" for r in user.roles for p in r.permissions)
+            )
+            if not is_allowed:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Bạn không có quyền xuất báo cáo doanh thu tài chính.",
+                )
+        elif rtype == "CONTRACTS":
+            is_allowed = (
+                any(r.role_name.upper() in ("ADMIN", "ACCOUNTANT", "MARKETING") for r in user.roles)
+                or any(p.resource == "contracts" for r in user.roles for p in r.permissions)
+            )
+            if not is_allowed:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Bạn không có quyền xuất báo cáo hợp đồng pháp lý.",
+                )
+
         # Generate sequence-based export code
         res_seq = db.execute(text("SELECT NEXT VALUE FOR seq_report_export_number")).scalar()
         seq_num = res_seq if res_seq is not None else int(datetime.now().timestamp())
@@ -570,9 +592,12 @@ class ReportService:
         report_title = ""
         record_count = 0
 
-        # Build specific report data
+        # Build specific report data with synchronized filters (BA-31)
         if rtype == "REVENUE":
-            rep = cls.generate_revenue_report(db, start_date=start_d, end_date=end_d)
+            payment_method = req.filter_params.get("payment_method")
+            rep = cls.generate_revenue_report(
+                db, start_date=start_d, end_date=end_d, payment_method=payment_method
+            )
             report_title = "Báo Cáo Doanh Thu Thực Tế"
             kpis = [
                 ("Tổng Thực Thu", f"{rep.total_revenue:,.0f} đ".replace(",", ".")),
@@ -603,7 +628,8 @@ class ReportService:
             record_count = len(rep.drilldown_items)
 
         elif rtype == "OCCUPANCY":
-            rep = cls.generate_occupancy_report(db)
+            zone_id = int(req.filter_params["zone_id"]) if req.filter_params.get("zone_id") else None
+            rep = cls.generate_occupancy_report(db, zone_id=zone_id)
             report_title = "Báo Cáo Tỷ Lệ Lấp Đầy & Mộ Phần"
             kpis = [
                 ("Tổng Số Ô Mộ", f"{rep.total_plots}"),
@@ -639,7 +665,10 @@ class ReportService:
             record_count = len(rep.zones)
 
         elif rtype == "CONTRACTS":
-            rep = cls.generate_contracts_report(db, start_date=start_d, end_date=end_d)
+            status_filter = req.filter_params.get("status")
+            rep = cls.generate_contracts_report(
+                db, start_date=start_d, end_date=end_d, status_filter=status_filter
+            )
             report_title = "Báo Cáo Hợp Đồng & Phụ Lục"
             kpis = [
                 ("Tổng HĐ Đất", f"{rep.total_land_contracts}"),
@@ -813,6 +842,17 @@ class ReportService:
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Bạn không có quyền tải bản xuất báo cáo này",
             )
+
+        if export_rec.report_type == "REVENUE":
+            is_revenue_allowed = (
+                any(r.role_name.upper() in ("ADMIN", "ACCOUNTANT") for r in user.roles)
+                or any(p.resource == "finance" for r in user.roles for p in r.permissions)
+            )
+            if not is_revenue_allowed:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Bạn không có quyền tải báo cáo doanh thu tài chính.",
+                )
 
         if not export_rec.file_id or not export_rec.file:
             raise HTTPException(

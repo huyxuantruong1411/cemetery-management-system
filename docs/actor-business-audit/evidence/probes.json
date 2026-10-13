@@ -1,0 +1,170 @@
+{
+  "db": "QL_NghiaTrang_Test",
+  "columns": {
+    "customers": [
+      "customer_id",
+      "customer_code",
+      "full_name",
+      "citizen_id",
+      "phone_number",
+      "email",
+      "address",
+      "created_at",
+      "updated_at",
+      "date_of_birth"
+    ],
+    "death_certificates": [
+      "cert_id",
+      "deceased_id",
+      "certificate_number",
+      "issuing_authority",
+      "issue_date",
+      "scan_file_url",
+      "is_verified",
+      "verified_at",
+      "verified_by",
+      "rejection_reason",
+      "file_id",
+      "notes"
+    ],
+    "care_schedules": [
+      "schedule_id",
+      "care_annex_id",
+      "plot_id",
+      "package_id",
+      "caretaker_id",
+      "scheduled_date",
+      "performed_date",
+      "status",
+      "closed_at",
+      "created_at",
+      "period_key",
+      "notes",
+      "completed_by_id"
+    ]
+  },
+  "lock_sql": "SELECT plots.plot_id \nFROM plots \nWHERE plots.plot_id = :plot_id_1",
+  "staff_sql": "SELECT users.user_id \nFROM users \nWHERE users.is_active IS 1",
+  "probes": [
+    {
+      "actor": "caretaker",
+      "method": "GET",
+      "path": "/auth/staff",
+      "status": 500,
+      "detail": "Internal Server Error"
+    },
+    {
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/care/schedules/2147483646/assign",
+      "status": 405,
+      "detail": "Method Not Allowed"
+    },
+    {
+      "actor": "caretaker",
+      "method": "PUT",
+      "path": "/profiles/customers/2147483646",
+      "status": 404,
+      "detail": "Không tìm thấy khách hàng"
+    },
+    {
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/contracts/2147483646/submit-signing",
+      "status": 404,
+      "detail": "Không tìm thấy hợp đồng với ID 2147483646"
+    },
+    {
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/finance/receivables/2147483646/discount",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'finance:discount'."
+    },
+    {
+      "actor": "accountant",
+      "method": "GET",
+      "path": "/auth/staff",
+      "status": 500,
+      "detail": "Internal Server Error"
+    },
+    {
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/care/schedules/2147483646/assign",
+      "status": 405,
+      "detail": "Method Not Allowed"
+    },
+    {
+      "actor": "accountant",
+      "method": "PUT",
+      "path": "/profiles/customers/2147483646",
+      "status": 404,
+      "detail": "Không tìm thấy khách hàng"
+    },
+    {
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/contracts/2147483646/submit-signing",
+      "status": 404,
+      "detail": "Không tìm thấy hợp đồng với ID 2147483646"
+    },
+    {
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/finance/receivables/2147483646/discount",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'finance:discount'."
+    },
+    {
+      "actor": "marketing",
+      "method": "GET",
+      "path": "/auth/staff",
+      "status": 500,
+      "detail": "Internal Server Error"
+    },
+    {
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/care/schedules/2147483646/assign",
+      "status": 405,
+      "detail": "Method Not Allowed"
+    },
+    {
+      "actor": "marketing",
+      "method": "PUT",
+      "path": "/profiles/customers/2147483646",
+      "status": 404,
+      "detail": "Không tìm thấy khách hàng"
+    },
+    {
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/contracts/2147483646/submit-signing",
+      "status": 404,
+      "detail": "Không tìm thấy hợp đồng với ID 2147483646"
+    },
+    {
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/finance/receivables/2147483646/discount",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'finance:discount'."
+    },
+    {
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/profiles/customers",
+      "status": 201,
+      "created": true
+    },
+    {
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/profiles/customers",
+      "status": 201,
+      "created": true
+    }
+  ],
+  "rollback": "All writes rolled back; no file/storage writes performed"
+}

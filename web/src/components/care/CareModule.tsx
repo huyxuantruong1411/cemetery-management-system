@@ -350,7 +350,9 @@ export const CareModule: React.FC = () => {
   }
 
   const canManageCare =
-    hasPermission('care:manage') || (user?.roles ? user.roles.some((r) => r.role_name === 'ADMIN') : false)
+    hasPermission('care:write') ||
+    hasPermission('care:execute') ||
+    (user?.roles ? user.roles.some((r) => ['ADMIN', 'OPERATIONS', 'CARETAKER'].includes(r.role_name)) : false)
 
   // ---------------------------------------------------------------------------
   // Render

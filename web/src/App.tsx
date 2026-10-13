@@ -32,6 +32,7 @@ import { FinanceModule } from './components/finance/FinanceModule'
 import { PlotMapModule } from './components/plots/PlotMapModule'
 import { ProfileModule } from './components/profiles/ProfileModule'
 import { ReportsModule } from './components/reports/ReportsModule'
+import { ErrorBoundary } from './components/common/ErrorBoundary'
 import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './context/useAuth'
 
@@ -958,9 +959,11 @@ function MainApp() {
 
 export function App() {
   return (
-    <AuthProvider>
-      <MainApp />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <MainApp />
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
 export default App

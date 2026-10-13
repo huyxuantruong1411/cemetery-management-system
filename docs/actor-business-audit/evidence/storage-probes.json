@@ -1,0 +1,275 @@
+{
+  "fixture": "SYNTHETIC; QL_NghiaTrang_Test 0012; real MinIO; outer SQL rollback, commit converted to flush; no assertion of cross-transaction atomicity",
+  "steps": [
+    {
+      "label": "Real synthetic signed-document PDF upload",
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/documents/upload",
+      "status": 201,
+      "detail": null,
+      "bytes": 478,
+      "content_type": "application/json"
+    },
+    {
+      "label": "/documents/versions",
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/documents/versions",
+      "status": 201,
+      "detail": null,
+      "bytes": 752,
+      "content_type": "application/json"
+    },
+    {
+      "label": "Preview uploaded legal document",
+      "actor": "marketing",
+      "method": "GET",
+      "path": "/documents/0aa18e6dd4b54c43b4372dee878e390c/preview",
+      "status": 200,
+      "detail": null,
+      "bytes": 83167,
+      "content_type": "application/pdf"
+    },
+    {
+      "label": "Preview uploaded legal document",
+      "actor": "caretaker",
+      "method": "GET",
+      "path": "/documents/0aa18e6dd4b54c43b4372dee878e390c/preview",
+      "status": 200,
+      "detail": null,
+      "bytes": 83167,
+      "content_type": "application/pdf"
+    },
+    {
+      "label": "Preview uploaded legal document",
+      "actor": "accountant",
+      "method": "GET",
+      "path": "/documents/0aa18e6dd4b54c43b4372dee878e390c/preview",
+      "status": 200,
+      "detail": null,
+      "bytes": 83167,
+      "content_type": "application/pdf"
+    },
+    {
+      "label": "Preview uploaded legal document",
+      "actor": "no bearer",
+      "method": "GET",
+      "path": "/documents/0aa18e6dd4b54c43b4372dee878e390c/preview",
+      "status": 401,
+      "detail": "Yêu cầu xác thực tài khoản (thiếu Bearer token)",
+      "bytes": 71,
+      "content_type": "application/json"
+    },
+    {
+      "label": "Generate full legal contract PDF by actor",
+      "actor": "marketing",
+      "method": "GET",
+      "path": "/contracts/7/pdf",
+      "status": 200,
+      "detail": null,
+      "bytes": 83168,
+      "content_type": "application/pdf"
+    },
+    {
+      "label": "Generate full legal contract PDF by actor",
+      "actor": "caretaker",
+      "method": "GET",
+      "path": "/contracts/7/pdf",
+      "status": 200,
+      "detail": null,
+      "bytes": 83168,
+      "content_type": "application/pdf"
+    },
+    {
+      "label": "/reports/revenue",
+      "actor": "caretaker",
+      "method": "GET",
+      "path": "/reports/revenue",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'reports:read'.",
+      "bytes": 66,
+      "content_type": "application/json"
+    },
+    {
+      "label": "Caretaker exports forbidden financial report",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/reports/export",
+      "status": 201,
+      "detail": null,
+      "bytes": 304,
+      "content_type": "application/json"
+    },
+    {
+      "label": "/reports/exports/1/download",
+      "actor": "caretaker",
+      "method": "GET",
+      "path": "/reports/exports/1/download",
+      "status": 200,
+      "detail": null,
+      "bytes": 5120,
+      "content_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    },
+    {
+      "label": "Report ACL positive control: another creator denied",
+      "actor": "marketing",
+      "method": "GET",
+      "path": "/reports/exports/1/download",
+      "status": 403,
+      "detail": "Bạn không có quyền tải bản xuất báo cáo này",
+      "bytes": 71,
+      "content_type": "application/json"
+    },
+    {
+      "label": "Bypass export ACL using generic file endpoint",
+      "actor": "marketing",
+      "method": "GET",
+      "path": "/documents/report_exp-202610-1001_2b02ef88/download",
+      "status": 200,
+      "detail": null,
+      "bytes": 5120,
+      "content_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    },
+    {
+      "label": "Collect first synthetic installment with real receipt",
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/finance/receivables/1/payments",
+      "status": 201,
+      "detail": null,
+      "bytes": 511,
+      "content_type": "application/json"
+    },
+    {
+      "label": "Receipt business endpoint access",
+      "actor": "accountant",
+      "method": "GET",
+      "path": "/finance/payments/1/receipt/download",
+      "status": 200,
+      "detail": null,
+      "bytes": 82307,
+      "content_type": "application/pdf"
+    },
+    {
+      "label": "Receipt business endpoint access",
+      "actor": "caretaker",
+      "method": "GET",
+      "path": "/finance/payments/1/receipt/download",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'finance:read'.",
+      "bytes": 66,
+      "content_type": "application/json"
+    },
+    {
+      "label": "Receipt business endpoint access",
+      "actor": "no bearer",
+      "method": "GET",
+      "path": "/finance/payments/1/receipt/download",
+      "status": 401,
+      "detail": "Yêu cầu xác thực tài khoản (thiếu Bearer token)",
+      "bytes": 71,
+      "content_type": "application/json"
+    },
+    {
+      "label": "Caretaker bypass receipt ACL using generic file endpoint",
+      "actor": "caretaker",
+      "method": "GET",
+      "path": "/documents/3dd9b967cccb431d8c264c6009858033/download",
+      "status": 200,
+      "detail": null,
+      "bytes": 82307,
+      "content_type": "application/pdf"
+    },
+    {
+      "label": "Same idempotency key different payload",
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/finance/receivables/1/payments",
+      "status": 201,
+      "detail": null,
+      "bytes": 511,
+      "content_type": "application/json"
+    },
+    {
+      "label": "Export filter excludes CASH fixture",
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/reports/export",
+      "status": 201,
+      "detail": null,
+      "bytes": 304,
+      "content_type": "application/json"
+    },
+    {
+      "label": "Compare UI report filter",
+      "actor": "accountant",
+      "method": "GET",
+      "path": "/reports/revenue?payment_method=BANK_TRANSFER",
+      "status": 200,
+      "detail": null,
+      "bytes": 167,
+      "content_type": "application/json"
+    },
+    {
+      "label": "Validation failure registers key",
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/finance/receivables/2147483646/payments",
+      "status": 404,
+      "detail": "Không tìm thấy khoản thu mã 2147483646",
+      "bytes": 58,
+      "content_type": "application/json"
+    },
+    {
+      "label": "Retry validation failure with same key",
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/finance/receivables/2147483646/payments",
+      "status": 409,
+      "detail": "Giao dịch thanh toán đang được xử lý song song. Vui lòng thử lại sau.",
+      "bytes": 98,
+      "content_type": "application/json"
+    },
+    {
+      "label": "Inject receipt storage failure after payment write",
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/finance/receivables/1/payments",
+      "status": 500,
+      "detail": null,
+      "bytes": 21,
+      "content_type": "text/plain; charset=utf-8"
+    },
+    {
+      "label": "Retry same failed storage payment key",
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/finance/receivables/1/payments",
+      "status": 409,
+      "detail": "Giao dịch thanh toán đang được xử lý song song. Vui lòng thử lại sau.",
+      "bytes": 98,
+      "content_type": "application/json"
+    }
+  ],
+  "pdf_roundtrip_exact": true,
+  "caretaker_export_status": "COMPLETED",
+  "first_payment": {
+    "amount": "30.00",
+    "has_invoice": true
+  },
+  "changed_payload_replay": {
+    "status": 201,
+    "returned_amount": "30.00",
+    "same_payment_id": true
+  },
+  "filtered_export_record_count": 1,
+  "storage_failure_observation": {
+    "payment_visible_within_test_transaction": true,
+    "invoice_present": false,
+    "real_commit_persistence_tested": false
+  },
+  "rollback": "completed",
+  "objects_created": 4,
+  "objects_removed": 4
+}

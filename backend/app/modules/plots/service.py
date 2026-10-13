@@ -518,13 +518,28 @@ class PlotService:
                 detail="Ô mộ đang có lệnh giữ chỗ hiệu lực, không thể xóa.",
             )
 
-        # Contracts check
-        from app.modules.contracts.models import Contract
-        contract_count = db.query(Contract).filter(Contract.plot_id == plot_id).count()
-        if contract_count > 0:
+        # Contracts & Annexes check
+        from app.modules.contracts.models import (
+            BurialAnnex,
+            ConstructionAnnex,
+            ExhumationContract,
+            LandPurchaseContract,
+            TransferContract,
+        )
+
+        contract_count = (
+            db.query(LandPurchaseContract).filter(LandPurchaseContract.plot_id == plot_id).count()
+            + db.query(ExhumationContract).filter(ExhumationContract.plot_id == plot_id).count()
+            + db.query(TransferContract).filter(TransferContract.plot_id == plot_id).count()
+        )
+        annex_count = (
+            db.query(BurialAnnex).filter(BurialAnnex.plot_id == plot_id).count()
+            + db.query(ConstructionAnnex).filter(ConstructionAnnex.plot_id == plot_id).count()
+        )
+        if contract_count > 0 or annex_count > 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Ô mộ đã gắn với {contract_count} hợp đồng giao dịch, không thể xóa.",
+                detail=f"Ô mộ đã gắn với {contract_count} hợp đồng và {annex_count} phụ lục giao dịch, không thể xóa.",
             )
 
         # Delete associated slots

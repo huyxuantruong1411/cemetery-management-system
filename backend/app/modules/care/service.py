@@ -184,12 +184,15 @@ class CareService:
             .first()
         )
 
-        has_conflict = conflict is not None
-        conflict_msg = (
-            f"Nhân viên {user.full_name} có lịch nghỉ/bận từ {conflict.start_date} đến {conflict.end_date} (Lý do: {conflict.reason})"
-            if conflict
-            else None
-        )
+        if conflict:
+            has_conflict = True
+            conflict_msg = (
+                f"Nhân viên {user.full_name} có lịch nghỉ/bận từ {conflict.start_date} "
+                f"đến {conflict.end_date} (Lý do: {conflict.reason})"
+            )
+        else:
+            has_conflict = False
+            conflict_msg = None
 
         schedule.caretaker_id = caretaker_id
         db.commit()
@@ -222,12 +225,18 @@ class CareService:
         if not item:
             raise HTTPException(status_code=404, detail="Không tìm thấy hạng mục công việc")
 
+        schedule = item.schedule
+        if schedule and schedule.status == "CLOSED":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ca chăm sóc đã ĐÓNG (CLOSED), không được phép chỉnh sửa checklist.",
+            )
+
         if is_completed is not None:
             item.is_completed = is_completed
         if field_notes is not None:
             item.field_notes = field_notes
 
-        schedule = item.schedule
         if schedule and schedule.status == "SCHEDULED":
             schedule.status = "IN_PROGRESS"
 
@@ -248,20 +257,25 @@ class CareService:
         if not schedule:
             raise HTTPException(status_code=404, detail="Không tìm thấy lịch chăm sóc")
 
-        if not file_id and not media_url:
+        if schedule.status == "CLOSED":
             raise HTTPException(
-                status_code=400, detail="Bắt buộc phải cung cấp file_id hoặc media_url"
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ca chăm sóc đã ĐÓNG (CLOSED), không thể thêm ảnh minh chứng mới.",
             )
 
-        if file_id:
-            file_obj = db.query(FileObject).filter(FileObject.file_id == file_id).first()
-            if not file_obj:
-                raise HTTPException(status_code=404, detail="Không tìm thấy tệp lưu trữ")
-            if file_obj.state != "READY":
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Tệp minh chứng chưa sẵn sàng (trạng thái: {file_obj.state}). Chỉ chấp nhận tệp READY.",
-                )
+        if not file_id:
+            raise HTTPException(
+                status_code=400, detail="Bắt buộc phải cung cấp file_id của tệp minh chứng hợp lệ (READY)"
+            )
+
+        file_obj = db.query(FileObject).filter(FileObject.file_id == file_id).first()
+        if not file_obj:
+            raise HTTPException(status_code=404, detail="Không tìm thấy tệp lưu trữ")
+        if file_obj.state != "READY":
+            raise HTTPException(
+                status_code=400,
+                detail=f"Tệp minh chứng chưa sẵn sàng (trạng thái: {file_obj.state}). Chỉ chấp nhận tệp READY.",
+            )
 
         evidence = CareMediaEvidence(
             schedule_id=schedule_id,

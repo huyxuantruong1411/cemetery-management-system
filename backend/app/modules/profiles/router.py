@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.modules.auth.dependencies import get_current_user
+from app.modules.auth.dependencies import require_permission
 from app.modules.auth.models import User
 from app.modules.profiles.schemas import (
     CustomerCreate,
@@ -52,7 +52,7 @@ def public_memorial_lookup(
 def create_customer(
     data: CustomerCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("customers", "write")),
 ):
     """Tạo mới hồ sơ khách hàng. Kiểm tra nghiêm ngặt trùng CCCD (409 Conflict)."""
     return ProfileService.create_customer(db, data)
@@ -63,7 +63,7 @@ def list_customers(
     search: Optional[str] = Query(None, description="Tìm theo tên, mã KH, CCCD, SĐT"),
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("customers", "read")),
 ):
     """Danh sách khách hàng (yêu cầu quyền nhân viên)."""
     return ProfileService.list_customers(db, search=search, limit=limit)
@@ -73,7 +73,7 @@ def list_customers(
 def get_customer(
     customer_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("customers", "read")),
 ):
     """Chi tiết hồ sơ khách hàng kèm danh sách người mất có liên hệ."""
     return ProfileService.get_customer(db, customer_id)
@@ -84,10 +84,10 @@ def update_customer(
     customer_id: int,
     data: CustomerUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("customers", "write")),
 ):
     """Cập nhật thông tin khách hàng."""
-    return ProfileService.update_customer(db, customer_id, data)
+    return ProfileService.update_customer(db, customer_id, data, user_id=current_user.user_id)
 
 
 # =============================================================================
@@ -99,7 +99,7 @@ def update_customer(
 def create_deceased_profile(
     data: DeceasedProfileCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("customers", "write")),
 ):
     """
     Tạo hồ sơ người mất (G07).
@@ -116,7 +116,7 @@ def list_deceased_profiles(
     search: Optional[str] = Query(None, description="Tìm theo họ tên, mã người mất, quê quán"),
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("customers", "read")),
 ):
     """Danh sách hồ sơ người mất nội bộ."""
     return ProfileService.list_deceased_profiles(db, search=search, limit=limit)
@@ -126,7 +126,7 @@ def list_deceased_profiles(
 def get_deceased_profile(
     deceased_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("customers", "read")),
 ):
     """Chi tiết hồ sơ người mất kèm giấy báo tử, thân nhân và vị trí ô mộ/slot huyệt đã an táng."""
     return ProfileService.get_deceased_profile(db, deceased_id)
@@ -137,10 +137,10 @@ def update_deceased_profile(
     deceased_id: int,
     data: DeceasedProfileUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("customers", "write")),
 ):
     """Cập nhật thông tin người mất."""
-    return ProfileService.update_deceased_profile(db, deceased_id, data)
+    return ProfileService.update_deceased_profile(db, deceased_id, data, user_id=current_user.user_id)
 
 
 # =============================================================================
@@ -151,13 +151,13 @@ def attach_death_certificate(
     deceased_id: int,
     data: DeathCertificateCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("customers", "write")),
 ):
     """
     Đính kèm hoặc cập nhật giấy báo tử cho người mất (G08).
-    Trạng thái ban đầu: is_verified = False. Mọi thay đổi đều đưa về chưa xác minh để đảm bảo tính pháp lý.
+    Trạng thái ban đầu: is_verified = False nếu chưa có tệp scan READY.
     """
-    return ProfileService.attach_or_update_certificate(db, deceased_id, data)
+    return ProfileService.attach_or_update_certificate(db, deceased_id, data, user_id=current_user.user_id)
 
 
 @router.post("/certificates/{cert_id}/verify", response_model=DeathCertificateResponse)
@@ -165,7 +165,7 @@ def verify_death_certificate(
     cert_id: int,
     data: DeathCertificateVerifyRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("customers", "write")),
 ):
     """
     Xác minh hoặc từ chối giấy báo tử (G08).
@@ -185,7 +185,7 @@ def list_relations(
     search: Optional[str] = Query(None, description="Tìm theo tên khách, tên người mất, CCCD, SĐT"),
     limit: int = Query(200, ge=1, le=500),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("customers", "read")),
 ):
     """Danh sách các mối liên kết thân nhân - người mất trong hệ thống."""
     return ProfileService.list_relations(db, search=search, limit=limit)
@@ -197,7 +197,7 @@ def list_relations(
 def link_customer_to_deceased(
     data: RelationCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("customers", "write")),
 ):
     """Thiết lập mối quan hệ giữa khách hàng và người mất."""
     return ProfileService.link_relation(db, data)
@@ -207,7 +207,7 @@ def link_customer_to_deceased(
 def remove_customer_deceased_relation(
     relation_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("customers", "write")),
 ):
     """Xóa liên kết thân nhân."""
     ProfileService.remove_relation(db, relation_id)

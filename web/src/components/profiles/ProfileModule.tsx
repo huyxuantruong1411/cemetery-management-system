@@ -496,11 +496,20 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
       try {
         const res = await fetch(`/api/v1/profiles/public/memorials?q=${encodeURIComponent(q)}`);
         if (res.ok) {
-          const data: DeceasedPublicLookupResponse[] = await res.json();
-          setMemorialResults(data);
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            setMemorialResults(data);
+          } else {
+            setMemorialResults([]);
+          }
+        } else {
+          const err = await res.json().catch(() => null);
+          setErrorMsg(err?.detail || 'Hệ thống tra cứu đang bận hoặc gặp sự cố.');
+          setMemorialResults([]);
         }
       } catch {
-        // ignore
+        setErrorMsg('Lỗi kết nối khi tra cứu.');
+        setMemorialResults([]);
       } finally {
         setIsMemorialLoading(false);
       }
@@ -2079,13 +2088,25 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={async () => {
                     if (memorialQuery.trim()) {
                       setIsMemorialLoading(true);
-                      fetch(`/api/v1/profiles/public/memorials?q=${encodeURIComponent(memorialQuery.trim())}`)
-                        .then(r => r.json())
-                        .then(data => setMemorialResults(data))
-                        .finally(() => setIsMemorialLoading(false));
+                      try {
+                        const res = await fetch(`/api/v1/profiles/public/memorials?q=${encodeURIComponent(memorialQuery.trim())}`);
+                        if (res.ok) {
+                          const data = await res.json();
+                          setMemorialResults(Array.isArray(data) ? data : []);
+                        } else {
+                          const err = await res.json().catch(() => null);
+                          setErrorMsg(err?.detail || 'Hệ thống tra cứu đang bận hoặc gặp sự cố.');
+                          setMemorialResults([]);
+                        }
+                      } catch {
+                        setErrorMsg('Lỗi kết nối khi tra cứu.');
+                        setMemorialResults([]);
+                      } finally {
+                        setIsMemorialLoading(false);
+                      }
                     }
                   }}
                   style={{

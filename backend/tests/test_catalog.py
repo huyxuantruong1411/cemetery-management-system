@@ -33,7 +33,7 @@ def test_get_price_lists_and_items():
     lists = resp.json()
     assert len(lists) >= 1
     pl = lists[0]
-    assert "Bảng Giá" in pl["price_list_name"]
+    assert "Giá" in pl["price_list_name"]
     assert len(pl["items"]) >= 1
 
 

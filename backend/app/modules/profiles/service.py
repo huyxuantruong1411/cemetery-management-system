@@ -1,3 +1,4 @@
+import json
 import unicodedata
 from datetime import datetime, timezone
 
@@ -5,6 +6,8 @@ from fastapi import HTTPException, status
 from sqlalchemy import or_, select
 from sqlalchemy.orm import Session, joinedload
 
+from app.modules.audit.models import AuditLog
+from app.modules.documents.models import FileObject
 from app.modules.plots.models import Plot, PlotSlot, Row
 from app.modules.profiles.models import (
     Customer,
@@ -86,12 +89,22 @@ class ProfileService:
         return ProfileService._to_customer_response(customer)
 
     @staticmethod
-    def update_customer(db: Session, customer_id: int, data: CustomerUpdate) -> CustomerResponse:
+    def update_customer(
+        db: Session, customer_id: int, data: CustomerUpdate, user_id: int | None = None
+    ) -> CustomerResponse:
         customer = db.get(Customer, customer_id)
         if not customer:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy khách hàng"
             )
+
+        pre_values = {
+            "full_name": customer.full_name,
+            "phone_number": customer.phone_number,
+            "email": customer.email,
+            "address": customer.address,
+            "date_of_birth": customer.date_of_birth.isoformat() if customer.date_of_birth else None,
+        }
 
         if data.full_name is not None:
             customer.full_name = data.full_name.strip()
@@ -105,6 +118,25 @@ class ProfileService:
             customer.date_of_birth = data.date_of_birth
 
         customer.updated_at = datetime.now(timezone.utc)
+
+        post_values = {
+            "full_name": customer.full_name,
+            "phone_number": customer.phone_number,
+            "email": customer.email,
+            "address": customer.address,
+            "date_of_birth": customer.date_of_birth.isoformat() if customer.date_of_birth else None,
+        }
+
+        audit = AuditLog(
+            user_id=user_id,
+            action_type="UPDATE",
+            target_entity="Customer",
+            target_id=str(customer.customer_id),
+            pre_change_values=json.dumps(pre_values),
+            post_change_values=json.dumps(post_values),
+        )
+        db.add(audit)
+
         db.commit()
         db.refresh(customer)
         return ProfileService._to_customer_response(customer)
@@ -230,8 +262,16 @@ class ProfileService:
             )
             db.add(rel)
 
-        # Create death certificate record if provided (auto-verified upon archiving)
+        # Create death certificate record if provided
         if data.death_certificate:
+            if data.death_certificate.file_id:
+                file_obj = db.get(FileObject, data.death_certificate.file_id)
+                if not file_obj or file_obj.state != "READY":
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Tệp đính kèm chưa sẵn sàng hoặc không tồn tại",
+                    )
+
             cert = DeathCertificate(
                 deceased_id=profile.deceased_id,
                 certificate_number=data.death_certificate.certificate_number.strip(),
@@ -242,7 +282,7 @@ class ProfileService:
                 notes=data.death_certificate.notes,
                 is_verified=True,
                 verified_at=datetime.now(timezone.utc),
-                verified_by=None,
+                verified_by=user_id,
             )
             db.add(cert)
             profile.has_death_certificate = True
@@ -252,13 +292,24 @@ class ProfileService:
 
     @staticmethod
     def update_deceased_profile(
-        db: Session, deceased_id: int, data: DeceasedProfileUpdate
+        db: Session, deceased_id: int, data: DeceasedProfileUpdate, user_id: int | None = None
     ) -> DeceasedProfileResponse:
         profile = db.get(DeceasedProfile, deceased_id)
         if not profile:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy hồ sơ người mất"
             )
+
+        pre_values = {
+            "full_name": profile.full_name,
+            "gender": profile.gender,
+            "date_of_birth": profile.date_of_birth.isoformat() if profile.date_of_birth else None,
+            "date_of_death": profile.date_of_death.isoformat() if profile.date_of_death else None,
+            "birth_year": profile.birth_year,
+            "birth_date_precision": profile.birth_date_precision,
+            "hometown": profile.hometown,
+            "religion": profile.religion,
+        }
 
         if data.full_name is not None:
             profile.full_name = data.full_name.strip()
@@ -294,6 +345,27 @@ class ProfileService:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, detail="Năm sinh không thể lớn hơn năm mất"
             )
+
+        post_values = {
+            "full_name": profile.full_name,
+            "gender": profile.gender,
+            "date_of_birth": profile.date_of_birth.isoformat() if profile.date_of_birth else None,
+            "date_of_death": profile.date_of_death.isoformat() if profile.date_of_death else None,
+            "birth_year": profile.birth_year,
+            "birth_date_precision": profile.birth_date_precision,
+            "hometown": profile.hometown,
+            "religion": profile.religion,
+        }
+
+        audit = AuditLog(
+            user_id=user_id,
+            action_type="UPDATE",
+            target_entity="DeceasedProfile",
+            target_id=str(profile.deceased_id),
+            pre_change_values=json.dumps(pre_values),
+            post_change_values=json.dumps(post_values),
+        )
+        db.add(audit)
 
         profile.updated_at = datetime.now(timezone.utc)
         db.commit()
@@ -387,13 +459,21 @@ class ProfileService:
     # ==========================================================================
     @staticmethod
     def attach_or_update_certificate(
-        db: Session, deceased_id: int, data: DeathCertificateCreate
+        db: Session, deceased_id: int, data: DeathCertificateCreate, user_id: int | None = None
     ) -> DeathCertificateResponse:
         profile = db.get(DeceasedProfile, deceased_id)
         if not profile:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy hồ sơ người mất"
             )
+
+        if data.file_id:
+            file_obj = db.get(FileObject, data.file_id)
+            if not file_obj or file_obj.state != "READY":
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Tệp đính kèm chưa sẵn sàng hoặc không tồn tại",
+                )
 
         cert = db.execute(
             select(DeathCertificate).where(DeathCertificate.deceased_id == deceased_id)
@@ -411,6 +491,7 @@ class ProfileService:
                 cert.notes = data.notes
             cert.is_verified = True
             cert.verified_at = datetime.now(timezone.utc)
+            cert.verified_by = user_id
             cert.rejection_reason = None
         else:
             cert = DeathCertificate(
@@ -423,7 +504,7 @@ class ProfileService:
                 notes=data.notes,
                 is_verified=True,
                 verified_at=datetime.now(timezone.utc),
-                verified_by=None,
+                verified_by=user_id,
             )
             db.add(cert)
 
@@ -477,13 +558,20 @@ class ProfileService:
 
     @staticmethod
     def check_death_certificate_verified(db: Session, deceased_id: int) -> bool:
-        """Domain invariant helper: returns True iff a death certificate exists."""
+        """Domain invariant helper: returns True iff a verified death certificate exists with valid file."""
         cert = db.execute(
             select(DeathCertificate).where(
                 DeathCertificate.deceased_id == deceased_id,
+                DeathCertificate.is_verified == True,  # noqa: E712
             )
         ).scalar_one_or_none()
-        return cert is not None
+        if not cert:
+            return False
+        if cert.file_id:
+            file_obj = db.get(FileObject, cert.file_id)
+            if not file_obj or file_obj.state != "READY":
+                return False
+        return True
 
     # ==========================================================================
     # Public Lookup (Zero PII Leakage - G19 & ADR-001)
@@ -496,15 +584,36 @@ class ProfileService:
             return []
 
         search_term = f"%{query_str.strip()}%"
+
+        # Search by deceased name/code, or by plot code/row code
+        matching_plot_dec_ids = (
+            db.execute(
+                select(PlotSlot.current_deceased_id)
+                .join(Plot, PlotSlot.plot_id == Plot.plot_id)
+                .join(Row, Plot.row_id == Row.row_id)
+                .where(
+                    PlotSlot.current_deceased_id.isnot(None),
+                    or_(
+                        Plot.plot_code.ilike(search_term),
+                        Row.row_code.ilike(search_term),
+                    ),
+                )
+            )
+            .scalars()
+            .all()
+        )
+
+        query_conditions = [
+            DeceasedProfile.full_name.ilike(search_term),
+            DeceasedProfile.deceased_code.ilike(search_term),
+        ]
+        if matching_plot_dec_ids:
+            query_conditions.append(DeceasedProfile.deceased_id.in_(matching_plot_dec_ids))
+
         profiles = (
             db.execute(
                 select(DeceasedProfile)
-                .where(
-                    or_(
-                        DeceasedProfile.full_name.ilike(search_term),
-                        DeceasedProfile.deceased_code.ilike(search_term),
-                    )
-                )
+                .where(or_(*query_conditions))
                 .order_by(DeceasedProfile.full_name)
                 .limit(limit)
             )

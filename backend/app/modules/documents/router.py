@@ -52,11 +52,11 @@ async def upload_document(
 )
 def download_document(
     file_id: str,
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Response:
     """Tải xuống tệp chứng từ có xác thực người dùng."""
-    file_obj, content = DocumentService.get_file(db, file_id)
+    file_obj, content = DocumentService.get_file(db, file_id, user=current_user)
     safe_ascii = file_obj.file_name.encode("ascii", "ignore").decode() or "document"
     encoded_name = quote(file_obj.file_name)
     return Response(
@@ -75,11 +75,11 @@ def download_document(
 )
 def preview_document(
     file_id: str,
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Response:
     """Xem trực tiếp tệp PDF hoặc hình ảnh trên trình duyệt."""
-    file_obj, content = DocumentService.get_file(db, file_id)
+    file_obj, content = DocumentService.get_file(db, file_id, user=current_user)
     safe_ascii = file_obj.file_name.encode("ascii", "ignore").decode() or "document"
     encoded_name = quote(file_obj.file_name)
     return Response(

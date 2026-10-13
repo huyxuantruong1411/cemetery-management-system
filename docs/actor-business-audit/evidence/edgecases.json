@@ -1,0 +1,24 @@
+{
+  "map": {
+    "mapContainers": 0,
+    "div": "<div class=\"plot-map-container\"></div>"
+  },
+  "drawerEscapeDismissed": false,
+  "publicErrors": [
+    "items.slice is not a function"
+  ],
+  "publicRootBlank": true,
+  "login": {
+    "height": 294,
+    "scrollHeight": 372,
+    "overflowY": "hidden"
+  },
+  "loginAfterWheel": {
+    "top": 319.8125,
+    "bottom": 360.8125,
+    "cardBottom": 307.203125,
+    "cardScroll": 0,
+    "unclipped": false
+  },
+  "loginSubmitVisible": true
+}

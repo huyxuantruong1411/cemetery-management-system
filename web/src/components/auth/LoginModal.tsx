@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { AlertCircle, Loader2, LogIn, ShieldCheck, X } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
 
@@ -13,6 +13,20 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
   const [password, setPassword] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+    if (isOpen) {
+      window.addEventListener('keydown', handleKeyDown)
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isOpen, onClose])
 
   if (!isOpen) return null
 
@@ -62,6 +76,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
           borderRadius: '16px',
           width: '100%',
           maxWidth: '520px',
+          maxHeight: 'min(92vh, 600px)',
           boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
           overflow: 'hidden',
           display: 'flex',
@@ -78,6 +93,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
+            flexShrink: 0,
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
@@ -118,7 +134,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Modal Body */}
-        <div style={{ padding: '24px 28px' }}>
+        <div style={{ padding: '24px 28px', overflowY: 'auto', flex: 1 }}>
 
           {/* Error alert */}
           {error && (

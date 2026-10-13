@@ -3,7 +3,7 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import List, Optional
 
-from fastapi import HTTPException
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.modules.audit.models import AuditLog
@@ -269,7 +269,7 @@ class ConstructionService:
     def create_order(
         db: Session, data: ConstructionOrderCreate, creator_user_id: int
     ) -> ConstructionOrderResponse:
-        # 1. Validate Annex is ACTIVE (Gate: hủy/chưa ACTIVE phụ lục không triển khai)
+        # 1. Validate Annex is ACTIVE and of type CONSTRUCTION or BURIAL
         annex = db.query(ContractAnnex).filter(ContractAnnex.annex_id == data.annex_id).first()
         if not annex:
             raise HTTPException(status_code=404, detail="Phụ lục hợp đồng không tồn tại")
@@ -278,11 +278,27 @@ class ConstructionService:
                 status_code=400,
                 detail=f"Phụ lục hợp đồng chưa được kích hoạt (trạng thái hiện tại: {annex.status}). Chỉ phụ lục ACTIVE mới được triển khai thi công.",
             )
+        if annex.annex_type not in ("CONSTRUCTION", "BURIAL"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Phụ lục hợp đồng loại '{annex.annex_type}' không phải phụ lục thi công/an táng hợp lệ.",
+            )
 
-        # 2. Validate Plot
+        # 2. Validate Plot and match with Annex plot
         plot = db.query(Plot).filter(Plot.plot_id == data.plot_id).first()
         if not plot:
             raise HTTPException(status_code=404, detail="Ô mộ không tồn tại")
+
+        annex_plot_id = None
+        if annex.construction:
+            annex_plot_id = annex.construction.plot_id
+        elif annex.burial:
+            annex_plot_id = annex.burial.plot_id
+        if annex_plot_id is not None and annex_plot_id != data.plot_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Ô mộ chỉ định ({data.plot_id}) không khớp với ô mộ của phụ lục thi công ({annex_plot_id}).",
+            )
 
         # 3. Validate Supervisor
         supervisor = db.query(User).filter(User.user_id == data.supervisor_id).first()
@@ -294,6 +310,11 @@ class ConstructionService:
         conflict_res = ConstructionService.check_staff_conflict(
             db, data.supervisor_id, start_d, data.expected_end_date
         )
+        if conflict_res.has_conflict:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Xung đột lịch giám sát viên: {conflict_res.warning_message}",
+            )
 
         # 5. Create Order
         order = ConstructionOrder(
@@ -382,6 +403,20 @@ class ConstructionService:
         if not order:
             raise HTTPException(status_code=404, detail="Không tìm thấy lệnh thi công")
 
+        if order.status == "COMPLETED":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Lệnh thi công đã nghiệm thu hoàn thành (COMPLETED), không được phép chỉnh sửa.",
+            )
+
+        if data.status is not None:
+            new_status = data.status.upper()
+            if new_status == "COMPLETED":
+                return ConstructionService.complete_order(
+                    db, order_id, notes=data.notes, actor_user_id=actor_user_id
+                )
+            order.status = new_status
+
         if data.supervisor_id is not None:
             supervisor = db.query(User).filter(User.user_id == data.supervisor_id).first()
             if not supervisor:
@@ -394,8 +429,6 @@ class ConstructionService:
             order.expected_end_date = data.expected_end_date
         if data.notes is not None:
             order.notes = data.notes
-        if data.status is not None:
-            order.status = data.status.upper()
 
         db.commit()
         db.refresh(order)
@@ -491,6 +524,12 @@ class ConstructionService:
         if not order:
             raise HTTPException(status_code=404, detail="Lệnh thi công không tồn tại")
 
+        if order.status == "COMPLETED":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Lệnh thi công đã nghiệm thu hoàn thành (COMPLETED), không được phép thêm công việc mới.",
+            )
+
         # G13 Conflict check if assignee provided
         if data.assignee_user_id and data.start_date and data.due_date:
             ConstructionService.check_staff_conflict(
@@ -524,6 +563,12 @@ class ConstructionService:
         task = db.query(ConstructionTask).filter(ConstructionTask.task_id == task_id).first()
         if not task:
             raise HTTPException(status_code=404, detail="Công việc thi công không tồn tại")
+
+        if task.order and task.order.status == "COMPLETED":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Lệnh thi công đã nghiệm thu hoàn thành (COMPLETED), không được phép chỉnh sửa công việc.",
+            )
 
         if data.task_name is not None:
             task.task_name = data.task_name

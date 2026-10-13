@@ -184,101 +184,109 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
 
   // 3. Leaflet Map Initialization and Marker Management
   useEffect(() => {
-    if (activeTab !== 'map' || !mapContainerRef.current) return;
+    if (activeTab !== 'map' || isLoading || !mapContainerRef.current) return;
 
-    // Initialize Map if not already created
-    if (!mapInstanceRef.current) {
-      // Default center: [10.925200, 106.825200]
-      const map = L.map(mapContainerRef.current, {
-        center: [10.925200, 106.825200],
-        zoom: 18,
-        maxZoom: 20,
-        minZoom: 15,
-      });
-
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors',
-      }).addTo(map);
-
-      markersLayerRef.current = L.layerGroup().addTo(map);
-      mapInstanceRef.current = map;
+    // Clean up previous map instance if container changed or already bound
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.remove();
+      mapInstanceRef.current = null;
+      markersLayerRef.current = null;
     }
 
-    const markersLayer = markersLayerRef.current;
-    if (markersLayer) {
-      markersLayer.clearLayers();
+    // Initialize Map
+    const map = L.map(mapContainerRef.current, {
+      center: [10.925200, 106.825200],
+      zoom: 18,
+      maxZoom: 20,
+      minZoom: 15,
+    });
 
-      const filteredPlots = getFilteredPlots();
-      const bounds: L.LatLngTuple[] = [];
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
+    }).addTo(map);
 
-      filteredPlots.forEach((p) => {
-        if (p.latitude && p.longitude) {
-          const lat = Number(p.latitude);
-          const lng = Number(p.longitude);
-          bounds.push([lat, lng]);
+    const markersLayer = L.layerGroup().addTo(map);
+    markersLayerRef.current = markersLayer;
+    mapInstanceRef.current = map;
 
-          // Marker color based on status
-          let color = '#10B981'; // EMPTY_UNSOLD: Green
-          if (p.status === 'RESERVED') color = '#F59E0B'; // Orange
-          else if (p.status === 'OWNED_EMPTY') color = '#3B82F6'; // Blue
-          else if (p.status === 'UNDER_CONSTRUCTION') color = '#8B5CF6'; // Purple
-          else if (p.status === 'OCCUPIED') color = '#DC2626'; // Red
-          else if (p.status === 'UNDER_EXHUMATION') color = '#6B7280'; // Gray
+    const filteredPlots = getFilteredPlots();
+    const bounds: L.LatLngTuple[] = [];
 
-          const isKt = p.is_kim_tinh;
-          const isLocked = p.is_locked;
+    filteredPlots.forEach((p) => {
+      if (p.latitude && p.longitude) {
+        const lat = Number(p.latitude);
+        const lng = Number(p.longitude);
+        bounds.push([lat, lng]);
 
-          // Custom SVG icon
-          const iconHtml = `
-            <div style="
-              width: 32px;
-              height: 32px;
-              border-radius: 8px;
-              background-color: ${color};
-              border: ${isKt ? '3px solid #EAB308' : '2px solid white'};
-              box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              color: white;
-              font-size: 11px;
-              font-weight: bold;
-              position: relative;
-              cursor: pointer;
-            ">
-              ${p.plot_code.split('-').pop() || 'P'}
-              ${isKt ? `<div style="position: absolute; top: -5px; right: -5px; background: #EAB308; border-radius: 50%; width: 12px; height: 12px; display: flex; align-items: center; justify-content: center; font-size: 8px; color: black;">🛡️</div>` : ''}
-              ${isLocked ? `<div style="position: absolute; bottom: -5px; right: -5px; background: #991B1B; border-radius: 50%; width: 12px; height: 12px; display: flex; align-items: center; justify-content: center; font-size: 8px;">🔒</div>` : ''}
-            </div>
-          `;
+        // Marker color based on status
+        let color = '#10B981'; // EMPTY_UNSOLD: Green
+        if (p.status === 'RESERVED') color = '#F59E0B'; // Orange
+        else if (p.status === 'OWNED_EMPTY') color = '#3B82F6'; // Blue
+        else if (p.status === 'UNDER_CONSTRUCTION') color = '#8B5CF6'; // Purple
+        else if (p.status === 'OCCUPIED') color = '#DC2626'; // Red
+        else if (p.status === 'UNDER_EXHUMATION') color = '#6B7280'; // Gray
 
-          const customIcon = L.divIcon({
-            html: iconHtml,
-            className: 'custom-plot-marker',
-            iconSize: [32, 32],
-            iconAnchor: [16, 16],
-          });
+        const isKt = p.is_kim_tinh;
+        const isLocked = p.is_locked;
 
-          const marker = L.marker([lat, lng], { icon: customIcon });
-          marker.on('click', () => {
-            handleSelectPlot(p.plot_id);
-          });
-          marker.bindTooltip(`<b>${p.plot_code}</b><br/>${p.type_name}<br/>${p.status}`, {
-            direction: 'top',
-          });
+        // Custom SVG icon
+        const iconHtml = `
+          <div style="
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background-color: ${color};
+            border: ${isKt ? '3px solid #EAB308' : '2px solid white'};
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+            position: relative;
+            cursor: pointer;
+          ">
+            ${p.plot_code.split('-').pop() || 'P'}
+            ${isKt ? `<div style="position: absolute; top: -5px; right: -5px; background: #EAB308; border-radius: 50%; width: 12px; height: 12px; display: flex; align-items: center; justify-content: center; font-size: 8px; color: black;">🛡️</div>` : ''}
+            ${isLocked ? `<div style="position: absolute; bottom: -5px; right: -5px; background: #991B1B; border-radius: 50%; width: 12px; height: 12px; display: flex; align-items: center; justify-content: center; font-size: 8px;">🔒</div>` : ''}
+          </div>
+        `;
 
-          markersLayer.addLayer(marker);
-        }
-      });
-
-      if (bounds.length > 0 && mapInstanceRef.current) {
-        mapInstanceRef.current.fitBounds(L.latLngBounds(bounds), {
-          padding: [40, 40],
-          maxZoom: 18,
+        const customIcon = L.divIcon({
+          html: iconHtml,
+          className: 'custom-plot-marker',
+          iconSize: [32, 32],
+          iconAnchor: [16, 16],
         });
+
+        const marker = L.marker([lat, lng], { icon: customIcon });
+        marker.on('click', () => {
+          handleSelectPlot(p.plot_id);
+        });
+        marker.bindTooltip(`<b>${p.plot_code}</b><br/>${p.type_name}<br/>${p.status}`, {
+          direction: 'top',
+        });
+
+        markersLayer.addLayer(marker);
       }
+    });
+
+    if (bounds.length > 0 && mapInstanceRef.current) {
+      mapInstanceRef.current.fitBounds(L.latLngBounds(bounds), {
+        padding: [40, 40],
+        maxZoom: 18,
+      });
     }
-  }, [activeTab, plots, selectedZoneId, statusFilter, kimTinhFilter, searchQuery]);
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+        markersLayerRef.current = null;
+      }
+    };
+  }, [activeTab, isLoading, plots, selectedZoneId, statusFilter, kimTinhFilter, searchQuery]);
 
   // 4. Handle Reserve Submission (Anti-Double Booking)
   const handleReserveSubmit = async (e: React.FormEvent) => {

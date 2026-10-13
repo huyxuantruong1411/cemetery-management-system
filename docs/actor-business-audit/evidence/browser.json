@@ -1,0 +1,7081 @@
+[
+  {
+    "actor": "guest",
+    "errors": [],
+    "responses": [],
+    "screens": [
+      {
+        "name": "Trang Chủ & Giới Thiệu",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Tra Cứu Phần Mộ Ngay",
+              "disabled": false
+            },
+            {
+              "text": "Cổng Cán Bộ Nội Bộ",
+              "disabled": false
+            },
+            {
+              "text": "Mở cổng tra cứu→",
+              "disabled": false
+            },
+            {
+              "text": "Đăng nhập hệ thống→",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Nơi An Nghỉ Vĩnh Hằng & Tôn Vinh Ký Ức Bình Yên",
+            "Tra Cứu Phần Mộ Trực Tuyến",
+            "Dịch Vụ Chăm Sóc Phần Mộ",
+            "Cổng Dành Cho Cán Bộ Quản Lý",
+            "Thông Tin Hướng Dẫn & Thăm Viếng"
+          ],
+          "inputs": []
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Tra Cứu Phần Mộ Ngay",
+              "disabled": false
+            },
+            {
+              "text": "Cổng Cán Bộ Nội Bộ",
+              "disabled": false
+            },
+            {
+              "text": "Mở cổng tra cứu→",
+              "disabled": false
+            },
+            {
+              "text": "Đăng nhập hệ thống→",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Nơi An Nghỉ Vĩnh Hằng & Tôn Vinh Ký Ức Bình Yên",
+            "Tra Cứu Phần Mộ Trực Tuyến",
+            "Dịch Vụ Chăm Sóc Phần Mộ",
+            "Cổng Dành Cho Cán Bộ Quản Lý",
+            "Thông Tin Hướng Dẫn & Thăm Viếng"
+          ],
+          "inputs": []
+        },
+        "index": 0
+      },
+      {
+        "name": "Tra Cứu Phần Mộ",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Tìm Kiếm",
+              "disabled": false
+            },
+            {
+              "text": "Nguyễn",
+              "disabled": false
+            },
+            {
+              "text": "Trần",
+              "disabled": false
+            },
+            {
+              "text": "Lê",
+              "disabled": false
+            },
+            {
+              "text": "A1",
+              "disabled": false
+            },
+            {
+              "text": "Khu A",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Cổng Tra Cứu Phần Mộ Tưởng Niệm (Dành Cho Thân Nhân)",
+            "Cổng Tra Cứu Tưởng Niệm & Vị Trí Mộ Phần"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Nhập họ tên hoặc mã người quá cố (ví dụ: Nguyễn Văn Phúc hoặc NM-2024)..."
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Tìm Kiếm",
+              "disabled": false
+            },
+            {
+              "text": "Nguyễn",
+              "disabled": false
+            },
+            {
+              "text": "Trần",
+              "disabled": false
+            },
+            {
+              "text": "Lê",
+              "disabled": false
+            },
+            {
+              "text": "A1",
+              "disabled": false
+            },
+            {
+              "text": "Khu A",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Cổng Tra Cứu Phần Mộ Tưởng Niệm (Dành Cho Thân Nhân)",
+            "Cổng Tra Cứu Tưởng Niệm & Vị Trí Mộ Phần"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Nhập họ tên hoặc mã người quá cố (ví dụ: Nguyễn Văn Phúc hoặc NM-2024)..."
+            }
+          ]
+        },
+        "index": 1
+      }
+    ],
+    "api": [],
+    "nav": [
+      "Trang Chủ & Giới Thiệu",
+      "Tra Cứu Phần Mộ"
+    ]
+  },
+  {
+    "actor": "marketing",
+    "errors": [],
+    "responses": [
+      {
+        "url": "v1/auth/staff",
+        "status": 500
+      },
+      {
+        "url": "v1/auth/staff",
+        "status": 500
+      },
+      {
+        "url": "v1/auth/staff",
+        "status": 500
+      },
+      {
+        "url": "v1/auth/staff",
+        "status": 500
+      }
+    ],
+    "screens": [
+      {
+        "name": "Sơ Đồ Ô Mộ & Bản Đồ",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "Bản Đồ Số GIS (Leaflet Map)",
+              "disabled": false
+            },
+            {
+              "text": "Ma Trận Phân Lô Thực Địa",
+              "disabled": false
+            },
+            {
+              "text": "Danh Mục Khu Vực & Loại Mộ",
+              "disabled": false
+            },
+            {
+              "text": "Thêm Ô Mộ Mới",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Bản Đồ Số GIS & Quản Lý Ô Mộ"
+          ],
+          "inputs": [
+            {
+              "type": "select-one",
+              "options": [
+                "-- Tất cả khu vực --",
+                "KHU-A - Khu Vạn Phúc (Mộ Đơn & Đôi)"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "-- Tất cả trạng thái --",
+                "Đất trống chưa bán"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "-- Tất cả kết cấu --",
+                "Chỉ mộ Kim Tĩnh"
+              ]
+            },
+            {
+              "type": "text",
+              "placeholder": "Tìm theo mã ô mộ (ví dụ: A-H01-01)..."
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "Bản Đồ Số GIS (Leaflet Map)",
+              "disabled": false
+            },
+            {
+              "text": "Ma Trận Phân Lô Thực Địa",
+              "disabled": false
+            },
+            {
+              "text": "Danh Mục Khu Vực & Loại Mộ",
+              "disabled": false
+            },
+            {
+              "text": "Thêm Ô Mộ Mới",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Bản Đồ Số GIS & Quản Lý Ô Mộ"
+          ],
+          "inputs": [
+            {
+              "type": "select-one",
+              "options": [
+                "-- Tất cả khu vực --",
+                "KHU-A - Khu Vạn Phúc (Mộ Đơn & Đôi)"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "-- Tất cả trạng thái --",
+                "Đất trống chưa bán"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "-- Tất cả kết cấu --",
+                "Chỉ mộ Kim Tĩnh"
+              ]
+            },
+            {
+              "type": "text",
+              "placeholder": "Tìm theo mã ô mộ (ví dụ: A-H01-01)..."
+            }
+          ]
+        },
+        "index": 0
+      },
+      {
+        "name": "Thân Nhân & Người Mất",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "👥 Thân Nhân (Khách Hàng)",
+              "disabled": false
+            },
+            {
+              "text": "⚰️ Người Quá Cố & Giấy Báo Tử",
+              "disabled": false
+            },
+            {
+              "text": "🔗 Liên Kết Hồ Sơ",
+              "disabled": false
+            },
+            {
+              "text": "🪷 Cổng Tra Cứu Tưởng Niệm",
+              "disabled": false
+            },
+            {
+              "text": "Tìm Kiếm",
+              "disabled": false
+            },
+            {
+              "text": "Tất cả (100)",
+              "disabled": false
+            },
+            {
+              "text": "Có liên kết",
+              "disabled": false
+            },
+            {
+              "text": "Chưa liên kết",
+              "disabled": false
+            },
+            {
+              "text": "Thiết Lập Liên Kết Hồ Sơ",
+              "disabled": false
+            },
+            {
+              "text": "+ Thêm Khách Hàng Thân Nhân",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "4",
+              "disabled": false
+            },
+            {
+              "text": "5",
+              "disabled": false
+            },
+            {
+              "text": "10",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Đi",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Hồ Sơ Khách Hàng & Người Quá Cố"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm tên, mã KH, số CCCD, SĐT..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            },
+            {
+              "type": "number",
+              "placeholder": "1"
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "👥 Thân Nhân (Khách Hàng)",
+              "disabled": false
+            },
+            {
+              "text": "⚰️ Người Quá Cố & Giấy Báo Tử",
+              "disabled": false
+            },
+            {
+              "text": "🔗 Liên Kết Hồ Sơ",
+              "disabled": false
+            },
+            {
+              "text": "🪷 Cổng Tra Cứu Tưởng Niệm",
+              "disabled": false
+            },
+            {
+              "text": "Tìm Kiếm",
+              "disabled": false
+            },
+            {
+              "text": "Tất cả (100)",
+              "disabled": false
+            },
+            {
+              "text": "Có liên kết",
+              "disabled": false
+            },
+            {
+              "text": "Chưa liên kết",
+              "disabled": false
+            },
+            {
+              "text": "Thiết Lập Liên Kết Hồ Sơ",
+              "disabled": false
+            },
+            {
+              "text": "+ Thêm Khách Hàng Thân Nhân",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "4",
+              "disabled": false
+            },
+            {
+              "text": "5",
+              "disabled": false
+            },
+            {
+              "text": "10",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Hồ Sơ Khách Hàng & Người Quá Cố"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm tên, mã KH, số CCCD, SĐT..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            },
+            {
+              "type": "number",
+              "placeholder": "1"
+            }
+          ]
+        },
+        "index": 1
+      },
+      {
+        "name": "Hợp Đồng & Khách Hàng",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": true
+            },
+            {
+              "text": "+ Mua Đất",
+              "disabled": false
+            },
+            {
+              "text": "+ Cải Táng",
+              "disabled": false
+            },
+            {
+              "text": "+ Chuyển Nhượng",
+              "disabled": false
+            },
+            {
+              "text": "+ Hỏa Táng",
+              "disabled": false
+            }
+          ],
+          "headings": [],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm theo mã HĐ, tên KH, SĐT, mã ô..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả trạng thái",
+                "Dự thảo"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả loại hợp đồng",
+                "Mua Đất"
+              ]
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "+ Mua Đất",
+              "disabled": false
+            },
+            {
+              "text": "+ Cải Táng",
+              "disabled": false
+            },
+            {
+              "text": "+ Chuyển Nhượng",
+              "disabled": false
+            },
+            {
+              "text": "+ Hỏa Táng",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "4",
+              "disabled": false
+            },
+            {
+              "text": "5",
+              "disabled": false
+            },
+            {
+              "text": "30",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            }
+          ],
+          "headings": [],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm theo mã HĐ, tên KH, SĐT, mã ô..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả trạng thái",
+                "Dự thảo"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả loại hợp đồng",
+                "Mua Đất"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            },
+            {
+              "type": "number",
+              "placeholder": "1"
+            }
+          ]
+        },
+        "index": 2
+      },
+      {
+        "name": "Chăm Sóc Mộ Phần",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": true
+            },
+            {
+              "text": "Tất cả",
+              "disabled": false
+            },
+            {
+              "text": "Chờ chỉ định",
+              "disabled": false
+            },
+            {
+              "text": "Đã giao",
+              "disabled": false
+            },
+            {
+              "text": "Đang làm",
+              "disabled": false
+            },
+            {
+              "text": "Đã đóng ca",
+              "disabled": false
+            }
+          ],
+          "headings": [],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "YYYY-Mmm (vd: 2026-M10)"
+            },
+            {
+              "type": "text",
+              "placeholder": "Tìm mã mộ, khu, nhân viên..."
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": true
+            },
+            {
+              "text": "Tất cả",
+              "disabled": false
+            },
+            {
+              "text": "Chờ chỉ định",
+              "disabled": false
+            },
+            {
+              "text": "Đã giao",
+              "disabled": false
+            },
+            {
+              "text": "Đang làm",
+              "disabled": false
+            },
+            {
+              "text": "Đã đóng ca",
+              "disabled": false
+            }
+          ],
+          "headings": [],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "YYYY-Mmm (vd: 2026-M10)"
+            },
+            {
+              "type": "text",
+              "placeholder": "Tìm mã mộ, khu, nhân viên..."
+            }
+          ]
+        },
+        "index": 3
+      },
+      {
+        "name": "Thi Công Thực Địa",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Làm Mới",
+              "disabled": false
+            },
+            {
+              "text": "Lệnh Thi Công Thực Địa (0)",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Nghỉ & Xung Đột Nhân Sự (29)",
+              "disabled": false
+            },
+            {
+              "text": "Tất Cả",
+              "disabled": false
+            },
+            {
+              "text": "Đang Chờ",
+              "disabled": false
+            },
+            {
+              "text": "Đang Thi Công",
+              "disabled": false
+            },
+            {
+              "text": "Đã Nghiệm Thu",
+              "disabled": false
+            },
+            {
+              "text": "Quá Hạn",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Quản Lý Thi Công Thực Địa"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm mã ô, giám sát, số lệnh..."
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Làm Mới",
+              "disabled": false
+            },
+            {
+              "text": "Lệnh Thi Công Thực Địa (0)",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Nghỉ & Xung Đột Nhân Sự (29)",
+              "disabled": false
+            },
+            {
+              "text": "Tất Cả",
+              "disabled": false
+            },
+            {
+              "text": "Đang Chờ",
+              "disabled": false
+            },
+            {
+              "text": "Đang Thi Công",
+              "disabled": false
+            },
+            {
+              "text": "Đã Nghiệm Thu",
+              "disabled": false
+            },
+            {
+              "text": "Quá Hạn",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Quản Lý Thi Công Thực Địa"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm mã ô, giám sát, số lệnh..."
+            }
+          ]
+        },
+        "index": 4
+      },
+      {
+        "name": "Công Nợ & Thu Tiền",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Sử (0)",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Sử (0)",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Sử (0)",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Sử (0)",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Sử (0)",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Sử (0)",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Sử (0)",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Sử (0)",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Sử (0)",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Sử (0)",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "4",
+              "disabled": false
+            },
+            {
+              "text": "5",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Đi",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Quản Lý Công Nợ & Thu Tiền"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm theo tên khách hàng, số điện thoại, mã hợp đồng hoặc mã phụ lục..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả trạng thái",
+                "Chưa thanh toán"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            },
+            {
+              "type": "number",
+              "placeholder": "1"
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "4",
+              "disabled": false
+            },
+            {
+              "text": "5",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Quản Lý Công Nợ & Thu Tiền"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm theo tên khách hàng, số điện thoại, mã hợp đồng hoặc mã phụ lục..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả trạng thái",
+                "Chưa thanh toán"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            },
+            {
+              "type": "number",
+              "placeholder": "1"
+            }
+          ]
+        },
+        "index": 5
+      },
+      {
+        "name": "Bảng Giá & Gói Dịch Vụ",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "1. Bảng Giá & Khoản Mục (1)",
+              "disabled": false
+            },
+            {
+              "text": "2. Gói Chăm Sóc (189)",
+              "disabled": false
+            },
+            {
+              "text": "3. Mẫu Hợp Đồng 4 Loại (5)",
+              "disabled": false
+            },
+            {
+              "text": "4. Tra Cứu Giá Tức Thời",
+              "disabled": false
+            },
+            {
+              "text": "Thêm",
+              "disabled": false
+            },
+            {
+              "text": "Thêm Khoản Mục Giá",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "",
+              "disabled": true
+            }
+          ],
+          "headings": [
+            "Quản Trị Bảng Giá & Danh Mục Dịch Vụ",
+            "Các Bảng Giá (1)",
+            "Bảng Giá Dịch Vụ Nghĩa Trang Niêm Yết 2026"
+          ],
+          "inputs": [
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "1. Bảng Giá & Khoản Mục (1)",
+              "disabled": false
+            },
+            {
+              "text": "2. Gói Chăm Sóc (189)",
+              "disabled": false
+            },
+            {
+              "text": "3. Mẫu Hợp Đồng 4 Loại (5)",
+              "disabled": false
+            },
+            {
+              "text": "4. Tra Cứu Giá Tức Thời",
+              "disabled": false
+            },
+            {
+              "text": "Thêm",
+              "disabled": false
+            },
+            {
+              "text": "Thêm Khoản Mục Giá",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            }
+          ],
+          "headings": [
+            "Quản Trị Bảng Giá & Danh Mục Dịch Vụ",
+            "Các Bảng Giá (1)",
+            "Bảng Giá Dịch Vụ Nghĩa Trang Niêm Yết 2026"
+          ],
+          "inputs": [
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            }
+          ]
+        },
+        "index": 6
+      },
+      {
+        "name": "Báo Cáo Thống Kê",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Xuất Báo Cáo (PDF / XLSX)",
+              "disabled": false
+            },
+            {
+              "text": "Làm Mới",
+              "disabled": false
+            },
+            {
+              "text": "Doanh Thu Thực Thu",
+              "disabled": false
+            },
+            {
+              "text": "Tỷ Lệ Lấp Đầy & Mộ Phần",
+              "disabled": false
+            },
+            {
+              "text": "Hợp Đồng & Phụ Lục",
+              "disabled": false
+            },
+            {
+              "text": "Vận Hành: Thi Công & Chăm Sóc",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Báo Cáo Thống Kê & Vận Hành Quản Trị"
+          ],
+          "inputs": [
+            {
+              "type": "date",
+              "placeholder": ""
+            },
+            {
+              "type": "date",
+              "placeholder": ""
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Xuất Báo Cáo (PDF / XLSX)",
+              "disabled": false
+            },
+            {
+              "text": "Làm Mới",
+              "disabled": false
+            },
+            {
+              "text": "Doanh Thu Thực Thu",
+              "disabled": false
+            },
+            {
+              "text": "Tỷ Lệ Lấp Đầy & Mộ Phần",
+              "disabled": false
+            },
+            {
+              "text": "Hợp Đồng & Phụ Lục",
+              "disabled": false
+            },
+            {
+              "text": "Vận Hành: Thi Công & Chăm Sóc",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Báo Cáo Thống Kê & Vận Hành Quản Trị"
+          ],
+          "inputs": [
+            {
+              "type": "date",
+              "placeholder": ""
+            },
+            {
+              "type": "date",
+              "placeholder": ""
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            }
+          ]
+        },
+        "index": 7
+      }
+    ],
+    "api": [
+      {
+        "path": "profiles/customers?limit=1",
+        "status": 200,
+        "fields": [
+          "full_name",
+          "citizen_id",
+          "phone_number",
+          "email",
+          "address",
+          "date_of_birth",
+          "customer_id",
+          "customer_code",
+          "created_at",
+          "updated_at",
+          "relations"
+        ],
+        "count": 1
+      },
+      {
+        "path": "profiles/deceased?limit=1",
+        "status": 200,
+        "fields": [
+          "full_name",
+          "gender",
+          "date_of_birth",
+          "date_of_death",
+          "birth_year",
+          "birth_date_precision",
+          "hometown",
+          "religion",
+          "deceased_id",
+          "deceased_code",
+          "has_death_certificate",
+          "created_at",
+          "updated_at",
+          "death_certificate",
+          "relations",
+          "burial_slot"
+        ],
+        "count": 1
+      },
+      {
+        "path": "profiles/relations?limit=1",
+        "status": 200,
+        "fields": [
+          "relation_id",
+          "customer_id",
+          "customer_code",
+          "customer_name",
+          "citizen_id",
+          "phone_number",
+          "deceased_id",
+          "deceased_code",
+          "deceased_name",
+          "date_of_death",
+          "relationship_type",
+          "is_primary_contact",
+          "slot_info"
+        ],
+        "count": 1
+      },
+      {
+        "path": "contracts?limit=1",
+        "status": 200,
+        "fields": [
+          "contract_id",
+          "contract_code",
+          "contract_type",
+          "status",
+          "total_amount",
+          "customer_id",
+          "customer_name",
+          "customer_phone",
+          "plot_id",
+          "plot_code",
+          "zone_name",
+          "signed_at",
+          "activated_at",
+          "created_at"
+        ],
+        "count": 1
+      },
+      {
+        "path": "plots?limit=1",
+        "status": 200,
+        "fields": [
+          "plot_id",
+          "plot_code",
+          "row_id",
+          "row_code",
+          "zone_id",
+          "zone_code",
+          "zone_name",
+          "type_id",
+          "type_name",
+          "default_slots",
+          "status",
+          "is_kim_tinh",
+          "is_locked",
+          "latitude",
+          "longitude",
+          "orientation",
+          "owner_id",
+          "owner_name",
+          "active_reservation"
+        ],
+        "count": 1
+      },
+      {
+        "path": "finance/summary",
+        "status": 200,
+        "fields": [
+          "total_receivables_amount",
+          "total_collected_amount",
+          "total_outstanding_amount",
+          "total_discounts_amount",
+          "count_unpaid",
+          "count_partially_paid",
+          "count_paid",
+          "count_overdue"
+        ]
+      },
+      {
+        "path": "care/schedules?limit=1",
+        "status": 200,
+        "fields": [
+          "schedule_id",
+          "care_annex_id",
+          "plot_id",
+          "plot_code",
+          "zone_name",
+          "package_id",
+          "package_name",
+          "caretaker_id",
+          "caretaker_name",
+          "scheduled_date",
+          "performed_date",
+          "status",
+          "period_key",
+          "notes",
+          "closed_at",
+          "created_at",
+          "tasks_count",
+          "completed_tasks_count",
+          "evidence_count"
+        ],
+        "count": 1
+      },
+      {
+        "path": "construction/orders?limit=1",
+        "status": 200,
+        "fields": [
+          "order_id",
+          "annex_id",
+          "plot_id",
+          "plot_code",
+          "zone_name",
+          "supervisor_id",
+          "supervisor_name",
+          "start_date",
+          "expected_end_date",
+          "actual_end_date",
+          "overall_progress",
+          "status",
+          "is_overdue",
+          "notes",
+          "created_at",
+          "tasks",
+          "total_tasks",
+          "completed_tasks",
+          "required_tasks",
+          "completed_required_tasks"
+        ],
+        "count": 141
+      },
+      {
+        "path": "reports/revenue",
+        "status": 200,
+        "fields": [
+          "total_revenue",
+          "total_transactions",
+          "average_transaction_value",
+          "start_date",
+          "end_date",
+          "by_period",
+          "by_method",
+          "drilldown_items"
+        ]
+      },
+      {
+        "path": "reports/occupancy",
+        "status": 200,
+        "fields": [
+          "total_plots",
+          "total_empty",
+          "total_reserved",
+          "total_owned_empty",
+          "total_under_construction",
+          "total_occupied",
+          "total_kim_tinh",
+          "overall_occupancy_rate",
+          "total_slots",
+          "occupied_slots",
+          "slot_occupancy_rate",
+          "zones"
+        ]
+      },
+      {
+        "path": "reports/contracts",
+        "status": 200,
+        "fields": [
+          "total_land_contracts",
+          "total_land_value",
+          "total_annexes",
+          "total_annex_value",
+          "by_contract_status",
+          "by_annex_type",
+          "expiring_care_annexes"
+        ]
+      },
+      {
+        "path": "reports/operations",
+        "status": 200,
+        "fields": [
+          "construction",
+          "care"
+        ]
+      },
+      {
+        "path": "auth/users",
+        "status": 403,
+        "fields": [
+          "detail"
+        ]
+      },
+      {
+        "path": "catalog/price-lists",
+        "status": 200,
+        "fields": [
+          "price_list_name",
+          "effective_from_date",
+          "effective_to_date",
+          "is_active",
+          "price_list_id",
+          "created_at",
+          "items"
+        ],
+        "count": 1
+      },
+      {
+        "path": "catalog/care-packages",
+        "status": 200,
+        "fields": [
+          "package_code",
+          "package_name",
+          "cycle_type",
+          "default_tasks_json",
+          "unit_price",
+          "is_active",
+          "package_id"
+        ],
+        "count": 189
+      },
+      {
+        "path": "audit/logs",
+        "status": 403,
+        "fields": [
+          "detail"
+        ]
+      }
+    ],
+    "roles": [
+      "MARKETING"
+    ],
+    "permissions": [
+      "care:read",
+      "care:write",
+      "construction:read",
+      "contracts:activate",
+      "contracts:read",
+      "contracts:write",
+      "customers:read",
+      "customers:write",
+      "finance:read",
+      "plots:read",
+      "plots:write",
+      "reports:read"
+    ],
+    "nav": [
+      "Sơ Đồ Ô Mộ & Bản Đồ",
+      "Thân Nhân & Người Mất",
+      "Hợp Đồng & Khách Hàng",
+      "Chăm Sóc Mộ Phần",
+      "Thi Công Thực Địa",
+      "Công Nợ & Thu Tiền",
+      "Bảng Giá & Gói Dịch Vụ",
+      "Báo Cáo Thống Kê"
+    ]
+  },
+  {
+    "actor": "caretaker",
+    "errors": [],
+    "responses": [
+      {
+        "url": "v1/auth/staff",
+        "status": 500
+      },
+      {
+        "url": "v1/auth/staff",
+        "status": 500
+      },
+      {
+        "url": "v1/auth/staff",
+        "status": 500
+      },
+      {
+        "url": "v1/auth/staff",
+        "status": 500
+      },
+      {
+        "url": "v1/reports/revenue",
+        "status": 403
+      },
+      {
+        "url": "v1/reports/revenue",
+        "status": 403
+      }
+    ],
+    "screens": [
+      {
+        "name": "Sơ Đồ Ô Mộ & Bản Đồ",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "Bản Đồ Số GIS (Leaflet Map)",
+              "disabled": false
+            },
+            {
+              "text": "Ma Trận Phân Lô Thực Địa",
+              "disabled": false
+            },
+            {
+              "text": "Danh Mục Khu Vực & Loại Mộ",
+              "disabled": false
+            },
+            {
+              "text": "Thêm Ô Mộ Mới",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Bản Đồ Số GIS & Quản Lý Ô Mộ"
+          ],
+          "inputs": [
+            {
+              "type": "select-one",
+              "options": [
+                "-- Tất cả khu vực --",
+                "KHU-A - Khu Vạn Phúc (Mộ Đơn & Đôi)"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "-- Tất cả trạng thái --",
+                "Đất trống chưa bán"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "-- Tất cả kết cấu --",
+                "Chỉ mộ Kim Tĩnh"
+              ]
+            },
+            {
+              "type": "text",
+              "placeholder": "Tìm theo mã ô mộ (ví dụ: A-H01-01)..."
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "Bản Đồ Số GIS (Leaflet Map)",
+              "disabled": false
+            },
+            {
+              "text": "Ma Trận Phân Lô Thực Địa",
+              "disabled": false
+            },
+            {
+              "text": "Danh Mục Khu Vực & Loại Mộ",
+              "disabled": false
+            },
+            {
+              "text": "Thêm Ô Mộ Mới",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Bản Đồ Số GIS & Quản Lý Ô Mộ"
+          ],
+          "inputs": [
+            {
+              "type": "select-one",
+              "options": [
+                "-- Tất cả khu vực --",
+                "KHU-A - Khu Vạn Phúc (Mộ Đơn & Đôi)"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "-- Tất cả trạng thái --",
+                "Đất trống chưa bán"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "-- Tất cả kết cấu --",
+                "Chỉ mộ Kim Tĩnh"
+              ]
+            },
+            {
+              "type": "text",
+              "placeholder": "Tìm theo mã ô mộ (ví dụ: A-H01-01)..."
+            }
+          ]
+        },
+        "index": 0
+      },
+      {
+        "name": "Thân Nhân & Người Mất",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "👥 Thân Nhân (Khách Hàng)",
+              "disabled": false
+            },
+            {
+              "text": "⚰️ Người Quá Cố & Giấy Báo Tử",
+              "disabled": false
+            },
+            {
+              "text": "🔗 Liên Kết Hồ Sơ",
+              "disabled": false
+            },
+            {
+              "text": "🪷 Cổng Tra Cứu Tưởng Niệm",
+              "disabled": false
+            },
+            {
+              "text": "Tìm Kiếm",
+              "disabled": false
+            },
+            {
+              "text": "Tất cả (100)",
+              "disabled": false
+            },
+            {
+              "text": "Có liên kết",
+              "disabled": false
+            },
+            {
+              "text": "Chưa liên kết",
+              "disabled": false
+            },
+            {
+              "text": "Thiết Lập Liên Kết Hồ Sơ",
+              "disabled": false
+            },
+            {
+              "text": "+ Thêm Khách Hàng Thân Nhân",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "4",
+              "disabled": false
+            },
+            {
+              "text": "5",
+              "disabled": false
+            },
+            {
+              "text": "10",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Đi",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Hồ Sơ Khách Hàng & Người Quá Cố"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm tên, mã KH, số CCCD, SĐT..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            },
+            {
+              "type": "number",
+              "placeholder": "1"
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "👥 Thân Nhân (Khách Hàng)",
+              "disabled": false
+            },
+            {
+              "text": "⚰️ Người Quá Cố & Giấy Báo Tử",
+              "disabled": false
+            },
+            {
+              "text": "🔗 Liên Kết Hồ Sơ",
+              "disabled": false
+            },
+            {
+              "text": "🪷 Cổng Tra Cứu Tưởng Niệm",
+              "disabled": false
+            },
+            {
+              "text": "Tìm Kiếm",
+              "disabled": false
+            },
+            {
+              "text": "Tất cả (100)",
+              "disabled": false
+            },
+            {
+              "text": "Có liên kết",
+              "disabled": false
+            },
+            {
+              "text": "Chưa liên kết",
+              "disabled": false
+            },
+            {
+              "text": "Thiết Lập Liên Kết Hồ Sơ",
+              "disabled": false
+            },
+            {
+              "text": "+ Thêm Khách Hàng Thân Nhân",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "4",
+              "disabled": false
+            },
+            {
+              "text": "5",
+              "disabled": false
+            },
+            {
+              "text": "10",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Hồ Sơ Khách Hàng & Người Quá Cố"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm tên, mã KH, số CCCD, SĐT..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            },
+            {
+              "type": "number",
+              "placeholder": "1"
+            }
+          ]
+        },
+        "index": 1
+      },
+      {
+        "name": "Hợp Đồng & Khách Hàng",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": true
+            }
+          ],
+          "headings": [],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm theo mã HĐ, tên KH, SĐT, mã ô..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả trạng thái",
+                "Dự thảo"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả loại hợp đồng",
+                "Mua Đất"
+              ]
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "4",
+              "disabled": false
+            },
+            {
+              "text": "5",
+              "disabled": false
+            },
+            {
+              "text": "30",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            }
+          ],
+          "headings": [],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm theo mã HĐ, tên KH, SĐT, mã ô..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả trạng thái",
+                "Dự thảo"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả loại hợp đồng",
+                "Mua Đất"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            },
+            {
+              "type": "number",
+              "placeholder": "1"
+            }
+          ]
+        },
+        "index": 2
+      },
+      {
+        "name": "Chăm Sóc Mộ Phần",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": true
+            },
+            {
+              "text": "Tất cả",
+              "disabled": false
+            },
+            {
+              "text": "Chờ chỉ định",
+              "disabled": false
+            },
+            {
+              "text": "Đã giao",
+              "disabled": false
+            },
+            {
+              "text": "Đang làm",
+              "disabled": false
+            },
+            {
+              "text": "Đã đóng ca",
+              "disabled": false
+            }
+          ],
+          "headings": [],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "YYYY-Mmm (vd: 2026-M10)"
+            },
+            {
+              "type": "text",
+              "placeholder": "Tìm mã mộ, khu, nhân viên..."
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "Tất cả",
+              "disabled": false
+            },
+            {
+              "text": "Chờ chỉ định",
+              "disabled": false
+            },
+            {
+              "text": "Đã giao",
+              "disabled": false
+            },
+            {
+              "text": "Đang làm",
+              "disabled": false
+            },
+            {
+              "text": "Đã đóng ca",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết ca chăm sóc",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết ca chăm sóc",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết ca chăm sóc",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết ca chăm sóc",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết ca chăm sóc",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết ca chăm sóc",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết ca chăm sóc",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết ca chăm sóc",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết ca chăm sóc",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết ca chăm sóc",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "4",
+              "disabled": false
+            },
+            {
+              "text": "5",
+              "disabled": false
+            },
+            {
+              "text": "10",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            }
+          ],
+          "headings": [],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "YYYY-Mmm (vd: 2026-M10)"
+            },
+            {
+              "type": "text",
+              "placeholder": "Tìm mã mộ, khu, nhân viên..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            },
+            {
+              "type": "number",
+              "placeholder": "1"
+            }
+          ]
+        },
+        "index": 3
+      },
+      {
+        "name": "Thi Công Thực Địa",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Làm Mới",
+              "disabled": false
+            },
+            {
+              "text": "+ Lập Lệnh Thi Công",
+              "disabled": false
+            },
+            {
+              "text": "Lệnh Thi Công Thực Địa (0)",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Nghỉ & Xung Đột Nhân Sự (29)",
+              "disabled": false
+            },
+            {
+              "text": "Tất Cả",
+              "disabled": false
+            },
+            {
+              "text": "Đang Chờ",
+              "disabled": false
+            },
+            {
+              "text": "Đang Thi Công",
+              "disabled": false
+            },
+            {
+              "text": "Đã Nghiệm Thu",
+              "disabled": false
+            },
+            {
+              "text": "Quá Hạn",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Quản Lý Thi Công Thực Địa"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm mã ô, giám sát, số lệnh..."
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Làm Mới",
+              "disabled": false
+            },
+            {
+              "text": "+ Lập Lệnh Thi Công",
+              "disabled": false
+            },
+            {
+              "text": "Lệnh Thi Công Thực Địa (0)",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Nghỉ & Xung Đột Nhân Sự (29)",
+              "disabled": false
+            },
+            {
+              "text": "Tất Cả",
+              "disabled": false
+            },
+            {
+              "text": "Đang Chờ",
+              "disabled": false
+            },
+            {
+              "text": "Đang Thi Công",
+              "disabled": false
+            },
+            {
+              "text": "Đã Nghiệm Thu",
+              "disabled": false
+            },
+            {
+              "text": "Quá Hạn",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Quản Lý Thi Công Thực Địa"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm mã ô, giám sát, số lệnh..."
+            }
+          ]
+        },
+        "index": 4
+      },
+      {
+        "name": "Bảng Giá & Gói Dịch Vụ",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "1. Bảng Giá & Khoản Mục (1)",
+              "disabled": false
+            },
+            {
+              "text": "2. Gói Chăm Sóc (189)",
+              "disabled": false
+            },
+            {
+              "text": "3. Mẫu Hợp Đồng 4 Loại (5)",
+              "disabled": false
+            },
+            {
+              "text": "4. Tra Cứu Giá Tức Thời",
+              "disabled": false
+            },
+            {
+              "text": "Thêm",
+              "disabled": false
+            },
+            {
+              "text": "Thêm Khoản Mục Giá",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "",
+              "disabled": true
+            }
+          ],
+          "headings": [
+            "Quản Trị Bảng Giá & Danh Mục Dịch Vụ",
+            "Các Bảng Giá (1)",
+            "Bảng Giá Dịch Vụ Nghĩa Trang Niêm Yết 2026"
+          ],
+          "inputs": [
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "1. Bảng Giá & Khoản Mục (1)",
+              "disabled": false
+            },
+            {
+              "text": "2. Gói Chăm Sóc (189)",
+              "disabled": false
+            },
+            {
+              "text": "3. Mẫu Hợp Đồng 4 Loại (5)",
+              "disabled": false
+            },
+            {
+              "text": "4. Tra Cứu Giá Tức Thời",
+              "disabled": false
+            },
+            {
+              "text": "Thêm",
+              "disabled": false
+            },
+            {
+              "text": "Thêm Khoản Mục Giá",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            }
+          ],
+          "headings": [
+            "Quản Trị Bảng Giá & Danh Mục Dịch Vụ",
+            "Các Bảng Giá (1)",
+            "Bảng Giá Dịch Vụ Nghĩa Trang Niêm Yết 2026"
+          ],
+          "inputs": [
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            }
+          ]
+        },
+        "index": 5
+      },
+      {
+        "name": "Báo Cáo Thống Kê",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Xuất Báo Cáo (PDF / XLSX)",
+              "disabled": false
+            },
+            {
+              "text": "Làm Mới",
+              "disabled": false
+            },
+            {
+              "text": "Thử lại",
+              "disabled": false
+            },
+            {
+              "text": "Doanh Thu Thực Thu",
+              "disabled": false
+            },
+            {
+              "text": "Tỷ Lệ Lấp Đầy & Mộ Phần",
+              "disabled": false
+            },
+            {
+              "text": "Hợp Đồng & Phụ Lục",
+              "disabled": false
+            },
+            {
+              "text": "Vận Hành: Thi Công & Chăm Sóc",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Báo Cáo Thống Kê & Vận Hành Quản Trị"
+          ],
+          "inputs": [
+            {
+              "type": "date",
+              "placeholder": ""
+            },
+            {
+              "type": "date",
+              "placeholder": ""
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Xuất Báo Cáo (PDF / XLSX)",
+              "disabled": false
+            },
+            {
+              "text": "Làm Mới",
+              "disabled": false
+            },
+            {
+              "text": "Thử lại",
+              "disabled": false
+            },
+            {
+              "text": "Doanh Thu Thực Thu",
+              "disabled": false
+            },
+            {
+              "text": "Tỷ Lệ Lấp Đầy & Mộ Phần",
+              "disabled": false
+            },
+            {
+              "text": "Hợp Đồng & Phụ Lục",
+              "disabled": false
+            },
+            {
+              "text": "Vận Hành: Thi Công & Chăm Sóc",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Báo Cáo Thống Kê & Vận Hành Quản Trị"
+          ],
+          "inputs": [
+            {
+              "type": "date",
+              "placeholder": ""
+            },
+            {
+              "type": "date",
+              "placeholder": ""
+            }
+          ]
+        },
+        "index": 6
+      }
+    ],
+    "api": [
+      {
+        "path": "profiles/customers?limit=1",
+        "status": 200,
+        "fields": [
+          "full_name",
+          "citizen_id",
+          "phone_number",
+          "email",
+          "address",
+          "date_of_birth",
+          "customer_id",
+          "customer_code",
+          "created_at",
+          "updated_at",
+          "relations"
+        ],
+        "count": 1
+      },
+      {
+        "path": "profiles/deceased?limit=1",
+        "status": 200,
+        "fields": [
+          "full_name",
+          "gender",
+          "date_of_birth",
+          "date_of_death",
+          "birth_year",
+          "birth_date_precision",
+          "hometown",
+          "religion",
+          "deceased_id",
+          "deceased_code",
+          "has_death_certificate",
+          "created_at",
+          "updated_at",
+          "death_certificate",
+          "relations",
+          "burial_slot"
+        ],
+        "count": 1
+      },
+      {
+        "path": "profiles/relations?limit=1",
+        "status": 200,
+        "fields": [
+          "relation_id",
+          "customer_id",
+          "customer_code",
+          "customer_name",
+          "citizen_id",
+          "phone_number",
+          "deceased_id",
+          "deceased_code",
+          "deceased_name",
+          "date_of_death",
+          "relationship_type",
+          "is_primary_contact",
+          "slot_info"
+        ],
+        "count": 1
+      },
+      {
+        "path": "contracts?limit=1",
+        "status": 200,
+        "fields": [
+          "contract_id",
+          "contract_code",
+          "contract_type",
+          "status",
+          "total_amount",
+          "customer_id",
+          "customer_name",
+          "customer_phone",
+          "plot_id",
+          "plot_code",
+          "zone_name",
+          "signed_at",
+          "activated_at",
+          "created_at"
+        ],
+        "count": 1
+      },
+      {
+        "path": "plots?limit=1",
+        "status": 200,
+        "fields": [
+          "plot_id",
+          "plot_code",
+          "row_id",
+          "row_code",
+          "zone_id",
+          "zone_code",
+          "zone_name",
+          "type_id",
+          "type_name",
+          "default_slots",
+          "status",
+          "is_kim_tinh",
+          "is_locked",
+          "latitude",
+          "longitude",
+          "orientation",
+          "owner_id",
+          "owner_name",
+          "active_reservation"
+        ],
+        "count": 1
+      },
+      {
+        "path": "finance/summary",
+        "status": 403,
+        "fields": [
+          "detail"
+        ]
+      },
+      {
+        "path": "care/schedules?limit=1",
+        "status": 200,
+        "fields": [
+          "schedule_id",
+          "care_annex_id",
+          "plot_id",
+          "plot_code",
+          "zone_name",
+          "package_id",
+          "package_name",
+          "caretaker_id",
+          "caretaker_name",
+          "scheduled_date",
+          "performed_date",
+          "status",
+          "period_key",
+          "notes",
+          "closed_at",
+          "created_at",
+          "tasks_count",
+          "completed_tasks_count",
+          "evidence_count"
+        ],
+        "count": 1
+      },
+      {
+        "path": "construction/orders?limit=1",
+        "status": 200,
+        "fields": [
+          "order_id",
+          "annex_id",
+          "plot_id",
+          "plot_code",
+          "zone_name",
+          "supervisor_id",
+          "supervisor_name",
+          "start_date",
+          "expected_end_date",
+          "actual_end_date",
+          "overall_progress",
+          "status",
+          "is_overdue",
+          "notes",
+          "created_at",
+          "tasks",
+          "total_tasks",
+          "completed_tasks",
+          "required_tasks",
+          "completed_required_tasks"
+        ],
+        "count": 141
+      },
+      {
+        "path": "reports/revenue",
+        "status": 403,
+        "fields": [
+          "detail"
+        ]
+      },
+      {
+        "path": "reports/occupancy",
+        "status": 403,
+        "fields": [
+          "detail"
+        ]
+      },
+      {
+        "path": "reports/contracts",
+        "status": 403,
+        "fields": [
+          "detail"
+        ]
+      },
+      {
+        "path": "reports/operations",
+        "status": 403,
+        "fields": [
+          "detail"
+        ]
+      },
+      {
+        "path": "auth/users",
+        "status": 403,
+        "fields": [
+          "detail"
+        ]
+      },
+      {
+        "path": "catalog/price-lists",
+        "status": 200,
+        "fields": [
+          "price_list_name",
+          "effective_from_date",
+          "effective_to_date",
+          "is_active",
+          "price_list_id",
+          "created_at",
+          "items"
+        ],
+        "count": 1
+      },
+      {
+        "path": "catalog/care-packages",
+        "status": 200,
+        "fields": [
+          "package_code",
+          "package_name",
+          "cycle_type",
+          "default_tasks_json",
+          "unit_price",
+          "is_active",
+          "package_id"
+        ],
+        "count": 189
+      },
+      {
+        "path": "audit/logs",
+        "status": 403,
+        "fields": [
+          "detail"
+        ]
+      }
+    ],
+    "roles": [
+      "CARETAKER"
+    ],
+    "permissions": [
+      "care:execute",
+      "care:read",
+      "care:write",
+      "construction:execute",
+      "construction:read",
+      "construction:write",
+      "contracts:read",
+      "customers:read",
+      "plots:lock",
+      "plots:read"
+    ],
+    "nav": [
+      "Sơ Đồ Ô Mộ & Bản Đồ",
+      "Thân Nhân & Người Mất",
+      "Hợp Đồng & Khách Hàng",
+      "Chăm Sóc Mộ Phần",
+      "Thi Công Thực Địa",
+      "Bảng Giá & Gói Dịch Vụ",
+      "Báo Cáo Thống Kê"
+    ]
+  },
+  {
+    "actor": "accountant",
+    "errors": [],
+    "responses": [],
+    "screens": [
+      {
+        "name": "Thân Nhân & Người Mất",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "👥 Thân Nhân (Khách Hàng)",
+              "disabled": false
+            },
+            {
+              "text": "⚰️ Người Quá Cố & Giấy Báo Tử",
+              "disabled": false
+            },
+            {
+              "text": "🔗 Liên Kết Hồ Sơ",
+              "disabled": false
+            },
+            {
+              "text": "🪷 Cổng Tra Cứu Tưởng Niệm",
+              "disabled": false
+            },
+            {
+              "text": "Tìm Kiếm",
+              "disabled": false
+            },
+            {
+              "text": "Tất cả (100)",
+              "disabled": false
+            },
+            {
+              "text": "Có liên kết",
+              "disabled": false
+            },
+            {
+              "text": "Chưa liên kết",
+              "disabled": false
+            },
+            {
+              "text": "Thiết Lập Liên Kết Hồ Sơ",
+              "disabled": false
+            },
+            {
+              "text": "+ Thêm Khách Hàng Thân Nhân",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "4",
+              "disabled": false
+            },
+            {
+              "text": "5",
+              "disabled": false
+            },
+            {
+              "text": "10",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Đi",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Hồ Sơ Khách Hàng & Người Quá Cố"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm tên, mã KH, số CCCD, SĐT..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            },
+            {
+              "type": "number",
+              "placeholder": "1"
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "👥 Thân Nhân (Khách Hàng)",
+              "disabled": false
+            },
+            {
+              "text": "⚰️ Người Quá Cố & Giấy Báo Tử",
+              "disabled": false
+            },
+            {
+              "text": "🔗 Liên Kết Hồ Sơ",
+              "disabled": false
+            },
+            {
+              "text": "🪷 Cổng Tra Cứu Tưởng Niệm",
+              "disabled": false
+            },
+            {
+              "text": "Tìm Kiếm",
+              "disabled": false
+            },
+            {
+              "text": "Tất cả (100)",
+              "disabled": false
+            },
+            {
+              "text": "Có liên kết",
+              "disabled": false
+            },
+            {
+              "text": "Chưa liên kết",
+              "disabled": false
+            },
+            {
+              "text": "Thiết Lập Liên Kết Hồ Sơ",
+              "disabled": false
+            },
+            {
+              "text": "+ Thêm Khách Hàng Thân Nhân",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "4",
+              "disabled": false
+            },
+            {
+              "text": "5",
+              "disabled": false
+            },
+            {
+              "text": "10",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Hồ Sơ Khách Hàng & Người Quá Cố"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm tên, mã KH, số CCCD, SĐT..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            },
+            {
+              "type": "number",
+              "placeholder": "1"
+            }
+          ]
+        },
+        "index": 0
+      },
+      {
+        "name": "Hợp Đồng & Khách Hàng",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": true
+            }
+          ],
+          "headings": [],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm theo mã HĐ, tên KH, SĐT, mã ô..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả trạng thái",
+                "Dự thảo"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả loại hợp đồng",
+                "Mua Đất"
+              ]
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": true
+            }
+          ],
+          "headings": [],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm theo mã HĐ, tên KH, SĐT, mã ô..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả trạng thái",
+                "Dự thảo"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả loại hợp đồng",
+                "Mua Đất"
+              ]
+            }
+          ]
+        },
+        "index": 1
+      },
+      {
+        "name": "Công Nợ & Thu Tiền",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [],
+          "headings": [],
+          "inputs": []
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "4",
+              "disabled": false
+            },
+            {
+              "text": "5",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Quản Lý Công Nợ & Thu Tiền"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm theo tên khách hàng, số điện thoại, mã hợp đồng hoặc mã phụ lục..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả trạng thái",
+                "Chưa thanh toán"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            },
+            {
+              "type": "number",
+              "placeholder": "1"
+            }
+          ]
+        },
+        "index": 2
+      },
+      {
+        "name": "Bảng Giá & Gói Dịch Vụ",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "1. Bảng Giá & Khoản Mục (1)",
+              "disabled": false
+            },
+            {
+              "text": "2. Gói Chăm Sóc (189)",
+              "disabled": false
+            },
+            {
+              "text": "3. Mẫu Hợp Đồng 4 Loại (5)",
+              "disabled": false
+            },
+            {
+              "text": "4. Tra Cứu Giá Tức Thời",
+              "disabled": false
+            },
+            {
+              "text": "Thêm",
+              "disabled": false
+            },
+            {
+              "text": "Thêm Khoản Mục Giá",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "",
+              "disabled": true
+            }
+          ],
+          "headings": [
+            "Quản Trị Bảng Giá & Danh Mục Dịch Vụ",
+            "Các Bảng Giá (1)",
+            "Bảng Giá Dịch Vụ Nghĩa Trang Niêm Yết 2026"
+          ],
+          "inputs": [
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "1. Bảng Giá & Khoản Mục (1)",
+              "disabled": false
+            },
+            {
+              "text": "2. Gói Chăm Sóc (189)",
+              "disabled": false
+            },
+            {
+              "text": "3. Mẫu Hợp Đồng 4 Loại (5)",
+              "disabled": false
+            },
+            {
+              "text": "4. Tra Cứu Giá Tức Thời",
+              "disabled": false
+            },
+            {
+              "text": "Thêm",
+              "disabled": false
+            },
+            {
+              "text": "Thêm Khoản Mục Giá",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            }
+          ],
+          "headings": [
+            "Quản Trị Bảng Giá & Danh Mục Dịch Vụ",
+            "Các Bảng Giá (1)",
+            "Bảng Giá Dịch Vụ Nghĩa Trang Niêm Yết 2026"
+          ],
+          "inputs": [
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            }
+          ]
+        },
+        "index": 3
+      },
+      {
+        "name": "Báo Cáo Thống Kê",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Xuất Báo Cáo (PDF / XLSX)",
+              "disabled": false
+            },
+            {
+              "text": "Làm Mới",
+              "disabled": false
+            },
+            {
+              "text": "Doanh Thu Thực Thu",
+              "disabled": false
+            },
+            {
+              "text": "Tỷ Lệ Lấp Đầy & Mộ Phần",
+              "disabled": false
+            },
+            {
+              "text": "Hợp Đồng & Phụ Lục",
+              "disabled": false
+            },
+            {
+              "text": "Vận Hành: Thi Công & Chăm Sóc",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Báo Cáo Thống Kê & Vận Hành Quản Trị"
+          ],
+          "inputs": [
+            {
+              "type": "date",
+              "placeholder": ""
+            },
+            {
+              "type": "date",
+              "placeholder": ""
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Xuất Báo Cáo (PDF / XLSX)",
+              "disabled": false
+            },
+            {
+              "text": "Làm Mới",
+              "disabled": false
+            },
+            {
+              "text": "Doanh Thu Thực Thu",
+              "disabled": false
+            },
+            {
+              "text": "Tỷ Lệ Lấp Đầy & Mộ Phần",
+              "disabled": false
+            },
+            {
+              "text": "Hợp Đồng & Phụ Lục",
+              "disabled": false
+            },
+            {
+              "text": "Vận Hành: Thi Công & Chăm Sóc",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Báo Cáo Thống Kê & Vận Hành Quản Trị"
+          ],
+          "inputs": [
+            {
+              "type": "date",
+              "placeholder": ""
+            },
+            {
+              "type": "date",
+              "placeholder": ""
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            }
+          ]
+        },
+        "index": 4
+      }
+    ],
+    "api": [
+      {
+        "path": "profiles/customers?limit=1",
+        "status": 200,
+        "fields": [
+          "full_name",
+          "citizen_id",
+          "phone_number",
+          "email",
+          "address",
+          "date_of_birth",
+          "customer_id",
+          "customer_code",
+          "created_at",
+          "updated_at",
+          "relations"
+        ],
+        "count": 1
+      },
+      {
+        "path": "profiles/deceased?limit=1",
+        "status": 200,
+        "fields": [
+          "full_name",
+          "gender",
+          "date_of_birth",
+          "date_of_death",
+          "birth_year",
+          "birth_date_precision",
+          "hometown",
+          "religion",
+          "deceased_id",
+          "deceased_code",
+          "has_death_certificate",
+          "created_at",
+          "updated_at",
+          "death_certificate",
+          "relations",
+          "burial_slot"
+        ],
+        "count": 1
+      },
+      {
+        "path": "profiles/relations?limit=1",
+        "status": 200,
+        "fields": [
+          "relation_id",
+          "customer_id",
+          "customer_code",
+          "customer_name",
+          "citizen_id",
+          "phone_number",
+          "deceased_id",
+          "deceased_code",
+          "deceased_name",
+          "date_of_death",
+          "relationship_type",
+          "is_primary_contact",
+          "slot_info"
+        ],
+        "count": 1
+      },
+      {
+        "path": "contracts?limit=1",
+        "status": 200,
+        "fields": [
+          "contract_id",
+          "contract_code",
+          "contract_type",
+          "status",
+          "total_amount",
+          "customer_id",
+          "customer_name",
+          "customer_phone",
+          "plot_id",
+          "plot_code",
+          "zone_name",
+          "signed_at",
+          "activated_at",
+          "created_at"
+        ],
+        "count": 1
+      },
+      {
+        "path": "plots?limit=1",
+        "status": 200,
+        "fields": [
+          "plot_id",
+          "plot_code",
+          "row_id",
+          "row_code",
+          "zone_id",
+          "zone_code",
+          "zone_name",
+          "type_id",
+          "type_name",
+          "default_slots",
+          "status",
+          "is_kim_tinh",
+          "is_locked",
+          "latitude",
+          "longitude",
+          "orientation",
+          "owner_id",
+          "owner_name",
+          "active_reservation"
+        ],
+        "count": 1
+      },
+      {
+        "path": "finance/summary",
+        "status": 200,
+        "fields": [
+          "total_receivables_amount",
+          "total_collected_amount",
+          "total_outstanding_amount",
+          "total_discounts_amount",
+          "count_unpaid",
+          "count_partially_paid",
+          "count_paid",
+          "count_overdue"
+        ]
+      },
+      {
+        "path": "care/schedules?limit=1",
+        "status": 403,
+        "fields": [
+          "detail"
+        ]
+      },
+      {
+        "path": "construction/orders?limit=1",
+        "status": 403,
+        "fields": [
+          "detail"
+        ]
+      },
+      {
+        "path": "reports/revenue",
+        "status": 200,
+        "fields": [
+          "total_revenue",
+          "total_transactions",
+          "average_transaction_value",
+          "start_date",
+          "end_date",
+          "by_period",
+          "by_method",
+          "drilldown_items"
+        ]
+      },
+      {
+        "path": "reports/occupancy",
+        "status": 200,
+        "fields": [
+          "total_plots",
+          "total_empty",
+          "total_reserved",
+          "total_owned_empty",
+          "total_under_construction",
+          "total_occupied",
+          "total_kim_tinh",
+          "overall_occupancy_rate",
+          "total_slots",
+          "occupied_slots",
+          "slot_occupancy_rate",
+          "zones"
+        ]
+      },
+      {
+        "path": "reports/contracts",
+        "status": 200,
+        "fields": [
+          "total_land_contracts",
+          "total_land_value",
+          "total_annexes",
+          "total_annex_value",
+          "by_contract_status",
+          "by_annex_type",
+          "expiring_care_annexes"
+        ]
+      },
+      {
+        "path": "reports/operations",
+        "status": 200,
+        "fields": [
+          "construction",
+          "care"
+        ]
+      },
+      {
+        "path": "auth/users",
+        "status": 403,
+        "fields": [
+          "detail"
+        ]
+      },
+      {
+        "path": "catalog/price-lists",
+        "status": 200,
+        "fields": [
+          "price_list_name",
+          "effective_from_date",
+          "effective_to_date",
+          "is_active",
+          "price_list_id",
+          "created_at",
+          "items"
+        ],
+        "count": 1
+      },
+      {
+        "path": "catalog/care-packages",
+        "status": 200,
+        "fields": [
+          "package_code",
+          "package_name",
+          "cycle_type",
+          "default_tasks_json",
+          "unit_price",
+          "is_active",
+          "package_id"
+        ],
+        "count": 189
+      },
+      {
+        "path": "audit/logs",
+        "status": 403,
+        "fields": [
+          "detail"
+        ]
+      }
+    ],
+    "roles": [
+      "ACCOUNTANT"
+    ],
+    "permissions": [
+      "contracts:read",
+      "customers:read",
+      "finance:collect",
+      "finance:read",
+      "finance:write",
+      "reports:read"
+    ],
+    "nav": [
+      "Thân Nhân & Người Mất",
+      "Hợp Đồng & Khách Hàng",
+      "Công Nợ & Thu Tiền",
+      "Bảng Giá & Gói Dịch Vụ",
+      "Báo Cáo Thống Kê"
+    ]
+  },
+  {
+    "actor": "admin",
+    "errors": [],
+    "responses": [
+      {
+        "url": "v1/auth/staff",
+        "status": 500
+      },
+      {
+        "url": "v1/auth/staff",
+        "status": 500
+      },
+      {
+        "url": "v1/auth/staff",
+        "status": 500
+      },
+      {
+        "url": "v1/auth/staff",
+        "status": 500
+      }
+    ],
+    "screens": [
+      {
+        "name": "Sơ Đồ Ô Mộ & Bản Đồ",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "Bản Đồ Số GIS (Leaflet Map)",
+              "disabled": false
+            },
+            {
+              "text": "Ma Trận Phân Lô Thực Địa",
+              "disabled": false
+            },
+            {
+              "text": "Danh Mục Khu Vực & Loại Mộ",
+              "disabled": false
+            },
+            {
+              "text": "Thêm Ô Mộ Mới",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Bản Đồ Số GIS & Quản Lý Ô Mộ"
+          ],
+          "inputs": [
+            {
+              "type": "select-one",
+              "options": [
+                "-- Tất cả khu vực --",
+                "KHU-A - Khu Vạn Phúc (Mộ Đơn & Đôi)"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "-- Tất cả trạng thái --",
+                "Đất trống chưa bán"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "-- Tất cả kết cấu --",
+                "Chỉ mộ Kim Tĩnh"
+              ]
+            },
+            {
+              "type": "text",
+              "placeholder": "Tìm theo mã ô mộ (ví dụ: A-H01-01)..."
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "Bản Đồ Số GIS (Leaflet Map)",
+              "disabled": false
+            },
+            {
+              "text": "Ma Trận Phân Lô Thực Địa",
+              "disabled": false
+            },
+            {
+              "text": "Danh Mục Khu Vực & Loại Mộ",
+              "disabled": false
+            },
+            {
+              "text": "Thêm Ô Mộ Mới",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Bản Đồ Số GIS & Quản Lý Ô Mộ"
+          ],
+          "inputs": [
+            {
+              "type": "select-one",
+              "options": [
+                "-- Tất cả khu vực --",
+                "KHU-A - Khu Vạn Phúc (Mộ Đơn & Đôi)"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "-- Tất cả trạng thái --",
+                "Đất trống chưa bán"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "-- Tất cả kết cấu --",
+                "Chỉ mộ Kim Tĩnh"
+              ]
+            },
+            {
+              "type": "text",
+              "placeholder": "Tìm theo mã ô mộ (ví dụ: A-H01-01)..."
+            }
+          ]
+        },
+        "index": 0
+      },
+      {
+        "name": "Thân Nhân & Người Mất",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "👥 Thân Nhân (Khách Hàng)",
+              "disabled": false
+            },
+            {
+              "text": "⚰️ Người Quá Cố & Giấy Báo Tử",
+              "disabled": false
+            },
+            {
+              "text": "🔗 Liên Kết Hồ Sơ",
+              "disabled": false
+            },
+            {
+              "text": "🪷 Cổng Tra Cứu Tưởng Niệm",
+              "disabled": false
+            },
+            {
+              "text": "Tìm Kiếm",
+              "disabled": false
+            },
+            {
+              "text": "Tất cả (100)",
+              "disabled": false
+            },
+            {
+              "text": "Có liên kết",
+              "disabled": false
+            },
+            {
+              "text": "Chưa liên kết",
+              "disabled": false
+            },
+            {
+              "text": "Thiết Lập Liên Kết Hồ Sơ",
+              "disabled": false
+            },
+            {
+              "text": "+ Thêm Khách Hàng Thân Nhân",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "+ Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "4",
+              "disabled": false
+            },
+            {
+              "text": "5",
+              "disabled": false
+            },
+            {
+              "text": "10",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Đi",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Hồ Sơ Khách Hàng & Người Quá Cố"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm tên, mã KH, số CCCD, SĐT..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            },
+            {
+              "type": "number",
+              "placeholder": "1"
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "👥 Thân Nhân (Khách Hàng)",
+              "disabled": false
+            },
+            {
+              "text": "⚰️ Người Quá Cố & Giấy Báo Tử",
+              "disabled": false
+            },
+            {
+              "text": "🔗 Liên Kết Hồ Sơ",
+              "disabled": false
+            },
+            {
+              "text": "🪷 Cổng Tra Cứu Tưởng Niệm",
+              "disabled": false
+            },
+            {
+              "text": "Tìm Kiếm",
+              "disabled": false
+            },
+            {
+              "text": "Tất cả (100)",
+              "disabled": false
+            },
+            {
+              "text": "Có liên kết",
+              "disabled": false
+            },
+            {
+              "text": "Chưa liên kết",
+              "disabled": false
+            },
+            {
+              "text": "Thiết Lập Liên Kết Hồ Sơ",
+              "disabled": false
+            },
+            {
+              "text": "+ Thêm Khách Hàng Thân Nhân",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "Chi tiết",
+              "disabled": false
+            },
+            {
+              "text": "Gắn kết",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "4",
+              "disabled": false
+            },
+            {
+              "text": "5",
+              "disabled": false
+            },
+            {
+              "text": "10",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Hồ Sơ Khách Hàng & Người Quá Cố"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm tên, mã KH, số CCCD, SĐT..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            },
+            {
+              "type": "number",
+              "placeholder": "1"
+            }
+          ]
+        },
+        "index": 1
+      },
+      {
+        "name": "Hợp Đồng & Khách Hàng",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": true
+            },
+            {
+              "text": "+ Mua Đất",
+              "disabled": false
+            },
+            {
+              "text": "+ Cải Táng",
+              "disabled": false
+            },
+            {
+              "text": "+ Chuyển Nhượng",
+              "disabled": false
+            },
+            {
+              "text": "+ Hỏa Táng",
+              "disabled": false
+            }
+          ],
+          "headings": [],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm theo mã HĐ, tên KH, SĐT, mã ô..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả trạng thái",
+                "Dự thảo"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả loại hợp đồng",
+                "Mua Đất"
+              ]
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": true
+            },
+            {
+              "text": "+ Mua Đất",
+              "disabled": false
+            },
+            {
+              "text": "+ Cải Táng",
+              "disabled": false
+            },
+            {
+              "text": "+ Chuyển Nhượng",
+              "disabled": false
+            },
+            {
+              "text": "+ Hỏa Táng",
+              "disabled": false
+            }
+          ],
+          "headings": [],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm theo mã HĐ, tên KH, SĐT, mã ô..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả trạng thái",
+                "Dự thảo"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả loại hợp đồng",
+                "Mua Đất"
+              ]
+            }
+          ]
+        },
+        "index": 2
+      },
+      {
+        "name": "Chăm Sóc Mộ Phần",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": true
+            },
+            {
+              "text": "Sinh Lịch Kỳ Mới",
+              "disabled": false
+            },
+            {
+              "text": "Tất cả",
+              "disabled": false
+            },
+            {
+              "text": "Chờ chỉ định",
+              "disabled": false
+            },
+            {
+              "text": "Đã giao",
+              "disabled": false
+            },
+            {
+              "text": "Đang làm",
+              "disabled": false
+            },
+            {
+              "text": "Đã đóng ca",
+              "disabled": false
+            }
+          ],
+          "headings": [],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "YYYY-Mmm (vd: 2026-M10)"
+            },
+            {
+              "type": "text",
+              "placeholder": "Tìm mã mộ, khu, nhân viên..."
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": true
+            },
+            {
+              "text": "Sinh Lịch Kỳ Mới",
+              "disabled": false
+            },
+            {
+              "text": "Tất cả",
+              "disabled": false
+            },
+            {
+              "text": "Chờ chỉ định",
+              "disabled": false
+            },
+            {
+              "text": "Đã giao",
+              "disabled": false
+            },
+            {
+              "text": "Đang làm",
+              "disabled": false
+            },
+            {
+              "text": "Đã đóng ca",
+              "disabled": false
+            }
+          ],
+          "headings": [],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "YYYY-Mmm (vd: 2026-M10)"
+            },
+            {
+              "type": "text",
+              "placeholder": "Tìm mã mộ, khu, nhân viên..."
+            }
+          ]
+        },
+        "index": 3
+      },
+      {
+        "name": "Thi Công Thực Địa",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Làm Mới",
+              "disabled": false
+            },
+            {
+              "text": "+ Lập Lệnh Thi Công",
+              "disabled": false
+            },
+            {
+              "text": "Lệnh Thi Công Thực Địa (0)",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Nghỉ & Xung Đột Nhân Sự (29)",
+              "disabled": false
+            },
+            {
+              "text": "Tất Cả",
+              "disabled": false
+            },
+            {
+              "text": "Đang Chờ",
+              "disabled": false
+            },
+            {
+              "text": "Đang Thi Công",
+              "disabled": false
+            },
+            {
+              "text": "Đã Nghiệm Thu",
+              "disabled": false
+            },
+            {
+              "text": "Quá Hạn",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Quản Lý Thi Công Thực Địa"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm mã ô, giám sát, số lệnh..."
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Làm Mới",
+              "disabled": false
+            },
+            {
+              "text": "+ Lập Lệnh Thi Công",
+              "disabled": false
+            },
+            {
+              "text": "Lệnh Thi Công Thực Địa (0)",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Nghỉ & Xung Đột Nhân Sự (29)",
+              "disabled": false
+            },
+            {
+              "text": "Tất Cả",
+              "disabled": false
+            },
+            {
+              "text": "Đang Chờ",
+              "disabled": false
+            },
+            {
+              "text": "Đang Thi Công",
+              "disabled": false
+            },
+            {
+              "text": "Đã Nghiệm Thu",
+              "disabled": false
+            },
+            {
+              "text": "Quá Hạn",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Quản Lý Thi Công Thực Địa"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm mã ô, giám sát, số lệnh..."
+            }
+          ]
+        },
+        "index": 4
+      },
+      {
+        "name": "Công Nợ & Thu Tiền",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "Chiết Khấu",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Sử (0)",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "Chiết Khấu",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Sử (0)",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "Chiết Khấu",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Sử (0)",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "Chiết Khấu",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Sử (0)",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "Chiết Khấu",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Sử (0)",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "Chiết Khấu",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Sử (0)",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "Chiết Khấu",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Sử (0)",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "Chiết Khấu",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Sử (0)",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "Chiết Khấu",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Sử (0)",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "Chiết Khấu",
+              "disabled": false
+            },
+            {
+              "text": "Lịch Sử (0)",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "4",
+              "disabled": false
+            },
+            {
+              "text": "5",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Đi",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Quản Lý Công Nợ & Thu Tiền"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm theo tên khách hàng, số điện thoại, mã hợp đồng hoặc mã phụ lục..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả trạng thái",
+                "Chưa thanh toán"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            },
+            {
+              "type": "number",
+              "placeholder": "1"
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Thu Tiền",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "4",
+              "disabled": false
+            },
+            {
+              "text": "5",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Quản Lý Công Nợ & Thu Tiền"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm theo tên khách hàng, số điện thoại, mã hợp đồng hoặc mã phụ lục..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả trạng thái",
+                "Chưa thanh toán"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            },
+            {
+              "type": "number",
+              "placeholder": "1"
+            }
+          ]
+        },
+        "index": 5
+      },
+      {
+        "name": "Bảng Giá & Gói Dịch Vụ",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "1. Bảng Giá & Khoản Mục (1)",
+              "disabled": false
+            },
+            {
+              "text": "2. Gói Chăm Sóc (189)",
+              "disabled": false
+            },
+            {
+              "text": "3. Mẫu Hợp Đồng 4 Loại (5)",
+              "disabled": false
+            },
+            {
+              "text": "4. Tra Cứu Giá Tức Thời",
+              "disabled": false
+            },
+            {
+              "text": "Thêm",
+              "disabled": false
+            },
+            {
+              "text": "Thêm Khoản Mục Giá",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "",
+              "disabled": true
+            }
+          ],
+          "headings": [
+            "Quản Trị Bảng Giá & Danh Mục Dịch Vụ",
+            "Các Bảng Giá (1)",
+            "Bảng Giá Dịch Vụ Nghĩa Trang Niêm Yết 2026"
+          ],
+          "inputs": [
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "1. Bảng Giá & Khoản Mục (1)",
+              "disabled": false
+            },
+            {
+              "text": "2. Gói Chăm Sóc (189)",
+              "disabled": false
+            },
+            {
+              "text": "3. Mẫu Hợp Đồng 4 Loại (5)",
+              "disabled": false
+            },
+            {
+              "text": "4. Tra Cứu Giá Tức Thời",
+              "disabled": false
+            },
+            {
+              "text": "Thêm",
+              "disabled": false
+            },
+            {
+              "text": "Thêm Khoản Mục Giá",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            }
+          ],
+          "headings": [
+            "Quản Trị Bảng Giá & Danh Mục Dịch Vụ",
+            "Các Bảng Giá (1)",
+            "Bảng Giá Dịch Vụ Nghĩa Trang Niêm Yết 2026"
+          ],
+          "inputs": [
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            }
+          ]
+        },
+        "index": 6
+      },
+      {
+        "name": "Quản Trị Người Dùng",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "Thêm Tài Khoản Mới",
+              "disabled": false
+            },
+            {
+              "text": "Danh Sách Tài Khoản (24)",
+              "disabled": false
+            },
+            {
+              "text": "Ma Trận Phân Quyền Vai Trò (4)",
+              "disabled": false
+            },
+            {
+              "text": "Sửa",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "Sửa",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Sửa",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Sửa",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Sửa",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Sửa",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Sửa",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Sửa",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Sửa",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Sửa",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Quản Trị Người Dùng & Phân Quyền (RBAC)"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm kiếm theo tên, username, email, SĐT..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả vai trò",
+                "ADMIN"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả trạng thái",
+                "Đang hoạt động"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Làm mới",
+              "disabled": false
+            },
+            {
+              "text": "Thêm Tài Khoản Mới",
+              "disabled": false
+            },
+            {
+              "text": "Danh Sách Tài Khoản (24)",
+              "disabled": false
+            },
+            {
+              "text": "Ma Trận Phân Quyền Vai Trò (4)",
+              "disabled": false
+            },
+            {
+              "text": "Sửa",
+              "disabled": false
+            },
+            {
+              "text": "Đổi MK",
+              "disabled": false
+            },
+            {
+              "text": "Khóa",
+              "disabled": true
+            },
+            {
+              "text": "Sửa",
+              "disabled": false
+            },
+            {
+              "text": "Đổi MK",
+              "disabled": false
+            },
+            {
+              "text": "Khóa",
+              "disabled": false
+            },
+            {
+              "text": "Sửa",
+              "disabled": false
+            },
+            {
+              "text": "Đổi MK",
+              "disabled": false
+            },
+            {
+              "text": "Khóa",
+              "disabled": false
+            },
+            {
+              "text": "Sửa",
+              "disabled": false
+            },
+            {
+              "text": "Đổi MK",
+              "disabled": false
+            },
+            {
+              "text": "Khóa",
+              "disabled": false
+            },
+            {
+              "text": "Sửa",
+              "disabled": false
+            },
+            {
+              "text": "Đổi MK",
+              "disabled": false
+            },
+            {
+              "text": "Khóa",
+              "disabled": false
+            },
+            {
+              "text": "Sửa",
+              "disabled": false
+            },
+            {
+              "text": "Đổi MK",
+              "disabled": false
+            },
+            {
+              "text": "Khóa",
+              "disabled": false
+            },
+            {
+              "text": "Sửa",
+              "disabled": false
+            },
+            {
+              "text": "Đổi MK",
+              "disabled": false
+            },
+            {
+              "text": "Khóa",
+              "disabled": false
+            },
+            {
+              "text": "Sửa",
+              "disabled": false
+            },
+            {
+              "text": "Đổi MK",
+              "disabled": false
+            },
+            {
+              "text": "Khóa",
+              "disabled": false
+            },
+            {
+              "text": "Sửa",
+              "disabled": false
+            },
+            {
+              "text": "Đổi MK",
+              "disabled": false
+            },
+            {
+              "text": "Khóa",
+              "disabled": false
+            },
+            {
+              "text": "Sửa",
+              "disabled": false
+            },
+            {
+              "text": "Đổi MK",
+              "disabled": false
+            },
+            {
+              "text": "Khóa",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Quản Trị Người Dùng & Phân Quyền (RBAC)"
+          ],
+          "inputs": [
+            {
+              "type": "text",
+              "placeholder": "Tìm kiếm theo tên, username, email, SĐT..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả vai trò",
+                "ADMIN"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả trạng thái",
+                "Đang hoạt động"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            }
+          ]
+        },
+        "index": 7
+      },
+      {
+        "name": "Báo Cáo Thống Kê",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Xuất Báo Cáo (PDF / XLSX)",
+              "disabled": false
+            },
+            {
+              "text": "Làm Mới",
+              "disabled": false
+            },
+            {
+              "text": "Doanh Thu Thực Thu",
+              "disabled": false
+            },
+            {
+              "text": "Tỷ Lệ Lấp Đầy & Mộ Phần",
+              "disabled": false
+            },
+            {
+              "text": "Hợp Đồng & Phụ Lục",
+              "disabled": false
+            },
+            {
+              "text": "Vận Hành: Thi Công & Chăm Sóc",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Báo Cáo Thống Kê & Vận Hành Quản Trị"
+          ],
+          "inputs": [
+            {
+              "type": "date",
+              "placeholder": ""
+            },
+            {
+              "type": "date",
+              "placeholder": ""
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Xuất Báo Cáo (PDF / XLSX)",
+              "disabled": false
+            },
+            {
+              "text": "Làm Mới",
+              "disabled": false
+            },
+            {
+              "text": "Doanh Thu Thực Thu",
+              "disabled": false
+            },
+            {
+              "text": "Tỷ Lệ Lấp Đầy & Mộ Phần",
+              "disabled": false
+            },
+            {
+              "text": "Hợp Đồng & Phụ Lục",
+              "disabled": false
+            },
+            {
+              "text": "Vận Hành: Thi Công & Chăm Sóc",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Báo Cáo Thống Kê & Vận Hành Quản Trị"
+          ],
+          "inputs": [
+            {
+              "type": "date",
+              "placeholder": ""
+            },
+            {
+              "type": "date",
+              "placeholder": ""
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "20 / trang"
+              ]
+            }
+          ]
+        },
+        "index": 8
+      },
+      {
+        "name": "Nhật Ký Kiểm Toán",
+        "desktop": {
+          "viewport": 1440,
+          "bodyWidth": 1440,
+          "mainWidth": 1180,
+          "mainScroll": 1180,
+          "buttons": [
+            {
+              "text": "Làm Mới",
+              "disabled": false
+            },
+            {
+              "text": "Xem",
+              "disabled": false
+            },
+            {
+              "text": "Xem",
+              "disabled": false
+            },
+            {
+              "text": "Xem",
+              "disabled": false
+            },
+            {
+              "text": "Xem",
+              "disabled": false
+            },
+            {
+              "text": "Xem",
+              "disabled": false
+            },
+            {
+              "text": "Xem",
+              "disabled": false
+            },
+            {
+              "text": "Xem",
+              "disabled": false
+            },
+            {
+              "text": "Xem",
+              "disabled": false
+            },
+            {
+              "text": "Xem",
+              "disabled": false
+            },
+            {
+              "text": "Xem",
+              "disabled": false
+            },
+            {
+              "text": "Xem",
+              "disabled": false
+            },
+            {
+              "text": "Xem",
+              "disabled": false
+            },
+            {
+              "text": "Xem",
+              "disabled": false
+            },
+            {
+              "text": "Xem",
+              "disabled": false
+            },
+            {
+              "text": "Xem",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "4",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            },
+            {
+              "text": "Đi",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Nhật Ký Kiểm Toán & Giám Sát Hệ Thống (Audit Logs)"
+          ],
+          "inputs": [
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả thực thể (6)",
+                "ConstructionOrder"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả hành vi (11)",
+                "ACTIVATE"
+              ]
+            },
+            {
+              "type": "text",
+              "placeholder": "Tìm theo mã đối tượng (Target ID)..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "20 dòng",
+                "50 dòng"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "15 / trang"
+              ]
+            },
+            {
+              "type": "number",
+              "placeholder": "1"
+            }
+          ]
+        },
+        "mobile": {
+          "viewport": 390,
+          "bodyWidth": 390,
+          "mainWidth": 390,
+          "mainScroll": 390,
+          "buttons": [
+            {
+              "text": "Làm Mới",
+              "disabled": false
+            },
+            {
+              "text": "Xem Chi Tiết Sự Kiện & Diff",
+              "disabled": false
+            },
+            {
+              "text": "Xem Chi Tiết Sự Kiện & Diff",
+              "disabled": false
+            },
+            {
+              "text": "Xem Chi Tiết Sự Kiện & Diff",
+              "disabled": false
+            },
+            {
+              "text": "Xem Chi Tiết Sự Kiện & Diff",
+              "disabled": false
+            },
+            {
+              "text": "Xem Chi Tiết Sự Kiện & Diff",
+              "disabled": false
+            },
+            {
+              "text": "Xem Chi Tiết Sự Kiện & Diff",
+              "disabled": false
+            },
+            {
+              "text": "Xem Chi Tiết Sự Kiện & Diff",
+              "disabled": false
+            },
+            {
+              "text": "Xem Chi Tiết Sự Kiện & Diff",
+              "disabled": false
+            },
+            {
+              "text": "Xem Chi Tiết Sự Kiện & Diff",
+              "disabled": false
+            },
+            {
+              "text": "Xem Chi Tiết Sự Kiện & Diff",
+              "disabled": false
+            },
+            {
+              "text": "Xem Chi Tiết Sự Kiện & Diff",
+              "disabled": false
+            },
+            {
+              "text": "Xem Chi Tiết Sự Kiện & Diff",
+              "disabled": false
+            },
+            {
+              "text": "Xem Chi Tiết Sự Kiện & Diff",
+              "disabled": false
+            },
+            {
+              "text": "Xem Chi Tiết Sự Kiện & Diff",
+              "disabled": false
+            },
+            {
+              "text": "Xem Chi Tiết Sự Kiện & Diff",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": true
+            },
+            {
+              "text": "1",
+              "disabled": false
+            },
+            {
+              "text": "2",
+              "disabled": false
+            },
+            {
+              "text": "3",
+              "disabled": false
+            },
+            {
+              "text": "4",
+              "disabled": false
+            },
+            {
+              "text": "",
+              "disabled": false
+            }
+          ],
+          "headings": [
+            "Nhật Ký Kiểm Toán & Giám Sát Hệ Thống (Audit Logs)"
+          ],
+          "inputs": [
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả thực thể (6)",
+                "ConstructionOrder"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "Tất cả hành vi (11)",
+                "ACTIVATE"
+              ]
+            },
+            {
+              "type": "text",
+              "placeholder": "Tìm theo mã đối tượng (Target ID)..."
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "20 dòng",
+                "50 dòng"
+              ]
+            },
+            {
+              "type": "select-one",
+              "options": [
+                "10 / trang",
+                "15 / trang"
+              ]
+            },
+            {
+              "type": "number",
+              "placeholder": "1"
+            }
+          ]
+        },
+        "index": 9
+      }
+    ],
+    "api": [
+      {
+        "path": "profiles/customers?limit=1",
+        "status": 200,
+        "fields": [
+          "full_name",
+          "citizen_id",
+          "phone_number",
+          "email",
+          "address",
+          "date_of_birth",
+          "customer_id",
+          "customer_code",
+          "created_at",
+          "updated_at",
+          "relations"
+        ],
+        "count": 1
+      },
+      {
+        "path": "profiles/deceased?limit=1",
+        "status": 200,
+        "fields": [
+          "full_name",
+          "gender",
+          "date_of_birth",
+          "date_of_death",
+          "birth_year",
+          "birth_date_precision",
+          "hometown",
+          "religion",
+          "deceased_id",
+          "deceased_code",
+          "has_death_certificate",
+          "created_at",
+          "updated_at",
+          "death_certificate",
+          "relations",
+          "burial_slot"
+        ],
+        "count": 1
+      },
+      {
+        "path": "profiles/relations?limit=1",
+        "status": 200,
+        "fields": [
+          "relation_id",
+          "customer_id",
+          "customer_code",
+          "customer_name",
+          "citizen_id",
+          "phone_number",
+          "deceased_id",
+          "deceased_code",
+          "deceased_name",
+          "date_of_death",
+          "relationship_type",
+          "is_primary_contact",
+          "slot_info"
+        ],
+        "count": 1
+      },
+      {
+        "path": "contracts?limit=1",
+        "status": 200,
+        "fields": [
+          "contract_id",
+          "contract_code",
+          "contract_type",
+          "status",
+          "total_amount",
+          "customer_id",
+          "customer_name",
+          "customer_phone",
+          "plot_id",
+          "plot_code",
+          "zone_name",
+          "signed_at",
+          "activated_at",
+          "created_at"
+        ],
+        "count": 1
+      },
+      {
+        "path": "plots?limit=1",
+        "status": 200,
+        "fields": [
+          "plot_id",
+          "plot_code",
+          "row_id",
+          "row_code",
+          "zone_id",
+          "zone_code",
+          "zone_name",
+          "type_id",
+          "type_name",
+          "default_slots",
+          "status",
+          "is_kim_tinh",
+          "is_locked",
+          "latitude",
+          "longitude",
+          "orientation",
+          "owner_id",
+          "owner_name",
+          "active_reservation"
+        ],
+        "count": 1
+      },
+      {
+        "path": "finance/summary",
+        "status": 200,
+        "fields": [
+          "total_receivables_amount",
+          "total_collected_amount",
+          "total_outstanding_amount",
+          "total_discounts_amount",
+          "count_unpaid",
+          "count_partially_paid",
+          "count_paid",
+          "count_overdue"
+        ]
+      },
+      {
+        "path": "care/schedules?limit=1",
+        "status": 200,
+        "fields": [
+          "schedule_id",
+          "care_annex_id",
+          "plot_id",
+          "plot_code",
+          "zone_name",
+          "package_id",
+          "package_name",
+          "caretaker_id",
+          "caretaker_name",
+          "scheduled_date",
+          "performed_date",
+          "status",
+          "period_key",
+          "notes",
+          "closed_at",
+          "created_at",
+          "tasks_count",
+          "completed_tasks_count",
+          "evidence_count"
+        ],
+        "count": 1
+      },
+      {
+        "path": "construction/orders?limit=1",
+        "status": 200,
+        "fields": [
+          "order_id",
+          "annex_id",
+          "plot_id",
+          "plot_code",
+          "zone_name",
+          "supervisor_id",
+          "supervisor_name",
+          "start_date",
+          "expected_end_date",
+          "actual_end_date",
+          "overall_progress",
+          "status",
+          "is_overdue",
+          "notes",
+          "created_at",
+          "tasks",
+          "total_tasks",
+          "completed_tasks",
+          "required_tasks",
+          "completed_required_tasks"
+        ],
+        "count": 141
+      },
+      {
+        "path": "reports/revenue",
+        "status": 200,
+        "fields": [
+          "total_revenue",
+          "total_transactions",
+          "average_transaction_value",
+          "start_date",
+          "end_date",
+          "by_period",
+          "by_method",
+          "drilldown_items"
+        ]
+      },
+      {
+        "path": "reports/occupancy",
+        "status": 200,
+        "fields": [
+          "total_plots",
+          "total_empty",
+          "total_reserved",
+          "total_owned_empty",
+          "total_under_construction",
+          "total_occupied",
+          "total_kim_tinh",
+          "overall_occupancy_rate",
+          "total_slots",
+          "occupied_slots",
+          "slot_occupancy_rate",
+          "zones"
+        ]
+      },
+      {
+        "path": "reports/contracts",
+        "status": 200,
+        "fields": [
+          "total_land_contracts",
+          "total_land_value",
+          "total_annexes",
+          "total_annex_value",
+          "by_contract_status",
+          "by_annex_type",
+          "expiring_care_annexes"
+        ]
+      },
+      {
+        "path": "reports/operations",
+        "status": 200,
+        "fields": [
+          "construction",
+          "care"
+        ]
+      },
+      {
+        "path": "auth/users",
+        "status": 200,
+        "fields": [
+          "user_id",
+          "username",
+          "full_name",
+          "email",
+          "phone_number",
+          "is_active",
+          "auth_version",
+          "roles",
+          "permissions"
+        ],
+        "count": 24
+      },
+      {
+        "path": "catalog/price-lists",
+        "status": 200,
+        "fields": [
+          "price_list_name",
+          "effective_from_date",
+          "effective_to_date",
+          "is_active",
+          "price_list_id",
+          "created_at",
+          "items"
+        ],
+        "count": 1
+      },
+      {
+        "path": "catalog/care-packages",
+        "status": 200,
+        "fields": [
+          "package_code",
+          "package_name",
+          "cycle_type",
+          "default_tasks_json",
+          "unit_price",
+          "is_active",
+          "package_id"
+        ],
+        "count": 189
+      },
+      {
+        "path": "audit/logs",
+        "status": 200,
+        "fields": [
+          "log_id",
+          "user_id",
+          "username",
+          "action_type",
+          "target_entity",
+          "target_id",
+          "pre_change_values",
+          "post_change_values",
+          "ip_address",
+          "timestamp"
+        ],
+        "count": 50
+      }
+    ],
+    "roles": [
+      "ADMIN"
+    ],
+    "permissions": [
+      "audit:read",
+      "care:execute",
+      "care:read",
+      "care:write",
+      "construction:execute",
+      "construction:read",
+      "construction:write",
+      "contracts:activate",
+      "contracts:read",
+      "contracts:write",
+      "customers:read",
+      "customers:write",
+      "finance:collect",
+      "finance:read",
+      "finance:write",
+      "plots:lock",
+      "plots:read",
+      "plots:write",
+      "reports:read",
+      "users:read",
+      "users:write"
+    ],
+    "nav": [
+      "Sơ Đồ Ô Mộ & Bản Đồ",
+      "Thân Nhân & Người Mất",
+      "Hợp Đồng & Khách Hàng",
+      "Chăm Sóc Mộ Phần",
+      "Thi Công Thực Địa",
+      "Công Nợ & Thu Tiền",
+      "Bảng Giá & Gói Dịch Vụ",
+      "Quản Trị Người Dùng",
+      "Báo Cáo Thống Kê",
+      "Nhật Ký Kiểm Toán"
+    ]
+  }
+]

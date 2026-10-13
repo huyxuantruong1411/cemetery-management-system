@@ -92,7 +92,7 @@ def create_receivable(
     "/receivables/{receivable_id}/discount",
     response_model=ReceivableResponse,
     summary="Áp dụng chiết khấu cho khoản thu (G16)",
-    dependencies=[Depends(require_permission("finance", "discount"))],
+    dependencies=[Depends(require_permission("finance", "write"))],
 )
 def apply_discount(
     receivable_id: int,
@@ -179,3 +179,17 @@ def download_payment_receipt_pdf(payment_id: int, db: Session = Depends(get_db))
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Lỗi khi đọc tệp từ MinIO: {str(e)}",
         ) from e
+
+
+@router.post(
+    "/payments/{payment_id}/regenerate-invoice",
+    response_model=InvoiceResponse,
+    summary="Tạo lại hóa đơn/biên lai thu tiền nếu bị gián đoạn",
+    dependencies=[Depends(require_permission("finance", "write"))],
+)
+def regenerate_invoice(
+    payment_id: int,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return FinanceService.regenerate_invoice(db, payment_id, current_user.user_id)

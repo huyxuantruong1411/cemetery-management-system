@@ -156,6 +156,12 @@ def generate_schedules(
     summary="Phân công nhân viên quản trang (Kiểm tra xung đột G13)",
     dependencies=[Depends(require_permission("care", "write"))],
 )
+@router.post(
+    "/schedules/{schedule_id}/assign",
+    response_model=CareScheduleDetail,
+    summary="Phân công nhân viên quản trang (Kiểm tra xung đột G13 - POST alias)",
+    dependencies=[Depends(require_permission("care", "write"))],
+)
 def assign_caretaker(
     schedule_id: int,
     req: CareScheduleAssign,

@@ -1,0 +1,79 @@
+{
+  "before": {
+    "database": "QL_NghiaTrang_Test",
+    "revision": "0010_g12_care_schedules",
+    "counts": {
+      "customers": 3,
+      "deceased_profiles": 3,
+      "contracts": 0,
+      "plots": 11,
+      "payments": 0,
+      "receivables": 0
+    },
+    "columns": {
+      "receivables": [
+        "receivable_id",
+        "contract_id",
+        "annex_id",
+        "customer_id",
+        "original_amount",
+        "discount_amount",
+        "final_payable_amount",
+        "total_paid_amount",
+        "status",
+        "due_date",
+        "created_at"
+      ],
+      "invoices": [
+        "invoice_id",
+        "invoice_number",
+        "payment_id",
+        "issued_date",
+        "total_amount_in_words",
+        "pdf_file_url"
+      ]
+    }
+  },
+  "backup": "D:\\work\\TH-PTTK\\QL-NghiaTrang\\backend\\runtime\\backups\\QL_NghiaTrang_Test_before_actor_audit_20261013.bak",
+  "after": {
+    "database": "QL_NghiaTrang_Test",
+    "revision": "0012_g17_report_exports",
+    "counts": {
+      "customers": 3,
+      "deceased_profiles": 3,
+      "contracts": 0,
+      "plots": 11,
+      "payments": 0,
+      "receivables": 0
+    },
+    "columns": {
+      "receivables": [
+        "receivable_id",
+        "contract_id",
+        "annex_id",
+        "customer_id",
+        "original_amount",
+        "discount_amount",
+        "final_payable_amount",
+        "total_paid_amount",
+        "status",
+        "due_date",
+        "created_at",
+        "notes",
+        "created_by_user_id",
+        "installment_no"
+      ],
+      "invoices": [
+        "invoice_id",
+        "invoice_number",
+        "payment_id",
+        "issued_date",
+        "total_amount_in_words",
+        "pdf_file_url",
+        "file_id",
+        "notes",
+        "created_by_user_id"
+      ]
+    }
+  }
+}

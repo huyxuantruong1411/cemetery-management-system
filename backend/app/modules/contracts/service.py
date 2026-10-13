@@ -6,9 +6,11 @@ from typing import List, Optional
 
 import sqlalchemy as sa
 from fastapi import HTTPException, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session, joinedload
 
 from app.modules.audit.models import AuditLog
+from app.modules.auth.models import User
 from app.modules.catalog.models import PriceItem, PriceList
 from app.modules.contracts.models import (
     BurialAnnex,
@@ -139,17 +141,43 @@ class ContractService:
         unit_price = data.land_unit_price
         if unit_price is None or unit_price <= 0:
             today = date.today()
+            # 1. Look up specific plot_type_id or LAND_{type_id}
             active_price_item = (
                 db.query(PriceItem)
                 .join(PriceList, PriceList.price_list_id == PriceItem.price_list_id)
                 .filter(
                     PriceList.is_active == True,  # noqa: E712
                     PriceList.effective_from_date <= today,
-                    PriceList.effective_to_date >= today,
-                    PriceItem.item_code == f"LAND_{plot.type_id}",
+                    or_(
+                        PriceList.effective_to_date.is_(None),
+                        PriceList.effective_to_date >= today,
+                    ),
+                    or_(
+                        PriceItem.plot_type_id == plot.type_id,
+                        PriceItem.item_code == f"LAND_{plot.type_id}",
+                    ),
                 )
                 .first()
             )
+            # 2. Look up standard catalog item code by slot count (GIA-DAT-DON, GIA-DAT-DOI, GIA-DAT-GIA-TOC)
+            if not active_price_item and plot.plot_type:
+                slots = plot.plot_type.default_slots
+                slot_code = "GIA-DAT-DON" if slots == 1 else ("GIA-DAT-DOI" if slots == 2 else "GIA-DAT-GIA-TOC")
+                active_price_item = (
+                    db.query(PriceItem)
+                    .join(PriceList, PriceList.price_list_id == PriceItem.price_list_id)
+                    .filter(
+                        PriceList.is_active == True,  # noqa: E712
+                        PriceList.effective_from_date <= today,
+                        or_(
+                            PriceList.effective_to_date.is_(None),
+                            PriceList.effective_to_date >= today,
+                        ),
+                        PriceItem.item_code == slot_code,
+                    )
+                    .first()
+                )
+            # 3. Fallback to general land item in price list
             if not active_price_item:
                 active_price_item = (
                     db.query(PriceItem)
@@ -157,15 +185,20 @@ class ContractService:
                     .filter(
                         PriceList.is_active == True,  # noqa: E712
                         PriceList.effective_from_date <= today,
-                        PriceList.effective_to_date >= today,
+                        or_(
+                            PriceList.effective_to_date.is_(None),
+                            PriceList.effective_to_date >= today,
+                        ),
+                        PriceItem.item_code.like("GIA-DAT%"),
                     )
                     .first()
                 )
-
-            if active_price_item:
-                unit_price = active_price_item.unit_price
-            else:
-                unit_price = Decimal("50000000.00")
+            if not active_price_item:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Chưa có đơn giá niêm yết hiệu lực cho loại đất mộ '{plot.type_id}'. Vui lòng liên hệ ban quản trị để cấu hình bảng giá.",
+                )
+            unit_price = active_price_item.unit_price
 
         template_id = data.template_id
         template_version = None
@@ -1552,16 +1585,21 @@ class ContractService:
     # 8. DTO SERIALIZATION
     # ==============================================================================
     @classmethod
-    def get_contract_detail_dto(cls, db: Session, contract_id: int) -> ContractDetailResponse:
+    def get_contract_detail_dto(
+        cls, db: Session, contract_id: int, current_user: Optional[User] = None
+    ) -> ContractDetailResponse:
         contract = cls.get_contract(db, contract_id)
 
         customer_brief = None
         if contract.customer:
+            cid = contract.customer.citizen_id
+            if current_user and getattr(current_user, "role", None) == "CARETAKER":
+                cid = cid[:3] + "******" + cid[-3:] if len(cid) >= 6 else "******"
             customer_brief = CustomerBrief(
                 customer_id=contract.customer.customer_id,
                 customer_code=contract.customer.customer_code,
                 full_name=contract.customer.full_name,
-                citizen_id=contract.customer.citizen_id,
+                citizen_id=cid,
                 phone_number=contract.customer.phone_number,
                 address=contract.customer.address,
                 date_of_birth=contract.customer.date_of_birth,

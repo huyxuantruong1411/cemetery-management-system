@@ -7,6 +7,7 @@ from fastapi import HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.modules.auth.models import User
 from app.modules.documents.models import DocumentVersion, FileObject
 from app.modules.documents.schemas import LinkDocumentRequest
 from app.storage.minio_adapter import storage_adapter
@@ -98,14 +99,65 @@ class DocumentService:
         return file_obj
 
     @classmethod
-    def get_file(cls, db: Session, file_id: str) -> tuple[FileObject, bytes]:
-        """Fetch FileObject record and download object content from MinIO."""
+    def get_file(
+        cls, db: Session, file_id: str, user: User | None = None
+    ) -> tuple[FileObject, bytes]:
+        """Fetch FileObject record and download object content from MinIO with authorization."""
         file_obj = db.get(FileObject, file_id)
         if not file_obj or file_obj.state == "DELETED":
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Tệp tài liệu không tồn tại hoặc đã bị xóa.",
             )
+
+        if user:
+            is_admin = any(r.role_name.upper() == "ADMIN" for r in user.roles)
+            if not is_admin:
+                # 1. Check if bound to an Invoice (Receipt)
+                from app.modules.finance.models import Invoice
+
+                invoice = db.query(Invoice).filter(Invoice.file_id == file_id).first()
+                if invoice:
+                    has_finance_read = any(
+                        r.role_name.upper() in ("ADMIN", "ACCOUNTANT")
+                        or any(p.resource == "finance" for p in r.permissions)
+                        for r in user.roles
+                    )
+                    if not has_finance_read:
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Bạn không có quyền truy cập chứng từ thanh toán/biên lai này.",
+                        )
+
+                # 2. Check if bound to a ReportExport
+                from app.modules.reports.models import ReportExport
+
+                report_export = (
+                    db.query(ReportExport).filter(ReportExport.file_id == file_id).first()
+                )
+                if report_export:
+                    if report_export.report_type == "REVENUE":
+                        has_finance_access = any(
+                            r.role_name.upper() in ("ADMIN", "ACCOUNTANT")
+                            or any(p.resource == "finance" for p in r.permissions)
+                            for r in user.roles
+                        )
+                        if not has_finance_access:
+                            raise HTTPException(
+                                status_code=status.HTTP_403_FORBIDDEN,
+                                detail="Bạn không có quyền truy cập tệp xuất báo cáo tài chính này.",
+                            )
+                    elif report_export.requester_id != user.user_id:
+                        has_reports_export = any(
+                            p.action == "export" and p.resource == "reports"
+                            for r in user.roles
+                            for p in r.permissions
+                        )
+                        if not has_reports_export:
+                            raise HTTPException(
+                                status_code=status.HTTP_403_FORBIDDEN,
+                                detail="Bạn không có quyền truy cập tệp xuất báo cáo này.",
+                            )
 
         content, _ = storage_adapter.get_object(file_obj.object_key)
         return file_obj, content

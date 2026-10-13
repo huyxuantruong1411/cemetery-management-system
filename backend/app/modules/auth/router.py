@@ -31,7 +31,7 @@ def list_staff(
     _: User = Depends(get_current_user),
 ) -> list[StaffBriefResponse]:
     """Lấy danh sách nhân sự đang hoạt động để phân công ca chăm sóc, thi công."""
-    users = db.query(User).filter(User.is_active.is_(True)).all()
+    users = db.query(User).filter(User.is_active == True).all()  # noqa: E712
     return [
         StaffBriefResponse(
             user_id=u.user_id,
