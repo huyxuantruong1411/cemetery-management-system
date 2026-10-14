@@ -1,5 +1,5 @@
 import uuid
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient
@@ -29,6 +29,11 @@ def get_auth_headers(role: str = "marketing") -> dict:
         resp = client.post(
             f"{settings.API_V1_PREFIX}/auth/login",
             json={"username": "marketing", "password": "Marketing2026!"},
+        )
+    elif role == "caretaker":
+        resp = client.post(
+            f"{settings.API_V1_PREFIX}/auth/login",
+            json={"username": "caretaker", "password": "Caretaker2026!"},
         )
     else:
         resp = client.post(
@@ -235,6 +240,7 @@ def test_burial_annex_requires_verified_death_certificate(
         certificate_number="GBT-TEST-001",
         issuing_authority="UBND Phường 1",
         issue_date=date(2026, 1, 16),
+        file_id=sample_scan_file,
         is_verified=True,
         verified_at=datetime.now(timezone.utc).replace(tzinfo=None),
         verified_by=get_admin_user_id(),
@@ -271,6 +277,7 @@ def test_kim_tinh_burial_activation_permanently_locks_plot(
             certificate_number=f"GBT-KT-{uuid.uuid4().hex[:6]}",
             issuing_authority="UBND Phường 1",
             issue_date=date(2026, 1, 16),
+            file_id=sample_scan_file,
             is_verified=True,
             verified_at=datetime.now(timezone.utc).replace(tzinfo=None),
             verified_by=get_admin_user_id(),
@@ -302,11 +309,11 @@ def test_kim_tinh_burial_activation_permanently_locks_plot(
         plot = db.query(Plot).filter(Plot.plot_id == f["plot_kt_id"]).first()
         slot = db.query(PlotSlot).filter(PlotSlot.plot_id == f["plot_kt_id"]).first()
 
-        # 3. Create burial annex
+        # 3. Create burial annex (same-day burial so it locks immediately upon activation)
         annex_payload = {
             "deceased_id": f["dec_1_id"],
             "slot_id": slot.slot_id,
-            "burial_date": "2026-10-10",
+            "burial_date": date.today().isoformat(),
             "is_kim_tinh": True,
             "additional_amount": 10000000.0,
             "construction_notes": "Xây kim tĩnh đúc bê tông cốt thép",
@@ -412,7 +419,9 @@ def test_kim_tinh_immutability_blocks_exhumation_and_transfer(auth_headers, life
     assert "Kim Tĩnh" in tr_res.json()["detail"]
 
 
-def test_concurrent_burial_same_deceased_blocked(auth_headers, lifecycle_fixtures):
+def test_concurrent_burial_same_deceased_blocked(
+    auth_headers, lifecycle_fixtures, sample_scan_file
+):
     """Slot Occupancy Invariant: 1 deceased person cannot be buried concurrently in 2 slots."""
     f = lifecycle_fixtures
     db = SessionLocal()
@@ -427,12 +436,14 @@ def test_concurrent_burial_same_deceased_blocked(auth_headers, lifecycle_fixture
                 certificate_number="GBT-TEST-001",
                 issuing_authority="UBND Phường 1",
                 issue_date=date(2026, 1, 16),
+                file_id=sample_scan_file,
                 is_verified=True,
                 verified_at=datetime.now(timezone.utc).replace(tzinfo=None),
                 verified_by=get_admin_user_id(),
             )
             db.add(cert)
         else:
+            cert.file_id = sample_scan_file
             cert.is_verified = True
 
         # Ensure dec_1 is occupied in plot_kt slot
@@ -723,6 +734,7 @@ def test_cremation_contract_requires_death_cert_and_activates(
             certificate_number="GBT-TEST-002",
             issuing_authority="UBND Phường 3",
             issue_date=date(2026, 2, 21),
+            file_id=sample_scan_file,
             is_verified=True,
             verified_at=datetime.now(timezone.utc).replace(tzinfo=None),
             verified_by=get_admin_user_id(),
@@ -758,5 +770,210 @@ def test_cremation_contract_requires_death_cert_and_activates(
             .first()
         )
         assert outbox is not None
+    finally:
+        db.close()
+
+
+def test_future_burial_reserves_slot_until_physical_confirmation(
+    auth_headers, lifecycle_fixtures, sample_scan_file
+):
+    """R05 / BA-09 / BA-14: Future burial activation sets slot to RESERVED without locking plot; confirmation by Caretaker marks OCCUPIED and locks Kim Tinh."""
+    f = lifecycle_fixtures
+    db = SessionLocal()
+    try:
+        caretaker_headers = get_auth_headers("caretaker")
+
+        # 1. Purchase land for Plot KT
+        contract_res = client.post(
+            f"{settings.API_V1_PREFIX}/contracts/land-purchase",
+            json={
+                "customer_id": f["cust_a_id"],
+                "plot_id": f["plot_kt_id"],
+                "land_unit_price": 50000000.0,
+            },
+            headers=auth_headers,
+        )
+        assert contract_res.status_code == 201
+        contract_id = contract_res.json()["contract_id"]
+
+        act_contract_res = client.post(
+            f"{settings.API_V1_PREFIX}/contracts/{contract_id}/activate",
+            json={"signed_scan_file_id": sample_scan_file, "signed_at": "2026-10-03"},
+            headers=auth_headers,
+        )
+        assert act_contract_res.status_code == 200
+
+        plot = db.query(Plot).filter(Plot.plot_id == f["plot_kt_id"]).first()
+        slot = db.query(PlotSlot).filter(PlotSlot.plot_id == f["plot_kt_id"]).first()
+
+        # Ensure dec_1 has verified cert
+        cert = DeathCertificate(
+            deceased_id=f["dec_1_id"],
+            certificate_number=f"GBT-FUT-{uuid.uuid4().hex[:6]}",
+            issuing_authority="UBND Phường 1",
+            issue_date=date(2026, 1, 16),
+            file_id=sample_scan_file,
+            is_verified=True,
+            verified_at=datetime.now(timezone.utc).replace(tzinfo=None),
+            verified_by=get_admin_user_id(),
+        )
+        db.add(cert)
+        db.commit()
+
+        # 2. Create future burial annex (5 days ahead)
+        future_date = (date.today() + timedelta(days=5)).isoformat()
+        annex_payload = {
+            "deceased_id": f["dec_1_id"],
+            "slot_id": slot.slot_id,
+            "burial_date": future_date,
+            "is_kim_tinh": True,
+            "additional_amount": 10000000.0,
+            "construction_notes": "Kim tĩnh tương lai",
+        }
+        annex_res = client.post(
+            f"{settings.API_V1_PREFIX}/contracts/{contract_id}/annexes/burial",
+            json=annex_payload,
+            headers=auth_headers,
+        )
+        assert annex_res.status_code == 201
+        annex_id = annex_res.json()["annexes"][-1]["annex_id"]
+
+        # 3. Activate burial annex -> Sets RESERVED, does NOT occupy or lock Kim Tinh yet
+        act_res = client.post(
+            f"{settings.API_V1_PREFIX}/contracts/annexes/{annex_id}/activate",
+            json={"signed_scan_file_id": sample_scan_file, "signed_at": "2026-10-03"},
+            headers=auth_headers,
+        )
+        assert act_res.status_code == 200
+
+        db.refresh(slot)
+        db.refresh(plot)
+        assert slot.status == "EMPTY"
+        assert plot.is_locked is False
+        assert plot.status != "OCCUPIED"
+
+        # 4. Caretaker confirms physical burial on site
+        conf_res = client.post(
+            f"{settings.API_V1_PREFIX}/contracts/annexes/{annex_id}/confirm-burial",
+            json={
+                "proof_file_id": sample_scan_file,
+                "notes": "Caretaker đã an táng thực địa hoàn tất",
+            },
+            headers=caretaker_headers,
+        )
+        assert conf_res.status_code == 200
+
+        db.refresh(slot)
+        db.refresh(plot)
+        assert slot.status == "OCCUPIED"
+        assert plot.status == "OCCUPIED"
+        assert plot.is_kim_tinh is True
+        assert plot.is_locked is True
+    finally:
+        db.close()
+
+
+def test_transfer_contract_allows_burial_and_care_annexes(
+    auth_headers, lifecycle_fixtures, sample_scan_file
+):
+    """User Invariant: Transfer contract acts as land purchase for buyer; allows burial and care annexes."""
+    from app.modules.care.models import CarePackage
+
+    f = lifecycle_fixtures
+    db = SessionLocal()
+    try:
+        plot = db.query(Plot).filter(Plot.plot_id == f["plot_std_id"]).first()
+        plot.status = "OWNED_EMPTY"
+        plot.owner_id = f["cust_a_id"]
+        for s in plot.slots:
+            s.status = "EMPTY"
+            s.current_deceased_id = None
+        db.commit()
+
+        # 1. Create and activate Transfer contract to Cust B
+        tr_payload = {
+            "seller_id": f["cust_a_id"],
+            "buyer_id": f["cust_b_id"],
+            "plot_id": plot.plot_id,
+            "commission_fee": 3000000.0,
+            "transfer_reason": "Chuyển nhượng quyền sử dụng đất",
+        }
+        tr_res = client.post(
+            f"{settings.API_V1_PREFIX}/contracts/transfer",
+            json=tr_payload,
+            headers=auth_headers,
+        )
+        assert tr_res.status_code == 201
+        tr_id = tr_res.json()["contract_id"]
+
+        act_res = client.post(
+            f"{settings.API_V1_PREFIX}/contracts/{tr_id}/activate",
+            json={"signed_scan_file_id": sample_scan_file, "signed_at": "2026-10-03"},
+            headers=auth_headers,
+        )
+        assert act_res.status_code == 200
+
+        # Ensure dec_2 has verified cert
+        cert = DeathCertificate(
+            deceased_id=f["dec_2_id"],
+            certificate_number=f"GBT-TR-{uuid.uuid4().hex[:6]}",
+            issuing_authority="UBND Phường 2",
+            issue_date=date(2026, 2, 21),
+            file_id=sample_scan_file,
+            is_verified=True,
+            verified_at=datetime.now(timezone.utc).replace(tzinfo=None),
+            verified_by=get_admin_user_id(),
+        )
+        db.add(cert)
+        db.commit()
+
+        slot = db.query(PlotSlot).filter(PlotSlot.plot_id == plot.plot_id).first()
+
+        # 2. Buyer B adds Burial Annex under Transfer contract
+        burial_payload = {
+            "deceased_id": f["dec_2_id"],
+            "slot_id": slot.slot_id,
+            "burial_date": date.today().isoformat(),
+            "is_kim_tinh": False,
+            "additional_amount": 5000000.0,
+            "notes": "An táng trên đất chuyển nhượng",
+        }
+        b_annex_res = client.post(
+            f"{settings.API_V1_PREFIX}/contracts/{tr_id}/annexes/burial",
+            json=burial_payload,
+            headers=auth_headers,
+        )
+        assert b_annex_res.status_code == 201
+        assert len(b_annex_res.json()["annexes"]) >= 1
+
+        # 3. Buyer B adds Care Annex under Transfer contract via /care/annexes
+        pkg = db.query(CarePackage).first()
+        if not pkg:
+            pkg = CarePackage(
+                package_code=f"PKG-{uuid.uuid4().hex[:6]}",
+                package_name="Chăm sóc cơ bản",
+                cycle_months=1,
+                base_price=300000.0,
+                is_active=True,
+            )
+            db.add(pkg)
+            db.commit()
+
+        care_payload = {
+            "contract_id": tr_id,
+            "package_id": pkg.package_id,
+            "cycle_months": 12,
+            "recurring_price": 300000.0,
+            "valid_from": "2026-11-01",
+            "valid_to": "2027-11-01",
+            "notes": "Chăm sóc mộ chuyển nhượng",
+        }
+        c_annex_res = client.post(
+            f"{settings.API_V1_PREFIX}/care/annexes",
+            json=care_payload,
+            headers=auth_headers,
+        )
+        assert c_annex_res.status_code == 201
+        assert c_annex_res.json()["contract_id"] == tr_id
     finally:
         db.close()

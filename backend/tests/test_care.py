@@ -263,17 +263,15 @@ def test_assign_caretaker_with_conflict_warning():
 
         admin_token = get_admin_token()
 
-        # Assign caretaker during unavailability
+        # Assign caretaker during unavailability -> must fail with 409 Conflict (KT19 / R08)
         resp = client.patch(
             f"/api/v1/care/schedules/{schedule.schedule_id}/assign",
             headers={"Authorization": f"Bearer {admin_token}"},
             json={"caretaker_id": caretaker.user_id},
         )
-        assert resp.status_code == 200, resp.text
-        data = resp.json()
-        assert data["caretaker_id"] == caretaker.user_id
-        assert data["has_conflict"] is True
-        assert "Nghỉ phép gia đình" in data["conflict_reason"]
+        assert resp.status_code == 409, resp.text
+        assert "Xung đột lịch" in resp.json()["detail"]
+        assert "Nghỉ phép gia đình" in resp.json()["detail"]
     finally:
         db.close()
 

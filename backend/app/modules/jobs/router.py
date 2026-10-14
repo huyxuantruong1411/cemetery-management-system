@@ -84,12 +84,7 @@ def list_jobs(
     _: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Any:
-    return (
-        db.query(BackgroundJob)
-        .order_by(BackgroundJob.created_at.desc())
-        .limit(limit)
-        .all()
-    )
+    return db.query(BackgroundJob).order_by(BackgroundJob.created_at.desc()).limit(limit).all()
 
 
 @router.post(

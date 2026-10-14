@@ -185,14 +185,10 @@ class CareService:
         )
 
         if conflict:
-            has_conflict = True
-            conflict_msg = (
-                f"Nhân viên {user.full_name} có lịch nghỉ/bận từ {conflict.start_date} "
-                f"đến {conflict.end_date} (Lý do: {conflict.reason})"
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Xung đột lịch làm việc: Nhân viên {user.full_name} có lịch nghỉ/bận từ {conflict.start_date} đến {conflict.end_date} (Lý do: {conflict.reason})",
             )
-        else:
-            has_conflict = False
-            conflict_msg = None
 
         schedule.caretaker_id = caretaker_id
         db.commit()
@@ -204,14 +200,12 @@ class CareService:
             action_type="ASSIGN_CARETAKER",
             target_entity="care_schedules",
             target_id=str(schedule.schedule_id),
-            post_change_values=json.dumps(
-                {"caretaker_id": caretaker_id, "has_conflict": has_conflict}
-            ),
+            post_change_values=json.dumps({"caretaker_id": caretaker_id, "has_conflict": False}),
         )
         db.add(audit)
         db.commit()
 
-        return schedule, has_conflict, conflict_msg
+        return schedule, False, None
 
     @staticmethod
     def update_checklist_item(
@@ -265,7 +259,8 @@ class CareService:
 
         if not file_id:
             raise HTTPException(
-                status_code=400, detail="Bắt buộc phải cung cấp file_id của tệp minh chứng hợp lệ (READY)"
+                status_code=400,
+                detail="Bắt buộc phải cung cấp file_id của tệp minh chứng hợp lệ (READY)",
             )
 
         file_obj = db.query(FileObject).filter(FileObject.file_id == file_id).first()
@@ -275,6 +270,11 @@ class CareService:
             raise HTTPException(
                 status_code=400,
                 detail=f"Tệp minh chứng chưa sẵn sàng (trạng thái: {file_obj.state}). Chỉ chấp nhận tệp READY.",
+            )
+        if not file_obj.mime_type or not file_obj.mime_type.startswith("image/"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ảnh minh chứng chăm sóc phải là tệp hình ảnh hợp lệ (JPEG, PNG, WEBP).",
             )
 
         evidence = CareMediaEvidence(
@@ -320,15 +320,18 @@ class CareService:
                 detail=f"Không thể đóng ca: Còn {len(incomplete_required)} hạng mục bắt buộc chưa hoàn tất ({', '.join(incomplete_required)})",
             )
 
-        # G12 Gate Invariant 2: Check photo evidence
+        # G12 Gate Invariant 2: Check photo evidence (must be READY image)
         valid_evidence_count = 0
         for ev in schedule.media_evidences:
             if ev.file_id:
                 fo = db.query(FileObject).filter(FileObject.file_id == ev.file_id).first()
-                if fo and fo.state == "READY":
+                if (
+                    fo
+                    and fo.state == "READY"
+                    and fo.mime_type
+                    and fo.mime_type.startswith("image/")
+                ):
                     valid_evidence_count += 1
-            elif ev.media_url:
-                valid_evidence_count += 1
 
         if valid_evidence_count == 0:
             raise HTTPException(
@@ -496,6 +499,11 @@ class CareService:
             raise HTTPException(
                 status_code=400,
                 detail="Hợp đồng gốc phải ở trạng thái ACTIVE mới được lập phụ lục chăm sóc",
+            )
+        if contract.contract_type not in ("LAND_PURCHASE", "TRANSFER"):
+            raise HTTPException(
+                status_code=400,
+                detail="Phụ lục chăm sóc chỉ có thể gắn vào hợp đồng mua bán đất (LAND_PURCHASE) hoặc hợp đồng chuyển nhượng (TRANSFER).",
             )
 
         pkg = db.query(CarePackage).filter(CarePackage.package_id == data.package_id).first()

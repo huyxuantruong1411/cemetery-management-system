@@ -264,6 +264,7 @@ class ProfileService:
 
         # Create death certificate record if provided
         if data.death_certificate:
+            has_valid_file = False
             if data.death_certificate.file_id:
                 file_obj = db.get(FileObject, data.death_certificate.file_id)
                 if not file_obj or file_obj.state != "READY":
@@ -271,6 +272,7 @@ class ProfileService:
                         status_code=status.HTTP_400_BAD_REQUEST,
                         detail="Tệp đính kèm chưa sẵn sàng hoặc không tồn tại",
                     )
+                has_valid_file = True
 
             cert = DeathCertificate(
                 deceased_id=profile.deceased_id,
@@ -280,12 +282,12 @@ class ProfileService:
                 scan_file_url=data.death_certificate.scan_file_url,
                 file_id=data.death_certificate.file_id,
                 notes=data.death_certificate.notes,
-                is_verified=True,
-                verified_at=datetime.now(timezone.utc),
-                verified_by=user_id,
+                is_verified=has_valid_file,
+                verified_at=datetime.now(timezone.utc) if has_valid_file else None,
+                verified_by=user_id if has_valid_file else None,
             )
             db.add(cert)
-            profile.has_death_certificate = True
+            profile.has_death_certificate = has_valid_file
 
         db.commit()
         return ProfileService.get_deceased_profile(db, profile.deceased_id)
@@ -467,6 +469,7 @@ class ProfileService:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy hồ sơ người mất"
             )
 
+        has_valid_file = False
         if data.file_id:
             file_obj = db.get(FileObject, data.file_id)
             if not file_obj or file_obj.state != "READY":
@@ -474,6 +477,7 @@ class ProfileService:
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Tệp đính kèm chưa sẵn sàng hoặc không tồn tại",
                 )
+            has_valid_file = True
 
         cert = db.execute(
             select(DeathCertificate).where(DeathCertificate.deceased_id == deceased_id)
@@ -489,10 +493,15 @@ class ProfileService:
                 cert.file_id = data.file_id
             if data.notes:
                 cert.notes = data.notes
-            cert.is_verified = True
-            cert.verified_at = datetime.now(timezone.utc)
-            cert.verified_by = user_id
+
+            target_file_id = data.file_id or cert.file_id
+            target_file_obj = db.get(FileObject, target_file_id) if target_file_id else None
+            is_ready = bool(target_file_obj and target_file_obj.state == "READY")
+            cert.is_verified = is_ready
+            cert.verified_at = datetime.now(timezone.utc) if is_ready else None
+            cert.verified_by = user_id if is_ready else None
             cert.rejection_reason = None
+            profile.has_death_certificate = is_ready
         else:
             cert = DeathCertificate(
                 deceased_id=deceased_id,
@@ -502,13 +511,13 @@ class ProfileService:
                 scan_file_url=data.scan_file_url,
                 file_id=data.file_id,
                 notes=data.notes,
-                is_verified=True,
-                verified_at=datetime.now(timezone.utc),
-                verified_by=user_id,
+                is_verified=has_valid_file,
+                verified_at=datetime.now(timezone.utc) if has_valid_file else None,
+                verified_by=user_id if has_valid_file else None,
             )
             db.add(cert)
+            profile.has_death_certificate = has_valid_file
 
-        profile.has_death_certificate = True
         db.commit()
         db.refresh(cert)
         return ProfileService._to_certificate_response(cert)
@@ -535,6 +544,17 @@ class ProfileService:
             )
 
         if data.is_verified:
+            if not cert.file_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Không thể xác minh giấy báo tử khi chưa tải lên tệp chứng từ scan.",
+                )
+            file_obj = db.get(FileObject, cert.file_id)
+            if not file_obj or file_obj.state != "READY":
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Tệp chứng từ '{cert.file_id}' chưa ở trạng thái sẵn sàng (READY).",
+                )
             cert.is_verified = True
             cert.verified_at = datetime.now(timezone.utc)
             cert.verified_by = verifier_user_id
@@ -565,12 +585,11 @@ class ProfileService:
                 DeathCertificate.is_verified == True,  # noqa: E712
             )
         ).scalar_one_or_none()
-        if not cert:
+        if not cert or not cert.file_id:
             return False
-        if cert.file_id:
-            file_obj = db.get(FileObject, cert.file_id)
-            if not file_obj or file_obj.state != "READY":
-                return False
+        file_obj = db.get(FileObject, cert.file_id)
+        if not file_obj or file_obj.state != "READY":
+            return False
         return True
 
     # ==========================================================================
@@ -761,10 +780,14 @@ class ProfileService:
         query = (
             select(CustomerDeceasedRelation)
             .join(Customer, CustomerDeceasedRelation.customer_id == Customer.customer_id)
-            .join(DeceasedProfile, CustomerDeceasedRelation.deceased_id == DeceasedProfile.deceased_id)
+            .join(
+                DeceasedProfile, CustomerDeceasedRelation.deceased_id == DeceasedProfile.deceased_id
+            )
             .options(
                 joinedload(CustomerDeceasedRelation.customer),
-                joinedload(CustomerDeceasedRelation.deceased).joinedload(DeceasedProfile.current_slot).joinedload(PlotSlot.plot),
+                joinedload(CustomerDeceasedRelation.deceased)
+                .joinedload(DeceasedProfile.current_slot)
+                .joinedload(PlotSlot.plot),
             )
             .order_by(CustomerDeceasedRelation.relation_id.desc())
         )

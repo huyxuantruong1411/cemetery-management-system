@@ -487,6 +487,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
     const q = memorialQuery.trim();
     if (q.length < 2) {
       if (q.length === 0) setMemorialResults([]);
+      setErrorMsg(null);
       return;
     }
 
@@ -496,6 +497,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
       try {
         const res = await fetch(`/api/v1/profiles/public/memorials?q=${encodeURIComponent(q)}`);
         if (res.ok) {
+          setErrorMsg(null);
           const data = await res.json();
           if (Array.isArray(data)) {
             setMemorialResults(data);
@@ -2091,9 +2093,11 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                   onClick={async () => {
                     if (memorialQuery.trim()) {
                       setIsMemorialLoading(true);
+                      setErrorMsg(null);
                       try {
                         const res = await fetch(`/api/v1/profiles/public/memorials?q=${encodeURIComponent(memorialQuery.trim())}`);
                         if (res.ok) {
+                          setErrorMsg(null);
                           const data = await res.json();
                           setMemorialResults(Array.isArray(data) ? data : []);
                         } else {

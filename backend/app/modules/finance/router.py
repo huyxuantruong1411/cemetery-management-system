@@ -172,7 +172,9 @@ def download_payment_receipt_pdf(payment_id: int, db: Session = Depends(get_db))
         return Response(
             content=content,
             media_type=mime_type or "application/pdf",
-            headers={"Content-Disposition": f"inline; filename=\"{safe_ascii}\"; filename*=UTF-8''{encoded_name}"},
+            headers={
+                "Content-Disposition": f"inline; filename=\"{safe_ascii}\"; filename*=UTF-8''{encoded_name}"
+            },
         )
     except Exception as e:
         raise HTTPException(

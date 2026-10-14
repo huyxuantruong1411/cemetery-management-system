@@ -23,7 +23,7 @@ import type {
 import { Pagination, usePagination } from '../common/Pagination'
 
 export const CareModule: React.FC = () => {
-  const { accessToken: token, user, hasPermission } = useAuth()
+  const { accessToken: token, user } = useAuth()
 
   // Main state
   const [schedules, setSchedules] = useState<CareScheduleBrief[]>([])
@@ -349,10 +349,10 @@ export const CareModule: React.FC = () => {
     overdue: schedules.filter((s) => s.status === 'OVERDUE').length,
   }
 
-  const canManageCare =
-    hasPermission('care:write') ||
-    hasPermission('care:execute') ||
-    (user?.roles ? user.roles.some((r) => ['ADMIN', 'OPERATIONS', 'CARETAKER'].includes(r.role_name)) : false)
+  // Only ADMIN and CARETAKER have field coordination rights (R09 / actor-policy)
+  const isCareCoordinator =
+    user?.roles ? user.roles.some((r) => ['ADMIN', 'CARETAKER'].includes(r.role_name.toUpperCase())) : false
+  const canManageCare = isCareCoordinator
 
   // ---------------------------------------------------------------------------
   // Render

@@ -16,7 +16,7 @@ class CustomerBrief(BaseModel):
     full_name: str
     citizen_id: str
     phone_number: str
-    address: str
+    address: Optional[str] = None
     date_of_birth: Optional[date] = None
 
 
@@ -295,3 +295,8 @@ class ContractDetailResponse(BaseModel):
     plot: Optional[PlotBrief] = None
     receivable: Optional[ReceivableBrief] = None
     annexes: List[ContractAnnexResponse] = []
+
+
+class ConfirmBurialRequest(BaseModel):
+    proof_file_id: Optional[str] = None
+    notes: Optional[str] = None

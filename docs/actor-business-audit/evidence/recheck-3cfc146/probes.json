@@ -1,0 +1,519 @@
+{
+  "commit": "3cfc146",
+  "fixture": "SYNTHETIC Test DB, real MinIO. Services commit normally to nested savepoints in an outer rollback; not independent durable commit/concurrency proof.",
+  "steps": [
+    {
+      "label": "/profiles/customers",
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/profiles/customers",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "/profiles/customers",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/profiles/customers",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'customers:write'."
+    },
+    {
+      "label": "/contracts/2147483646/submit-signing",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/contracts/2147483646/submit-signing",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'contracts:write'."
+    },
+    {
+      "label": "/profiles/customers",
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/profiles/customers",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'customers:write'."
+    },
+    {
+      "label": "/contracts/2147483646/submit-signing",
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/contracts/2147483646/submit-signing",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'contracts:write'."
+    },
+    {
+      "label": "Certificate with no file",
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/profiles/deceased",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "Caretaker PII masking actual ORM User",
+      "actor": "caretaker",
+      "method": "GET",
+      "path": "/contracts/141",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "Caretaker full legal PDF",
+      "actor": "caretaker",
+      "method": "GET",
+      "path": "/contracts/141/pdf",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "/documents/upload",
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/documents/upload",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "/documents/versions",
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/documents/versions",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "Caretaker private signed PDF remains readable",
+      "actor": "caretaker",
+      "method": "GET",
+      "path": "/documents/d965f6c8075942e6bea20092473cd997/download",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "Caretaker can link legal version despite no contracts write",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/documents/versions",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "Create burial without certificate file via HTTP",
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/contracts/141/annexes/burial",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "/contracts/annexes/80/submit-signing",
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/contracts/annexes/80/submit-signing",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "Legal activation before future burial date",
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/contracts/annexes/80/activate",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "Register care without signed scan",
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/care/annexes",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "/care/schedules/generate",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/care/schedules/generate",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "Conflict assignment still accepted",
+      "actor": "caretaker",
+      "method": "PATCH",
+      "path": "/care/schedules/28/assign",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "POST alias now supported",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/care/schedules/28/assign",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "Marketing can coordinate care with broad care write",
+      "actor": "marketing",
+      "method": "PATCH",
+      "path": "/care/schedules/28/assign",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "/care/checklist-items/76",
+      "actor": "caretaker",
+      "method": "PATCH",
+      "path": "/care/checklist-items/76",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "Old URL-only evidence now blocked",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/care/schedules/28/evidence",
+      "status": 400,
+      "detail": "Bắt buộc phải cung cấp file_id của tệp minh chứng hợp lệ (READY)"
+    },
+    {
+      "label": "Use unrelated legal PDF as care photo",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/care/schedules/28/evidence",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "Close care using unrelated PDF",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/care/schedules/28/close",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "Closed checklist guard now blocks",
+      "actor": "caretaker",
+      "method": "PATCH",
+      "path": "/care/checklist-items/76",
+      "status": 400,
+      "detail": "Ca chăm sóc đã ĐÓNG (CLOSED), không được phép chỉnh sửa checklist."
+    },
+    {
+      "label": "Closed add evidence now blocks",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/care/schedules/28/evidence",
+      "status": 400,
+      "detail": "Ca chăm sóc đã ĐÓNG (CLOSED), không thể thêm ảnh minh chứng mới."
+    },
+    {
+      "label": "Wrong CARE construction basis now blocked",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/construction/orders",
+      "status": 400,
+      "detail": "Phụ lục hợp đồng loại 'CARE' không phải phụ lục thi công/an táng hợp lệ."
+    },
+    {
+      "label": "Valid construction fixture",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/construction/orders",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "Old direct completion bypass now blocked",
+      "actor": "caretaker",
+      "method": "PUT",
+      "path": "/construction/orders/18",
+      "status": 400,
+      "detail": "Không thể hoàn thành lệnh thi công: vẫn còn 5 công việc bắt buộc chưa hoàn tất: 'Khảo sát & định vị khuôn viên ô mộ', 'Đào móng & đổ bê tông lót nền', 'Xây tường gạch & hố kim tĩnh (nếu có)', 'Ốp đá hoa cương & lắp đặt bia mộ', 'Dọn dẹp vệ sinh & nghiệm thu bàn giao'."
+    },
+    {
+      "label": "Complete required task using nonexistent URL",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/construction/tasks/77/complete",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "Complete required task using nonexistent URL",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/construction/tasks/78/complete",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "Complete required task using nonexistent URL",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/construction/tasks/79/complete",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "Complete required task using nonexistent URL",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/construction/tasks/80/complete",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "Complete required task using nonexistent URL",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/construction/tasks/81/complete",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "Complete construction without READY file evidence",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/construction/orders/18/complete",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "Attach evidence after order COMPLETED",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/construction/tasks/77/evidences",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "caretaker exports REVENUE",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/reports/export",
+      "status": 403,
+      "detail": "Bạn không có quyền xuất báo cáo doanh thu tài chính."
+    },
+    {
+      "label": "caretaker exports CONTRACTS",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/reports/export",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "caretaker downloads CONTRACTS",
+      "actor": "caretaker",
+      "method": "GET",
+      "path": "/reports/exports/12/download",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "caretaker exports OCCUPANCY",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/reports/export",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "caretaker downloads OCCUPANCY",
+      "actor": "caretaker",
+      "method": "GET",
+      "path": "/reports/exports/13/download",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "caretaker exports OPERATIONS",
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/reports/export",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "caretaker downloads OPERATIONS",
+      "actor": "caretaker",
+      "method": "GET",
+      "path": "/reports/exports/14/download",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "marketing exports REVENUE",
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/reports/export",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "marketing downloads REVENUE",
+      "actor": "marketing",
+      "method": "GET",
+      "path": "/reports/exports/15/download",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "accountant exports OCCUPANCY",
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/reports/export",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "accountant downloads OCCUPANCY",
+      "actor": "accountant",
+      "method": "GET",
+      "path": "/reports/exports/16/download",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "Accountant financial export fixture",
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/reports/export",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "Business endpoint denies another revenue exporter",
+      "actor": "marketing",
+      "method": "GET",
+      "path": "/reports/exports/17/download",
+      "status": 403,
+      "detail": "Bạn không có quyền tải bản xuất báo cáo này"
+    },
+    {
+      "label": "Generic file bypass of revenue export ownership",
+      "actor": "marketing",
+      "method": "GET",
+      "path": "/documents/report_exp-202610-1017_a39a8a6f/download",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "Normal payment with receipt",
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/finance/receivables/82/payments",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "Receipt generic file denial fixed for caretaker",
+      "actor": "caretaker",
+      "method": "GET",
+      "path": "/documents/8bea38e1775047f58ba983143b965fa0/download",
+      "status": 403,
+      "detail": "Bạn không có quyền truy cập chứng từ thanh toán/biên lai này."
+    },
+    {
+      "label": "Same key changed amount now rejected",
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/finance/receivables/82/payments",
+      "status": 409,
+      "detail": "Xung đột khóa chống trùng: Tham số thanh toán không khớp với yêu cầu trước đó sử dụng cùng Idempotency Key."
+    },
+    {
+      "label": "Same key changed transaction reference",
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/finance/receivables/82/payments",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "Invalid receivable creates IN_PROGRESS key",
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/finance/receivables/2147483646/payments",
+      "status": 404,
+      "detail": "Không tìm thấy khoản thu mã 2147483646"
+    },
+    {
+      "label": "Invalid request retry still stuck",
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/finance/receivables/2147483646/payments",
+      "status": 409,
+      "detail": "Giao dịch thanh toán đang được xử lý song song. Vui lòng thử lại sau."
+    },
+    {
+      "label": "Storage failure now returns payment without invoice",
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/finance/receivables/82/payments",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "label": "Regenerate failed invoice",
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/finance/payments/27/regenerate-invoice",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "label": "Regenerated receipt is readable",
+      "actor": "accountant",
+      "method": "GET",
+      "path": "/finance/payments/27/receipt/download",
+      "status": 200,
+      "detail": null
+    }
+  ],
+  "no_file_certificate_gate": true,
+  "caretaker_dto": {
+    "status": 200,
+    "citizen_id_unmasked": true,
+    "address_present": true,
+    "total_amount_present": true
+  },
+  "burial_after_legal_activation": {
+    "status": 200,
+    "slot_status": "OCCUPIED",
+    "plot_status": "OCCUPIED",
+    "scheduled_date": "2026-11-12"
+  },
+  "care_immediate_active": "ACTIVE",
+  "conflict": {
+    "status": 200,
+    "flag": true,
+    "assignee_saved": true,
+    "schedule_status": "SCHEDULED"
+  },
+  "care_pdf_evidence_close": {
+    "status": 200,
+    "state": "CLOSED"
+  },
+  "construction_url_bypass": {
+    "status": 200,
+    "state": "COMPLETED",
+    "evidence_count": 0
+  },
+  "reference_hash_gap": {
+    "status": 201,
+    "old_reference_returned": true
+  },
+  "receipt_failure_result": {
+    "status": 201,
+    "payment_exists": true,
+    "invoice": null
+  },
+  "outer_transaction_active_before_rollback": true,
+  "objects_created": 9,
+  "objects_removed": 9
+}

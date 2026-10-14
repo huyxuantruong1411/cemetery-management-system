@@ -472,7 +472,10 @@ function parseApiError(errJson: unknown, fallback: string): string {
 
   const handleOpenBurialAnnex = async () => {
     if (!contractDetail) return;
-    const plotId = contractDetail.plot?.plot_id || contractDetail.land_purchase?.plot_id;
+    const plotId =
+      contractDetail.plot?.plot_id ||
+      contractDetail.land_purchase?.plot_id ||
+      contractDetail.transfer?.plot_id;
     if (!plotId) {
       alert('Không tìm thấy thông tin ô mộ của hợp đồng');
       return;
@@ -620,6 +623,29 @@ function parseApiError(errJson: unknown, fallback: string): string {
       setAnnexActivateError(err instanceof Error ? err.message : 'Lỗi khi kích hoạt phụ lục');
     } finally {
       setAnnexActivateSubmitting(false);
+    }
+  };
+
+  const handleConfirmBurial = async (annexId: number) => {
+    if (!window.confirm('Xác nhận: Quản trang đã thực hiện hạ huyệt an táng thực tế tại ô mộ này?')) return;
+    try {
+      const res = await fetch(`/api/v1/contracts/annexes/${annexId}/confirm-burial`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ notes: 'Quản trang xác nhận an táng thực địa hoàn tất' }),
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.detail || 'Xác nhận an táng thất bại');
+      }
+      alert('Đã xác nhận an táng thực địa và cập nhật trạng thái ô mộ thành công!');
+      await fetchContracts();
+      if (contractDetail) fetchContractDetail(contractDetail.contract_id);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Lỗi xác nhận an táng');
     }
   };
 
@@ -2314,7 +2340,10 @@ function parseApiError(errJson: unknown, fallback: string): string {
                         <Layers size={16} color="var(--brand-primary)" />
                         <span>Phụ Lục Hợp Đồng ({contractDetail.annexes?.length || 0})</span>
                       </div>
-                      {contractDetail.status === 'ACTIVE' && contractDetail.contract_type === 'LAND_PURCHASE' && canManage && (
+                      {contractDetail.status === 'ACTIVE' &&
+                        (contractDetail.contract_type === 'LAND_PURCHASE' ||
+                          contractDetail.contract_type === 'TRANSFER') &&
+                        canManage && (
                         <button
                           onClick={handleOpenBurialAnnex}
                           style={{
@@ -2492,6 +2521,33 @@ function parseApiError(errJson: unknown, fallback: string): string {
                                       <span>Kích Hoạt Phụ Lục</span>
                                     </button>
                                   )}
+                                  {annex.annex_type === 'BURIAL' &&
+                                    annex.status === 'ACTIVE' &&
+                                    (currentUserRoles.some((r) =>
+                                      ['ADMIN', 'CARETAKER'].includes(r.toUpperCase())
+                                    ) ||
+                                      canManage) && (
+                                      <button
+                                        onClick={() => handleConfirmBurial(annex.annex_id)}
+                                        title="Quản trang xác nhận đã hoàn tất hạ huyệt thực địa"
+                                        style={{
+                                          padding: '4px 10px',
+                                          borderRadius: '4px',
+                                          border: '1px solid #15803D',
+                                          backgroundColor: '#DCFCE7',
+                                          color: '#15803D',
+                                          fontSize: '11px',
+                                          fontWeight: 600,
+                                          cursor: 'pointer',
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px',
+                                        }}
+                                      >
+                                        <CheckCircle size={12} />
+                                        <span>Xác Nhận Thực Địa</span>
+                                      </button>
+                                    )}
                                 </div>
                               </div>
                             </div>

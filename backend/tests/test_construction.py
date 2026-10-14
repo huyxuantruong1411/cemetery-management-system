@@ -394,13 +394,42 @@ def test_complete_task_required_without_evidence_rejected():
         assert resp_no_ev.status_code == 400
         assert "phải có ít nhất 1 ảnh" in resp_no_ev.json()["detail"]
 
-        # Now complete with proof_media_url or attached evidence
-        resp_with_proof = client.post(
+        # Attempt to complete with proof_media_url without READY evidence -> still 400 (R06: URL shortcut blocked)
+        resp_url_only = client.post(
             f"/api/v1/construction/tasks/{task_id}/complete",
             json={
-                "field_notes": "Hoàn tất có ảnh",
+                "field_notes": "Hoàn tất chỉ truyền URL giả",
                 "proof_media_url": "https://storage.local/proof1.jpg",
             },
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp_url_only.status_code == 400
+
+        # Create and attach valid READY evidence
+        file_ready = FileObject(
+            file_id=f"file_ev_{uuid.uuid4().hex[:8]}",
+            bucket_name="nghiatrang-private",
+            object_key=f"uploads/{uuid.uuid4().hex}.jpg",
+            file_name="minh_chung_thuc_te.jpg",
+            mime_type="image/jpeg",
+            file_size_bytes=2048,
+            sha256_hash="2" * 64,
+            state="READY",
+            uploaded_by_user_id=caretaker.user_id,
+        )
+        db.add(file_ready)
+        db.commit()
+
+        client.post(
+            f"/api/v1/construction/tasks/{task_id}/evidences",
+            json={"file_id": file_ready.file_id, "caption": "Ảnh nghiệm thu"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        # Now complete task succeeds
+        resp_with_proof = client.post(
+            f"/api/v1/construction/tasks/{task_id}/complete",
+            json={"field_notes": "Hoàn tất có ảnh"},
             headers={"Authorization": f"Bearer {token}"},
         )
         assert resp_with_proof.status_code == 200, resp_with_proof.text
@@ -477,13 +506,30 @@ def test_progress_capped_and_complete_order_invariants():
         assert bad_complete.status_code == 400
         assert "công việc bắt buộc chưa hoàn tất" in bad_complete.json()["detail"]
 
-        # 4. Complete the required task with evidence
+        # 4. Attach valid READY evidence and complete the required task
+        file_ready = FileObject(
+            file_id=f"file_ev_{uuid.uuid4().hex[:8]}",
+            bucket_name="nghiatrang-private",
+            object_key=f"uploads/{uuid.uuid4().hex}.jpg",
+            file_name="kimtinh_ready.jpg",
+            mime_type="image/jpeg",
+            file_size_bytes=2048,
+            sha256_hash="3" * 64,
+            state="READY",
+            uploaded_by_user_id=admin_user.user_id,
+        )
+        db.add(file_ready)
+        db.commit()
+
+        client.post(
+            f"/api/v1/construction/tasks/{t_req['task_id']}/evidences",
+            json={"file_id": file_ready.file_id, "caption": "Ảnh móng kim tĩnh"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
         client.post(
             f"/api/v1/construction/tasks/{t_req['task_id']}/complete",
-            json={
-                "field_notes": "Xây móng kim tĩnh hoàn thiện",
-                "proof_media_url": "https://storage.local/kimtinh.jpg",
-            },
+            json={"field_notes": "Xây móng kim tĩnh hoàn thiện"},
             headers={"Authorization": f"Bearer {token}"},
         )
 

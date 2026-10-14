@@ -89,4 +89,3 @@ class StaffBriefResponse(BaseModel):
     username: str
     full_name: str
     roles: list[str] = []
-

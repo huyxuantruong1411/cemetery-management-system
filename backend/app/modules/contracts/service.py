@@ -129,8 +129,17 @@ class ContractService:
                 )
             is_matching_reservation = (
                 active_res.reserved_by == current_user_id
-                or (active_res.customer_phone and customer.phone_number and active_res.customer_phone.strip() == customer.phone_number.strip())
-                or (active_res.customer_name and customer.full_name and active_res.customer_name.strip().lower() == customer.full_name.strip().lower())
+                or (
+                    active_res.customer_phone
+                    and customer.phone_number
+                    and active_res.customer_phone.strip() == customer.phone_number.strip()
+                )
+                or (
+                    active_res.customer_name
+                    and customer.full_name
+                    and active_res.customer_name.strip().lower()
+                    == customer.full_name.strip().lower()
+                )
             )
             if not is_matching_reservation:
                 raise HTTPException(
@@ -162,7 +171,11 @@ class ContractService:
             # 2. Look up standard catalog item code by slot count (GIA-DAT-DON, GIA-DAT-DOI, GIA-DAT-GIA-TOC)
             if not active_price_item and plot.plot_type:
                 slots = plot.plot_type.default_slots
-                slot_code = "GIA-DAT-DON" if slots == 1 else ("GIA-DAT-DOI" if slots == 2 else "GIA-DAT-GIA-TOC")
+                slot_code = (
+                    "GIA-DAT-DON"
+                    if slots == 1
+                    else ("GIA-DAT-DOI" if slots == 2 else "GIA-DAT-GIA-TOC")
+                )
                 active_price_item = (
                     db.query(PriceItem)
                     .join(PriceList, PriceList.price_list_id == PriceItem.price_list_id)
@@ -174,22 +187,6 @@ class ContractService:
                             PriceList.effective_to_date >= today,
                         ),
                         PriceItem.item_code == slot_code,
-                    )
-                    .first()
-                )
-            # 3. Fallback to general land item in price list
-            if not active_price_item:
-                active_price_item = (
-                    db.query(PriceItem)
-                    .join(PriceList, PriceList.price_list_id == PriceItem.price_list_id)
-                    .filter(
-                        PriceList.is_active == True,  # noqa: E712
-                        PriceList.effective_from_date <= today,
-                        or_(
-                            PriceList.effective_to_date.is_(None),
-                            PriceList.effective_to_date >= today,
-                        ),
-                        PriceItem.item_code.like("GIA-DAT%"),
                     )
                     .first()
                 )
@@ -255,7 +252,9 @@ class ContractService:
             active_res.customer_phone = customer.phone_number
             active_res.contract_id = contract.contract_id
             active_res.expires_at = now + timedelta(days=7)
-            active_res.notes = f"Chuyển từ giữ chỗ tư vấn sang hợp đồng mua đất {contract.contract_code}"
+            active_res.notes = (
+                f"Chuyển từ giữ chỗ tư vấn sang hợp đồng mua đất {contract.contract_code}"
+            )
 
         plot.status = "RESERVED"
 
@@ -587,10 +586,10 @@ class ContractService:
         current_user_id: int,
     ) -> ContractAnnex:
         contract = cls.get_contract(db, contract_id)
-        if contract.contract_type != "LAND_PURCHASE":
+        if contract.contract_type not in ("LAND_PURCHASE", "TRANSFER"):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Phụ lục an táng chỉ có thể gắn vào hợp đồng mua bán đất (LAND_PURCHASE).",
+                detail="Phụ lục an táng chỉ có thể gắn vào hợp đồng mua bán đất (LAND_PURCHASE) hoặc chuyển nhượng (TRANSFER).",
             )
         if contract.status != "ACTIVE":
             raise HTTPException(
@@ -629,11 +628,19 @@ class ContractService:
             )
 
         # Invariant 3: Slot must belong to the contract plot
-        land_sub = contract.land_purchase
-        if not land_sub:
-            raise HTTPException(status_code=400, detail="Hợp đồng đất không có dữ liệu ô mộ")
+        target_plot_id = None
+        if contract.contract_type == "LAND_PURCHASE":
+            if not contract.land_purchase:
+                raise HTTPException(status_code=400, detail="Hợp đồng đất không có dữ liệu ô mộ")
+            target_plot_id = contract.land_purchase.plot_id
+        elif contract.contract_type == "TRANSFER":
+            if not contract.transfer:
+                raise HTTPException(
+                    status_code=400, detail="Hợp đồng chuyển nhượng không có dữ liệu ô mộ"
+                )
+            target_plot_id = contract.transfer.plot_id
 
-        plot = db.query(Plot).filter(Plot.plot_id == land_sub.plot_id).with_for_update().first()
+        plot = db.query(Plot).filter(Plot.plot_id == target_plot_id).with_for_update().first()
         if not plot:
             raise HTTPException(status_code=404, detail="Không tìm thấy ô mộ của hợp đồng")
 
@@ -664,6 +671,21 @@ class ContractService:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail=f"Slot huyệt #{slot.slot_number} hiện ở trạng thái '{slot.status}', không khả dụng để an táng.",
+            )
+
+        existing_slot_annex = (
+            db.query(BurialAnnex)
+            .join(ContractAnnex, ContractAnnex.annex_id == BurialAnnex.annex_id)
+            .filter(
+                BurialAnnex.slot_id == slot.slot_id,
+                ContractAnnex.status.in_(["ACTIVE", "PENDING_ACTIVATION", "DRAFT"]),
+            )
+            .first()
+        )
+        if existing_slot_annex:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Slot huyệt #{slot.slot_number} đã được đăng ký phụ lục an táng, không thể tạo thêm.",
             )
 
         annex_code = cls.generate_annex_code(db, "PL-AT")
@@ -807,6 +829,12 @@ class ContractService:
                 detail="Quy tắc Kim Tĩnh Bất Biến: Ô mộ Kim Tĩnh đã hoàn tất an táng và khóa vĩnh viễn!",
             )
 
+        if not ProfileService.check_death_certificate_verified(db, burial.deceased_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Người quá cố chưa có giấy báo tử được xác minh và đính kèm tệp chứng từ hợp lệ. Không thể kích hoạt phụ lục an táng!",
+            )
+
         slot = (
             db.query(PlotSlot)
             .filter(PlotSlot.slot_id == burial.slot_id, PlotSlot.plot_id == plot.plot_id)
@@ -831,27 +859,33 @@ class ContractService:
         annex.activation_notes = data.activation_notes
         annex.updated_at = now
 
-        slot.status = "OCCUPIED"
-        slot.current_deceased_id = burial.deceased_id
+        # Legal activation vs physical execution (R05 / BA-09 / BA-14)
+        # If burial date is in the future, slot remains reserved via this active annex without setting OCCUPIED or locking Kim Tinh.
+        # DB check constraint CK_plot_slots_status strictly allows ('EMPTY', 'OCCUPIED'), so slot remains 'EMPTY' until confirmed on-site.
+        is_future_burial = burial.burial_date > date.today()
+        if is_future_burial:
+            pass
+        else:
+            slot.status = "OCCUPIED"
+            slot.current_deceased_id = burial.deceased_id
+            plot.status = "OCCUPIED"
+            if burial.is_kim_tinh:
+                plot.is_kim_tinh = True
+                plot.is_locked = True
 
-        plot.status = "OCCUPIED"
-        if burial.is_kim_tinh:
-            plot.is_kim_tinh = True
-            plot.is_locked = True
-
-        history = BurialHistory(
-            plot_id=plot.plot_id,
-            slot_id=slot.slot_id,
-            deceased_id=burial.deceased_id,
-            action_type="BURIED",
-            action_date=now,
-            proof_url=scan_file.object_key,
-            proof_file_id=scan_file.file_id,
-            performed_by=current_user_id,
-            notes=f"An táng theo phụ lục {annex.annex_code}",
-            created_at=now,
-        )
-        db.add(history)
+            history = BurialHistory(
+                plot_id=plot.plot_id,
+                slot_id=slot.slot_id,
+                deceased_id=burial.deceased_id,
+                action_type="BURIED",
+                action_date=now,
+                proof_url=scan_file.object_key,
+                proof_file_id=scan_file.file_id,
+                performed_by=current_user_id,
+                notes=f"An táng theo phụ lục {annex.annex_code}",
+                created_at=now,
+            )
+            db.add(history)
 
         if annex.additional_amount > 0:
             cls._create_receivable(
@@ -863,9 +897,10 @@ class ContractService:
                 amount=annex.additional_amount,
             )
 
+        outbox_event_type = "BURIAL_ANNEX_ACTIVATED" if is_future_burial else "BURIAL_COMPLETED"
         outbox = OutboxEvent(
             event_id=str(uuid.uuid4()),
-            event_type="BURIAL_COMPLETED",
+            event_type=outbox_event_type,
             aggregate_type="ANNEX",
             aggregate_id=str(annex.annex_id),
             payload=json.dumps(
@@ -877,6 +912,7 @@ class ContractService:
                     "slot_id": slot.slot_id,
                     "deceased_id": burial.deceased_id,
                     "is_kim_tinh": burial.is_kim_tinh,
+                    "is_future_burial": is_future_burial,
                     "activated_at": now.isoformat(),
                     "activated_by": current_user_id,
                 },
@@ -898,6 +934,148 @@ class ContractService:
                     "status": annex.status,
                     "plot_id": plot.plot_id,
                     "slot_id": slot.slot_id,
+                    "slot_status": slot.status,
+                    "is_kim_tinh": burial.is_kim_tinh,
+                    "is_future_burial": is_future_burial,
+                },
+                ensure_ascii=False,
+            ),
+        )
+        db.add(audit)
+
+        db.commit()
+        db.refresh(annex)
+        return annex
+
+    @classmethod
+    def confirm_burial(
+        cls,
+        db: Session,
+        annex_id: int,
+        current_user_id: int,
+        proof_file_id: Optional[str] = None,
+        notes: Optional[str] = None,
+    ) -> ContractAnnex:
+        """Physical burial confirmation by Caretaker on site (R05 / BA-09 / BA-14)."""
+        annex = (
+            db.query(ContractAnnex)
+            .filter(ContractAnnex.annex_id == annex_id)
+            .with_for_update()
+            .first()
+        )
+        if not annex:
+            raise HTTPException(status_code=404, detail="Không tìm thấy phụ lục an táng")
+
+        if annex.status != "ACTIVE":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Phụ lục phải ở trạng thái ACTIVE mới có thể xác nhận an táng (hiện tại: {annex.status}).",
+            )
+
+        burial = db.query(BurialAnnex).filter(BurialAnnex.annex_id == annex.annex_id).first()
+        if not burial:
+            raise HTTPException(
+                status_code=400, detail="Không tìm thấy thông tin chi tiết an táng của phụ lục."
+            )
+
+        plot = db.query(Plot).filter(Plot.plot_id == burial.plot_id).with_for_update().first()
+        if not plot:
+            raise HTTPException(status_code=404, detail="Không tìm thấy ô mộ.")
+
+        if plot.is_locked:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Ô mộ đã bị khóa vĩnh viễn, không thể thao tác an táng thêm!",
+            )
+
+        if not ProfileService.check_death_certificate_verified(db, burial.deceased_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Người quá cố chưa có giấy báo tử được xác minh và đính kèm tệp chứng từ hợp lệ. Không thể xác nhận an táng thực địa!",
+            )
+
+        slot = (
+            db.query(PlotSlot)
+            .filter(PlotSlot.slot_id == burial.slot_id, PlotSlot.plot_id == plot.plot_id)
+            .with_for_update()
+            .first()
+        )
+        if not slot:
+            raise HTTPException(status_code=404, detail="Không tìm thấy slot huyệt an táng.")
+
+        if slot.status == "OCCUPIED" and slot.current_deceased_id == burial.deceased_id:
+            return annex  # Already confirmed
+
+        # Invariant check: death certificate
+        if not ProfileService.check_death_certificate_verified(db, burial.deceased_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Người quá cố chưa có giấy báo tử được xác minh hợp lệ. Không thể xác nhận an táng!",
+            )
+
+        now = _utc_now_naive()
+        slot.status = "OCCUPIED"
+        slot.current_deceased_id = burial.deceased_id
+        plot.status = "OCCUPIED"
+
+        if burial.is_kim_tinh:
+            plot.is_kim_tinh = True
+            plot.is_locked = True
+
+        proof_key = None
+        if proof_file_id:
+            p_file = db.query(FileObject).filter(FileObject.file_id == proof_file_id).first()
+            if p_file and p_file.state == "READY":
+                proof_key = p_file.object_key
+
+        history = BurialHistory(
+            plot_id=plot.plot_id,
+            slot_id=slot.slot_id,
+            deceased_id=burial.deceased_id,
+            action_type="BURIED",
+            action_date=now,
+            proof_url=proof_key or annex.signed_scan_url,
+            proof_file_id=proof_file_id or annex.signed_scan_file_id,
+            performed_by=current_user_id,
+            notes=notes or f"Xác nhận an táng thực địa theo phụ lục {annex.annex_code}",
+            created_at=now,
+        )
+        db.add(history)
+
+        outbox = OutboxEvent(
+            event_id=str(uuid.uuid4()),
+            event_type="BURIAL_COMPLETED",
+            aggregate_type="ANNEX",
+            aggregate_id=str(annex.annex_id),
+            payload=json.dumps(
+                {
+                    "annex_id": annex.annex_id,
+                    "annex_code": annex.annex_code,
+                    "contract_id": annex.contract_id,
+                    "plot_id": plot.plot_id,
+                    "slot_id": slot.slot_id,
+                    "deceased_id": burial.deceased_id,
+                    "is_kim_tinh": burial.is_kim_tinh,
+                    "confirmed_at": now.isoformat(),
+                    "confirmed_by": current_user_id,
+                },
+                ensure_ascii=False,
+            ),
+            state="PENDING",
+            created_at=now,
+        )
+        db.add(outbox)
+
+        audit = AuditLog(
+            user_id=current_user_id,
+            action_type="CONFIRM_BURIAL",
+            target_entity="ContractAnnex",
+            target_id=str(annex.annex_id),
+            post_change_values=json.dumps(
+                {
+                    "annex_code": annex.annex_code,
+                    "slot_status": "OCCUPIED",
+                    "plot_status": "OCCUPIED",
                     "is_kim_tinh": burial.is_kim_tinh,
                 },
                 ensure_ascii=False,
@@ -1590,18 +1768,26 @@ class ContractService:
     ) -> ContractDetailResponse:
         contract = cls.get_contract(db, contract_id)
 
+        user_roles = (
+            [r.role_name.upper() for r in (current_user.roles or [])] if current_user else []
+        )
+        is_admin = "ADMIN" in user_roles
+        is_caretaker = "CARETAKER" in user_roles and not is_admin
+
         customer_brief = None
         if contract.customer:
             cid = contract.customer.citizen_id
-            if current_user and getattr(current_user, "role", None) == "CARETAKER":
-                cid = cid[:3] + "******" + cid[-3:] if len(cid) >= 6 else "******"
+            addr = contract.customer.address
+            if is_caretaker:
+                cid = "******"
+                addr = None
             customer_brief = CustomerBrief(
                 customer_id=contract.customer.customer_id,
                 customer_code=contract.customer.customer_code,
                 full_name=contract.customer.full_name,
                 citizen_id=cid,
                 phone_number=contract.customer.phone_number,
-                address=contract.customer.address,
+                address=addr,
                 date_of_birth=contract.customer.date_of_birth,
             )
 
@@ -1617,7 +1803,9 @@ class ContractService:
                 plot_brief = cls._to_plot_brief(plot)
             land_detail = LandPurchaseDetailBrief(
                 plot_id=contract.land_purchase.plot_id,
-                land_unit_price=contract.land_purchase.land_unit_price,
+                land_unit_price=Decimal("0.00")
+                if is_caretaker
+                else contract.land_purchase.land_unit_price,
                 plot=plot_brief,
             )
 
@@ -1643,7 +1831,9 @@ class ContractService:
                 plot_code=plot.plot_code if plot else None,
                 slot_number=slot.slot_number if slot else None,
                 exhumation_date=contract.exhumation.exhumation_date,
-                exhumation_fee=contract.exhumation.exhumation_fee,
+                exhumation_fee=Decimal("0.00")
+                if is_caretaker
+                else contract.exhumation.exhumation_fee,
                 reason=contract.exhumation.reason,
             )
 
@@ -1668,7 +1858,9 @@ class ContractService:
                 seller_name=seller.full_name if seller else None,
                 buyer_id=contract.transfer.buyer_id,
                 buyer_name=buyer.full_name if buyer else None,
-                commission_fee=contract.transfer.commission_fee,
+                commission_fee=Decimal("0.00")
+                if is_caretaker
+                else contract.transfer.commission_fee,
                 transfer_reason=contract.transfer.transfer_reason,
             )
 
@@ -1684,26 +1876,29 @@ class ContractService:
                 cremation_date=contract.cremation.cremation_date,
                 package_service_code=contract.cremation.package_service_code,
                 urn_storage_option=contract.cremation.urn_storage_option,
-                service_fee=contract.cremation.service_fee,
+                service_fee=Decimal("0.00") if is_caretaker else contract.cremation.service_fee,
             )
 
         receivable_brief = None
-        rec = (
-            db.query(Receivable)
-            .filter(Receivable.contract_id == contract.contract_id, Receivable.annex_id.is_(None))
-            .first()
-        )
-        if rec:
-            receivable_brief = ReceivableBrief(
-                receivable_id=rec.receivable_id,
-                contract_id=rec.contract_id or contract.contract_id,
-                original_amount=rec.original_amount,
-                discount_amount=rec.discount_amount,
-                final_payable_amount=rec.final_payable_amount,
-                total_paid_amount=rec.total_paid_amount,
-                status=rec.status,
-                due_date=rec.due_date,
+        if not is_caretaker:
+            rec = (
+                db.query(Receivable)
+                .filter(
+                    Receivable.contract_id == contract.contract_id, Receivable.annex_id.is_(None)
+                )
+                .first()
             )
+            if rec:
+                receivable_brief = ReceivableBrief(
+                    receivable_id=rec.receivable_id,
+                    contract_id=rec.contract_id or contract.contract_id,
+                    original_amount=rec.original_amount,
+                    discount_amount=rec.discount_amount,
+                    final_payable_amount=rec.final_payable_amount,
+                    total_paid_amount=rec.total_paid_amount,
+                    status=rec.status,
+                    due_date=rec.due_date,
+                )
 
         activator_name = None
         if contract.activator:
@@ -1740,9 +1935,9 @@ class ContractService:
                     contract_id=a.contract_id,
                     annex_type=a.annex_type,
                     status=a.status,
-                    additional_amount=a.additional_amount,
-                    signed_scan_file_id=a.signed_scan_file_id,
-                    signed_scan_url=a.signed_scan_url,
+                    additional_amount=Decimal("0.00") if is_caretaker else a.additional_amount,
+                    signed_scan_file_id=None if is_caretaker else a.signed_scan_file_id,
+                    signed_scan_url=None if is_caretaker else a.signed_scan_url,
                     signed_at=a.signed_at,
                     activated_at=a.activated_at,
                     activated_by=a.activated_by,
@@ -1762,7 +1957,7 @@ class ContractService:
             contract_code=contract.contract_code,
             contract_type=contract.contract_type,
             status=contract.status,
-            total_amount=contract.total_amount,
+            total_amount=Decimal("0.00") if is_caretaker else contract.total_amount,
             signed_at=contract.signed_at,
             activated_at=contract.activated_at,
             activated_by=contract.activated_by,
@@ -1770,8 +1965,8 @@ class ContractService:
             activation_notes=contract.activation_notes,
             template_id=contract.template_id,
             template_version=contract.template_version,
-            signed_scan_file_id=contract.signed_scan_file_id,
-            signed_scan_url=contract.signed_scan_url,
+            signed_scan_file_id=None if is_caretaker else contract.signed_scan_file_id,
+            signed_scan_url=None if is_caretaker else contract.signed_scan_url,
             notes=contract.notes,
             created_at=contract.created_at,
             updated_at=contract.updated_at,

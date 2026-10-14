@@ -70,6 +70,9 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="login-modal-title"
         className="responsive-modal-card"
         style={{
           backgroundColor: '#FFFFFF',
@@ -111,7 +114,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
               <ShieldCheck size={24} color="#FFFFFF" />
             </div>
             <div>
-              <h3 style={{ fontSize: '18px', fontWeight: 600, margin: 0 }}>Đăng Nhập Hệ Thống</h3>
+              <h3 id="login-modal-title" style={{ fontSize: '18px', fontWeight: 600, margin: 0 }}>Đăng Nhập Hệ Thống</h3>
               <p style={{ fontSize: '13px', opacity: 0.85, margin: '2px 0 0 0' }}>
                 Xác thực danh tính & phân quyền nghiệp vụ
               </p>

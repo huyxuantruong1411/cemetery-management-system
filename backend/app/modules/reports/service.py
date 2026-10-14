@@ -57,7 +57,9 @@ class ReportService:
         query = db.query(Payment)
 
         if start_date:
-            query = query.filter(Payment.paid_at >= datetime.combine(start_date, datetime.min.time()))
+            query = query.filter(
+                Payment.paid_at >= datetime.combine(start_date, datetime.min.time())
+            )
         if end_date:
             query = query.filter(Payment.paid_at <= datetime.combine(end_date, datetime.max.time()))
         if payment_method:
@@ -527,6 +529,18 @@ class ReportService:
     # =========================================================================
     # 5. Persistent Report Export & ACL (UC-7.5 & G17)
     # =========================================================================
+    @staticmethod
+    def check_report_capability(user: User, report_type: str) -> bool:
+        roles = [r.role_name.upper() for r in (user.roles or [])]
+        if "ADMIN" in roles:
+            return True
+        rtype = report_type.upper()
+        if rtype == "REVENUE":
+            return "ACCOUNTANT" in roles
+        elif rtype == "OPERATIONS":
+            return "CARETAKER" in roles
+        return False
+
     @classmethod
     def create_export(
         cls,
@@ -550,27 +564,12 @@ class ReportService:
                 detail=f"Định dạng xuất không hợp lệ: {rformat}",
             )
 
-        # Enforce report type authorization (BA-03)
-        if rtype == "REVENUE":
-            is_allowed = (
-                any(r.role_name.upper() in ("ADMIN", "ACCOUNTANT") for r in user.roles)
-                or any(p.resource == "finance" for r in user.roles for p in r.permissions)
+        # Enforce report type authorization (BA-03 / R03)
+        if not cls.check_report_capability(user, rtype):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Bạn không có quyền xuất báo cáo {rtype}.",
             )
-            if not is_allowed:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Bạn không có quyền xuất báo cáo doanh thu tài chính.",
-                )
-        elif rtype == "CONTRACTS":
-            is_allowed = (
-                any(r.role_name.upper() in ("ADMIN", "ACCOUNTANT", "MARKETING") for r in user.roles)
-                or any(p.resource == "contracts" for r in user.roles for p in r.permissions)
-            )
-            if not is_allowed:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Bạn không có quyền xuất báo cáo hợp đồng pháp lý.",
-                )
 
         # Generate sequence-based export code
         res_seq = db.execute(text("SELECT NEXT VALUE FOR seq_report_export_number")).scalar()
@@ -628,7 +627,9 @@ class ReportService:
             record_count = len(rep.drilldown_items)
 
         elif rtype == "OCCUPANCY":
-            zone_id = int(req.filter_params["zone_id"]) if req.filter_params.get("zone_id") else None
+            zone_id = (
+                int(req.filter_params["zone_id"]) if req.filter_params.get("zone_id") else None
+            )
             rep = cls.generate_occupancy_report(db, zone_id=zone_id)
             report_title = "Báo Cáo Tỷ Lệ Lấp Đầy & Mộ Phần"
             kpis = [
@@ -828,31 +829,20 @@ class ReportService:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy bản xuất báo cáo"
             )
 
-        has_access = (
-            (export_rec.requester_id == user.user_id)
-            or any(r.role_name.upper() == "ADMIN" for r in user.roles)
-            or any(
-                p.action == "export" and p.resource == "reports"
-                for r in user.roles
-                for p in r.permissions
-            )
-        )
-        if not has_access:
+        # 1. Enforce capability for this report type (R03)
+        if not cls.check_report_capability(user, export_rec.report_type):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Bạn không có quyền tải bản xuất báo cáo này",
+                detail=f"Bạn không có quyền tải báo cáo loại {export_rec.report_type}.",
             )
 
-        if export_rec.report_type == "REVENUE":
-            is_revenue_allowed = (
-                any(r.role_name.upper() in ("ADMIN", "ACCOUNTANT") for r in user.roles)
-                or any(p.resource == "finance" for r in user.roles for p in r.permissions)
+        # 2. Enforce ownership: only requester or Admin can download (R03)
+        is_admin = any(r.role_name.upper() == "ADMIN" for r in (user.roles or []))
+        if not is_admin and export_rec.requester_id != user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Bạn không có quyền tải bản xuất báo cáo của người khác.",
             )
-            if not is_revenue_allowed:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Bạn không có quyền tải báo cáo doanh thu tài chính.",
-                )
 
         if not export_rec.file_id or not export_rec.file:
             raise HTTPException(

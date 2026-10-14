@@ -140,7 +140,9 @@ def update_deceased_profile(
     current_user: User = Depends(require_permission("customers", "write")),
 ):
     """Cập nhật thông tin người mất."""
-    return ProfileService.update_deceased_profile(db, deceased_id, data, user_id=current_user.user_id)
+    return ProfileService.update_deceased_profile(
+        db, deceased_id, data, user_id=current_user.user_id
+    )
 
 
 # =============================================================================
@@ -157,7 +159,9 @@ def attach_death_certificate(
     Đính kèm hoặc cập nhật giấy báo tử cho người mất (G08).
     Trạng thái ban đầu: is_verified = False nếu chưa có tệp scan READY.
     """
-    return ProfileService.attach_or_update_certificate(db, deceased_id, data, user_id=current_user.user_id)
+    return ProfileService.attach_or_update_certificate(
+        db, deceased_id, data, user_id=current_user.user_id
+    )
 
 
 @router.post("/certificates/{cert_id}/verify", response_model=DeathCertificateResponse)
@@ -212,4 +216,3 @@ def remove_customer_deceased_relation(
     """Xóa liên kết thân nhân."""
     ProfileService.remove_relation(db, relation_id)
     return None
-

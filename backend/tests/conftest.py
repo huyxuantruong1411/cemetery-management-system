@@ -28,3 +28,9 @@ def guard_test_database():
     assert "QL_NghiaTrang_Test" in url_str or "test" in url_str.lower(), (
         f"CRITICAL SAFETY GUARD: Engine bound to non-test URL: {url_str}"
     )
+    with engine.connect() as conn:
+        actual_db = conn.exec_driver_sql("SELECT DB_NAME()").scalar()
+        assert actual_db in ("QL_NghiaTrang_Test", "QL_NghiaTrang_test", "test"), (
+            f"CRITICAL SAFETY GUARD: Physical SQL Server connection is connected to database '{actual_db}'! "
+            "Tests must ONLY be executed against 'QL_NghiaTrang_Test'."
+        )

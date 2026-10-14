@@ -43,7 +43,6 @@ def list_staff(
     ]
 
 
-
 @router.post(
     "/login",
     response_model=TokenResponse,

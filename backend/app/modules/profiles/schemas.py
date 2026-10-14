@@ -256,4 +256,3 @@ class RelationDetailResponse(BaseModel):
     relationship_type: str
     is_primary_contact: bool
     slot_info: str | None = None
-

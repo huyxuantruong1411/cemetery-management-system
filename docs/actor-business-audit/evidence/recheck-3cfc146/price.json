@@ -1,0 +1,8 @@
+{
+  "commit": "3cfc146",
+  "fixture": "SYNTHETIC Test DB, outer rollback, only a SINGLE-plot price active; request DOUBLE plot without explicit price",
+  "status": 201,
+  "total_amount": "123.45",
+  "detail": null,
+  "outer_active": true
+}

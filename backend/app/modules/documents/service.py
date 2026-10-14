@@ -111,17 +111,16 @@ class DocumentService:
             )
 
         if user:
-            is_admin = any(r.role_name.upper() == "ADMIN" for r in user.roles)
+            is_admin = any(r.role_name.upper() == "ADMIN" for r in (user.roles or []))
+            user_roles = [r.role_name.upper() for r in (user.roles or [])]
             if not is_admin:
                 # 1. Check if bound to an Invoice (Receipt)
                 from app.modules.finance.models import Invoice
 
                 invoice = db.query(Invoice).filter(Invoice.file_id == file_id).first()
                 if invoice:
-                    has_finance_read = any(
-                        r.role_name.upper() in ("ADMIN", "ACCOUNTANT")
-                        or any(p.resource == "finance" for p in r.permissions)
-                        for r in user.roles
+                    has_finance_read = "ACCOUNTANT" in user_roles or any(
+                        p.resource == "finance" for r in user.roles for p in r.permissions
                     )
                     if not has_finance_read:
                         raise HTTPException(
@@ -129,34 +128,114 @@ class DocumentService:
                             detail="Bạn không có quyền truy cập chứng từ thanh toán/biên lai này.",
                         )
 
-                # 2. Check if bound to a ReportExport
+                # 2. Check if bound to a ReportExport (R03)
                 from app.modules.reports.models import ReportExport
 
                 report_export = (
                     db.query(ReportExport).filter(ReportExport.file_id == file_id).first()
                 )
                 if report_export:
-                    if report_export.report_type == "REVENUE":
-                        has_finance_access = any(
-                            r.role_name.upper() in ("ADMIN", "ACCOUNTANT")
-                            or any(p.resource == "finance" for p in r.permissions)
-                            for r in user.roles
+                    rtype = report_export.report_type.upper()
+                    has_type_access = False
+                    if rtype == "REVENUE":
+                        has_type_access = "ACCOUNTANT" in user_roles
+                    elif rtype == "OPERATIONS":
+                        has_type_access = "CARETAKER" in user_roles
+                    elif rtype in ("OCCUPANCY", "CONTRACTS"):
+                        has_type_access = False
+
+                    if not has_type_access:
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail=f"Bạn không có quyền truy cập tệp xuất báo cáo {rtype}.",
                         )
-                        if not has_finance_access:
+
+                    if report_export.requester_id != user.user_id:
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Bạn không có quyền truy cập tệp xuất báo cáo của người khác.",
+                        )
+
+                # 3. Check if bound to a Contract / Annex signed scan (R02)
+                from app.modules.contracts.models import Contract, ContractAnnex
+
+                is_contract_scan = (
+                    db.query(Contract).filter(Contract.signed_scan_file_id == file_id).first()
+                    is not None
+                    or db.query(ContractAnnex)
+                    .filter(ContractAnnex.signed_scan_file_id == file_id)
+                    .first()
+                    is not None
+                    or db.query(DocumentVersion)
+                    .filter(
+                        DocumentVersion.file_id == file_id, DocumentVersion.contract_id.isnot(None)
+                    )
+                    .first()
+                    is not None
+                    or db.query(DocumentVersion)
+                    .filter(
+                        DocumentVersion.file_id == file_id, DocumentVersion.annex_id.isnot(None)
+                    )
+                    .first()
+                    is not None
+                )
+                if is_contract_scan:
+                    if "CARETAKER" in user_roles:
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Quản trang không có quyền truy cập bản scan hợp đồng/phụ lục pháp lý.",
+                        )
+
+                # 4. Check if bound to a Death Certificate (R02)
+                from app.modules.profiles.models import DeathCertificate
+
+                is_death_cert = (
+                    db.query(DeathCertificate).filter(DeathCertificate.file_id == file_id).first()
+                    is not None
+                    or db.query(DocumentVersion)
+                    .filter(
+                        DocumentVersion.file_id == file_id,
+                        DocumentVersion.certificate_id.isnot(None),
+                    )
+                    .first()
+                    is not None
+                )
+                if is_death_cert:
+                    if "ACCOUNTANT" in user_roles or "CARETAKER" in user_roles:
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Bạn không có quyền truy cập bản scan giấy báo tử.",
+                        )
+
+                # 5. Check unbound/draft file (R02): only uploader or admin can access
+                is_bound = (
+                    invoice is not None
+                    or report_export is not None
+                    or is_contract_scan
+                    or is_death_cert
+                )
+                if not is_bound:
+                    from app.modules.care.models import CareScheduleEvidence
+                    from app.modules.construction.models import ConstructionTaskEvidence
+
+                    is_evidence = (
+                        db.query(ConstructionTaskEvidence)
+                        .filter(ConstructionTaskEvidence.file_id == file_id)
+                        .first()
+                        is not None
+                        or db.query(CareScheduleEvidence)
+                        .filter(CareScheduleEvidence.file_id == file_id)
+                        .first()
+                        is not None
+                    )
+                    if not is_evidence:
+                        if (
+                            file_obj.uploaded_by_user_id
+                            and file_obj.uploaded_by_user_id != user.user_id
+                        ):
                             raise HTTPException(
                                 status_code=status.HTTP_403_FORBIDDEN,
-                                detail="Bạn không có quyền truy cập tệp xuất báo cáo tài chính này.",
-                            )
-                    elif report_export.requester_id != user.user_id:
-                        has_reports_export = any(
-                            p.action == "export" and p.resource == "reports"
-                            for r in user.roles
-                            for p in r.permissions
-                        )
-                        if not has_reports_export:
-                            raise HTTPException(
-                                status_code=status.HTTP_403_FORBIDDEN,
-                                detail="Bạn không có quyền truy cập tệp xuất báo cáo này.",
+                                detail="Tệp tài liệu chưa được liên kết và không thuộc quyền sở hữu của bạn.",
                             )
 
         content, _ = storage_adapter.get_object(file_obj.object_key)
@@ -168,6 +247,7 @@ class DocumentService:
         db: Session,
         req: LinkDocumentRequest,
         user_id: int | None = None,
+        user: User | None = None,
     ) -> DocumentVersion:
         """Attach a FileObject to a Contract, Annex, or DeathCertificate with automatic version numbering."""
         parents = [req.contract_id, req.annex_id, req.certificate_id]
@@ -177,6 +257,33 @@ class DocumentService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Chứng từ phải liên kết chính xác với một đối tượng (Hợp đồng, Phụ lục hoặc Giấy báo tử).",
             )
+
+        if user:
+            is_admin = any(r.role_name.upper() == "ADMIN" for r in (user.roles or []))
+            user_roles = [r.role_name.upper() for r in (user.roles or [])]
+            if not is_admin:
+                if req.contract_id is not None or req.annex_id is not None:
+                    has_contract_write = "MARKETING" in user_roles or any(
+                        p.action == "write" and p.resource == "contracts"
+                        for r in user.roles
+                        for p in r.permissions
+                    )
+                    if not has_contract_write:
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Bạn không có quyền liên kết tài liệu vào hợp đồng hoặc phụ lục.",
+                        )
+                elif req.certificate_id is not None:
+                    has_customer_write = "MARKETING" in user_roles or any(
+                        p.action == "write" and p.resource == "customers"
+                        for r in user.roles
+                        for p in r.permissions
+                    )
+                    if not has_customer_write:
+                        raise HTTPException(
+                            status_code=status.HTTP_403_FORBIDDEN,
+                            detail="Bạn không có quyền liên kết tài liệu vào giấy báo tử.",
+                        )
 
         file_obj = db.get(FileObject, req.file_id)
         if not file_obj or file_obj.state != "READY":

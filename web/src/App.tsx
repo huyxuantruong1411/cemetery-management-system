@@ -132,6 +132,17 @@ function MainApp() {
     }
   }, [isMobileMenuOpen])
 
+  // Close mobile drawer on Escape key (R14)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isMobileMenuOpen) {
+        setIsMobileMenuOpen(false)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isMobileMenuOpen])
+
   const handleSelectTab = (tab: string) => {
     setActiveTab(tab)
     setIsMobileMenuOpen(false)

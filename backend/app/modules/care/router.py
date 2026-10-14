@@ -1,7 +1,7 @@
 from datetime import date
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -97,16 +97,25 @@ def get_schedule(
     return CareService.get_schedule_detail(db=db, schedule_id=schedule_id)
 
 
+def require_care_coordinator(current_user: User = Depends(get_current_user)) -> User:
+    roles = [r.role_name.upper() for r in (current_user.roles or [])]
+    if not ("ADMIN" in roles or "CARETAKER" in roles):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ Quản trang hoặc Quản trị viên mới có quyền điều phối và phân công lịch chăm sóc.",
+        )
+    return current_user
+
+
 @router.post(
     "/schedules/generate",
     response_model=CareScheduleGenerateResponse,
     summary="Sinh lịch chăm sóc tự động theo kỳ (Idempotent G12)",
-    dependencies=[Depends(require_permission("care", "write"))],
 )
 def generate_schedules(
     req: CareScheduleGenerateRequest,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_care_coordinator),
 ):
     period_key, generated_count, skipped_count, schedules = (
         CareService.generate_schedules_for_period(
@@ -154,19 +163,17 @@ def generate_schedules(
     "/schedules/{schedule_id}/assign",
     response_model=CareScheduleDetail,
     summary="Phân công nhân viên quản trang (Kiểm tra xung đột G13)",
-    dependencies=[Depends(require_permission("care", "write"))],
 )
 @router.post(
     "/schedules/{schedule_id}/assign",
     response_model=CareScheduleDetail,
     summary="Phân công nhân viên quản trang (Kiểm tra xung đột G13 - POST alias)",
-    dependencies=[Depends(require_permission("care", "write"))],
 )
 def assign_caretaker(
     schedule_id: int,
     req: CareScheduleAssign,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_care_coordinator),
 ):
     CareService.assign_caretaker(
         db=db,

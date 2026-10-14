@@ -162,7 +162,9 @@ def test_biz_scenario_1_walkin_customer_land_purchase_lifecycle(
     assert activate_resp.json()["status"] == "ACTIVE"
 
     # Kiểm tra ô đất đã chuyển sang OWNED_EMPTY hoặc ASSIGNED và gắn chủ sở hữu
-    plot_check = client.get(f"{settings.API_V1_PREFIX}/plots/{plot_id}", headers=marketing_headers).json()
+    plot_check = client.get(
+        f"{settings.API_V1_PREFIX}/plots/{plot_id}", headers=marketing_headers
+    ).json()
     assert plot_check["status"] in ["OWNED_EMPTY", "ASSIGNED"]
     assert plot_check.get("current_owner_id") == cust_id or plot_check.get("owner_id") == cust_id
 
@@ -186,7 +188,9 @@ def test_biz_scenario_1_walkin_customer_land_purchase_lifecycle(
         },
     )
     assert pay1_resp.status_code == 201
-    rec_check1 = client.get(f"{settings.API_V1_PREFIX}/finance/receivables/{rec_id}", headers=accountant_headers).json()
+    rec_check1 = client.get(
+        f"{settings.API_V1_PREFIX}/finance/receivables/{rec_id}", headers=accountant_headers
+    ).json()
     assert rec_check1["status"] in ["PARTIALLY_PAID", "PARTIAL"]
     assert Decimal(str(rec_check1["remaining_balance"])) == Decimal("24500000.00")
 
@@ -204,7 +208,9 @@ def test_biz_scenario_1_walkin_customer_land_purchase_lifecycle(
     assert pay2_resp.status_code == 201
     pay2_data = pay2_resp.json()
 
-    rec_check2 = client.get(f"{settings.API_V1_PREFIX}/finance/receivables/{rec_id}", headers=accountant_headers).json()
+    rec_check2 = client.get(
+        f"{settings.API_V1_PREFIX}/finance/receivables/{rec_id}", headers=accountant_headers
+    ).json()
     assert rec_check2["status"] == "PAID"
     assert Decimal(str(rec_check2["remaining_balance"])) == Decimal("0.00")
 
@@ -364,7 +370,9 @@ def test_biz_scenario_2_burial_and_kim_tinh_immutability(
             "reason": "Yêu cầu bốc mộ chuyển về quê",
         },
     )
-    assert exh_fail.status_code in [400, 422, 409], "Phải cấm lập hợp đồng cải táng trên mộ Kim Tĩnh!"
+    assert exh_fail.status_code in [400, 422, 409], (
+        "Phải cấm lập hợp đồng cải táng trên mộ Kim Tĩnh!"
+    )
 
 
 def test_biz_scenario_3_care_package_and_schedule_tasks(caretaker_headers, admin_headers):
@@ -492,7 +500,7 @@ def test_biz_scenario_4_exhumation_rules_and_kim_tinh_prevention(
         json={
             "deceased_id": dec_id,
             "slot_id": slot_id,
-            "burial_date": "2026-10-15",
+            "burial_date": "2026-10-05",
             "is_kim_tinh": False,
             "additional_amount": 5000000.0,
             "construction_notes": "Chôn cất mộ đất thông thường",
@@ -519,7 +527,9 @@ def test_biz_scenario_4_exhumation_rules_and_kim_tinh_prevention(
             "reason": "Người ngoài đòi bốc mộ",
         },
     )
-    assert bad_ex_resp.status_code == 403, "Phải từ chối yêu cầu cải táng của người không phải chính chủ"
+    assert bad_ex_resp.status_code == 403, (
+        "Phải từ chối yêu cầu cải táng của người không phải chính chủ"
+    )
 
     # Case 4C: Chính chủ yêu cầu cải táng mộ đất thường -> Thành công
     good_ex_resp = client.post(
@@ -545,7 +555,9 @@ def test_biz_scenario_4_exhumation_rules_and_kim_tinh_prevention(
     )
 
     # Kiểm tra ô đất sau cải táng trả về OWNED_EMPTY và slot trống
-    plot_check = client.get(f"{settings.API_V1_PREFIX}/plots/{plot_id}", headers=marketing_headers).json()
+    plot_check = client.get(
+        f"{settings.API_V1_PREFIX}/plots/{plot_id}", headers=marketing_headers
+    ).json()
     assert plot_check["status"] == "OWNED_EMPTY"
 
 
@@ -581,18 +593,32 @@ def test_biz_scenario_5_plot_transfer_and_invariants(marketing_headers, sample_p
     cust_a = client.post(
         f"{settings.API_V1_PREFIX}/profiles/customers",
         headers=marketing_headers,
-        json={"full_name": "Chủ A Chuyển Nhượng", "citizen_id": f"079{uuid.uuid4().int % 1000000000:09d}", "phone_number": "0933112233", "address": "123 Đường A, Quận 1"},
+        json={
+            "full_name": "Chủ A Chuyển Nhượng",
+            "citizen_id": f"079{uuid.uuid4().int % 1000000000:09d}",
+            "phone_number": "0933112233",
+            "address": "123 Đường A, Quận 1",
+        },
     ).json()
     cust_b = client.post(
         f"{settings.API_V1_PREFIX}/profiles/customers",
         headers=marketing_headers,
-        json={"full_name": "Chủ B Nhận Chuyển Nhượng", "citizen_id": f"079{uuid.uuid4().int % 1000000000:09d}", "phone_number": "0944112233", "address": "456 Đường B, Quận 2"},
+        json={
+            "full_name": "Chủ B Nhận Chuyển Nhượng",
+            "citizen_id": f"079{uuid.uuid4().int % 1000000000:09d}",
+            "phone_number": "0944112233",
+            "address": "456 Đường B, Quận 2",
+        },
     ).json()
 
     c_resp = client.post(
         f"{settings.API_V1_PREFIX}/contracts/land-purchase",
         headers=marketing_headers,
-        json={"customer_id": cust_a["customer_id"], "plot_id": plot_id, "land_unit_price": 25000000.00},
+        json={
+            "customer_id": cust_a["customer_id"],
+            "plot_id": plot_id,
+            "land_unit_price": 25000000.00,
+        },
     ).json()
     client.post(
         f"{settings.API_V1_PREFIX}/contracts/{c_resp['contract_id']}/activate",
@@ -621,24 +647,40 @@ def test_biz_scenario_5_plot_transfer_and_invariants(marketing_headers, sample_p
         json={"signed_scan_file_id": sample_pdf_scan, "signed_at": "2026-10-10"},
     )
 
-    plot_check = client.get(f"{settings.API_V1_PREFIX}/plots/{plot_id}", headers=marketing_headers).json()
-    assert plot_check.get("current_owner_id") == cust_b["customer_id"] or plot_check.get("owner_id") == cust_b["customer_id"]
+    plot_check = client.get(
+        f"{settings.API_V1_PREFIX}/plots/{plot_id}", headers=marketing_headers
+    ).json()
+    assert (
+        plot_check.get("current_owner_id") == cust_b["customer_id"]
+        or plot_check.get("owner_id") == cust_b["customer_id"]
+    )
 
 
-def test_biz_scenario_6_cremation_independent_service(marketing_headers, accountant_headers, sample_pdf_scan):
+def test_biz_scenario_6_cremation_independent_service(
+    marketing_headers, accountant_headers, sample_pdf_scan
+):
     """
     KỊCH BẢN 6: Hỏa táng độc lập (không gắn ô đất nghĩa trang), lưu tháp cốt Địa Tạng.
     """
     cust = client.post(
         f"{settings.API_V1_PREFIX}/profiles/customers",
         headers=marketing_headers,
-        json={"full_name": "Thân Nhân Đăng Ký Hỏa Táng", "citizen_id": f"079{uuid.uuid4().int % 1000000000:09d}", "phone_number": "0977889900", "address": "789 Đường Hỏa Táng, Bình Hưng Hòa"},
+        json={
+            "full_name": "Thân Nhân Đăng Ký Hỏa Táng",
+            "citizen_id": f"079{uuid.uuid4().int % 1000000000:09d}",
+            "phone_number": "0977889900",
+            "address": "789 Đường Hỏa Táng, Bình Hưng Hòa",
+        },
     ).json()
 
     dec = client.post(
         f"{settings.API_V1_PREFIX}/profiles/deceased",
         headers=marketing_headers,
-        json={"full_name": "Người Quá Cố Hỏa Táng", "gender": "FEMALE", "date_of_death": "2026-10-05"},
+        json={
+            "full_name": "Người Quá Cố Hỏa Táng",
+            "gender": "FEMALE",
+            "date_of_death": "2026-10-05",
+        },
     ).json()
 
     cert = client.post(

@@ -2,7 +2,7 @@ from datetime import date
 from typing import List, Optional
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -38,6 +38,11 @@ def get_revenue_report(
     Báo cáo doanh thu chuẩn kế toán dựa trên tổng thực thu của bảng payments.
     Hỗ trợ drill-down chi tiết từng phiếu thu và nhóm theo thời gian, phương thức.
     """
+    if not ReportService.check_report_capability(current_user, "REVENUE"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bạn không có quyền xem báo cáo doanh thu tài chính.",
+        )
     return ReportService.generate_revenue_report(
         db=db,
         start_date=start_date,
@@ -61,6 +66,11 @@ def get_occupancy_report(
     Báo cáo tổng hợp số ô mộ và slot theo từng khu vực và toàn nghĩa trang.
     Tỷ lệ lấp đầy được tính trên mẫu số ô mộ quy hoạch; khu rỗng không chia cho 0.
     """
+    if not ReportService.check_report_capability(current_user, "OCCUPANCY"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bạn không có quyền xem báo cáo tỷ lệ lấp đầy.",
+        )
     return ReportService.generate_occupancy_report(db=db, zone_id=zone_id)
 
 
@@ -84,6 +94,11 @@ def get_contracts_report(
     Tách biệt nguồn doanh thu, ngăn ngừa double count khi join giữa HĐ và phụ lục.
     Liệt kê các phụ lục chăm sóc sắp hết hạn trong 60 ngày tới.
     """
+    if not ReportService.check_report_capability(current_user, "CONTRACTS"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bạn không có quyền xem báo cáo hợp đồng pháp lý.",
+        )
     return ReportService.generate_contracts_report(
         db=db,
         start_date=start_date,
@@ -111,6 +126,11 @@ def get_operations_report(
     - Thi công: tỷ lệ hoàn thành, số công trình quá hạn, thời gian thi công trung bình.
     - Chăm sóc: tỷ lệ đóng ca, tỷ lệ hoàn tất việc bắt buộc và tuân thủ ảnh minh chứng.
     """
+    if not ReportService.check_report_capability(current_user, "OPERATIONS"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bạn không có quyền xem báo cáo vận hành.",
+        )
     return ReportService.generate_operations_report(
         db=db,
         start_date=start_date,
@@ -171,5 +191,7 @@ def download_report_export(
     return Response(
         content=content,
         media_type=content_type,
-        headers={"Content-Disposition": f"attachment; filename=\"{safe_ascii}\"; filename*=UTF-8''{encoded_name}"},
+        headers={
+            "Content-Disposition": f"attachment; filename=\"{safe_ascii}\"; filename*=UTF-8''{encoded_name}"
+        },
     )

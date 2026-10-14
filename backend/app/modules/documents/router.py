@@ -108,6 +108,7 @@ def link_document(
         db=db,
         req=req,
         user_id=current_user.user_id,
+        user=current_user,
     )
     return doc_ver
 

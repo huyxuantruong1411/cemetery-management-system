@@ -324,9 +324,7 @@ def test_public_deceased_lookup_navigation_and_zero_pii():
     db.commit()
 
     # Query public lookup without any auth header (public endpoint)
-    resp = client.get(
-        f"/api/v1/profiles/public/memorials?q=Nguyễn Văn Tìm Kiếm {suffix}"
-    )
+    resp = client.get(f"/api/v1/profiles/public/memorials?q=Nguyễn Văn Tìm Kiếm {suffix}")
     assert resp.status_code == 200, resp.text
     results = resp.json()
     assert len(results) >= 1

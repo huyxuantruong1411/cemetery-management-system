@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -10,6 +10,7 @@ from app.modules.contracts.schemas import (
     AnnexActivateRequest,
     AnnexSubmitSigningRequest,
     BurialAnnexCreate,
+    ConfirmBurialRequest,
     ContractActivateRequest,
     ContractBriefResponse,
     ContractCancelRequest,
@@ -45,7 +46,9 @@ def create_land_purchase_contract(
     và snapshot đơn giá đất từ bảng giá niêm yết hiện hành.
     """
     contract = ContractService.create_land_purchase_contract(db, data, current_user.user_id)
-    return ContractService.get_contract_detail_dto(db, contract.contract_id, current_user=current_user)
+    return ContractService.get_contract_detail_dto(
+        db, contract.contract_id, current_user=current_user
+    )
 
 
 @router.post(
@@ -66,7 +69,9 @@ def create_exhumation_contract(
     - Kiểm tra slot huyệt và thông tin người quá cố chính xác.
     """
     contract = ContractService.create_exhumation_contract(db, data, current_user.user_id)
-    return ContractService.get_contract_detail_dto(db, contract.contract_id, current_user=current_user)
+    return ContractService.get_contract_detail_dto(
+        db, contract.contract_id, current_user=current_user
+    )
 
 
 @router.post(
@@ -87,7 +92,9 @@ def create_transfer_contract(
     - Chặn tuyệt đối chuyển nhượng ô mộ Kim Tĩnh đã khóa vĩnh viễn.
     """
     contract = ContractService.create_transfer_contract(db, data, current_user.user_id)
-    return ContractService.get_contract_detail_dto(db, contract.contract_id, current_user=current_user)
+    return ContractService.get_contract_detail_dto(
+        db, contract.contract_id, current_user=current_user
+    )
 
 
 @router.post(
@@ -107,7 +114,9 @@ def create_cremation_contract(
     - Thiết lập ngày thực hiện, gói dịch vụ và tùy chọn lưu tro cốt.
     """
     contract = ContractService.create_cremation_contract(db, data, current_user.user_id)
-    return ContractService.get_contract_detail_dto(db, contract.contract_id, current_user=current_user)
+    return ContractService.get_contract_detail_dto(
+        db, contract.contract_id, current_user=current_user
+    )
 
 
 # ==============================================================================
@@ -125,9 +134,7 @@ def list_contracts(
     status: Optional[str] = Query(
         None, description="Lọc theo trạng thái: DRAFT, PENDING_SIGN, ACTIVE, CANCELLED"
     ),
-    status_filter: Optional[str] = Query(
-        None, description="Bí danh lọc theo trạng thái"
-    ),
+    status_filter: Optional[str] = Query(None, description="Bí danh lọc theo trạng thái"),
     customer_id: Optional[int] = Query(None, description="Lọc theo khách hàng"),
     search: Optional[str] = Query(
         None, description="Tìm kiếm theo mã HĐ, tên khách hàng, SĐT, mã ô mộ"
@@ -230,6 +237,12 @@ def download_contract_pdf(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("contracts", "read")),
 ):
+    user_roles = [r.role_name.upper() for r in (current_user.roles or [])]
+    if "CARETAKER" in user_roles and "ADMIN" not in user_roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Quản trang không có quyền tải văn bản hợp đồng pháp lý đầy đủ. Vui lòng tham khảo Căn Cứ Công Việc.",
+        )
     pdf_bytes = ContractService.generate_contract_pdf(db, contract_id)
     contract = ContractService.get_contract(db, contract_id)
     return Response(
@@ -257,7 +270,7 @@ def create_burial_annex(
     current_user: User = Depends(require_permission("contracts", "write")),
 ):
     """
-    Lập phụ lục an táng cho hợp đồng mua đất:
+    Lập phụ lục an táng cho hợp đồng mua đất hoặc chuyển nhượng:
     - Bắt buộc người quá cố phải có giấy báo tử đã được duyệt (G08).
     - Chặn an táng đồng thời 1 người ở 2 slot khác nhau.
     - Slot huyệt phải còn trống và thuộc đúng ô mộ của hợp đồng.
@@ -295,10 +308,47 @@ def activate_burial_annex(
     """
     Kích hoạt phụ lục an táng toàn vẹn ACID:
     - Kiểm tra lại tính hợp lệ của giấy báo tử.
-    - Chuyển slot huyệt sang OCCUPIED và gán current_deceased_id.
-    - Chuyển ô mộ sang OCCUPIED. Nếu an táng Kim Tĩnh: tự động khóa vĩnh viễn (is_kim_tinh=1, is_locked=1).
-    - Ghi nhận lịch sử an táng (BurialHistory) kèm proof file MinIO và user thực hiện.
+    - Nếu an táng tương lai: giữ slot huyệt ở trạng thái RESERVED.
     - Tự động sinh công nợ phát sinh và phát sinh Transactional Outbox Event.
     """
     annex = ContractService.activate_burial_annex(db, annex_id, data, current_user.user_id)
+    return ContractService.get_contract_detail_dto(db, annex.contract_id, current_user=current_user)
+
+
+@router.post(
+    "/annexes/{annex_id}/confirm-burial",
+    summary="Xác nhận an táng thực địa trên mộ phần (Caretaker)",
+)
+def confirm_burial(
+    annex_id: int,
+    body: Optional[ConfirmBurialRequest] = None,
+    proof_file_id: Optional[str] = Query(None, description="Tệp ảnh minh chứng an táng thực tế"),
+    notes: Optional[str] = Query(None, description="Ghi chú xác nhận hiện trường"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("contracts", "read")),
+):
+    """
+    Xác nhận an táng thực địa độc lập với kích hoạt pháp lý (R05 / BA-09 / BA-14):
+    - Dành cho Quản trang xác nhận sau khi thực tế hạ huyệt.
+    - Cập nhật slot huyệt thành OCCUPIED và gán deceased_id.
+    - Chuyển ô mộ thành OCCUPIED. Nếu an táng Kim Tĩnh: khóa vĩnh viễn (is_kim_tinh=1, is_locked=1).
+    - Ghi nhận BurialHistory và Transactional Outbox Event.
+    """
+    user_roles = [r.role_name.upper() for r in (current_user.roles or [])]
+    if "CARETAKER" not in user_roles and "ADMIN" not in user_roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ Quản trang hoặc Quản trị viên mới có quyền xác nhận an táng thực địa.",
+        )
+    effective_proof_file_id = (
+        body.proof_file_id if body and body.proof_file_id else None
+    ) or proof_file_id
+    effective_notes = (body.notes if body and body.notes else None) or notes
+    annex = ContractService.confirm_burial(
+        db,
+        annex_id,
+        current_user.user_id,
+        proof_file_id=effective_proof_file_id,
+        notes=effective_notes,
+    )
     return ContractService.get_contract_detail_dto(db, annex.contract_id, current_user=current_user)

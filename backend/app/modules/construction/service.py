@@ -445,6 +445,11 @@ class ConstructionService:
         if order.status == "COMPLETED":
             return ConstructionService._to_order_response(order)
 
+        if order.status == "CANCELLED":
+            raise HTTPException(
+                status_code=400, detail="Lệnh thi công đã bị hủy, không thể nghiệm thu."
+            )
+
         # Gate Check: thiếu required task chặn 100%
         uncompleted_required = [t for t in order.tasks if t.is_required and t.status != "DONE"]
         if uncompleted_required:
@@ -454,13 +459,27 @@ class ConstructionService:
                 detail=f"Không thể hoàn thành lệnh thi công: vẫn còn {len(uncompleted_required)} công việc bắt buộc chưa hoàn tất: {names}.",
             )
 
-        # Check all attached evidences are READY
+        # Gate Check: order must have at least 1 valid READY evidence across all tasks (R06)
+        all_evidences = [ev for t in order.tasks for ev in t.evidences]
+        ready_evidences = [
+            ev for ev in all_evidences if ev.file_object and ev.file_object.state == "READY"
+        ]
+        if not ready_evidences:
+            raise HTTPException(
+                status_code=400,
+                detail="Không thể nghiệm thu lệnh thi công: chưa có bất kỳ bằng chứng/ảnh hiện trường nào ở trạng thái READY.",
+            )
+
+        # Gate Check: every required task must have at least 1 READY evidence (R06)
         for t in order.tasks:
-            for ev in t.evidences:
-                if ev.file_object and ev.file_object.state != "READY":
+            if t.is_required:
+                task_ready_ev = [
+                    ev for ev in t.evidences if ev.file_object and ev.file_object.state == "READY"
+                ]
+                if not task_ready_ev:
                     raise HTTPException(
                         status_code=400,
-                        detail=f"Tệp bằng chứng '{ev.file_id}' thuộc công việc '{t.task_name}' chưa ở trạng thái READY (trạng thái: {ev.file_object.state}).",
+                        detail=f"Hạng mục bắt buộc '{t.task_name}' chưa có ảnh/bằng chứng nghiệm thu ở trạng thái READY.",
                     )
 
         # Mark completed
@@ -564,10 +583,10 @@ class ConstructionService:
         if not task:
             raise HTTPException(status_code=404, detail="Công việc thi công không tồn tại")
 
-        if task.order and task.order.status == "COMPLETED":
+        if task.order and task.order.status in ("COMPLETED", "CANCELLED"):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Lệnh thi công đã nghiệm thu hoàn thành (COMPLETED), không được phép chỉnh sửa công việc.",
+                detail=f"Lệnh thi công đã kết thúc ({task.order.status}), không được phép chỉnh sửa công việc.",
             )
 
         if data.task_name is not None:
@@ -604,21 +623,22 @@ class ConstructionService:
         if not task:
             raise HTTPException(status_code=404, detail="Công việc thi công không tồn tại")
 
+        if task.order and task.order.status in ("COMPLETED", "CANCELLED"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Lệnh thi công đã kết thúc ({task.order.status}), không thể hoàn thành công việc.",
+            )
+
         if task.status == "DONE":
             return ConstructionService._to_task_brief(task)
 
-        # Gate Check: required task must have ready evidence
-        # (ảnh phải READY trước chốt; thiếu required task chặn 100%)
+        # Gate Check: required task must have ready evidence (R06: remove URL shortcut)
         if task.is_required:
             valid_evidence = False
-            # Check attached task evidences
             for ev in task.evidences:
                 if ev.file_object and ev.file_object.state == "READY":
                     valid_evidence = True
                     break
-            # Fallback to proof_media_url if provided
-            if not valid_evidence and proof_media_url:
-                valid_evidence = True
 
             if not valid_evidence:
                 raise HTTPException(
@@ -631,8 +651,6 @@ class ConstructionService:
         task.completed_by = completer_user_id
         if field_notes:
             task.field_notes = field_notes
-        if proof_media_url:
-            task.proof_media_url = proof_media_url
 
         # Transition order to IN_PROGRESS if currently PENDING
         if task.order.status == "PENDING":
@@ -655,6 +673,12 @@ class ConstructionService:
         if not task:
             raise HTTPException(status_code=404, detail="Công việc thi công không tồn tại")
 
+        if task.order and task.order.status in ("COMPLETED", "CANCELLED"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Lệnh thi công đã kết thúc ({task.order.status}), không thể thêm bằng chứng.",
+            )
+
         # Gate Check: file must exist and be READY (ảnh phải READY trước chốt)
         file_obj = db.query(FileObject).filter(FileObject.file_id == file_id).first()
         if not file_obj:
@@ -665,6 +689,11 @@ class ConstructionService:
             raise HTTPException(
                 status_code=400,
                 detail=f"Tệp bằng chứng '{file_id}' chưa ở trạng thái READY (trạng thái: {file_obj.state}). Vui lòng hoàn tất tải lên tệp trước.",
+            )
+        if not file_obj.mime_type.startswith("image/"):
+            raise HTTPException(
+                status_code=400,
+                detail="Minh chứng thi công thực địa bắt buộc phải là tệp hình ảnh (PNG, JPG).",
             )
 
         evidence = ConstructionTaskEvidence(

@@ -1,0 +1,34 @@
+{
+  "synthetic_prefix_rows_after_rollback": {
+    "customers": 0,
+    "deceased_profiles": 0,
+    "contracts": 0,
+    "plots": 0,
+    "care_packages": 0,
+    "contract_annexes": 0
+  },
+  "main_counts_before": {
+    "customers": 1081,
+    "deceased_profiles": 707,
+    "contracts": 928,
+    "plots": 1027,
+    "care_schedules": 311,
+    "construction_orders": 141,
+    "payments": 30,
+    "receivables": 403
+  },
+  "main_counts_after": {
+    "customers": 1081,
+    "deceased_profiles": 707,
+    "contracts": 928,
+    "plots": 1027,
+    "care_schedules": 311,
+    "construction_orders": 141,
+    "payments": 30,
+    "receivables": 403
+  },
+  "main_counts_unchanged": true,
+  "main_revision_unchanged": true,
+  "main_permissions_unchanged": true,
+  "limitation": "Counts are a sanity check, not a bytewise DB comparison; normal authentication/session/audit writes were allowed."
+}

@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 
 from app.db.session import SessionLocal
 from app.main import app
+from app.modules.documents.models import FileObject
 from app.modules.profiles.service import ProfileService
 
 client = TestClient(app)
@@ -178,7 +179,7 @@ def test_death_certificate_verification_workflow_g08():
     assert dec_resp.status_code == 201, dec_resp.text
     deceased_id = dec_resp.json()["deceased_id"]
 
-    # Attach certificate
+    # Attach certificate without file -> remains unverified draft (R04)
     cert_payload = {
         "certificate_number": f"GTT-{unique_suffix}",
         "issuing_authority": "UBND Phường 10, Quận 10",
@@ -193,25 +194,41 @@ def test_death_certificate_verification_workflow_g08():
     assert cert_resp.status_code == 200, cert_resp.text
     cert_data = cert_resp.json()
     assert cert_data["cert_id"] > 0
-    assert cert_data["is_verified"] is True, (
-        "Giấy báo tử mới đính kèm phải tự động hợp lệ (is_verified=True) để phục vụ an táng!"
+    assert cert_data["is_verified"] is False, (
+        "Giấy báo tử chưa có file scan đính kèm không được tự động xác minh (R04)!"
     )
-    assert cert_data["verified_at"] is not None
+    assert cert_data["verified_at"] is None
 
-    # Check domain invariant helper
+    # Check domain invariant helper -> False
     db = SessionLocal()
     try:
         is_verified = ProfileService.check_death_certificate_verified(db, deceased_id)
-        assert is_verified is True, "Đã có giấy báo tử phải trả về True để cho phép an táng!"
+        assert is_verified is False, "Chưa có file scan giấy báo tử không được cho phép an táng!"
+
+        # Create READY file object
+        file_ready = FileObject(
+            file_id=f"file_gbt_{unique_suffix}",
+            bucket_name="nghiatrang-private",
+            object_key=f"uploads/gbt_{unique_suffix}.pdf",
+            file_name="giay_bao_tu.pdf",
+            mime_type="application/pdf",
+            file_size_bytes=4096,
+            sha256_hash="4" * 64,
+            state="READY",
+            uploaded_by_user_id=1,
+        )
+        db.add(file_ready)
+        db.commit()
     finally:
         db.close()
 
-    # Update certificate notes/authority - must stay valid
+    # Update certificate with READY file_id -> now verified!
     update_payload = {
         "certificate_number": f"GTT-{unique_suffix}",
         "issuing_authority": "UBND Phường 10, Quận 10 (Cập nhật)",
         "issue_date": str(date(2026, 1, 16)),
-        "notes": "Đã đối chiếu bản lưu trữ",
+        "file_id": f"file_gbt_{unique_suffix}",
+        "notes": "Đã có bản scan READY",
     }
     update_resp = client.post(
         f"/api/v1/profiles/deceased/{deceased_id}/certificate",
@@ -221,7 +238,14 @@ def test_death_certificate_verification_workflow_g08():
     assert update_resp.status_code == 200, update_resp.text
     updated_data = update_resp.json()
     assert updated_data["is_verified"] is True
-    assert updated_data["issuing_authority"] == "UBND Phường 10, Quận 10 (Cập nhật)"
+    assert updated_data["file_id"] == f"file_gbt_{unique_suffix}"
+
+    # Now domain invariant helper returns True
+    db = SessionLocal()
+    try:
+        assert ProfileService.check_death_certificate_verified(db, deceased_id) is True
+    finally:
+        db.close()
 
 
 def test_public_lookup_zero_pii_g19():

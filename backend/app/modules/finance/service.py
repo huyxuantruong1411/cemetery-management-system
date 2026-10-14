@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from app.modules.audit.models import AuditLog
 from app.modules.auth.models import User
 from app.modules.contracts.models import Contract, ContractAnnex
+from app.modules.documents.models import FileObject
 from app.modules.documents.service import DocumentService
 from app.modules.finance.currency_words import number_to_vietnamese_words
 from app.modules.finance.models import (
@@ -418,11 +419,49 @@ class FinanceService:
     ) -> PaymentResponse:
         """Record an append-only payment, trigger-synced receivable balance, and auto-generate invoice (G15)."""
         idem_key = idempotency_key or payload.idempotency_key
+        norm_amount = Decimal(str(payload.paid_amount)).quantize(Decimal("0.01"))
+        norm_ref = (payload.transaction_reference or "").strip()
+        norm_method = (payload.payment_method or "").strip().upper()
         req_hash = hashlib.sha256(
-            f"{receivable_id}_{payload.paid_amount}_{payload.payment_method}_{idem_key}".encode()
+            f"{receivable_id}_{norm_amount}_{norm_method}_{norm_ref}_{idem_key}".encode()
         ).hexdigest()
 
-        # Check idempotency request
+        # 1. Lock and validate receivable BEFORE registering in-progress idempotency
+        receivable = (
+            db.query(Receivable)
+            .filter(Receivable.receivable_id == receivable_id)
+            .with_for_update()
+            .first()
+        )
+        if not receivable:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Không tìm thấy khoản thu mã {receivable_id}",
+            )
+
+        if receivable.status == "PAID":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Khoản thu này đã được thanh toán toàn bộ trước đó.",
+            )
+
+        if receivable.status == "CANCELLED":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Khoản thu này đã bị hủy, không thể tiếp nhận thanh toán.",
+            )
+
+        remaining_debt = receivable.final_payable_amount - receivable.total_paid_amount
+        if payload.paid_amount > remaining_debt:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=(
+                    f"Số tiền thanh toán ({payload.paid_amount:,.0f} đ) vượt quá "
+                    f"dư nợ hiện tại ({remaining_debt:,.0f} đ)."
+                ),
+            )
+
+        # 2. Check idempotency request
         if idem_key:
             existing_req = (
                 db.query(IdempotencyRequest)
@@ -462,41 +501,6 @@ class FinanceService:
             )
             db.add(idem_record)
             db.commit()
-
-        # 1. Lock and validate receivable
-        receivable = (
-            db.query(Receivable)
-            .filter(Receivable.receivable_id == receivable_id)
-            .with_for_update()
-            .first()
-        )
-        if not receivable:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Không tìm thấy khoản thu mã {receivable_id}",
-            )
-
-        if receivable.status == "PAID":
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Khoản thu này đã được thanh toán toàn bộ trước đó.",
-            )
-
-        if receivable.status == "CANCELLED":
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Khoản thu này đã bị hủy, không thể tiếp nhận thanh toán.",
-            )
-
-        remaining_debt = receivable.final_payable_amount - receivable.total_paid_amount
-        if payload.paid_amount > remaining_debt:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=(
-                    f"Số tiền thanh toán ({payload.paid_amount:,.0f} đ) vượt quá "
-                    f"dư nợ hiện tại ({remaining_debt:,.0f} đ)."
-                ),
-            )
 
         now = _utc_now_naive()
         payment = Payment(
@@ -565,7 +569,9 @@ class FinanceService:
                 source_code=source_code,
                 paid_amount_str=f"{payload.paid_amount:,.0f} VNĐ",
                 total_amount_in_words=amount_words,
-                payment_method_str=method_labels.get(payload.payment_method, payload.payment_method),
+                payment_method_str=method_labels.get(
+                    payload.payment_method, payload.payment_method
+                ),
                 transaction_reference=payload.transaction_reference,
                 recorder_name=recorder_name,
                 issued_date=now,
@@ -737,9 +743,7 @@ class FinanceService:
         )
 
     @classmethod
-    def regenerate_invoice(
-        cls, db: Session, payment_id: int, user_id: int
-    ) -> InvoiceResponse:
+    def regenerate_invoice(cls, db: Session, payment_id: int, user_id: int) -> InvoiceResponse:
         payment = db.query(Payment).filter(Payment.payment_id == payment_id).first()
         if not payment:
             raise HTTPException(
@@ -748,20 +752,24 @@ class FinanceService:
             )
         if payment.invoice:
             inv = payment.invoice
-            return InvoiceResponse(
-                invoice_id=inv.invoice_id,
-                invoice_number=inv.invoice_number,
-                payment_id=inv.payment_id,
-                issued_date=inv.issued_date,
-                total_amount_in_words=inv.total_amount_in_words,
-                pdf_file_url=inv.pdf_file_url,
-                file_id=inv.file_id,
-                notes=inv.notes,
-            )
+            file_obj = db.get(FileObject, inv.file_id) if inv.file_id else None
+            if file_obj and file_obj.state == "READY":
+                return InvoiceResponse(
+                    invoice_id=inv.invoice_id,
+                    invoice_number=inv.invoice_number,
+                    payment_id=inv.payment_id,
+                    issued_date=inv.issued_date,
+                    total_amount_in_words=inv.total_amount_in_words,
+                    pdf_file_url=inv.pdf_file_url,
+                    file_id=inv.file_id,
+                    notes=inv.notes,
+                )
 
         receivable = payment.receivable
         now = _utc_now_naive()
-        invoice_number = cls._generate_receipt_number(db)
+        invoice_number = (
+            payment.invoice.invoice_number if payment.invoice else cls._generate_receipt_number(db)
+        )
         amount_words = number_to_vietnamese_words(payment.paid_amount)
         source_code = (
             receivable.contract.contract_code
@@ -806,16 +814,22 @@ class FinanceService:
             user_id=user_id,
         )
 
-        invoice = Invoice(
-            invoice_number=invoice_number,
-            payment_id=payment.payment_id,
-            issued_date=now,
-            total_amount_in_words=amount_words,
-            pdf_file_url=f"/api/v1/documents/{file_obj.file_id}/download",
-            file_id=file_obj.file_id,
-            created_by_user_id=user_id,
-        )
-        db.add(invoice)
+        if payment.invoice:
+            invoice = payment.invoice
+            invoice.file_id = file_obj.file_id
+            invoice.pdf_file_url = f"/api/v1/documents/{file_obj.file_id}/download"
+            invoice.total_amount_in_words = amount_words
+        else:
+            invoice = Invoice(
+                invoice_number=invoice_number,
+                payment_id=payment.payment_id,
+                issued_date=now,
+                total_amount_in_words=amount_words,
+                pdf_file_url=f"/api/v1/documents/{file_obj.file_id}/download",
+                file_id=file_obj.file_id,
+                created_by_user_id=user_id,
+            )
+            db.add(invoice)
         db.commit()
         db.refresh(invoice)
 

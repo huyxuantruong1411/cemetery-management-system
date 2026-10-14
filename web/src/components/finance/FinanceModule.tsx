@@ -261,6 +261,33 @@ export const FinanceModule: React.FC = () => {
     }
   }
 
+  // Regenerate Invoice PDF (R12)
+  const [regeneratingId, setRegeneratingId] = useState<number | null>(null)
+  const handleRegenerateInvoice = async (paymentId: number) => {
+    if (!accessToken) return
+    setRegeneratingId(paymentId)
+    try {
+      const res = await fetch(`/api/v1/finance/payments/${paymentId}/regenerate-invoice`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}))
+        throw new Error(errJson.detail || 'Không thể tạo lại biên lai')
+      }
+      const invData = await res.json()
+      alert(`Đã khởi tạo biên lai ${invData.invoice_number} thành công!`)
+      if (paymentSuccessReceipt && paymentSuccessReceipt.payment_id === paymentId) {
+        setPaymentSuccessReceipt((prev) => (prev ? { ...prev, invoice: invData } : null))
+      }
+      loadData()
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Lỗi tạo lại biên lai')
+    } finally {
+      setRegeneratingId(null)
+    }
+  }
+
   // Status Badge
   const renderStatusBadge = (status: string) => {
     switch (status) {
@@ -954,7 +981,7 @@ export const FinanceModule: React.FC = () => {
                   Số tiền <b>{formatCurrency(paymentSuccessReceipt.paid_amount)}</b> đã được ghi nhận vào hệ thống.
                 </p>
 
-                {paymentSuccessReceipt.invoice && (
+                {paymentSuccessReceipt.invoice ? (
                   <div
                     style={{
                       backgroundColor: '#F8FAFC',
@@ -985,28 +1012,70 @@ export const FinanceModule: React.FC = () => {
                       </span>
                     </div>
                   </div>
+                ) : (
+                  <div
+                    style={{
+                      backgroundColor: '#FFFBEB',
+                      padding: '14px',
+                      borderRadius: '8px',
+                      border: '1px solid #FDE68A',
+                      textAlign: 'left',
+                      marginBottom: '20px',
+                      fontSize: '13px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                      color: '#92400E',
+                    }}
+                  >
+                    <Clock size={18} />
+                    <span>Đã ghi tiền, biên lai chưa sẵn sàng hoặc đang chờ kết xuất tệp PDF.</span>
+                  </div>
                 )}
 
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                  <button
-                    onClick={() => handleDownloadReceipt(paymentSuccessReceipt.payment_id)}
-                    style={{
-                      padding: '9px 18px',
-                      backgroundColor: 'var(--brand-primary)',
-                      color: '#FFFFFF',
-                      border: 'none',
-                      borderRadius: '6px',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                    }}
-                  >
-                    <Download size={15} />
-                    Tải Về Biên Lai (PDF)
-                  </button>
+                  {paymentSuccessReceipt.invoice ? (
+                    <button
+                      onClick={() => handleDownloadReceipt(paymentSuccessReceipt.payment_id)}
+                      style={{
+                        padding: '9px 18px',
+                        backgroundColor: 'var(--brand-primary)',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <Download size={15} />
+                      Tải Về Biên Lai (PDF)
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleRegenerateInvoice(paymentSuccessReceipt.payment_id)}
+                      disabled={regeneratingId === paymentSuccessReceipt.payment_id}
+                      style={{
+                        padding: '9px 18px',
+                        backgroundColor: '#D97706',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        cursor: regeneratingId === paymentSuccessReceipt.payment_id ? 'not-allowed' : 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <RefreshCw size={15} style={{ animation: regeneratingId === paymentSuccessReceipt.payment_id ? 'spin 1s linear infinite' : 'none' }} />
+                      {regeneratingId === paymentSuccessReceipt.payment_id ? 'Đang tạo...' : 'Tạo lại biên lai (PDF)'}
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       setIsPaymentModalOpen(false)
@@ -1451,7 +1520,7 @@ export const FinanceModule: React.FC = () => {
                           <div>
                             <b>Thu ngân:</b> {p.recorder_name || 'Nhân viên kế toán'}
                           </div>
-                          {p.invoice && (
+                          {p.invoice ? (
                             <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px dashed #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <span>
                                 <b>Biên lai:</b> {p.invoice.invoice_number}
@@ -1474,6 +1543,29 @@ export const FinanceModule: React.FC = () => {
                               >
                                 <Download size={12} />
                                 Tải PDF
+                              </button>
+                            </div>
+                          ) : (
+                            <div style={{ marginTop: '6px', paddingTop: '6px', borderTop: '1px dashed #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ color: '#D97706', fontSize: '11px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <Clock size={12} />
+                                Đã ghi tiền, biên lai chưa sẵn sàng
+                              </span>
+                              <button
+                                onClick={() => handleRegenerateInvoice(p.payment_id)}
+                                disabled={regeneratingId === p.payment_id}
+                                style={{
+                                  padding: '4px 10px',
+                                  backgroundColor: '#FEF3C7',
+                                  color: '#92400E',
+                                  border: '1px solid #FCD34D',
+                                  borderRadius: '4px',
+                                  fontSize: '11px',
+                                  fontWeight: 600,
+                                  cursor: regeneratingId === p.payment_id ? 'not-allowed' : 'pointer',
+                                }}
+                              >
+                                {regeneratingId === p.payment_id ? 'Đang tạo...' : 'Tạo lại biên lai (PDF)'}
                               </button>
                             </div>
                           )}
