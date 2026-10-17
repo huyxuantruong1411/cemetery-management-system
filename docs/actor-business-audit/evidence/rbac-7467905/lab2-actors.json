@@ -1,0 +1,158 @@
+{
+  "UC-1.1": {
+    "name": "Quản lý khu/hàng/ô",
+    "actors": "Sếp"
+  },
+  "UC-1.2": {
+    "name": "Quản lý loại mộ & số slot",
+    "actors": "Sếp"
+  },
+  "UC-1.3": {
+    "name": "Cập nhật trạng thái mộ",
+    "actors": "Quản trang"
+  },
+  "UC-1.4": {
+    "name": "Tra cứu tình trạng mộ",
+    "actors": "Sếp, Nhân viên Marketing, Quản trang, Khách hàng/Thân nhân"
+  },
+  "UC-1.5": {
+    "name": "Dẫn đường tới mộ",
+    "actors": "Khách hàng/Thân nhân, Quản trang, Dịch vụ bản đồ/GPS"
+  },
+  "UC-2.1": {
+    "name": "Quản lý thông tin khách hàng/thân nhân",
+    "actors": "Nhân viên Marketing"
+  },
+  "UC-2.2": {
+    "name": "Quản lý hồ sơ người mất",
+    "actors": "Nhân viên Marketing"
+  },
+  "UC-2.3": {
+    "name": "Liên kết khách hàng – người mất – mộ",
+    "actors": "Nhân viên Marketing"
+  },
+  "UC-2.4": {
+    "name": "Tra cứu hồ sơ",
+    "actors": "Nhân viên Marketing"
+  },
+  "UC-3.1": {
+    "name": "Lập hợp đồng",
+    "actors": "Nhân viên Marketing"
+  },
+  "UC-3.2": {
+    "name": "In hợp đồng/phụ lục",
+    "actors": "Nhân viên Marketing"
+  },
+  "UC-3.3": {
+    "name": "Đính kèm hợp đồng/phụ lục đã ký",
+    "actors": "Nhân viên Marketing"
+  },
+  "UC-3.4": {
+    "name": "Lập phụ lục hợp đồng",
+    "actors": "Nhân viên Marketing"
+  },
+  "UC-3.5": {
+    "name": "Theo dõi trạng thái, thời hạn phụ lục",
+    "actors": "Sếp, Nhân viên Marketing"
+  },
+  "UC-4.1": {
+    "name": "Lập checklist thi công",
+    "actors": "Quản trang"
+  },
+  "UC-4.2": {
+    "name": "Phân công",
+    "actors": "Quản trang"
+  },
+  "UC-4.3": {
+    "name": "Cập nhật checklist",
+    "actors": "Quản trang"
+  },
+  "UC-4.4": {
+    "name": "Cập nhật tiến độ",
+    "actors": "Quản trang"
+  },
+  "UC-4.5": {
+    "name": "Theo dõi thời hạn phụ lục",
+    "actors": "Quản trang"
+  },
+  "UC-5.1": {
+    "name": "Đăng ký gói chăm sóc",
+    "actors": "Nhân viên Marketing"
+  },
+  "UC-5.2": {
+    "name": "Lập lịch chăm sóc",
+    "actors": "Quản trang"
+  },
+  "UC-5.3": {
+    "name": "Phân công",
+    "actors": "Quản trang"
+  },
+  "UC-5.4": {
+    "name": "Xác nhận thực hiện checklist",
+    "actors": "Quản trang"
+  },
+  "UC-6.1": {
+    "name": "Tạo khoản phải thu",
+    "actors": "Kế toán"
+  },
+  "UC-6.2": {
+    "name": "Ghi nhận thanh toán",
+    "actors": "Kế toán"
+  },
+  "UC-6.3": {
+    "name": "Xuất hóa đơn/biên lai",
+    "actors": "Kế toán"
+  },
+  "UC-6.4": {
+    "name": "Áp chiết khấu",
+    "actors": "Kế toán"
+  },
+  "UC-7.1": {
+    "name": "Báo cáo doanh thu",
+    "actors": "Sếp, Kế toán"
+  },
+  "UC-7.2": {
+    "name": "Thống kê phần mộ theo khu/trạng thái",
+    "actors": "Sếp"
+  },
+  "UC-7.3": {
+    "name": "Thống kê hợp đồng",
+    "actors": "Sếp"
+  },
+  "UC-7.4": {
+    "name": "Thống kê thi công/chăm sóc",
+    "actors": "Sếp"
+  },
+  "UC-7.5": {
+    "name": "Xuất file",
+    "actors": "Sếp, Kế toán"
+  },
+  "UC-8.1": {
+    "name": "Đăng nhập hệ thống",
+    "actors": "Sếp, Nhân viên Marketing, Kế toán, Quản trang"
+  },
+  "UC-8.2": {
+    "name": "Quản lý tài khoản",
+    "actors": "Sếp"
+  },
+  "UC-8.3": {
+    "name": "Phân quyền",
+    "actors": "Sếp"
+  },
+  "UC-8.4": {
+    "name": "Quản lý loại hợp đồng",
+    "actors": "Sếp"
+  },
+  "UC-8.5": {
+    "name": "Quản lý gói dịch vụ",
+    "actors": "Sếp"
+  },
+  "UC-8.6": {
+    "name": "Quản lý bảng giá",
+    "actors": "Sếp"
+  },
+  "UC-8.7": {
+    "name": "Kiểm tra Audit Log",
+    "actors": "Sếp"
+  }
+}

@@ -381,7 +381,7 @@ def test_biz_scenario_3_care_package_and_schedule_tasks(caretaker_headers, admin
     """
     pkg_resp = client.get(
         f"{settings.API_V1_PREFIX}/catalog/care-packages",
-        headers=caretaker_headers,
+        headers=admin_headers,
     )
     assert pkg_resp.status_code == 200
     packages = pkg_resp.json()
@@ -512,6 +512,14 @@ def test_biz_scenario_4_exhumation_rules_and_kim_tinh_prevention(
         headers=marketing_headers,
         json={"signed_scan_file_id": sample_pdf_scan, "signed_at": "2026-10-10"},
     )
+
+    # Quản trang xác nhận hạ huyệt thực địa (FLOW-01)
+    confirm_res = client.post(
+        f"{settings.API_V1_PREFIX}/contracts/annexes/{annex_id}/confirm-burial",
+        headers=caretaker_headers,
+        json={"proof_file_id": sample_pdf_scan, "notes": "Đã hạ huyệt thực địa"},
+    )
+    assert confirm_res.status_code == 200
 
     # Case 4B: Người ngoài cố tình yêu cầu cải táng -> Bị từ chối 403
     bad_ex_resp = client.post(

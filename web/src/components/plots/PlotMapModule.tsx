@@ -26,6 +26,8 @@ import type {
   PlotType,
 } from '../../types/plots';
 import { Pagination, usePagination } from '../common/Pagination';
+import { useAuth } from '../../context/useAuth';
+import { SimulatedPlotMap } from './SimulatedPlotMap';
 
 interface PlotMapModuleProps {
   token: string | null;
@@ -36,8 +38,11 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
   token,
   onRequireLogin,
 }) => {
-  // Tab state
-  const [activeTab, setActiveTab] = useState<'map' | 'grid' | 'catalog'>('map');
+  const { hasPermission } = useAuth();
+  const canManagePlots = hasPermission('plots:manage');
+
+  // Tab state: Default to Simulated Layout
+  const [activeTab, setActiveTab] = useState<'simulated' | 'map' | 'grid' | 'catalog'>('simulated');
 
   // Data states
   const [plots, setPlots] = useState<Plot[]>([]);
@@ -911,6 +916,25 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
           }}
         >
           <button
+            onClick={() => setActiveTab('simulated')}
+            style={{
+              padding: '12px 18px',
+              fontSize: '13px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              border: 'none',
+              borderBottom: activeTab === 'simulated' ? '3px solid #24594D' : '3px solid transparent',
+              backgroundColor: 'transparent',
+              color: activeTab === 'simulated' ? '#24594D' : '#64748B',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+          >
+            <Layers size={16} />
+            <span>Sơ Đồ Quy Hoạch (384 Ô & Lối Đi)</span>
+          </button>
+          <button
             onClick={() => setActiveTab('map')}
             style={{
               padding: '12px 18px',
@@ -1065,7 +1089,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
             Hiển thị: <strong style={{ color: '#0F172A' }}>{filteredPlots.length}</strong> / {plots.length} ô
           </span>
 
-          {token && (
+          {token && canManagePlots && (
             <button
               onClick={() => {
                 setCrudError(null);
@@ -1131,6 +1155,13 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
             >
               Thử lại
             </button>
+          </div>
+        )}
+
+        {/* TAB 0: Simulated Layout (384 Plots & Walking Paths) */}
+        {activeTab === 'simulated' && !isLoading && (
+          <div style={{ padding: '16px' }}>
+            <SimulatedPlotMap />
           </div>
         )}
 
@@ -1389,7 +1420,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                       </button>
                     )}
 
-                    {token && (
+                    {token && canManagePlots && (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
                         <button
                           onClick={() => {
@@ -1625,8 +1656,9 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                     Cấu hình các phân khu an táng, số lượng hàng mộ và quy cách kích thước huyệt mộ.
                   </p>
                 </div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  <button
+                {canManagePlots && (
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <button
                     onClick={() => {
                       setCrudError(null);
                       setZoneModal({ isOpen: true, mode: 'create', data: null });
@@ -1693,7 +1725,8 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                     <span>Thêm Loại Mộ</span>
                   </button>
                 </div>
-              </div>
+              )}
+            </div>
             )}
 
             {/* Zones & Rows Section */}
@@ -1715,7 +1748,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                             <span style={{ fontSize: '11px', backgroundColor: '#E2E8F0', padding: '2px 8px', borderRadius: '4px', fontWeight: 600, color: '#475569' }}>
                               {zoneRows.length} hàng
                             </span>
-                            {token && (
+                            {token && canManagePlots && (
                               <>
                                 <button
                                   onClick={() => {
@@ -1762,7 +1795,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                                 <span style={{ fontWeight: 600, color: '#334155' }}>{r.row_code}</span>
                                 <span style={{ color: '#94A3B8', fontSize: '11px' }}>({r.total_plots} ô)</span>
                               </div>
-                              {token && (
+                              {token && canManagePlots && (
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                   <button
                                     onClick={() => {
@@ -1790,7 +1823,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                           ))}
                         </div>
                       </div>
-                      {token && (
+                      {token && canManagePlots && (
                         <button
                           onClick={() => {
                             setCrudError(null);
@@ -1855,7 +1888,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                           <span style={{ fontSize: '11px', backgroundColor: '#E8F1EE', color: '#24594D', padding: '3px 8px', borderRadius: '4px', fontWeight: 700 }}>
                             {pt.default_slots} slot
                           </span>
-                          {token && (
+                          {token && canManagePlots && (
                             <>
                               <button
                                 onClick={() => {

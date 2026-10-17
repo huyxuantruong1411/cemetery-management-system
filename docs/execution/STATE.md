@@ -1,7 +1,7 @@
 # Nhật Ký Thực Thi Dự Án (Project Execution State)
 
 **Dự án:** Hệ thống Quản lý Nghĩa trang Tư nhân  
-**Ngày cập nhật:** 14/10/2026
+**Ngày cập nhật:** 16/10/2026
 **Kế hoạch thực thi:** [`docs/EXECUTION_PLAN.md`](../EXECUTION_PLAN.md)
 
 ---
@@ -9,7 +9,7 @@
 ## 1. Trạng thái tổng quan
 
 - **Milestone hiện tại:** Đợt Cải Tiến Giao Diện Theo Actor (Kế hoạch `02_PLAN_ANTIGRAVITY_CAI_THIEN_GIAO_DIEN.md`).
-  - **UI-M00 (Baseline & Traceability):** ĐẠT (Done).
+  - **UI-M00 (Baseline & Traceability):** Cần đối chiếu lại mã UC và actor theo review 16/10/2026; giữ baseline cũ để truy vết.
   - **Làm sạch UI triển khai thực tế (Section 5.4):** ĐẠT (Done) -> Gỡ bỏ toàn bộ test UI, demo accounts/passwords trên web & mobile, loại bỏ dev health grid và RBAC permissions tag cloud, làm sạch worker triggers/demo PDF, chuyển đổi giao diện công khai P01 sang cổng thông tin tôn nghiêm.
   - **UI-M01 -> UI-M10:** Đang chuẩn bị / chưa hoàn tất trọn vẹn.
 - **Trạng thái CSDL:**
@@ -24,6 +24,7 @@
   - MinIO Docker Container (`elestio/minio:latest`) đang chạy trên máy.
   - Bind mount trực tiếp vào `D:\work\TH-PTTK\QL-NghiaTrang\backend\runtime\minio\data` trên ổ D.
 - **Bộ công cụ & Chất lượng mã nguồn:**
+  - **Lưu ý nghiệm thu 16/10/2026:** Các chỉ số quality gate dưới đây là báo cáo của đợt triển khai trước. Review độc lập tại `7467905` chưa chạy lại toàn bộ gate và xác nhận phân quyền còn sai ở cả ba actor non-admin; xem mục 2.5. Không dùng test xanh để kết luận đủ quyền/39 UC.
   - Backend: Python 3.12 (`uv`). 91 tests passed (7 Business Lifecycle E2E + 9 reports/audit + 7 finance + 7 care + 7 construction + 7 lifecycle + 6 contracts + 7 profiles + 6 plots + 6 auth + 6 catalog + 6 documents + 2 jobs + 2 triggers + 4 health/storage), ruff check/format clean.
   - Web: React 19 + TypeScript + Vite (`pnpm`). Build thành công (0 errors), oxlint clean (0 errors), đã hoàn tất xử lý xác nhận an táng thực địa, tạo lại biên lai, phân quyền điều phối chăm sóc, phím Escape drawer và accessibility dialog.
   - Mobile: Flutter 3.41.6 / Dart 3.11.4 Android. Analyze 0 issues, 14/14 tests passed, đồng bộ hóa ranh giới khách vãng lai chỉ xem Tra Cứu Tưởng Niệm Zero PII.
@@ -63,8 +64,8 @@
 
 | Milestone | Tên Milestone | Trạng thái | Gợi ý Commit / Tag | Ghi chú & Bằng chứng |
 |---|---|---|---|---|
-| **UI-M00** | Baseline, 39 UC, policy, quyết định, fixture an toàn | **ĐẠT (Done)** | `docs(ui): establish lab actor traceability` | Nhánh `ui/lab-actor-alignment`, baseline.md, traceability.csv, actor-policy.md, route-inventory.md, decisions.md, api-ui-contracts.md, acceptance.md. |
-| **UI-M01** | Ma trận capability và hợp đồng dữ liệu API/File ACL | **ĐẠT (Done)** | `audit-fixes-complete` | Đã xử lý triệt để toàn bộ 14 phát hiện R01-R14 từ REVIEW-3cfc146.md và quy tắc Hợp đồng chuyển nhượng. 91 tests passed, ruff clean, pnpm lint/build clean. |
+| **UI-M00** | Baseline, 39 UC, policy, quyết định, fixture an toàn | **CẦN ĐỐI CHIẾU LẠI** | `docs(ui): establish lab actor traceability` (lịch sử) | Baseline và tài liệu cũ vẫn giữ để truy vết; review 16/10 phát hiện mã UC/actor trong traceability bị lệch. Đồng bộ với AUTHORIZATION-MATRIX-7467905.csv trước khi nghiệm thu policy. |
+| **UI-M01** | Ma trận capability và hợp đồng dữ liệu API/File ACL | **CHƯA ĐẠT — rà soát lại** | `7467905` (baseline review) | Review 16/10 xác nhận quyền CRUD cấu hình sai actor, lộ dữ liệu hồ sơ/pháp lý, GET/export lệch quyền và lỗi tải file nháp. Xem mục 2.5 và PLAN-RBAC-MAP-7467905.md; chưa nghiệm thu toàn bộ R01–R14. |
 | **UI-M02** | Design system, routing và cổng công khai (Public Portal) | Chưa bắt đầu | `feat(ui): add public portal and role workspaces` | Cổng công khai P01-P04 Zero PII, bố cục 4 Actor workspaces, URL router. |
 | **UI-M03** | Hồ sơ, 4 loại HĐ, 3 loại phụ lục, in/ký ngoài/scan | Chưa bắt đầu | `feat(contracts): complete actor based legal journeys` | M01-M10 hoàn chỉnh luồng pháp lý. |
 | **UI-M04** | Nhiều quản trang, nhân sự đa tầng, lịch khả dụng | Chưa bắt đầu | `feat(operations): separate supervisors and executors` | Q10, phân tách supervisor vs work party, xử lý xung đột. |
@@ -130,9 +131,9 @@
 
 ---
 
-### 2.4. Báo cáo khắc phục toàn diện các phát hiện Review (R01 - R14) — 14/10/2026
+### 2.4. Báo cáo agent về khắc phục các phát hiện Review (R01 - R14) — 14/10/2026
 
-**Toàn bộ 14 phát hiện từ `REVIEW-3cfc146.md` cùng quy tắc nghiệp vụ người dùng yêu cầu đối với Hợp đồng chuyển nhượng đã được hoàn thiện, kiểm chứng thực tế và vượt qua toàn bộ Quality Gate.**
+> Giữ lại nội dung agent báo cáo tại commit 7467905 để truy vết; không phải kết luận nghiệm thu hiện hành. Review độc lập ngày 16/10/2026 bác bỏ tuyên bố hoàn tất toàn bộ. Cụ thể, che trường trên DTO hợp đồng chưa phải WorkBasis, Quản trang không được xuất báo cáo doanh nghiệp theo đặc tả, và nhánh download file nháp đang lỗi 500. Xem mục 2.5.
 
 1. **R01 (Bảo mật Hợp đồng với Quản trang):**
    - Áp dụng `WorkBasis` DTO projection cho vai trò Quản trang: ẩn `citizen_id` (`******`), ẩn `address = None`, ẩn giá trị thanh toán (`total_amount = 0.00`), ẩn hoàn toàn URL bản scan hợp đồng ký ngoài.
@@ -174,9 +175,69 @@
 16. **Bảo vệ CSDL Test Chặt Chẽ:**
     - Autouse session fixture trong `backend/tests/conftest.py` thực hiện live query `SELECT DB_NAME()` khẳng định 100% CSDL đích là `QL_NghiaTrang_Test`. Nếu kết nối tới bất kỳ CSDL nào khác (đặc biệt là DB chính `QL_NghiaTrang`), lập tức abort toàn bộ test suite.
 
-**Chỉ số Quality Gate hiện tại:**
+**Chỉ số Quality Gate do agent báo cáo cho đợt này:**
 - **Backend:** `uv run pytest` đạt **91/91 passed (100%)**, `uv run ruff check` đạt **0 errors**.
 - **Web Frontend:** `pnpm build` thành công (0 errors), `pnpm lint` (`oxlint --quiet`) đạt **0 errors**.
+
+---
+
+### 2.5. Rà soát độc lập quyền actor và bản đồ — 16/10/2026
+
+Baseline **7467905**. Tài liệu bàn giao: [PLAN-RBAC-MAP-7467905.md](../actor-business-audit/PLAN-RBAC-MAP-7467905.md), [ma trận 39 UC](../actor-business-audit/AUTHORIZATION-MATRIX-7467905.csv), [bằng chứng](../actor-business-audit/evidence/rbac-7467905). Lần này chỉ tạo tài liệu/mẫu độc lập và cập nhật kết luận review, **chưa sửa mã ứng dụng hoặc quyền DB đang vận hành**.
+
+- Đối chiếu Lab2 và đặc tả nghiệp vụ; phát hiện mã UC trong traceability cũ bị lệch. Ma trận mới phân biệt truy cập module, C/R/U/D, command, file và ngoại lệ phối hợp; Admin ngoài phạm vi thay đổi quyền.
+- UI đăng nhập thật ba actor; 122 lượt HTTP gồm 48 lượt đọc và 74 bước probe Test, thêm 13 lượt role rỗng/audit. Có inventory 130 khai báo route nhưng không khẳng định đã chạy đủ tất cả route hoặc toàn bộ 91 tests.
+- **Lỗi server tái hiện:** Marketing CRUD khu/ô và sửa mẫu hợp đồng; Marketing/Quản trang tạo/sửa giá gói chăm sóc; Kế toán sửa bảng giá/price item. Quản trang/Kế toán đọc directory hồ sơ; Quản trang list hợp đồng nhận số tiền thật; Kế toán tải legal PDF/scan. User role rỗng vẫn đọc được nhiều API nội bộ.
+- **Lỗi UI tái hiện:** module/nút/empty CTA không theo capability. Quản trang/Kế toán mở được modal thêm khách nhưng API đã trả 403; không đánh đồng nút hiển thị với ghi thành công. Cần WorkBasis/FinanceBasis và chuyển xác nhận hiện trường ra khỏi module hợp đồng trước khi rút quyền cũ.
+- **Lỗi khác:** Quản trang GET operations 403 nhưng export 201; Marketing/Kế toán GET contracts report 500 do shadow biến `status`; Marketing tải file nháp của mình 500 do import model không tồn tại. Nhánh ký phụ lục ngày hôm nay/quá khứ còn tự occupancy theo đọc mã, cần kiểm thử lại để đóng R05.
+- **Sửa đổi đã có tác dụng:** Quản trang tải legal PDF/scan và link version bị chặn; Kế toán link version bị chặn; Marketing xem/xuất doanh thu và Kế toán xem/xuất lấp đầy bị chặn ở các ca thử. Các phát hiện khác của review cũ chưa được tái nghiệm thu toàn bộ trong đợt tập trung này.
+- **Bản đồ:** 1.027 ô, 78 có tọa độ, 949 thiếu; 78 ô chỉ có 13 cặp khác nhau. UI tải 500 bản ghi chứa 4 ô có tọa độ, marker lớn hơn khoảng cách hiển thị nên chồng. Đề xuất synthetic layout theo mét/geometry riêng; chỉ neo WGS84 khi có mốc phù hợp, không ghi GPS giả vào DB hiện hữu.
+- [Mẫu bản đồ](../actor-business-audit/map-demo-7467905.html): 384 ô/6 khu/48 hàng, mở offline, tìm/lọc/chọn và lộ trình theo lối đi. Đã kiểm 1440/768/390 px và các ca tìm kiếm; đây là prototype, không phải map ứng dụng đã được sửa.
+- Bảo toàn dữ liệu: backup Test COPY_ONLY/CHECKSUM + VERIFYONLY trước probe, rollback dữ liệu synthetic, 4/4 MinIO object đã dọn. Số hàng nghiệp vụ chính, role-permission và revision không đổi; không bootstrap/drop DB. Probe rollback không chứng minh durability/concurrency và số hàng không phải so sánh từng byte.
+
+---
+
+### 2.6. Báo Cáo Hoàn Tất 5 Gói RBAC & Bản Đồ Mô Phỏng Thực Địa — 17/10/2026
+
+Thực thi trọn vẹn 5 gói công việc theo [`PLAN-RBAC-MAP-7467905.md`](../actor-business-audit/PLAN-RBAC-MAP-7467905.md) và [`AUTHORIZATION-MATRIX-7467905.csv`](../actor-business-audit/AUTHORIZATION-MATRIX-7467905.csv):
+
+1. **Gói P01 (Traceability & Policy Alignment):**
+   - Đồng bộ hóa 100% 39 Use Case trong `docs/ui-alignment/traceability.csv` về đúng chuẩn Lab2 (K01-K06, M01-M10, Q01-Q10, S01-S09, A01-A03, P01-P04).
+   - Thiết lập `docs/ui-alignment/actor-policy.md` chuẩn hóa nguyên tắc Default-Deny, chính sách Role Rỗng (`roles=[]`), và các chiếu nghiệp vụ phân quyền EX-01 -> EX-06.
+   - Ban hành `docs/ui-alignment/api-ui-contracts.md` định nghĩa chuẩn giao tiếp `WorkBasis`, `FinanceBasis`, `confirm-burial`, File ACL, và phân quyền trích xuất báo cáo.
+
+2. **Gói P02 (FastAPI Backend + Database Permissions):**
+   - **Báo cáo (Reports):** Sửa lỗi shadow biến `status` gây 500 error; giới hạn báo cáo `REVENUE` cho Kế toán (`reports:revenue`) & Admin; thắt chặt `OPERATIONS`, `OCCUPANCY`, `CONTRACTS` chỉ dành cho Admin (`reports:read`); bảo vệ endpoint export.
+   - **Tài liệu (Documents):** Sửa lỗi 500 `CareScheduleEvidence` -> `CareMediaEvidence`; thắt chặt File ACL ngăn Kế toán tải file hợp đồng/scan, Quản trang không tải export vận hành, file nháp chỉ uploader được phép tải.
+   - **Hợp đồng (Contracts):** Tách biệt luồng pháp lý và vật lý (`FLOW-01`): Kích hoạt phụ lục an táng giữ slot ở trạng thái `RESERVED`, chuyển giao trách nhiệm xác nhận an táng vật lý sang Quản trang thực địa qua endpoint `POST /contracts/annexes/{id}/confirm-burial`; cung cấp `GET /contracts/work-bases` (EX-01); chặn Quản trang & Kế toán tải file PDF hợp đồng pháp lý.
+   - **Tài chính (Finance):** Cung cấp `GET /finance/bases` (EX-02); kiểm tra quyền `finance:discount` khi áp dụng chiết khấu/ưu đãi.
+   - **Không gian (Plots):** Giới hạn toàn bộ quyền tạo/sửa/xóa Khu, Hàng, Ô mộ (`plots:manage`) cho Admin; bảo vệ các route đọc bằng `plots:read`.
+   - **Bảng giá (Catalog):** Giới hạn toàn bộ quyền tạo/sửa/xóa bảng giá, giá dịch vụ, gói chăm sóc, biểu mẫu (`catalog:manage`) cho Admin; bảo vệ các route đọc bằng `catalog:read`.
+   - **Xác thực & Hồ sơ:** Bảo vệ `GET /auth/staff` chặn user `roles=[]`; tách quyền `deceased:read`/`deceased:write` độc lập với `customers:*` (Quản trang đọc thông tin người mất không làm lộ PII khách hàng).
+   - **RBAC Seeding:** Bổ sung các permissions mới trong `scripts/seed_rbac.py` và tăng `auth_version` làm mới token hợp lệ.
+   - **Kiểm thử tự động Backend:** Thêm `backend/tests/test_rbac_strict_matrix.py` (4 tests). Toàn bộ 95/95 tests backend đạt **100% PASSED** (`uv run pytest tests/`). Linter `uv run ruff check app/` đạt **0 errors**.
+
+3. **Gói P03 (Web UI Alignment & Views):**
+   - Xây dựng component `WorkBasisView.tsx` (EX-01) cho Quản trang tra cứu căn cứ phụ lục hợp đồng hiệu lực và thực hiện nút "Xác nhận đã an táng thực địa" tại hiện trường.
+   - Xây dựng component `FinanceBasisView.tsx` (EX-02) cho Kế toán theo dõi căn cứ phát sinh công nợ theo hợp đồng/phụ lục và kích hoạt thu tiền.
+   - Tích hợp sub-tab chuyển đổi linh hoạt trong `FinanceModule.tsx` và `CareModule.tsx`.
+   - Cập nhật `ReportsModule.tsx`: Tự động ẩn các tab Báo cáo Vận hành, Lấp đầy, Hợp đồng đối với Kế toán; chỉ cho phép xem và xuất báo cáo Doanh Thu (`REVENUE`).
+   - Cập nhật `App.tsx`: Phân quyền động sidebar cho 5 Actors (Marketing, Accountant, Caretaker, Public, Role Rỗng); hiển thị màn hình riêng Unauthorized kèm nút Đăng xuất khi tài khoản chưa được gán vai trò vận hành; bọc capability guards chống can thiệp mount module bất hợp lệ.
+
+4. **Gói P04 (Interactive Simulated Map Layout):**
+   - Tích hợp component `SimulatedPlotMap.tsx` mô phỏng 384 ô mộ thực địa từ file tham khảo `map-demo-7467905.html`:
+     - 6 Khu (A, B, C, D, E, F), 48 Hàng (H01-H08), 384 Ô mộ.
+     - Đầy đủ hạ tầng: Cổng chính, trục đường nội bộ xe điện, bãi đỗ xe, nhà tiếp đón, nhà chờ, vườn tưởng niệm.
+     - Tính năng vẽ tuyến đường đi bộ (Walking route) từ Cổng chính đến ô mộ đang chọn.
+     - Hiển thị tọa độ mét nội khu cục bộ kèm phù hiệu "DỮ LIỆU MÔ PHỎNG - Không phải vị trí thực".
+     - Tắt nút điều hướng Google Maps ngoài thực tế khi xem ô mô phỏng.
+     - Ẩn toàn bộ nút tạo/sửa/xóa không gian (Khu, Hàng, Ô mộ, Loại mộ) đối với Tiếp thị và Quản trang (`canManagePlots`).
+
+5. **Gói P05 (Kiểm Thử & Đóng Gói):**
+   - `uv run pytest tests/`: 95/95 passed (100%).
+   - `uv run ruff check app/`: All checks passed (0 errors).
+   - `pnpm --dir web build`: TypeScript & Vite build thành công (833ms).
+   - `pnpm --dir web lint`: 0 errors.
 
 ---
 

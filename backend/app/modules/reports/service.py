@@ -537,8 +537,6 @@ class ReportService:
         rtype = report_type.upper()
         if rtype == "REVENUE":
             return "ACCOUNTANT" in roles
-        elif rtype == "OPERATIONS":
-            return "CARETAKER" in roles
         return False
 
     @classmethod

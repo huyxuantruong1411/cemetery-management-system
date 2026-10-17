@@ -10,6 +10,7 @@ from app.modules.auth.models import User
 from app.modules.finance.models import Payment
 from app.modules.finance.schemas import (
     DiscountApplyRequest,
+    FinanceBasisResponse,
     FinanceSummaryResponse,
     InvoiceResponse,
     PaymentRecordRequest,
@@ -88,11 +89,22 @@ def create_receivable(
     return FinanceService.create_receivable(db, payload, current_user.user_id)
 
 
+@router.get(
+    "/bases",
+    response_model=List[FinanceBasisResponse],
+    summary="Danh sách Căn Cứ Tài Chính cho Kế toán (EX-02 / FinanceBasis)",
+    dependencies=[Depends(require_permission("finance", "read"))],
+)
+def get_finance_bases(db: Session = Depends(get_db)):
+    """Lấy danh sách căn cứ nghĩa vụ tài chính từ HĐ và Phụ lục hợp lệ (không kéo theo PII)."""
+    return FinanceService.get_finance_bases(db)
+
+
 @router.post(
     "/receivables/{receivable_id}/discount",
     response_model=ReceivableResponse,
     summary="Áp dụng chiết khấu cho khoản thu (G16)",
-    dependencies=[Depends(require_permission("finance", "write"))],
+    dependencies=[Depends(require_permission("finance", "discount"))],
 )
 def apply_discount(
     receivable_id: int,

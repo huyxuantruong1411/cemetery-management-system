@@ -128,3 +128,24 @@ class FinanceSummaryResponse(BaseModel):
     count_partially_paid: int
     count_paid: int
     count_overdue: int
+
+
+class FinanceBasisResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    contract_id: int
+    contract_code: str
+    contract_type: str
+    annex_id: int | None = None
+    annex_code: str | None = None
+    source_type: str
+    status: str
+    signed_at: date | None = None
+    payer_name: str | None = None
+    payer_phone: str | None = None
+    plot_code: str | None = None
+    total_amount: Decimal
+    paid_amount: Decimal
+    balance: Decimal
+    due_date: date | None = None
+    service_description: str | None = None

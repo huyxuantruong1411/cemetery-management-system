@@ -5,7 +5,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from fastapi import HTTPException, status
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.modules.audit.models import AuditLog
 from app.modules.auth.models import User
@@ -843,3 +843,109 @@ class FinanceService:
             file_id=invoice.file_id,
             notes=invoice.notes,
         )
+
+    @classmethod
+    def get_finance_bases(cls, db: Session) -> list[dict]:
+        """Fetch billing and obligation bases for Accountant (EX-02 / FinanceBasis)."""
+        from app.modules.contracts.models import (
+            Contract,
+            ContractAnnex,
+            LandPurchaseContract,
+            TransferContract,
+        )
+
+        results = []
+        # Contracts
+        contracts = (
+            db.query(Contract)
+            .options(
+                joinedload(Contract.customer),
+                joinedload(Contract.land_purchase).joinedload(LandPurchaseContract.plot),
+                joinedload(Contract.transfer).joinedload(TransferContract.plot),
+            )
+            .filter(Contract.status.in_(["ACTIVE", "SIGNED", "PENDING_ACTIVATION"]))
+            .order_by(Contract.created_at.desc())
+            .all()
+        )
+        contract_ids = [c.contract_id for c in contracts]
+        contract_recs = {
+            r.contract_id: r
+            for r in db.query(Receivable).filter(Receivable.contract_id.in_(contract_ids)).all()
+        } if contract_ids else {}
+
+        for c in contracts:
+            plot_code = None
+            if c.land_purchase and c.land_purchase.plot:
+                plot_code = c.land_purchase.plot.plot_code
+            elif c.transfer and c.transfer.plot:
+                plot_code = c.transfer.plot.plot_code
+
+            rec = contract_recs.get(c.contract_id)
+            paid = rec.total_paid_amount if rec else Decimal("0.00")
+            bal = (rec.final_payable_amount - rec.total_paid_amount) if rec else c.total_amount
+            due = rec.due_date if rec else None
+
+            results.append({
+                "contract_id": c.contract_id,
+                "contract_code": c.contract_code,
+                "contract_type": c.contract_type,
+                "annex_id": None,
+                "annex_code": None,
+                "source_type": "CONTRACT",
+                "status": c.status,
+                "signed_at": c.signed_at,
+                "payer_name": c.customer.full_name if c.customer else None,
+                "payer_phone": c.customer.phone_number if c.customer else None,
+                "plot_code": plot_code,
+                "total_amount": c.total_amount,
+                "paid_amount": paid,
+                "balance": bal,
+                "due_date": due,
+                "service_description": f"Hợp đồng {c.contract_type} ({c.contract_code})",
+            })
+
+        # Annexes
+        annexes = (
+            db.query(ContractAnnex)
+            .options(
+                joinedload(ContractAnnex.contract).joinedload(Contract.customer),
+                joinedload(ContractAnnex.burial),
+                joinedload(ContractAnnex.care),
+                joinedload(ContractAnnex.construction),
+            )
+            .filter(ContractAnnex.status.in_(["ACTIVE", "SIGNED"]))
+            .order_by(ContractAnnex.created_at.desc())
+            .all()
+        )
+        annex_ids = [a.annex_id for a in annexes]
+        annex_recs = {
+            r.annex_id: r
+            for r in db.query(Receivable).filter(Receivable.annex_id.in_(annex_ids)).all()
+        } if annex_ids else {}
+
+        for a in annexes:
+            if a.additional_amount > 0:
+                rec = annex_recs.get(a.annex_id)
+                paid = rec.total_paid_amount if rec else Decimal("0.00")
+                bal = (rec.final_payable_amount - rec.total_paid_amount) if rec else a.additional_amount
+                due = rec.due_date if rec else a.valid_from
+
+                results.append({
+                    "contract_id": a.contract_id,
+                    "contract_code": a.contract.contract_code if a.contract else "",
+                    "contract_type": a.contract.contract_type if a.contract else "",
+                    "annex_id": a.annex_id,
+                    "annex_code": a.annex_code,
+                    "source_type": "ANNEX",
+                    "status": a.status,
+                    "signed_at": a.signed_at,
+                    "payer_name": a.contract.customer.full_name if (a.contract and a.contract.customer) else None,
+                    "payer_phone": a.contract.customer.phone_number if (a.contract and a.contract.customer) else None,
+                    "plot_code": None,
+                    "total_amount": a.additional_amount,
+                    "paid_amount": paid,
+                    "balance": bal,
+                    "due_date": due,
+                    "service_description": f"Phụ lục {a.annex_type} ({a.annex_code})",
+                })
+        return results

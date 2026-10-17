@@ -1,0 +1,12 @@
+{
+  "first_run_cleanup_helper_error": "Used MinIO SDK method on boto3 client; fixed helper and repeated probes.",
+  "exact_objects_removed": [
+    "documents/2026/10/c84e6de9d74542c886c992ff807c8c3d_SYNTHETIC.pdf",
+    "reports/EXP-202610-1030.xlsx"
+  ],
+  "main_and_test_bindings_before_delete": [
+    0,
+    0
+  ],
+  "test_transactions_rolled_back": true
+}

@@ -1,96 +1,104 @@
 # Chính Sách Phân Quyền Theo Actor (Actor Policy & Access Control Matrix)
 
 - **Dự án:** Hệ thống Quản lý Nghĩa trang Tư nhân
-- **Mục tiêu:** Định nghĩa quyền đọc/ghi, phạm vi tài nguyên (Resource Scope), DTO Allowlist và danh sách hành vi cấm tuyệt đối (Deny Policy) cho 5 nhóm Actor.
-- **Nguyên tắc bất biến:** Server-side Enforcement — Frontend chỉ render giao diện và gửi command; FastAPI backend chịu trách nhiệm 100% kiểm tra quyền và lọc dữ liệu.
+- **Baseline kiểm chứng:** 7467905
+- **Mục tiêu:** Định nghĩa quyền đọc/ghi, phạm vi tài nguyên (Resource Scope), DTO Allowlist và danh sách hành vi cấm tuyệt đối (Deny Policy) cho các nhóm Actor: Marketing, Kế toán, Quản trang, Public và Tài khoản role rỗng.
+- **Nguyên tắc bất biến:** Server-side Enforcement — Frontend chỉ render giao diện và gửi command; FastAPI backend chịu trách nhiệm 100% kiểm tra quyền và lọc dữ liệu. Mặc định từ chối (Default Deny) mọi quyền ngoài phạm vi được phân công.
 
 ---
 
-## 1. Ma trận quyền hạn theo Actor (Actor Capability Matrix)
+## 1. Ma trận chức năng, dữ liệu và thao tác theo Actor
 
-| Nhóm Capability | Mô tả | Public | Quản trang (CARETAKER) | Marketing (MARKETING) | Kế toán (ACCOUNTANT) | Sếp (ADMIN) |
-|---|---|:---:|:---:|:---:|:---:|:---:|
-| `memorial:public_lookup` | Tra cứu mộ công khai, thông tin người mất đã công bố | **CHO PHÉP** | CHO PHÉP | CHO PHÉP | CHO PHÉP | CHO PHÉP |
-| `memorial:public_care_read` | Xem kết quả chăm sóc đã được duyệt công bố | **CHO PHÉP** | CHO PHÉP | CHO PHÉP | CHO PHÉP | CHO PHÉP |
-| `work_basis:read` | Đọc căn cứ thi công/chăm sóc (chỉ phạm vi, không giá) | TỪ CHỐI | **CHO PHÉP** | CHO PHÉP | TỪ CHỐI | CHO PHÉP |
-| `construction:coordinate` | Lập checklist, phân công, kiểm tra, nghiệm thu thi công | TỪ CHỐI | **CHO PHÉP** | TỪ CHỐI | TỪ CHỐI | Giám sát |
-| `care:coordinate` | Lập lịch, điều phối thợ, kiểm tra, đóng ca chăm sóc | TỪ CHỐI | **CHO PHÉP** | TỪ CHỐI | TỪ CHỐI | Giám sát |
-| `workforce:manage` | Quản lý danh bạ thợ/tổ đội/nhà thầu ngoài | TỪ CHỐI | **CHO PHÉP** | TỪ CHỐI | TỪ CHỐI | CHO PHÉP |
-| `plots:burial_verify` | Nghiệm thu an táng, xác nhận giấy báo tử & khóa Kim Tĩnh | TỪ CHỐI | **CHO PHÉP** | TỪ CHỐI | TỪ CHỐI | TỪ CHỐI (không bypass) |
-| `customers:manage` | Tiếp nhận, tạo/sửa hồ sơ thân nhân và CCCD | TỪ CHỐI | TỪ CHỐI | **CHO PHÉP** | Xem cơ bản | CHO PHÉP |
-| `deceased:manage` | Lập hồ sơ người mất, tiếp nhận giấy báo tử MinIO | TỪ CHỐI | Xem trạng thái | **CHO PHÉP** | TỪ CHỐI | CHO PHÉP |
-| `contracts:manage` | Lập 4 loại HĐ, in bản giấy, kích hoạt sau ký | TỪ CHỐI | TỪ CHỐI | **CHO PHÉP** | TỪ CHỐI | Xem giám sát |
-| `annexes:manage` | Lập 3 loại phụ lục (An táng, Thi công, Chăm sóc) | TỪ CHỐI | TỪ CHỐI | **CHO PHÉP** | TỪ CHỐI | Xem giám sát |
-| `finance_basis:read` | Đọc nguồn nghĩa vụ tài chính từ HĐ/PL ACTIVE | TỪ CHỐI | TỪ CHỐI | TỪ CHỐI | **CHO PHÉP** | CHO PHÉP |
-| `finance:collect` | Ghi nhận thu tiền, xuất biên lai, quản lý công nợ | TỪ CHỐI | TỪ CHỐI | TỪ CHỐI | **CHO PHÉP** | Xem giám sát |
-| `finance:discount` | Áp dụng ưu đãi/chiết khấu theo hạn mức/phê duyệt | TỪ CHỐI | TỪ CHỐI | TỪ CHỐI | **CHO PHÉP** | Phê duyệt |
-| `reports:revenue_read` | Báo cáo doanh thu và dòng tiền thực tế | TỪ CHỐI | TỪ CHỐI | TỪ CHỐI | **CHO PHÉP** | **CHO PHÉP** |
-| `reports:occupancy_read` | Báo cáo tỷ lệ lấp đầy phân khu đất | TỪ CHỐI | TỪ CHỐI | TỪ CHỐI | TỪ CHỐI | **CHO PHÉP** |
-| `reports:contracts_read` | Báo cáo tình hình ký kết hợp đồng | TỪ CHỐI | TỪ CHỐI | TỪ CHỐI | TỪ CHỐI | **CHO PHÉP** |
-| `reports:operations_read` | Báo cáo vận hành thi công & chăm sóc | TỪ CHỐI | Xem phạm vi | TỪ CHỐI | TỪ CHỐI | **CHO PHÉP** |
-| `catalog:manage` | Quản lý bảng giá, gói chăm sóc, loại mộ | TỪ CHỐI | TỪ CHỐI | TỪ CHỐI | TỪ CHỐI | **CHO PHÉP** |
-| `spatial:manage` | Quy hoạch phân khu/hàng/ô, cập nhật GPS | TỪ CHỐI | TỪ CHỐI | TỪ CHỐI | TỪ CHỐI | **CHO PHÉP** |
-| `accounts:manage` | Tạo/khóa tài khoản, phân quyền vai trò | TỪ CHỐI | TỪ CHỐI | TỪ CHỐI | TỪ CHỐI | **CHO PHÉP** |
-| `audit:read` | Xem nhật ký kiểm toán hệ thống | TỪ CHỐI | TỪ CHỐI | TỪ CHỐI | TỪ CHỐI | **CHO PHÉP** |
+| Chức năng | Marketing | Kế toán | Quản trang | Public / thân nhân | Sếp (ADMIN) |
+|---|---|---|---|---|---|
+| **Khu/hàng/ô, loại mộ, slot** | Đọc lựa chọn/bản đồ phục vụ giao dịch (`plots:read`); không cấu hình C/U/D | Chỉ mã ô liên quan nghĩa vụ thu trong FinanceBasis | Đọc sơ đồ hiện trường (`plots:read`); không cấu hình C/U/D | Bản công bố tối thiểu qua cổng tra cứu | Toàn quyền quy hoạch C/U/D (`plots:manage`) |
+| **Khách hàng/thân nhân, người mất, quan hệ** | C/R/U và liên kết theo UC (`customers:*`, `deceased:*`); xác minh đúng luồng | Không vào danh bạ; chỉ người trả/liên hệ cần thu trong FinanceBasis | Không vào danh bạ; chỉ thông tin nhận diện phần mộ/công việc trong WorkBasis | Tra cứu thông tin tưởng niệm được công bố Zero PII | Toàn quyền kiểm soát (`customers:*`, `deceased:*`) |
+| **Hợp đồng/phụ lục** | Tạo/sửa bản nháp, in, nạp bản ký, kích hoạt (`contracts:*`); hủy bằng command | Không vào module pháp lý; đọc căn cứ khoản phải thu qua FinanceBasis | Không vào module pháp lý; đọc căn cứ công việc qua WorkBasis | Không truy cập nội bộ | Toàn quyền giám sát & quản trị |
+| **Đăng ký chăm sóc** | Đăng ký/gia hạn qua phụ lục; chọn gói có hiệu lực (`contracts:write`, `catalog:read`) | Nhận nghĩa vụ tài chính phát sinh | Nhận phạm vi, chu kỳ, thời hạn đã bàn giao | Xem kết quả được công bố | Toàn quyền giám sát |
+| **Thi công, ca chăm sóc** | Chỉ xem tóm tắt tiến độ/kết quả của hồ sơ dịch vụ liên quan (`construction:read`) | Không điều phối | Lập checklist/lịch, phân công, cập nhật, ảnh minh chứng, đóng ca (`construction:*`, `care:*`) | Không điều phối | Giám sát vận hành |
+| **Trạng thái an táng thực địa** | Không xác nhận thay Quản trang | Không thao tác | Xác nhận bằng command hiện trường có căn cứ hợp lệ (`plots:confirm_burial`); không sửa status tùy ý | Không thao tác | Xác nhận dự phòng khi cần; không bypass Kim Tĩnh |
+| **Thu tiền, chiết khấu, biên lai** | Không vào sổ tài chính; chỉ xem trạng thái thanh toán của hồ sơ | Tạo khoản thu hợp lệ, ghi nhận thanh toán, chiết khấu theo policy, xuất/tạo lại biên lai (`finance:*`) | Không truy cập tài chính | Thanh toán ngoài hệ thống | Giám sát & phê duyệt chính sách |
+| **Báo cáo** | Không báo cáo doanh nghiệp | Xem/xuất doanh thu (`reports:revenue`) | Không báo cáo doanh nghiệp; xem số việc trong workspace riêng | Không truy cập | Toàn bộ 4 loại báo cáo doanh nghiệp (`reports:read`) |
+| **Gói mẫu, mẫu HĐ, bảng giá** | Chọn dữ liệu có hiệu lực (`catalog:read`); không C/U/D cấu hình | Đọc snapshot giá của nghĩa vụ (`catalog:read`); không C/U/D cấu hình | Nhận yêu cầu kỹ thuật snapshot (`catalog:read`); không C/U/D cấu hình | Chỉ nội dung công bố nếu có | Toàn quyền cấu hình bảng giá, gói, mẫu HĐ (`catalog:manage`) |
+| **Tài khoản, phân quyền, audit** | Không truy cập | Không truy cập | Không truy cập; danh sách thợ là lookup điều phối riêng | Không truy cập | Toàn quyền quản trị tài khoản, quyền và nhật ký kiểm toán |
 
 ---
 
-## 2. Quy định Allowlist DTO theo Actor (Contextual DTO Allowlist)
+## 2. Đặc tả các ngoại lệ phối hợp liên phân hệ (Projections EX-01 ... EX-06)
 
-### 2.1. Public Memorial DTO (Cổng Thân Nhân / Khách)
-- **Cho phép (Allowlist):**
-  - `public_code` (Mã công khai, ví dụ: `A-H01-04-P`)
-  - `deceased_full_name` (Họ tên người mất)
-  - `birth_year` / `date_of_birth` (Năm sinh hoặc ngày sinh theo cờ chính xác)
-  - `date_of_death` (Ngày mất)
-  - `hometown` (Quê quán)
-  - `plot_code` (Mã ô mộ), `row_code`, `zone_code`
-  - `gps_latitude`, `gps_longitude` (Chỉ khi đã được Sếp xác minh `is_gps_verified = true`)
-  - `care_public_updates`: Danh sách các đợt chăm sóc đã được duyệt công bố (`performed_at`, `summary_tasks`, `public_photo_url`).
-- **Tuyệt đối cấm (Deny / Strip):**
-  - Số CCCD, số điện thoại, địa chỉ của thân nhân/khách hàng.
-  - Số tiền, hợp đồng, công nợ, giá gói dịch vụ.
-  - Tên/SĐT của thợ thi công hoặc quản trang thực hiện ca.
-  - Hình ảnh nội bộ chưa kiểm duyệt (giấy tờ chứng tử, ảnh có mặt người/biển số xe).
+Các ngoại lệ phối hợp phải được hiện thực bằng endpoint/projection chuyên biệt, allowlist trường dữ liệu chặt chẽ; không tái sử dụng DTO đầy đủ rồi che trường ở client.
 
-### 2.2. Work Basis DTO (Dành cho Quản Trang)
-- **Cho phép (Allowlist):**
-  - `basis_code` (Mã căn cứ: ví dụ `PL-TC-018`, `PL-AT-020`)
-  - `work_type` (`CONSTRUCTION`, `CARE`, `BURIAL`, `EXHUMATION`)
-  - `plot_code`, `slot_number`
-  - `deceased_name`, `birth_year`, `date_of_death` (Chỉ dùng để đối chiếu thi công bia/khắc tên)
-  - `scope_items` / `checklist`: Danh sách các hạng mục kỹ thuật cần thi công hoặc chăm sóc
-  - `target_date`, `due_date`
-  - `certificate_status` (`VERIFIED` / `MISSING` - cờ kiểm tra, không kèm scan)
-- **Tuyệt đối cấm (Deny / Strip):**
-  - Giá trị hợp đồng, số tiền thu, chiết khấu, phương thức thanh toán.
-  - Bản scan hợp đồng PDF hoặc biên lai thu tiền.
-  - Số CCCD, nơi công tác của khách hàng.
+### EX-01 — WorkBasis DTO (Dành cho Quản trang)
+- **Mục đích:** Cung cấp thông tin cần thiết để điều phối thi công, thực hiện chăm sóc mộ và xác nhận an táng ngoài hiện trường.
+- **Dữ liệu cho phép (Allowlist):**
+  - `annex_id`, `annex_code`, `annex_type` (`BURIAL`, `CARE`, `CONSTRUCTION`, `EXHUMATION`)
+  - `contract_id`, `contract_code`
+  - `status` (`ACTIVE`, `PENDING_ACTIVATION`, `COMPLETED`)
+  - `signed_at`, `target_date`, `due_date`
+  - `plot_id`, `plot_code`, `zone_code`, `slot_number`
+  - `deceased_id`, `deceased_name` (chỉ dùng nhận diện phần mộ/khắc bia)
+  - `service_summary`, `checklist_requirements`
+  - `is_burial_confirmed`, `burial_date`
+- **Dữ liệu tuyệt đối cấm (Deny / Strip):**
+  - Toàn bộ hồ sơ khách, số CCCD, địa chỉ nhà, số điện thoại khách hàng.
+  - Số tiền, công nợ, giá gói dịch vụ, thông tin chiết khấu.
+  - Bản scan/PDF hợp đồng pháp lý, bản scan giấy báo tử.
 
-### 2.3. Finance Basis DTO (Dành cho Kế Toán)
-- **Cho phép (Allowlist):**
-  - `receivable_id`, `receivable_code`
-  - `contract_id`, `contract_number`, `annex_id`, `annex_number`
-  - `customer_name`, `customer_phone` (để liên hệ chứng từ)
-  - `total_amount`, `paid_amount`, `remaining_balance`
-  - `due_date`, `payment_status`
-- **Tuyệt đối cấm (Deny / Strip):**
-  - Bản scan giấy báo tử của người mất.
-  - Ảnh thi công hiện trường hoặc nhật ký kỹ thuật của quản trang.
-  - Lịch trình phân công nhân sự nội bộ.
+### EX-02 — FinanceBasis DTO (Dành cho Kế toán)
+- **Mục đích:** Cung cấp căn cứ hợp lệ để lập khoản phải thu, theo dõi thanh toán và xuất biên lai mà không mở toàn bộ hồ sơ pháp lý.
+- **Dữ liệu cho phép (Allowlist):**
+  - `contract_id`, `contract_code`, `contract_type`
+  - `annex_id`, `annex_code`, `annex_type`
+  - `source_type` (`CONTRACT`, `ANNEX`)
+  - `status`, `signed_at`
+  - `payer_name`, `payer_phone` (thông tin cần thiết để xuất chứng từ và liên hệ thanh toán)
+  - `plot_code`, `zone_code`
+  - `total_amount`, `paid_amount`, `remaining_balance`, `due_date`
+  - `service_description`
+- **Dữ liệu tuyệt đối cấm (Deny / Strip):**
+  - Danh bạ khách hàng toàn hệ thống, CCCD, địa chỉ nhà không liên quan chứng từ.
+  - Hồ sơ người mất, giấy báo tử.
+  - Toàn văn điều khoản hợp đồng và bản scan/PDF hợp đồng.
+
+### EX-03 — Tiến độ thi công/chăm sóc (Dành cho Marketing)
+- **Mục đích:** Cho phép nhân viên kinh doanh theo dõi tiến độ và xem ảnh kết quả để cập nhật cho khách hàng.
+- **Dữ liệu cho phép (Allowlist):**
+  - Mã đơn việc, trạng thái tiến độ (`PENDING`, `IN_PROGRESS`, `COMPLETED`), ngày hẹn bàn giao.
+  - Ảnh minh chứng đã duyệt công bố hoặc gắn liền trực tiếp với hợp đồng/phụ lục mà khách hàng đó ký.
+- **Dữ liệu tuyệt đối cấm (Deny / Strip):**
+  - Toàn bộ danh sách công việc của nghĩa trang, lịch nghỉ/vắng mặt của nhân sự, evidence của các công việc không liên quan.
+  - Quyền phân công thợ, sửa checklist hoặc đóng ca.
+
+### EX-04 — Lookup Bán hàng & Dịch vụ (Dành cho Marketing / Quản trang)
+- **Mục đích:** Tra cứu bảng giá niêm yết, gói chăm sóc và mẫu hợp đồng hiệu lực để tư vấn và lập giao dịch.
+- **Dữ liệu cho phép (Allowlist):**
+  - Danh sách bảng giá, khoản mục giá đang `is_active = True`.
+  - Danh sách gói chăm sóc đang `is_active = True`.
+  - Danh sách mẫu hợp đồng đang hiệu lực (`is_active = True`).
+- **Dữ liệu tuyệt đối cấm (Deny / Strip):**
+  - Màn hình cấu hình, thêm/sửa/xóa bảng giá, sửa đơn giá, tạo gói mẫu, bump version hợp đồng.
+
+### EX-05 — Danh bạ người thực hiện (Staff Lookup cho Điều phối)
+- **Mục đích:** Lấy danh sách nhân viên đủ điều kiện để phân công ca chăm sóc hoặc giám sát thi công.
+- **Dữ liệu cho phép (Allowlist):**
+  - `user_id`, `username`, `full_name`, `roles` của nhân viên đang hoạt động (`is_active = True`).
+- **Dữ liệu tuyệt đối cấm (Deny / Strip):**
+  - Danh bạ quản trị, mật khẩu, permissions chi tiết, phiên đăng nhập hoặc tài khoản đã bị vô hiệu hóa.
+
+### EX-06 — DTO Công bố Công khai (Public Portal)
+- **Mục đích:** Tra cứu thông tin tưởng niệm người quá cố và chỉ đường tôn nghiêm.
+- **Dữ liệu cho phép (Allowlist):**
+  - `deceased_full_name`, `birth_year`, `date_of_death`, `hometown`.
+  - `plot_code`, `row_code`, `zone_code`.
+  - Tọa độ GPS đã được xác minh (`gps_verified = True`) phục vụ dẫn đường.
+  - Ảnh chăm sóc đã duyệt công bố Zero PII.
+- **Dữ liệu tuyệt đối cấm (Deny / Strip):**
+  - Mọi thông tin thân nhân/chủ hộ (CCCD, SĐT, địa chỉ), giá tiền, hợp đồng, chứng từ gốc chưa công bố.
 
 ---
 
-## 3. Chính sách cấm nghiêm ngặt (Strict Deny Policies)
+## 3. Chính sách tài khoản Role Rỗng (roles = [])
 
-1. **Deny Admin Invariant Bypass:**
-   - Quản trị viên (`ADMIN`) có thể có quyền trên mọi route quản trị, nhưng **KHÔNG ĐƯỢC PHÉP** bypass các bất biến nghiệp vụ:
-     - Không thể an táng nếu thiếu giấy báo tử hợp lệ.
-     - Không thể xóa, cải táng, sửa cấu trúc hoặc an táng thêm vào ô mộ đã khóa Kim Tĩnh.
-     - Không thể ghi nhận thu tiền với giá trị âm hoặc vượt quá số nợ còn lại mà không có đối soát.
-2. **Deny Caretaker Financial Access:**
-   - Quản trang gọi trực tiếp `/api/v1/contracts/{id}`, `/api/v1/contracts/{id}/pdf`, `/api/v1/finance/receivables`, `/api/v1/reports/revenue` phải bị trả về `403 Forbidden` ngay lập tức.
-3. **Deny Public PII Leaks:**
-   - Mọi request không có Bearer token nội bộ khi gọi endpoint tra cứu công khai tuyệt đối không bao giờ nhận được bất kỳ trường nào liên quan đến người sống (thân nhân, khách hàng) hoặc giá cả.
-4. **Deny Marketing Operational Closure:**
-   - Nhân viên Marketing không được phép nghiệm thu thi công hoặc đóng ca chăm sóc mộ. Thao tác này độc quyền thuộc về Quản trang.
+1. **Từ chối mặc định:** Tài khoản có phiên đăng nhập hợp lệ nhưng danh sách vai trò rỗng (`roles = []`) bị từ chối truy cập toàn bộ các route nghiệp vụ nội bộ (trả về `403 Forbidden`).
+2. **Quyền duy nhất được phép:** Xem thông tin phiên của chính mình (`GET /api/v1/auth/me`), làm mới token (`POST /api/v1/auth/refresh`), và đăng xuất (`POST /api/v1/auth/logout`).
+3. **Giao diện Web:** Hiển thị thông báo tài khoản chưa được cấp quyền kèm nút Đăng xuất; không fallback vào Hồ sơ hay bất kỳ module nội bộ nào; không thực hiện fetch API nghiệp vụ.

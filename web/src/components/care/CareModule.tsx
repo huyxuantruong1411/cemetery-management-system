@@ -3,6 +3,7 @@ import {
   Calendar,
   CheckCircle2,
   AlertTriangle,
+  FileCheck2,
   RefreshCw,
   Search,
   UploadCloud,
@@ -21,9 +22,13 @@ import type {
   CareChecklistItemBrief,
 } from '../../types/care'
 import { Pagination, usePagination } from '../common/Pagination'
+import { WorkBasisView } from '../contracts/WorkBasisView'
 
 export const CareModule: React.FC = () => {
   const { accessToken: token, user } = useAuth()
+
+  // Tab state: Lịch Chăm Sóc vs Căn Cứ Nghiệp Vụ (EX-01)
+  const [activeCareTab, setActiveCareTab] = useState<'schedules' | 'bases'>('schedules')
 
   // Main state
   const [schedules, setSchedules] = useState<CareScheduleBrief[]>([])
@@ -489,7 +494,57 @@ export const CareModule: React.FC = () => {
         </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* Sub-Tab Navigation: Lịch Chăm Sóc vs Căn Cứ Nghiệp Vụ (EX-01) */}
+      <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid #E2E8F0', paddingBottom: '8px' }}>
+        <button
+          type="button"
+          onClick={() => setActiveCareTab('schedules')}
+          style={{
+            padding: '8px 18px',
+            borderRadius: '6px',
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: 600,
+            fontSize: '13px',
+            backgroundColor: activeCareTab === 'schedules' ? 'var(--brand-primary, #24594D)' : 'transparent',
+            color: activeCareTab === 'schedules' ? '#FFFFFF' : '#64748B',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <Calendar size={16} />
+          Lịch Chăm Sóc Thực Địa
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveCareTab('bases')}
+          style={{
+            padding: '8px 18px',
+            borderRadius: '6px',
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: 600,
+            fontSize: '13px',
+            backgroundColor: activeCareTab === 'bases' ? 'var(--brand-primary, #24594D)' : 'transparent',
+            color: activeCareTab === 'bases' ? '#FFFFFF' : '#64748B',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <FileCheck2 size={16} />
+          Căn Cứ Nghiệp Vụ & An Táng (EX-01)
+        </button>
+      </div>
+
+      {activeCareTab === 'bases' ? (
+        <WorkBasisView />
+      ) : (
+        <>
+          {/* KPI Cards */}
       <div
         style={{
           display: 'grid',
@@ -1140,6 +1195,8 @@ export const CareModule: React.FC = () => {
             onPageSizeChange={pagination.handlePageSizeChange}
           />
         </div>
+      )}
+      </>
       )}
 
       {/* Schedule Detail Modal / Drawer */}

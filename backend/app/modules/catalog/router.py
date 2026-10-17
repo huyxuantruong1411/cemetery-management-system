@@ -30,7 +30,11 @@ router = APIRouter(prefix="/catalog", tags=["Catalog, Pricing & Templates"])
 # =============================================================================
 # 1. Price Lists
 # =============================================================================
-@router.get("/price-lists", response_model=List[PriceListResponse])
+@router.get(
+    "/price-lists",
+    response_model=List[PriceListResponse],
+    dependencies=[Depends(require_permission("catalog", "read"))],
+)
 def get_price_lists(
     active_only: bool = Query(False, description="Chỉ lấy bảng giá đang kích hoạt"),
     db: Session = Depends(get_db),
@@ -40,7 +44,11 @@ def get_price_lists(
     return CatalogService.list_price_lists(db, active_only=active_only)
 
 
-@router.get("/price-lists/{price_list_id}", response_model=PriceListResponse)
+@router.get(
+    "/price-lists/{price_list_id}",
+    response_model=PriceListResponse,
+    dependencies=[Depends(require_permission("catalog", "read"))],
+)
 def get_price_list_detail(
     price_list_id: int,
     db: Session = Depends(get_db),
@@ -54,7 +62,7 @@ def get_price_list_detail(
     "/price-lists",
     response_model=PriceListResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("finance", "write"))],
+    dependencies=[Depends(require_permission("catalog", "manage"))],
 )
 def create_price_list(
     data: PriceListCreate,
@@ -68,7 +76,7 @@ def create_price_list(
 @router.put(
     "/price-lists/{price_list_id}",
     response_model=PriceListResponse,
-    dependencies=[Depends(require_permission("finance", "write"))],
+    dependencies=[Depends(require_permission("catalog", "manage"))],
 )
 def update_price_list(
     price_list_id: int,
@@ -87,7 +95,7 @@ def update_price_list(
     "/price-items",
     response_model=PriceItemResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("finance", "write"))],
+    dependencies=[Depends(require_permission("catalog", "manage"))],
 )
 def add_price_item(
     data: PriceItemCreate,
@@ -101,7 +109,7 @@ def add_price_item(
 @router.put(
     "/price-items/{item_id}",
     response_model=PriceItemResponse,
-    dependencies=[Depends(require_permission("finance", "write"))],
+    dependencies=[Depends(require_permission("catalog", "manage"))],
 )
 def update_price_item(
     item_id: int,
@@ -116,7 +124,7 @@ def update_price_item(
 @router.delete(
     "/price-items/{item_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_permission("finance", "write"))],
+    dependencies=[Depends(require_permission("catalog", "manage"))],
 )
 def delete_price_item(
     item_id: int,
@@ -130,7 +138,11 @@ def delete_price_item(
 # =============================================================================
 # 3. Price Lookup Simulation
 # =============================================================================
-@router.post("/lookup-price", response_model=PriceLookupResponse)
+@router.post(
+    "/lookup-price",
+    response_model=PriceLookupResponse,
+    dependencies=[Depends(require_permission("catalog", "read"))],
+)
 def lookup_price(
     req: PriceLookupRequest,
     db: Session = Depends(get_db),
@@ -143,7 +155,11 @@ def lookup_price(
 # =============================================================================
 # 4. Care Packages
 # =============================================================================
-@router.get("/care-packages", response_model=List[CarePackageResponse])
+@router.get(
+    "/care-packages",
+    response_model=List[CarePackageResponse],
+    dependencies=[Depends(require_permission("catalog", "read"))],
+)
 def get_care_packages(
     active_only: bool = Query(False, description="Chỉ lấy gói đang kích hoạt"),
     db: Session = Depends(get_db),
@@ -153,7 +169,11 @@ def get_care_packages(
     return CatalogService.list_care_packages(db, active_only=active_only)
 
 
-@router.get("/care-packages/{package_id}", response_model=CarePackageResponse)
+@router.get(
+    "/care-packages/{package_id}",
+    response_model=CarePackageResponse,
+    dependencies=[Depends(require_permission("catalog", "read"))],
+)
 def get_care_package_detail(
     package_id: int,
     db: Session = Depends(get_db),
@@ -167,7 +187,7 @@ def get_care_package_detail(
     "/care-packages",
     response_model=CarePackageResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("care", "write"))],
+    dependencies=[Depends(require_permission("catalog", "manage"))],
 )
 def create_care_package(
     data: CarePackageCreate,
@@ -181,7 +201,7 @@ def create_care_package(
 @router.put(
     "/care-packages/{package_id}",
     response_model=CarePackageResponse,
-    dependencies=[Depends(require_permission("care", "write"))],
+    dependencies=[Depends(require_permission("catalog", "manage"))],
 )
 def update_care_package(
     package_id: int,
@@ -196,7 +216,11 @@ def update_care_package(
 # =============================================================================
 # 5. Contract Templates
 # =============================================================================
-@router.get("/contract-templates", response_model=List[ContractTemplateResponse])
+@router.get(
+    "/contract-templates",
+    response_model=List[ContractTemplateResponse],
+    dependencies=[Depends(require_permission("catalog", "read"))],
+)
 def get_contract_templates(
     active_only: bool = Query(False, description="Chỉ lấy mẫu đang hiệu lực"),
     db: Session = Depends(get_db),
@@ -206,7 +230,11 @@ def get_contract_templates(
     return CatalogService.list_contract_templates(db, active_only=active_only)
 
 
-@router.get("/contract-templates/{template_id}", response_model=ContractTemplateResponse)
+@router.get(
+    "/contract-templates/{template_id}",
+    response_model=ContractTemplateResponse,
+    dependencies=[Depends(require_permission("catalog", "read"))],
+)
 def get_contract_template_detail(
     template_id: int,
     db: Session = Depends(get_db),
@@ -220,7 +248,7 @@ def get_contract_template_detail(
     "/contract-templates",
     response_model=ContractTemplateResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("contracts", "write"))],
+    dependencies=[Depends(require_permission("catalog", "manage"))],
 )
 def create_contract_template(
     data: ContractTemplateCreate,
@@ -234,7 +262,7 @@ def create_contract_template(
 @router.put(
     "/contract-templates/{template_id}",
     response_model=ContractTemplateResponse,
-    dependencies=[Depends(require_permission("contracts", "write"))],
+    dependencies=[Depends(require_permission("catalog", "manage"))],
 )
 def update_contract_template(
     template_id: int,

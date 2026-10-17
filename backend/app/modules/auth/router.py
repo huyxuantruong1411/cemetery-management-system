@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -28,9 +28,14 @@ router = APIRouter(prefix="/auth", tags=["Authentication & RBAC"])
 )
 def list_staff(
     db: Session = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ) -> list[StaffBriefResponse]:
     """Lấy danh sách nhân sự đang hoạt động để phân công ca chăm sóc, thi công."""
+    if not current_user.roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Tài khoản chưa được phân vai trò hợp lệ trong hệ thống",
+        )
     users = db.query(User).filter(User.is_active == True).all()  # noqa: E712
     return [
         StaffBriefResponse(

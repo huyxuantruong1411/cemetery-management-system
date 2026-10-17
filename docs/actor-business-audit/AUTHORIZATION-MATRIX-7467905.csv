@@ -1,0 +1,40 @@
+﻿use_case,source_name,source_actor,marketing,accountant,caretaker,public,scope_and_crud_rule
+UC-1.1,Quản lý khu/hàng/ô,Sếp,DENY,DENY,DENY,DENY,Không cấp CRUD quy hoạch; đọc lookup theo UC-1.4 là quyền riêng.
+UC-1.2,Quản lý loại mộ & số slot,Sếp,DENY,DENY,DENY,DENY,Không sửa loại mộ/slot; actor tác nghiệp chỉ dùng lookup tối thiểu.
+UC-1.3,Cập nhật trạng thái mộ,Quản trang,DENY,DENY,CONFIRM_FIELD,DENY,Quản trang dùng command có căn cứ; không PATCH status tự do.
+UC-1.4,Tra cứu tình trạng mộ,"Sếp, Nhân viên Marketing, Quản trang, Khách hàng/Thân nhân",READ_SALES_MAP,DENY,READ_FIELD_MAP,READ_PUBLIC,Không trả owner/CCCD/giá cho Quản trang/Public; Kế toán chỉ mã ô trong FinanceBasis.
+UC-1.5,Dẫn đường tới mộ,"Khách hàng/Thân nhân, Quản trang, Dịch vụ bản đồ/GPS",DENY_INTERNAL,DENY_INTERNAL,NAVIGATE_VERIFIED,NAVIGATE_PUBLIC_VERIFIED,Mọi người có thể dùng cổng public; không dẫn đường GPS thật từ dữ liệu DEMO.
+UC-2.1,Quản lý thông tin khách hàng/thân nhân,Nhân viên Marketing,CREATE_READ_UPDATE,DENY,DENY,DENY,Không hard-delete hồ sơ; Kế toán nhận liên hệ cần thiết qua FinanceBasis.
+UC-2.2,Quản lý hồ sơ người mất,Nhân viên Marketing,CREATE_READ_UPDATE,DENY,DENY,DENY,Quản trang chỉ nhận thông tin người mất tối thiểu qua WorkBasis.
+UC-2.3,Liên kết khách hàng – người mất – mộ,Nhân viên Marketing,LINK_READ_UPDATE,DENY,DENY,DENY,Gỡ liên kết cần policy/lịch sử; không tự cấp quyền xóa hồ sơ.
+UC-2.4,Tra cứu hồ sơ,Nhân viên Marketing,SEARCH_READ,DENY,DENY,DENY,Không cấp directory khách/người mất cho actor phối hợp.
+UC-3.1,Lập hợp đồng,Nhân viên Marketing,CREATE_READ_UPDATE_DRAFT,DENY,DENY,DENY,Hủy là command theo trạng thái; không DELETE pháp lý.
+UC-3.2,In hợp đồng/phụ lục,Nhân viên Marketing,PRINT,DENY,DENY,DENY,Kế toán/Quản trang không tải PDF hợp đồng đầy đủ.
+UC-3.3,Đính kèm hợp đồng/phụ lục đã ký,Nhân viên Marketing,UPLOAD_LINK_CONFIRM,DENY,DENY,DENY,Bản ký giữ phiên bản; uploader không thay thế quyền tài nguyên.
+UC-3.4,Lập phụ lục hợp đồng,Nhân viên Marketing,CREATE_READ_UPDATE_DRAFT,DENY,DENY,DENY,Đăng ký/gia hạn là Marketing; Quản trang chỉ tiếp nhận căn cứ.
+UC-3.5,"Theo dõi trạng thái, thời hạn phụ lục","Sếp, Nhân viên Marketing",READ_LEGAL_STATUS,DENY,DENY,DENY,Quản trang xem hạn công việc theo UC-4.5; Kế toán đọc nghĩa vụ qua FinanceBasis.
+UC-4.1,Lập checklist thi công,Quản trang,DENY_MODULE,DENY,CREATE_READ_UPDATE_CHECKLIST,DENY,"Marketing chỉ summary trong hồ sơ liên quan, không module điều phối."
+UC-4.2,Phân công,Quản trang,DENY,DENY,ASSIGN_RESCHEDULE,DENY,Cho phép chọn người/tổ ngoài; không cấp quyền quản trị account.
+UC-4.3,Cập nhật checklist,Quản trang,DENY_MODULE,DENY,UPDATE_CHECKLIST_UPLOAD_EVIDENCE,DENY,Khóa thay đổi khi đóng; evidence đúng việc và scope.
+UC-4.4,Cập nhật tiến độ,Quản trang,DENY_MODULE,DENY,UPDATE_PROGRESS,DENY,Không sửa tiến độ bằng cách thay pháp lý hoặc tùy ý occupancy.
+UC-4.5,Theo dõi thời hạn phụ lục,Quản trang,DENY_MODULE,DENY,READ_WORK_DEADLINE_REQUEST_EXTENSION,DENY,Quản trang yêu cầu gia hạn; Marketing lập/ký phụ lục.
+UC-5.1,Đăng ký gói chăm sóc,Nhân viên Marketing,REGISTER_CARE_ANNEX,DENY,DENY,DENY,"Chọn gói đang hiệu lực, không CRUD gói mẫu hoặc đổi giá catalog."
+UC-5.2,Lập lịch chăm sóc,Quản trang,DENY,DENY,GENERATE_SCHEDULE,DENY,Tần suất lấy snapshot pháp lý hợp lệ.
+UC-5.3,Phân công,Quản trang,DENY,DENY,ASSIGN_RESCHEDULE,DENY,Không lưu phân công xung đột.
+UC-5.4,Xác nhận thực hiện checklist,Quản trang,DENY_MODULE,DENY,CHECKLIST_EVIDENCE_CLOSE,READ_PUBLISHED_RESULT,Public chỉ bản công bố; Marketing xem kết quả trong hồ sơ dịch vụ.
+UC-6.1,Tạo khoản phải thu,Kế toán,DENY_MODULE,CREATE_READ_RECEIVABLE,DENY,DENY,"Marketing chỉ trạng thái cần cho hồ sơ, không sổ công nợ/tổng tiền toàn hệ thống."
+UC-6.2,Ghi nhận thanh toán,Kế toán,DENY,RECORD_READ_PAYMENT,DENY,DENY,Append-only; không UPDATE/DELETE payment.
+UC-6.3,Xuất hóa đơn/biên lai,Kế toán,DENY,ISSUE_DOWNLOAD_REGENERATE_RECEIPT,DENY,DENY,Retry biên lai không thu thêm; file ACL cùng nghĩa vụ.
+UC-6.4,Áp chiết khấu,Kế toán,DENY,APPLY_DISCOUNT_WITH_POLICY,DENY,DENY,Trần/phê duyệt phải có policy; không tự bịa hạn mức.
+UC-7.1,Báo cáo doanh thu,"Sếp, Kế toán",DENY,READ_REVENUE,DENY,DENY,Không cấp reports:read rộng cho Marketing/Quản trang.
+UC-7.2,Thống kê phần mộ theo khu/trạng thái,Sếp,DENY,DENY,DENY,DENY,Sếp; thống kê toàn doanh nghiệp không phải bộ lọc tác vụ thực địa.
+UC-7.3,Thống kê hợp đồng,Sếp,DENY,DENY,DENY,DENY,Sếp; khác danh sách hợp đồng tác nghiệp của Marketing.
+UC-7.4,Thống kê thi công/chăm sóc,Sếp,DENY,DENY,DENY,DENY,Sếp; dashboard công việc Quản trang dùng endpoint tác vụ riêng.
+UC-7.5,Xuất file,"Sếp, Kế toán",DENY,EXPORT_REVENUE_ONLY,DENY,DENY,Xem/xuất/tải cùng permission và scope.
+UC-8.1,Đăng nhập hệ thống,"Sếp, Nhân viên Marketing, Kế toán, Quản trang",LOGIN_LOGOUT_SELF,LOGIN_LOGOUT_SELF,LOGIN_LOGOUT_SELF,PUBLIC_NO_ACCOUNT,"Role rỗng: không có module nội bộ, không fallback Hồ sơ."
+UC-8.2,Quản lý tài khoản,Sếp,DENY,DENY,DENY,DENY,Danh bạ người thực hiện là lookup riêng; không quản trị user.
+UC-8.3,Phân quyền,Sếp,DENY,DENY,DENY,DENY,Không cấp phân quyền cho actor tác nghiệp.
+UC-8.4,Quản lý loại hợp đồng,Sếp,DENY_CONFIG,DENY,DENY,DENY,"Marketing chỉ chọn mẫu/loại hiệu lực, không sửa template."
+UC-8.5,Quản lý gói dịch vụ,Sếp,DENY_CONFIG,DENY,DENY_CONFIG,DENY,Marketing chọn gói; Quản trang nhận tasks snapshot không giá.
+UC-8.6,Quản lý bảng giá,Sếp,DENY_CONFIG,DENY_CONFIG,DENY,DENY,Kế toán nhận giá snapshot nghĩa vụ; không sửa bảng giá.
+UC-8.7,Kiểm tra Audit Log,Sếp,DENY,DENY,DENY,DENY,Không CRUD audit; admin ngoài phạm vi rà quyền lần này.

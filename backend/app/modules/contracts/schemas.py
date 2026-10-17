@@ -300,3 +300,45 @@ class ContractDetailResponse(BaseModel):
 class ConfirmBurialRequest(BaseModel):
     proof_file_id: Optional[str] = None
     notes: Optional[str] = None
+
+
+class BurialConfirmationResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    annex_id: int
+    annex_code: str
+    contract_id: int
+    plot_id: int
+    plot_code: str
+    slot_id: int
+    slot_number: int
+    deceased_id: int
+    is_kim_tinh: bool
+    is_locked: bool
+    plot_status: str
+    slot_status: str
+    message: str
+    confirmed_at: datetime
+
+
+class WorkBasisResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    annex_id: int
+    annex_code: str
+    annex_type: str
+    contract_id: int
+    contract_code: str
+    status: str
+    signed_at: Optional[date] = None
+    target_date: Optional[date] = None
+    due_date: Optional[date] = None
+    plot_id: Optional[int] = None
+    plot_code: Optional[str] = None
+    zone_code: Optional[str] = None
+    slot_number: Optional[int] = None
+    deceased_id: Optional[int] = None
+    deceased_name: Optional[str] = None
+    service_summary: Optional[str] = None
+    is_burial_confirmed: bool = False
+    burial_date: Optional[date] = None

@@ -2,7 +2,8 @@ from datetime import date
 from typing import List, Optional
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
+from fastapi import status as http_status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -21,6 +22,21 @@ from app.modules.reports.service import ReportService
 router = APIRouter(prefix="/reports", tags=["Reports & Executive Dashboards (M12)"])
 
 
+def require_revenue_report_access(current_user: User = Depends(get_current_user)) -> User:
+    """Yêu cầu quyền xem báo cáo doanh thu (Kế toán hoặc Admin)."""
+    if not current_user.roles or len(current_user.roles) == 0:
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail="Tài khoản chưa được phân vai trò trong hệ thống.",
+        )
+    if not ReportService.check_report_capability(current_user, "REVENUE"):
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail="Bạn không có quyền xem báo cáo doanh thu tài chính.",
+        )
+    return current_user
+
+
 # =============================================================================
 # 1. Revenue Report (UC-7.1)
 # =============================================================================
@@ -32,17 +48,12 @@ def get_revenue_report(
         None, description="Phương thức thanh toán: CASH, BANK_TRANSFER, CARD"
     ),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("reports", "read")),
+    current_user: User = Depends(require_revenue_report_access),
 ) -> RevenueReportResponse:
     """
     Báo cáo doanh thu chuẩn kế toán dựa trên tổng thực thu của bảng payments.
     Hỗ trợ drill-down chi tiết từng phiếu thu và nhóm theo thời gian, phương thức.
     """
-    if not ReportService.check_report_capability(current_user, "REVENUE"):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Bạn không có quyền xem báo cáo doanh thu tài chính.",
-        )
     return ReportService.generate_revenue_report(
         db=db,
         start_date=start_date,
@@ -68,7 +79,7 @@ def get_occupancy_report(
     """
     if not ReportService.check_report_capability(current_user, "OCCUPANCY"):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=http_status.HTTP_403_FORBIDDEN,
             detail="Bạn không có quyền xem báo cáo tỷ lệ lấp đầy.",
         )
     return ReportService.generate_occupancy_report(db=db, zone_id=zone_id)
@@ -83,8 +94,10 @@ def get_occupancy_report(
 def get_contracts_report(
     start_date: Optional[date] = Query(None, description="Ngày ký bắt đầu (YYYY-MM-DD)"),
     end_date: Optional[date] = Query(None, description="Ngày ký kết thúc (YYYY-MM-DD)"),
-    status: Optional[str] = Query(
-        None, description="Trạng thái HĐ: DRAFT, SIGNED, ACTIVE, COMPLETED, CANCELLED"
+    contract_status: Optional[str] = Query(
+        None,
+        alias="status",
+        description="Trạng thái HĐ: DRAFT, SIGNED, ACTIVE, COMPLETED, CANCELLED",
     ),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("reports", "read")),
@@ -96,14 +109,14 @@ def get_contracts_report(
     """
     if not ReportService.check_report_capability(current_user, "CONTRACTS"):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=http_status.HTTP_403_FORBIDDEN,
             detail="Bạn không có quyền xem báo cáo hợp đồng pháp lý.",
         )
     return ReportService.generate_contracts_report(
         db=db,
         start_date=start_date,
         end_date=end_date,
-        status_filter=status,
+        status_filter=contract_status,
     )
 
 
@@ -128,7 +141,7 @@ def get_operations_report(
     """
     if not ReportService.check_report_capability(current_user, "OPERATIONS"):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
+            status_code=http_status.HTTP_403_FORBIDDEN,
             detail="Bạn không có quyền xem báo cáo vận hành.",
         )
     return ReportService.generate_operations_report(
@@ -144,7 +157,7 @@ def get_operations_report(
 @router.post(
     "/export",
     response_model=ReportExportResponse,
-    status_code=status.HTTP_201_CREATED,
+    status_code=http_status.HTTP_201_CREATED,
     summary="Khởi tạo yêu cầu xuất báo cáo (PDF/XLSX)",
 )
 def create_report_export(
@@ -156,6 +169,11 @@ def create_report_export(
     Tạo snapshot báo cáo, xuất file PDF hoặc XLSX lưu trên MinIO với mã kiểm tra SHA-256.
     Áp dụng cơ chế chống formula injection đối với bảng tính Excel.
     """
+    if not current_user.roles or len(current_user.roles) == 0:
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail="Tài khoản chưa được phân vai trò trong hệ thống.",
+        )
     return ReportService.create_export(db=db, user=current_user, req=req)
 
 
@@ -168,6 +186,11 @@ def list_report_exports(
     current_user: User = Depends(get_current_user),
 ) -> List[ReportExportResponse]:
     """Danh sách các bản xuất báo cáo (người dùng thông thường chỉ thấy của mình, admin thấy tất cả)."""
+    if not current_user.roles or len(current_user.roles) == 0:
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail="Tài khoản chưa được phân vai trò trong hệ thống.",
+        )
     return ReportService.list_exports(db=db, user=current_user, limit=limit)
 
 
@@ -181,6 +204,11 @@ def download_report_export(
     Tải file báo cáo với cơ chế phân quyền ACL nghiêm ngặt:
     Từ chối 403 Forbidden nếu người dùng không phải người tạo hoặc không có quyền quản trị.
     """
+    if not current_user.roles or len(current_user.roles) == 0:
+        raise HTTPException(
+            status_code=http_status.HTTP_403_FORBIDDEN,
+            detail="Tài khoản chưa được phân vai trò trong hệ thống.",
+        )
     content, content_type, filename = ReportService.download_export(
         db=db,
         user=current_user,

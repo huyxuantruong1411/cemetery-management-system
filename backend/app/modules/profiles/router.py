@@ -99,7 +99,7 @@ def update_customer(
 def create_deceased_profile(
     data: DeceasedProfileCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("customers", "write")),
+    current_user: User = Depends(require_permission("deceased", "write")),
 ):
     """
     Tạo hồ sơ người mất (G07).
@@ -116,7 +116,7 @@ def list_deceased_profiles(
     search: Optional[str] = Query(None, description="Tìm theo họ tên, mã người mất, quê quán"),
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("customers", "read")),
+    current_user: User = Depends(require_permission("deceased", "read")),
 ):
     """Danh sách hồ sơ người mất nội bộ."""
     return ProfileService.list_deceased_profiles(db, search=search, limit=limit)
@@ -126,7 +126,7 @@ def list_deceased_profiles(
 def get_deceased_profile(
     deceased_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("customers", "read")),
+    current_user: User = Depends(require_permission("deceased", "read")),
 ):
     """Chi tiết hồ sơ người mất kèm giấy báo tử, thân nhân và vị trí ô mộ/slot huyệt đã an táng."""
     return ProfileService.get_deceased_profile(db, deceased_id)
@@ -137,7 +137,7 @@ def update_deceased_profile(
     deceased_id: int,
     data: DeceasedProfileUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("customers", "write")),
+    current_user: User = Depends(require_permission("deceased", "write")),
 ):
     """Cập nhật thông tin người mất."""
     return ProfileService.update_deceased_profile(

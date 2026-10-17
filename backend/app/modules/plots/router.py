@@ -36,7 +36,7 @@ router = APIRouter(prefix="/plots", tags=["Plots, Zones, Slots & Maps"])
 @router.get("/stats", response_model=PlotStatsResponse)
 def get_plot_stats(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("plots", "read")),
 ):
     """Lấy thống kê số lượng ô mộ theo trạng thái, số mộ Kim Tĩnh và số mộ đã khóa."""
     return PlotService.get_stats(db)
@@ -48,7 +48,7 @@ def get_plot_stats(
 @router.get("/zones", response_model=List[ZoneResponse])
 def get_zones(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("plots", "read")),
 ):
     """Lấy danh sách tất cả các khu mộ trong nghĩa trang."""
     return PlotService.list_zones(db)
@@ -58,21 +58,21 @@ def get_zones(
     "/zones",
     response_model=ZoneResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("plots", "write"))],
+    dependencies=[Depends(require_permission("plots", "manage"))],
 )
 def create_zone(
     data: ZoneCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Tạo mới một khu vực mộ (yêu cầu quyền plots:write)."""
+    """Tạo mới một khu vực mộ (yêu cầu quyền plots:manage của Admin/Sếp)."""
     return PlotService.create_zone(db, data)
 
 
 @router.put(
     "/zones/{zone_id}",
     response_model=ZoneResponse,
-    dependencies=[Depends(require_permission("plots", "write"))],
+    dependencies=[Depends(require_permission("plots", "manage"))],
 )
 def update_zone(
     zone_id: int,
@@ -80,21 +80,21 @@ def update_zone(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Cập nhật thông tin khu mộ."""
+    """Cập nhật thông tin khu mộ (Admin/Sếp)."""
     return PlotService.update_zone(db, zone_id, data)
 
 
 @router.delete(
     "/zones/{zone_id}",
     response_model=PlotMessageResponse,
-    dependencies=[Depends(require_permission("plots", "write"))],
+    dependencies=[Depends(require_permission("plots", "manage"))],
 )
 def delete_zone(
     zone_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Xóa khu mộ (yêu cầu quyền plots:write, chỉ xóa được khi không chứa hàng mộ)."""
+    """Xóa khu mộ (chỉ xóa được khi không chứa hàng mộ)."""
     return PlotService.delete_zone(db, zone_id)
 
 
@@ -105,7 +105,7 @@ def delete_zone(
 def get_rows(
     zone_id: Optional[int] = Query(None, description="Lọc theo ID khu vực"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("plots", "read")),
 ):
     """Lấy danh sách các hàng mộ (có thể lọc theo khu vực)."""
     return PlotService.list_rows(db, zone_id=zone_id)
@@ -115,21 +115,21 @@ def get_rows(
     "/rows",
     response_model=RowResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("plots", "write"))],
+    dependencies=[Depends(require_permission("plots", "manage"))],
 )
 def create_row(
     data: RowCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Tạo mới một hàng mộ trong khu vực."""
+    """Tạo mới một hàng mộ trong khu vực (Admin/Sếp)."""
     return PlotService.create_row(db, data)
 
 
 @router.put(
     "/rows/{row_id}",
     response_model=RowResponse,
-    dependencies=[Depends(require_permission("plots", "write"))],
+    dependencies=[Depends(require_permission("plots", "manage"))],
 )
 def update_row(
     row_id: int,
@@ -137,21 +137,21 @@ def update_row(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Cập nhật thông tin hàng mộ."""
+    """Cập nhật thông tin hàng mộ (Admin/Sếp)."""
     return PlotService.update_row(db, row_id, data)
 
 
 @router.delete(
     "/rows/{row_id}",
     response_model=PlotMessageResponse,
-    dependencies=[Depends(require_permission("plots", "write"))],
+    dependencies=[Depends(require_permission("plots", "manage"))],
 )
 def delete_row(
     row_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Xóa hàng mộ (yêu cầu quyền plots:write, chỉ xóa được khi không chứa ô mộ)."""
+    """Xóa hàng mộ (chỉ xóa được khi không chứa ô mộ)."""
     return PlotService.delete_row(db, row_id)
 
 
@@ -161,7 +161,7 @@ def delete_row(
 @router.get("/types", response_model=List[PlotTypeResponse])
 def get_plot_types(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("plots", "read")),
 ):
     """Lấy danh mục các loại mộ và quy cách kích thước, dung lượng slot."""
     return PlotService.list_plot_types(db)
@@ -171,21 +171,21 @@ def get_plot_types(
     "/types",
     response_model=PlotTypeResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("plots", "write"))],
+    dependencies=[Depends(require_permission("plots", "manage"))],
 )
 def create_plot_type(
     data: PlotTypeCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Tạo mới loại mộ kèm số lượng slot mặc định."""
+    """Tạo mới loại mộ kèm số lượng slot mặc định (Admin/Sếp)."""
     return PlotService.create_plot_type(db, data)
 
 
 @router.put(
     "/types/{type_id}",
     response_model=PlotTypeResponse,
-    dependencies=[Depends(require_permission("plots", "write"))],
+    dependencies=[Depends(require_permission("plots", "manage"))],
 )
 def update_plot_type(
     type_id: int,
@@ -193,21 +193,21 @@ def update_plot_type(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Cập nhật thông số loại mộ."""
+    """Cập nhật thông số loại mộ (Admin/Sếp)."""
     return PlotService.update_plot_type(db, type_id, data)
 
 
 @router.delete(
     "/types/{type_id}",
     response_model=PlotMessageResponse,
-    dependencies=[Depends(require_permission("plots", "write"))],
+    dependencies=[Depends(require_permission("plots", "manage"))],
 )
 def delete_plot_type(
     type_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Xóa loại mộ (yêu cầu quyền plots:write, chỉ xóa được khi không có ô mộ nào sử dụng)."""
+    """Xóa loại mộ (chỉ xóa được khi không có ô mộ nào sử dụng)."""
     return PlotService.delete_plot_type(db, type_id)
 
 
@@ -227,7 +227,7 @@ def get_plots(
     skip: int = Query(0, ge=0),
     limit: int = Query(200, ge=1, le=1000),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("plots", "read")),
 ):
     """Tra cứu danh sách ô mộ kèm thông tin tọa độ GPS và trạng thái giữ chỗ."""
     return PlotService.list_plots(
@@ -247,7 +247,7 @@ def get_plots(
 def get_plot_detail(
     plot_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("plots", "read")),
 ):
     """Xem chi tiết đầy đủ một ô mộ kèm các slot con, thông tin Kim Tĩnh và giữ chỗ."""
     return PlotService.get_plot(db, plot_id)
@@ -257,21 +257,21 @@ def get_plot_detail(
     "",
     response_model=PlotDetailResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_permission("plots", "write"))],
+    dependencies=[Depends(require_permission("plots", "manage"))],
 )
 def create_plot(
     data: PlotCreate,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Tạo ô mộ mới (Tự động sinh các slot 1..N theo cấu hình loại mộ trong một transaction)."""
+    """Tạo ô mộ mới (Admin/Sếp - Tự động sinh các slot 1..N theo cấu hình loại mộ)."""
     return PlotService.create_plot(db, data)
 
 
 @router.put(
     "/{plot_id}",
     response_model=PlotDetailResponse,
-    dependencies=[Depends(require_permission("plots", "write"))],
+    dependencies=[Depends(require_permission("plots", "manage"))],
 )
 def update_plot(
     plot_id: int,
@@ -279,21 +279,21 @@ def update_plot(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Cập nhật tọa độ GPS, hướng mộ, ghi chú. Thực thi Quy tắc Bất biến Kim Tĩnh."""
+    """Cập nhật tọa độ GPS, hướng mộ, ghi chú (Admin/Sếp). Thực thi Quy tắc Bất biến Kim Tĩnh."""
     return PlotService.update_plot(db, plot_id, data)
 
 
 @router.delete(
     "/{plot_id}",
     response_model=PlotMessageResponse,
-    dependencies=[Depends(require_permission("plots", "write"))],
+    dependencies=[Depends(require_permission("plots", "manage"))],
 )
 def delete_plot(
     plot_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """Xóa ô mộ (yêu cầu quyền plots:write, chỉ xóa được khi ô chưa bán, không có giao dịch và không phải Kim Tĩnh)."""
+    """Xóa ô mộ (chỉ xóa được khi ô chưa bán, không có giao dịch và không phải Kim Tĩnh)."""
     return PlotService.delete_plot(db, plot_id)
 
 

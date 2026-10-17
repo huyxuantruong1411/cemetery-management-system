@@ -25,10 +25,17 @@ import type {
 } from '../../types/reports'
 
 export const ReportsModule: React.FC = () => {
-  const { accessToken } = useAuth()
+  const { accessToken, hasPermission } = useAuth()
+  const canViewAllReports = hasPermission('reports:read')
 
   // Active sub-tab
   const [activeTab, setActiveTab] = useState<'revenue' | 'occupancy' | 'contracts' | 'operations'>('revenue')
+
+  useEffect(() => {
+    if (!canViewAllReports && activeTab !== 'revenue') {
+      setActiveTab('revenue')
+    }
+  }, [canViewAllReports, activeTab])
 
   // Date filters
   const [startDate, setStartDate] = useState<string>('')
@@ -383,65 +390,69 @@ export const ReportsModule: React.FC = () => {
             <span>Doanh Thu Thực Thu</span>
           </button>
 
-          <button
-            onClick={() => setActiveTab('occupancy')}
-            style={{
-              padding: '8px 14px',
-              borderRadius: '6px',
-              border: 'none',
-              backgroundColor: activeTab === 'occupancy' ? '#E6F4EA' : 'transparent',
-              color: activeTab === 'occupancy' ? 'var(--brand-primary)' : '#64748B',
-              fontWeight: activeTab === 'occupancy' ? 600 : 500,
-              fontSize: '13px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <Layers size={15} />
-            <span>Tỷ Lệ Lấp Đầy & Mộ Phần</span>
-          </button>
+          {canViewAllReports && (
+            <>
+              <button
+                onClick={() => setActiveTab('occupancy')}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: activeTab === 'occupancy' ? '#E6F4EA' : 'transparent',
+                  color: activeTab === 'occupancy' ? 'var(--brand-primary)' : '#64748B',
+                  fontWeight: activeTab === 'occupancy' ? 600 : 500,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <Layers size={15} />
+                <span>Tỷ Lệ Lấp Đầy & Mộ Phần</span>
+              </button>
 
-          <button
-            onClick={() => setActiveTab('contracts')}
-            style={{
-              padding: '8px 14px',
-              borderRadius: '6px',
-              border: 'none',
-              backgroundColor: activeTab === 'contracts' ? '#E6F4EA' : 'transparent',
-              color: activeTab === 'contracts' ? 'var(--brand-primary)' : '#64748B',
-              fontWeight: activeTab === 'contracts' ? 600 : 500,
-              fontSize: '13px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <FileText size={15} />
-            <span>Hợp Đồng & Phụ Lục</span>
-          </button>
+              <button
+                onClick={() => setActiveTab('contracts')}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: activeTab === 'contracts' ? '#E6F4EA' : 'transparent',
+                  color: activeTab === 'contracts' ? 'var(--brand-primary)' : '#64748B',
+                  fontWeight: activeTab === 'contracts' ? 600 : 500,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <FileText size={15} />
+                <span>Hợp Đồng & Phụ Lục</span>
+              </button>
 
-          <button
-            onClick={() => setActiveTab('operations')}
-            style={{
-              padding: '8px 14px',
-              borderRadius: '6px',
-              border: 'none',
-              backgroundColor: activeTab === 'operations' ? '#E6F4EA' : 'transparent',
-              color: activeTab === 'operations' ? 'var(--brand-primary)' : '#64748B',
-              fontWeight: activeTab === 'operations' ? 600 : 500,
-              fontSize: '13px',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-            }}
-          >
-            <PieChart size={15} />
-            <span>Vận Hành: Thi Công & Chăm Sóc</span>
-          </button>
+              <button
+                onClick={() => setActiveTab('operations')}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: activeTab === 'operations' ? '#E6F4EA' : 'transparent',
+                  color: activeTab === 'operations' ? 'var(--brand-primary)' : '#64748B',
+                  fontWeight: activeTab === 'operations' ? 600 : 500,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                <PieChart size={15} />
+                <span>Vận Hành: Thi Công & Chăm Sóc</span>
+              </button>
+            </>
+          )}
         </div>
 
         {/* Date Filter Bar */}
@@ -1258,9 +1269,13 @@ export const ReportsModule: React.FC = () => {
                   }}
                 >
                   <option value="REVENUE">Doanh Thu Thực Thu</option>
-                  <option value="OCCUPANCY">Lấp Đầy & Mộ Phần</option>
-                  <option value="CONTRACTS">Hợp Đồng & Phụ Lục</option>
-                  <option value="OPERATIONS">Vận Hành (Thi Công & Chăm Sóc)</option>
+                  {canViewAllReports && (
+                    <>
+                      <option value="OCCUPANCY">Lấp Đầy & Mộ Phần</option>
+                      <option value="CONTRACTS">Hợp Đồng & Phụ Lục</option>
+                      <option value="OPERATIONS">Vận Hành (Thi Công & Chăm Sóc)</option>
+                    </>
+                  )}
                 </select>
               </div>
 

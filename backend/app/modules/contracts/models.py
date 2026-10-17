@@ -221,6 +221,7 @@ class ConstructionAnnex(Base):
     checklist_specifications = Column(Text, nullable=True)
 
     annex = relationship("ContractAnnex", back_populates="construction")
+    plot = relationship("Plot", foreign_keys=[plot_id])
 
 
 class ContractTemplate(Base):

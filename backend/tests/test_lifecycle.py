@@ -332,11 +332,22 @@ def test_kim_tinh_burial_activation_permanently_locks_plot(
             json={
                 "signed_scan_file_id": sample_scan_file,
                 "signed_at": "2026-10-03",
-                "activation_notes": "Đã chôn cất kim tĩnh hoàn tất",
+                "activation_notes": "Đã ký phụ lục an táng",
             },
             headers=auth_headers,
         )
         assert act_res.status_code == 200
+
+        # Quản trang xác nhận hạ huyệt thực địa (FLOW-01)
+        confirm_res = client.post(
+            f"{settings.API_V1_PREFIX}/contracts/annexes/{annex_id}/confirm-burial",
+            json={
+                "proof_file_id": sample_scan_file,
+                "notes": "Đã chôn cất kim tĩnh hoàn tất",
+            },
+            headers=auth_headers,
+        )
+        assert confirm_res.status_code == 200
 
         # Verify DB state
         db.refresh(plot)

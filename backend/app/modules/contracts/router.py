@@ -1,15 +1,18 @@
+from datetime import datetime, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.modules.auth.dependencies import require_permission
+from app.modules.auth.dependencies import get_current_user, require_permission
 from app.modules.auth.models import User
+from app.modules.contracts.models import BurialAnnex
 from app.modules.contracts.schemas import (
     AnnexActivateRequest,
     AnnexSubmitSigningRequest,
     BurialAnnexCreate,
+    BurialConfirmationResponse,
     ConfirmBurialRequest,
     ContractActivateRequest,
     ContractBriefResponse,
@@ -20,8 +23,10 @@ from app.modules.contracts.schemas import (
     ExhumationContractCreate,
     LandPurchaseContractCreate,
     TransferContractCreate,
+    WorkBasisResponse,
 )
 from app.modules.contracts.service import ContractService
+from app.modules.plots.models import Plot, PlotSlot
 
 router = APIRouter(prefix="/contracts", tags=["Contracts: Land Purchase & Lifecycle"])
 
@@ -157,6 +162,30 @@ def list_contracts(
 
 
 @router.get(
+    "/work-bases",
+    response_model=List[WorkBasisResponse],
+    summary="Danh sách Căn Cứ Công Việc cho Quản trang (EX-01 / WorkBasis)",
+)
+def get_work_bases(
+    status_filter: Optional[str] = Query(None, alias="status"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("plots", "read")),
+):
+    """
+    Cung cấp danh sách căn cứ công việc (WorkBasis) cho Quản trang và Marketing:
+    Bao gồm mã phụ lục, loại việc, ô/huyệt, người mất tối thiểu, ngày hẹn và tiến độ.
+    Tuyệt đối không kéo theo CCCD, địa chỉ, số tiền/công nợ hay scan hợp đồng.
+    """
+    user_roles = [r.role_name.upper() for r in (current_user.roles or [])]
+    if not any(r in ("CARETAKER", "ADMIN", "MARKETING") for r in user_roles):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Bạn không có quyền truy cập Căn Cứ Công Việc.",
+        )
+    return ContractService.get_work_bases(db, status_filter=status_filter)
+
+
+@router.get(
     "/{contract_id}",
     response_model=ContractDetailResponse,
     summary="Xem chi tiết hồ sơ hợp đồng",
@@ -238,10 +267,10 @@ def download_contract_pdf(
     current_user: User = Depends(require_permission("contracts", "read")),
 ):
     user_roles = [r.role_name.upper() for r in (current_user.roles or [])]
-    if "CARETAKER" in user_roles and "ADMIN" not in user_roles:
+    if ("CARETAKER" in user_roles or "ACCOUNTANT" in user_roles) and "ADMIN" not in user_roles:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Quản trang không có quyền tải văn bản hợp đồng pháp lý đầy đủ. Vui lòng tham khảo Căn Cứ Công Việc.",
+            detail="Bạn không có quyền tải văn bản hợp đồng pháp lý đầy đủ. Vui lòng tham khảo Căn Cứ Công Việc hoặc Căn Cứ Tài Chính.",
         )
     pdf_bytes = ContractService.generate_contract_pdf(db, contract_id)
     contract = ContractService.get_contract(db, contract_id)
@@ -317,7 +346,9 @@ def activate_burial_annex(
 
 @router.post(
     "/annexes/{annex_id}/confirm-burial",
+    response_model=BurialConfirmationResponse,
     summary="Xác nhận an táng thực địa trên mộ phần (Caretaker)",
+    dependencies=[Depends(require_permission("plots", "confirm_burial"))],
 )
 def confirm_burial(
     annex_id: int,
@@ -325,10 +356,10 @@ def confirm_burial(
     proof_file_id: Optional[str] = Query(None, description="Tệp ảnh minh chứng an táng thực tế"),
     notes: Optional[str] = Query(None, description="Ghi chú xác nhận hiện trường"),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_permission("contracts", "read")),
+    current_user: User = Depends(get_current_user),
 ):
     """
-    Xác nhận an táng thực địa độc lập với kích hoạt pháp lý (R05 / BA-09 / BA-14):
+    Xác nhận an táng thực địa độc lập với kích hoạt pháp lý (FLOW-01 / R05 / BA-09 / BA-14):
     - Dành cho Quản trang xác nhận sau khi thực tế hạ huyệt.
     - Cập nhật slot huyệt thành OCCUPIED và gán deceased_id.
     - Chuyển ô mộ thành OCCUPIED. Nếu an táng Kim Tĩnh: khóa vĩnh viễn (is_kim_tinh=1, is_locked=1).
@@ -351,4 +382,22 @@ def confirm_burial(
         proof_file_id=effective_proof_file_id,
         notes=effective_notes,
     )
-    return ContractService.get_contract_detail_dto(db, annex.contract_id, current_user=current_user)
+    burial = db.query(BurialAnnex).filter(BurialAnnex.annex_id == annex.annex_id).first()
+    plot = db.query(Plot).filter(Plot.plot_id == burial.plot_id).first()
+    slot = db.query(PlotSlot).filter(PlotSlot.slot_id == burial.slot_id).first()
+    return BurialConfirmationResponse(
+        annex_id=annex.annex_id,
+        annex_code=annex.annex_code,
+        contract_id=annex.contract_id,
+        plot_id=plot.plot_id,
+        plot_code=plot.plot_code,
+        slot_id=slot.slot_id,
+        slot_number=slot.slot_number,
+        deceased_id=burial.deceased_id,
+        is_kim_tinh=plot.is_kim_tinh,
+        is_locked=plot.is_locked,
+        plot_status=plot.status,
+        slot_status=slot.status,
+        message="Xác nhận an táng thực địa hoàn tất thành công. Ô mộ và slot đã được cập nhật.",
+        confirmed_at=datetime.now(timezone.utc),
+    )

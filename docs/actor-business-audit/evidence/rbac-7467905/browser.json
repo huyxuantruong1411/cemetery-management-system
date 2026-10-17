@@ -1,0 +1,1176 @@
+{
+  "commit": "7467905",
+  "date": "2026-10-16",
+  "backend": "Fresh HEAD on 8002; Vite 5174; main business reads only",
+  "actors": [
+    {
+      "actor": "caretaker",
+      "menu": [
+        "",
+        "Sơ Đồ Ô Mộ & Bản Đồ",
+        "Thân Nhân & Người Mất",
+        "Hợp Đồng & Khách Hàng",
+        "Chăm Sóc Mộ Phần",
+        "Thi Công Thực Địa",
+        "Bảng Giá & Gói Dịch Vụ",
+        "Báo Cáo Thống Kê",
+        "Đăng xuất"
+      ],
+      "pages": [
+        {
+          "key": "plots",
+          "buttons": [
+            "Làm mới",
+            "Bản Đồ Số GIS (Leaflet Map)",
+            "Ma Trận Phân Lô Thực Địa",
+            "Danh Mục Khu Vực & Loại Mộ",
+            "Thêm Ô Mộ Mới"
+          ],
+          "failures": [],
+          "markers": 0,
+          "catalogButtons": [
+            "Làm mới",
+            "Bản Đồ Số GIS (Leaflet Map)",
+            "Ma Trận Phân Lô Thực Địa",
+            "Danh Mục Khu Vực & Loại Mộ",
+            "Thêm Ô Mộ Mới"
+          ]
+        },
+        {
+          "key": "profiles",
+          "buttons": [
+            "👥 Thân Nhân (Khách Hàng)",
+            "⚰️ Người Quá Cố & Giấy Báo Tử",
+            "🔗 Liên Kết Hồ Sơ",
+            "🪷 Cổng Tra Cứu Tưởng Niệm",
+            "Tìm Kiếm",
+            "Tất cả (100)",
+            "Có liên kết",
+            "Chưa liên kết",
+            " Thiết Lập Liên Kết Hồ Sơ",
+            "+ Thêm Khách Hàng Thân Nhân",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "",
+            "",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "10",
+            "",
+            "",
+            "Đi"
+          ],
+          "failures": [],
+          "addCustomerDialogOpened": true
+        },
+        {
+          "key": "contracts",
+          "buttons": [
+            "Làm mới"
+          ],
+          "failures": []
+        },
+        {
+          "key": "catalog",
+          "buttons": [
+            "Làm mới",
+            "1. Bảng Giá & Khoản Mục (1)",
+            "2. Gói Chăm Sóc (189)",
+            "3. Mẫu Hợp Đồng 4 Loại (5)",
+            "4. Tra Cứu Giá Tức Thời",
+            "Thêm",
+            "Thêm Khoản Mục Giá",
+            "",
+            "",
+            "1",
+            "",
+            ""
+          ],
+          "failures": []
+        },
+        {
+          "key": "care",
+          "buttons": [
+            "Làm mới",
+            "Sinh Lịch Kỳ Mới",
+            "Tất cả",
+            "Chờ chỉ định",
+            "Đã giao",
+            "Đang làm",
+            "Đã đóng ca"
+          ],
+          "failures": []
+        },
+        {
+          "key": "construction",
+          "buttons": [
+            "Làm Mới",
+            "+ Lập Lệnh Thi Công",
+            "Lệnh Thi Công Thực Địa (0)",
+            "Lịch Nghỉ & Xung Đột Nhân Sự (29)",
+            "Tất Cả",
+            "Đang Chờ",
+            "Đang Thi Công",
+            "Đã Nghiệm Thu",
+            "Quá Hạn"
+          ],
+          "failures": []
+        },
+        {
+          "key": "reports",
+          "buttons": [
+            "Xuất Báo Cáo (PDF / XLSX)",
+            "Làm Mới",
+            "Doanh Thu Thực Thu",
+            "Tỷ Lệ Lấp Đầy & Mộ Phần",
+            "Hợp Đồng & Phụ Lục",
+            "Vận Hành: Thi Công & Chăm Sóc"
+          ],
+          "failures": []
+        }
+      ],
+      "api": [
+        {
+          "path": "/profiles/customers?limit=1",
+          "status": 200,
+          "count": 1,
+          "fields": [
+            "full_name",
+            "citizen_id",
+            "phone_number",
+            "email",
+            "address",
+            "date_of_birth",
+            "customer_id",
+            "customer_code",
+            "created_at",
+            "updated_at",
+            "relations"
+          ]
+        },
+        {
+          "path": "/profiles/deceased?limit=1",
+          "status": 200,
+          "count": 1,
+          "fields": [
+            "full_name",
+            "gender",
+            "date_of_birth",
+            "date_of_death",
+            "birth_year",
+            "birth_date_precision",
+            "hometown",
+            "religion",
+            "deceased_id",
+            "deceased_code",
+            "has_death_certificate",
+            "created_at",
+            "updated_at",
+            "death_certificate",
+            "relations",
+            "burial_slot"
+          ]
+        },
+        {
+          "path": "/contracts?limit=1",
+          "status": 200,
+          "count": 1,
+          "fields": [
+            "contract_id",
+            "contract_code",
+            "contract_type",
+            "status",
+            "total_amount",
+            "customer_id",
+            "customer_name",
+            "customer_phone",
+            "plot_id",
+            "plot_code",
+            "zone_name",
+            "signed_at",
+            "activated_at",
+            "created_at"
+          ]
+        },
+        {
+          "path": "/catalog/price-lists",
+          "status": 200,
+          "count": 1,
+          "fields": [
+            "price_list_name",
+            "effective_from_date",
+            "effective_to_date",
+            "is_active",
+            "price_list_id",
+            "created_at",
+            "items"
+          ]
+        },
+        {
+          "path": "/catalog/care-packages",
+          "status": 200,
+          "count": 189,
+          "fields": [
+            "package_code",
+            "package_name",
+            "cycle_type",
+            "default_tasks_json",
+            "unit_price",
+            "is_active",
+            "package_id"
+          ]
+        },
+        {
+          "path": "/catalog/contract-templates",
+          "status": 200,
+          "count": 5,
+          "fields": [
+            "template_code",
+            "contract_type",
+            "template_name",
+            "version_no",
+            "content_html",
+            "required_documents_json",
+            "is_active",
+            "template_id",
+            "created_at",
+            "updated_at"
+          ]
+        },
+        {
+          "path": "/plots?limit=500",
+          "status": 200,
+          "count": 500,
+          "fields": [
+            "plot_id",
+            "plot_code",
+            "row_id",
+            "row_code",
+            "zone_id",
+            "zone_code",
+            "zone_name",
+            "type_id",
+            "type_name",
+            "default_slots",
+            "status",
+            "is_kim_tinh",
+            "is_locked",
+            "latitude",
+            "longitude",
+            "orientation",
+            "owner_id",
+            "owner_name",
+            "active_reservation"
+          ],
+          "withCoordinates": 4
+        },
+        {
+          "path": "/finance/summary",
+          "status": 403,
+          "count": null
+        },
+        {
+          "path": "/finance/receivables?limit=1",
+          "status": 403,
+          "count": null
+        },
+        {
+          "path": "/care/schedules",
+          "status": 200,
+          "count": 100,
+          "fields": [
+            "schedule_id",
+            "care_annex_id",
+            "plot_id",
+            "plot_code",
+            "zone_name",
+            "package_id",
+            "package_name",
+            "caretaker_id",
+            "caretaker_name",
+            "scheduled_date",
+            "performed_date",
+            "status",
+            "period_key",
+            "notes",
+            "closed_at",
+            "created_at",
+            "tasks_count",
+            "completed_tasks_count",
+            "evidence_count"
+          ]
+        },
+        {
+          "path": "/construction/orders",
+          "status": 200,
+          "count": 141,
+          "fields": [
+            "order_id",
+            "annex_id",
+            "plot_id",
+            "plot_code",
+            "zone_name",
+            "supervisor_id",
+            "supervisor_name",
+            "start_date",
+            "expected_end_date",
+            "actual_end_date",
+            "overall_progress",
+            "status",
+            "is_overdue",
+            "notes",
+            "created_at",
+            "tasks",
+            "total_tasks",
+            "completed_tasks",
+            "required_tasks",
+            "completed_required_tasks"
+          ]
+        },
+        {
+          "path": "/reports/revenue",
+          "status": 403,
+          "count": null
+        },
+        {
+          "path": "/reports/occupancy",
+          "status": 403,
+          "count": null
+        },
+        {
+          "path": "/reports/contracts",
+          "status": 403,
+          "count": null
+        },
+        {
+          "path": "/reports/operations",
+          "status": 403,
+          "count": null
+        },
+        {
+          "path": "/auth/users",
+          "status": 403,
+          "count": null
+        },
+        {
+          "path": "/audit",
+          "status": 404,
+          "count": null
+        }
+      ],
+      "errors": []
+    },
+    {
+      "actor": "marketing",
+      "menu": [
+        "",
+        "Sơ Đồ Ô Mộ & Bản Đồ",
+        "Thân Nhân & Người Mất",
+        "Hợp Đồng & Khách Hàng",
+        "Chăm Sóc Mộ Phần",
+        "Thi Công Thực Địa",
+        "Công Nợ & Thu Tiền",
+        "Bảng Giá & Gói Dịch Vụ",
+        "Báo Cáo Thống Kê",
+        "Đăng xuất"
+      ],
+      "pages": [
+        {
+          "key": "plots",
+          "buttons": [
+            "Làm mới",
+            "Bản Đồ Số GIS (Leaflet Map)",
+            "Ma Trận Phân Lô Thực Địa",
+            "Danh Mục Khu Vực & Loại Mộ",
+            "Thêm Ô Mộ Mới"
+          ],
+          "failures": [],
+          "markers": 0,
+          "catalogButtons": [
+            "Làm mới",
+            "Bản Đồ Số GIS (Leaflet Map)",
+            "Ma Trận Phân Lô Thực Địa",
+            "Danh Mục Khu Vực & Loại Mộ",
+            "Thêm Ô Mộ Mới"
+          ]
+        },
+        {
+          "key": "profiles",
+          "buttons": [
+            "👥 Thân Nhân (Khách Hàng)",
+            "⚰️ Người Quá Cố & Giấy Báo Tử",
+            "🔗 Liên Kết Hồ Sơ",
+            "🪷 Cổng Tra Cứu Tưởng Niệm",
+            "Tìm Kiếm",
+            "Tất cả (100)",
+            "Có liên kết",
+            "Chưa liên kết",
+            " Thiết Lập Liên Kết Hồ Sơ",
+            "+ Thêm Khách Hàng Thân Nhân",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "",
+            "",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "10",
+            "",
+            "",
+            "Đi"
+          ],
+          "failures": [],
+          "addCustomerDialogOpened": true
+        },
+        {
+          "key": "contracts",
+          "buttons": [
+            "Làm mới",
+            "+ Mua Đất",
+            "+ Cải Táng",
+            "+ Chuyển Nhượng",
+            "+ Hỏa Táng"
+          ],
+          "failures": []
+        },
+        {
+          "key": "catalog",
+          "buttons": [
+            "Làm mới",
+            "1. Bảng Giá & Khoản Mục (1)",
+            "2. Gói Chăm Sóc (189)",
+            "3. Mẫu Hợp Đồng 4 Loại (5)",
+            "4. Tra Cứu Giá Tức Thời",
+            "Thêm",
+            "Thêm Khoản Mục Giá",
+            "",
+            "",
+            "1",
+            "",
+            ""
+          ],
+          "failures": []
+        },
+        {
+          "key": "finance",
+          "buttons": [],
+          "failures": []
+        },
+        {
+          "key": "care",
+          "buttons": [
+            "Làm mới",
+            "Tất cả",
+            "Chờ chỉ định",
+            "Đã giao",
+            "Đang làm",
+            "Đã đóng ca"
+          ],
+          "failures": []
+        },
+        {
+          "key": "construction",
+          "buttons": [
+            "Làm Mới",
+            "Lệnh Thi Công Thực Địa (0)",
+            "Lịch Nghỉ & Xung Đột Nhân Sự (0)",
+            "Tất Cả",
+            "Đang Chờ",
+            "Đang Thi Công",
+            "Đã Nghiệm Thu",
+            "Quá Hạn"
+          ],
+          "failures": []
+        },
+        {
+          "key": "reports",
+          "buttons": [
+            "Xuất Báo Cáo (PDF / XLSX)",
+            "Làm Mới",
+            "Thử lại",
+            "Doanh Thu Thực Thu",
+            "Tỷ Lệ Lấp Đầy & Mộ Phần",
+            "Hợp Đồng & Phụ Lục",
+            "Vận Hành: Thi Công & Chăm Sóc"
+          ],
+          "failures": [
+            {
+              "path": "/api/v1/reports/revenue",
+              "status": 403
+            },
+            {
+              "path": "/api/v1/reports/revenue",
+              "status": 403
+            }
+          ]
+        }
+      ],
+      "api": [
+        {
+          "path": "/profiles/customers?limit=1",
+          "status": 200,
+          "count": 1,
+          "fields": [
+            "full_name",
+            "citizen_id",
+            "phone_number",
+            "email",
+            "address",
+            "date_of_birth",
+            "customer_id",
+            "customer_code",
+            "created_at",
+            "updated_at",
+            "relations"
+          ]
+        },
+        {
+          "path": "/profiles/deceased?limit=1",
+          "status": 200,
+          "count": 1,
+          "fields": [
+            "full_name",
+            "gender",
+            "date_of_birth",
+            "date_of_death",
+            "birth_year",
+            "birth_date_precision",
+            "hometown",
+            "religion",
+            "deceased_id",
+            "deceased_code",
+            "has_death_certificate",
+            "created_at",
+            "updated_at",
+            "death_certificate",
+            "relations",
+            "burial_slot"
+          ]
+        },
+        {
+          "path": "/contracts?limit=1",
+          "status": 200,
+          "count": 1,
+          "fields": [
+            "contract_id",
+            "contract_code",
+            "contract_type",
+            "status",
+            "total_amount",
+            "customer_id",
+            "customer_name",
+            "customer_phone",
+            "plot_id",
+            "plot_code",
+            "zone_name",
+            "signed_at",
+            "activated_at",
+            "created_at"
+          ]
+        },
+        {
+          "path": "/catalog/price-lists",
+          "status": 200,
+          "count": 1,
+          "fields": [
+            "price_list_name",
+            "effective_from_date",
+            "effective_to_date",
+            "is_active",
+            "price_list_id",
+            "created_at",
+            "items"
+          ]
+        },
+        {
+          "path": "/catalog/care-packages",
+          "status": 200,
+          "count": 189,
+          "fields": [
+            "package_code",
+            "package_name",
+            "cycle_type",
+            "default_tasks_json",
+            "unit_price",
+            "is_active",
+            "package_id"
+          ]
+        },
+        {
+          "path": "/catalog/contract-templates",
+          "status": 200,
+          "count": 5,
+          "fields": [
+            "template_code",
+            "contract_type",
+            "template_name",
+            "version_no",
+            "content_html",
+            "required_documents_json",
+            "is_active",
+            "template_id",
+            "created_at",
+            "updated_at"
+          ]
+        },
+        {
+          "path": "/plots?limit=500",
+          "status": 200,
+          "count": 500,
+          "fields": [
+            "plot_id",
+            "plot_code",
+            "row_id",
+            "row_code",
+            "zone_id",
+            "zone_code",
+            "zone_name",
+            "type_id",
+            "type_name",
+            "default_slots",
+            "status",
+            "is_kim_tinh",
+            "is_locked",
+            "latitude",
+            "longitude",
+            "orientation",
+            "owner_id",
+            "owner_name",
+            "active_reservation"
+          ],
+          "withCoordinates": 4
+        },
+        {
+          "path": "/finance/summary",
+          "status": 200,
+          "count": null
+        },
+        {
+          "path": "/finance/receivables?limit=1",
+          "status": 200,
+          "count": 1,
+          "fields": [
+            "receivable_id",
+            "contract_id",
+            "contract_code",
+            "annex_id",
+            "annex_code",
+            "customer_id",
+            "customer_name",
+            "customer_phone",
+            "original_amount",
+            "discount_amount",
+            "final_payable_amount",
+            "total_paid_amount",
+            "remaining_balance",
+            "status",
+            "due_date",
+            "notes",
+            "installment_no",
+            "created_at",
+            "discounts",
+            "payments"
+          ]
+        },
+        {
+          "path": "/care/schedules",
+          "status": 200,
+          "count": 100,
+          "fields": [
+            "schedule_id",
+            "care_annex_id",
+            "plot_id",
+            "plot_code",
+            "zone_name",
+            "package_id",
+            "package_name",
+            "caretaker_id",
+            "caretaker_name",
+            "scheduled_date",
+            "performed_date",
+            "status",
+            "period_key",
+            "notes",
+            "closed_at",
+            "created_at",
+            "tasks_count",
+            "completed_tasks_count",
+            "evidence_count"
+          ]
+        },
+        {
+          "path": "/construction/orders",
+          "status": 200,
+          "count": 141,
+          "fields": [
+            "order_id",
+            "annex_id",
+            "plot_id",
+            "plot_code",
+            "zone_name",
+            "supervisor_id",
+            "supervisor_name",
+            "start_date",
+            "expected_end_date",
+            "actual_end_date",
+            "overall_progress",
+            "status",
+            "is_overdue",
+            "notes",
+            "created_at",
+            "tasks",
+            "total_tasks",
+            "completed_tasks",
+            "required_tasks",
+            "completed_required_tasks"
+          ]
+        },
+        {
+          "path": "/reports/revenue",
+          "status": 403,
+          "count": null
+        },
+        {
+          "path": "/reports/occupancy",
+          "status": 403,
+          "count": null
+        },
+        {
+          "path": "/reports/contracts",
+          "status": 500,
+          "count": null
+        },
+        {
+          "path": "/reports/operations",
+          "status": 403,
+          "count": null
+        },
+        {
+          "path": "/auth/users",
+          "status": 403,
+          "count": null
+        },
+        {
+          "path": "/audit",
+          "status": 404,
+          "count": null
+        }
+      ],
+      "errors": []
+    },
+    {
+      "actor": "accountant",
+      "menu": [
+        "",
+        "Thân Nhân & Người Mất",
+        "Hợp Đồng & Khách Hàng",
+        "Công Nợ & Thu Tiền",
+        "Bảng Giá & Gói Dịch Vụ",
+        "Báo Cáo Thống Kê",
+        "Đăng xuất"
+      ],
+      "pages": [
+        {
+          "key": "profiles",
+          "buttons": [
+            "👥 Thân Nhân (Khách Hàng)",
+            "⚰️ Người Quá Cố & Giấy Báo Tử",
+            "🔗 Liên Kết Hồ Sơ",
+            "🪷 Cổng Tra Cứu Tưởng Niệm",
+            "Tìm Kiếm",
+            "Tất cả (100)",
+            "Có liên kết",
+            "Chưa liên kết",
+            " Thiết Lập Liên Kết Hồ Sơ",
+            "+ Thêm Khách Hàng Thân Nhân",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "Chi tiết",
+            " Gắn kết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "+ Gắn kết",
+            "Chi tiết",
+            "",
+            "",
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "10",
+            "",
+            "",
+            "Đi"
+          ],
+          "failures": [],
+          "addCustomerDialogOpened": true
+        },
+        {
+          "key": "contracts",
+          "buttons": [
+            "Làm mới"
+          ],
+          "failures": []
+        },
+        {
+          "key": "catalog",
+          "buttons": [
+            "Làm mới",
+            "1. Bảng Giá & Khoản Mục (1)",
+            "2. Gói Chăm Sóc (189)",
+            "3. Mẫu Hợp Đồng 4 Loại (5)",
+            "4. Tra Cứu Giá Tức Thời",
+            "Thêm",
+            "Thêm Khoản Mục Giá",
+            "",
+            "",
+            "1",
+            "",
+            ""
+          ],
+          "failures": []
+        },
+        {
+          "key": "finance",
+          "buttons": [],
+          "failures": []
+        },
+        {
+          "key": "reports",
+          "buttons": [
+            "Xuất Báo Cáo (PDF / XLSX)",
+            "Làm Mới",
+            "Doanh Thu Thực Thu",
+            "Tỷ Lệ Lấp Đầy & Mộ Phần",
+            "Hợp Đồng & Phụ Lục",
+            "Vận Hành: Thi Công & Chăm Sóc"
+          ],
+          "failures": []
+        }
+      ],
+      "api": [
+        {
+          "path": "/profiles/customers?limit=1",
+          "status": 200,
+          "count": 1,
+          "fields": [
+            "full_name",
+            "citizen_id",
+            "phone_number",
+            "email",
+            "address",
+            "date_of_birth",
+            "customer_id",
+            "customer_code",
+            "created_at",
+            "updated_at",
+            "relations"
+          ]
+        },
+        {
+          "path": "/profiles/deceased?limit=1",
+          "status": 200,
+          "count": 1,
+          "fields": [
+            "full_name",
+            "gender",
+            "date_of_birth",
+            "date_of_death",
+            "birth_year",
+            "birth_date_precision",
+            "hometown",
+            "religion",
+            "deceased_id",
+            "deceased_code",
+            "has_death_certificate",
+            "created_at",
+            "updated_at",
+            "death_certificate",
+            "relations",
+            "burial_slot"
+          ]
+        },
+        {
+          "path": "/contracts?limit=1",
+          "status": 200,
+          "count": 1,
+          "fields": [
+            "contract_id",
+            "contract_code",
+            "contract_type",
+            "status",
+            "total_amount",
+            "customer_id",
+            "customer_name",
+            "customer_phone",
+            "plot_id",
+            "plot_code",
+            "zone_name",
+            "signed_at",
+            "activated_at",
+            "created_at"
+          ]
+        },
+        {
+          "path": "/catalog/price-lists",
+          "status": 200,
+          "count": 1,
+          "fields": [
+            "price_list_name",
+            "effective_from_date",
+            "effective_to_date",
+            "is_active",
+            "price_list_id",
+            "created_at",
+            "items"
+          ]
+        },
+        {
+          "path": "/catalog/care-packages",
+          "status": 200,
+          "count": 189,
+          "fields": [
+            "package_code",
+            "package_name",
+            "cycle_type",
+            "default_tasks_json",
+            "unit_price",
+            "is_active",
+            "package_id"
+          ]
+        },
+        {
+          "path": "/catalog/contract-templates",
+          "status": 200,
+          "count": 5,
+          "fields": [
+            "template_code",
+            "contract_type",
+            "template_name",
+            "version_no",
+            "content_html",
+            "required_documents_json",
+            "is_active",
+            "template_id",
+            "created_at",
+            "updated_at"
+          ]
+        },
+        {
+          "path": "/plots?limit=500",
+          "status": 200,
+          "count": 500,
+          "fields": [
+            "plot_id",
+            "plot_code",
+            "row_id",
+            "row_code",
+            "zone_id",
+            "zone_code",
+            "zone_name",
+            "type_id",
+            "type_name",
+            "default_slots",
+            "status",
+            "is_kim_tinh",
+            "is_locked",
+            "latitude",
+            "longitude",
+            "orientation",
+            "owner_id",
+            "owner_name",
+            "active_reservation"
+          ],
+          "withCoordinates": 4
+        },
+        {
+          "path": "/finance/summary",
+          "status": 200,
+          "count": null
+        },
+        {
+          "path": "/finance/receivables?limit=1",
+          "status": 200,
+          "count": 1,
+          "fields": [
+            "receivable_id",
+            "contract_id",
+            "contract_code",
+            "annex_id",
+            "annex_code",
+            "customer_id",
+            "customer_name",
+            "customer_phone",
+            "original_amount",
+            "discount_amount",
+            "final_payable_amount",
+            "total_paid_amount",
+            "remaining_balance",
+            "status",
+            "due_date",
+            "notes",
+            "installment_no",
+            "created_at",
+            "discounts",
+            "payments"
+          ]
+        },
+        {
+          "path": "/care/schedules",
+          "status": 403,
+          "count": null
+        },
+        {
+          "path": "/construction/orders",
+          "status": 403,
+          "count": null
+        },
+        {
+          "path": "/reports/revenue",
+          "status": 200,
+          "count": null
+        },
+        {
+          "path": "/reports/occupancy",
+          "status": 403,
+          "count": null
+        },
+        {
+          "path": "/reports/contracts",
+          "status": 500,
+          "count": null
+        },
+        {
+          "path": "/reports/operations",
+          "status": 403,
+          "count": null
+        },
+        {
+          "path": "/auth/users",
+          "status": 403,
+          "count": null
+        },
+        {
+          "path": "/audit",
+          "status": 404,
+          "count": null
+        }
+      ],
+      "errors": []
+    }
+  ]
+}

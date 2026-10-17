@@ -139,9 +139,7 @@ class DocumentService:
                     has_type_access = False
                     if rtype == "REVENUE":
                         has_type_access = "ACCOUNTANT" in user_roles
-                    elif rtype == "OPERATIONS":
-                        has_type_access = "CARETAKER" in user_roles
-                    elif rtype in ("OCCUPANCY", "CONTRACTS"):
+                    elif rtype in ("OPERATIONS", "OCCUPANCY", "CONTRACTS"):
                         has_type_access = False
 
                     if not has_type_access:
@@ -180,10 +178,10 @@ class DocumentService:
                     is not None
                 )
                 if is_contract_scan:
-                    if "CARETAKER" in user_roles:
+                    if "CARETAKER" in user_roles or "ACCOUNTANT" in user_roles:
                         raise HTTPException(
                             status_code=status.HTTP_403_FORBIDDEN,
-                            detail="Quản trang không có quyền truy cập bản scan hợp đồng/phụ lục pháp lý.",
+                            detail="Bạn không có quyền truy cập bản scan hợp đồng/phụ lục pháp lý.",
                         )
 
                 # 4. Check if bound to a Death Certificate (R02)
@@ -215,7 +213,7 @@ class DocumentService:
                     or is_death_cert
                 )
                 if not is_bound:
-                    from app.modules.care.models import CareScheduleEvidence
+                    from app.modules.care.models import CareMediaEvidence
                     from app.modules.construction.models import ConstructionTaskEvidence
 
                     is_evidence = (
@@ -223,16 +221,13 @@ class DocumentService:
                         .filter(ConstructionTaskEvidence.file_id == file_id)
                         .first()
                         is not None
-                        or db.query(CareScheduleEvidence)
-                        .filter(CareScheduleEvidence.file_id == file_id)
+                        or db.query(CareMediaEvidence)
+                        .filter(CareMediaEvidence.file_id == file_id)
                         .first()
                         is not None
                     )
                     if not is_evidence:
-                        if (
-                            file_obj.uploaded_by_user_id
-                            and file_obj.uploaded_by_user_id != user.user_id
-                        ):
+                        if file_obj.uploaded_by_user_id != user.user_id:
                             raise HTTPException(
                                 status_code=status.HTTP_403_FORBIDDEN,
                                 detail="Tệp tài liệu chưa được liên kết và không thuộc quyền sở hữu của bạn.",

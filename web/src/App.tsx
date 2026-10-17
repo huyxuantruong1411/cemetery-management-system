@@ -14,6 +14,7 @@ import {
   PhoneCall,
   Search,
   Shield,
+  ShieldAlert,
   ShieldCheck,
   Tag,
   UserCog,
@@ -150,18 +151,22 @@ function MainApp() {
 
   useEffect(() => {
     if (user) {
-      if (hasPermission('plots:read')) {
+      if (!user.roles || user.roles.length === 0) {
+        setActiveTab('unauthorized')
+      } else if (hasPermission('plots:read')) {
         setActiveTab('plots')
+      } else if (hasPermission('finance:read')) {
+        setActiveTab('finance')
       } else if (hasPermission('care:read')) {
         setActiveTab('care')
       } else if (hasPermission('construction:read')) {
         setActiveTab('construction')
-      } else if (hasPermission('finance:read')) {
-        setActiveTab('finance')
       } else if (hasPermission('contracts:read')) {
         setActiveTab('contracts')
-      } else {
+      } else if (hasPermission('customers:read')) {
         setActiveTab('profiles')
+      } else {
+        setActiveTab('unauthorized')
       }
     } else {
       setActiveTab('public_home')
@@ -170,6 +175,8 @@ function MainApp() {
 
   const getPageTitle = (tab: string) => {
     switch (tab) {
+      case 'unauthorized':
+        return 'Chưa Được Phân Quyền Vận Hành'
       case 'public_home':
         return 'Trang Chủ & Hướng Dẫn Thăm Viếng'
       case 'public_memorial':
@@ -308,145 +315,181 @@ function MainApp() {
           )}
 
           {/* Authenticated Staff Menu */}
-          {user && (
+          {user && (!user.roles || user.roles.length === 0) && (
+            <div
+              style={{
+                padding: '14px',
+                backgroundColor: 'rgba(239, 68, 68, 0.12)',
+                borderRadius: '8px',
+                border: '1px solid rgba(239, 68, 68, 0.3)',
+              }}
+            >
+              <div style={{ fontSize: '12px', fontWeight: 700, color: '#FCA5A5', marginBottom: '4px' }}>
+                Chưa Phân Quyền
+              </div>
+              <div style={{ fontSize: '11px', color: '#CBD5E1', lineHeight: 1.4 }}>
+                Tài khoản chưa được gán vai trò vận hành trong hệ thống.
+              </div>
+            </div>
+          )}
+
+          {user && user.roles && user.roles.length > 0 && (
             <>
               {/* Group 1: Tác Nghiệp Thực Địa & Kinh Doanh */}
-              <div>
-                <div
-                  style={{
-                    fontSize: '10px',
-                    fontWeight: 700,
-                    color: 'rgba(255,255,255,0.45)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                    padding: '0 8px 8px',
-                  }}
-                >
-                  Tác Nghiệp & Kinh Doanh
+              {(hasPermission('plots:read') ||
+                hasPermission('customers:read') ||
+                hasPermission('contracts:read') ||
+                hasPermission('care:read') ||
+                hasPermission('construction:read')) && (
+                <div>
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      color: 'rgba(255,255,255,0.45)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      padding: '0 8px 8px',
+                    }}
+                  >
+                    Tác Nghiệp & Kinh Doanh
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    {hasPermission('plots:read') && (
+                      <SidebarNavItem
+                        id="plots"
+                        label="Sơ Đồ Ô Mộ & Bản Đồ"
+                        icon={<MapPin size={17} />}
+                        isActive={activeTab === 'plots'}
+                        onClick={() => handleSelectTab('plots')}
+                      />
+                    )}
+                    {hasPermission('customers:read') && (
+                      <SidebarNavItem
+                        id="profiles"
+                        label="Thân Nhân & Người Mất"
+                        icon={<Users size={17} />}
+                        isActive={activeTab === 'profiles'}
+                        onClick={() => handleSelectTab('profiles')}
+                      />
+                    )}
+                    {hasPermission('contracts:read') && (
+                      <SidebarNavItem
+                        id="contracts"
+                        label="Hợp Đồng & Khách Hàng"
+                        icon={<FileText size={17} />}
+                        isActive={activeTab === 'contracts'}
+                        onClick={() => handleSelectTab('contracts')}
+                      />
+                    )}
+                    {hasPermission('care:read') && (
+                      <SidebarNavItem
+                        id="care"
+                        label="Chăm Sóc Mộ Phần"
+                        icon={<Wrench size={17} />}
+                        isActive={activeTab === 'care'}
+                        onClick={() => handleSelectTab('care')}
+                      />
+                    )}
+                    {hasPermission('construction:read') && (
+                      <SidebarNavItem
+                        id="construction"
+                        label="Thi Công Thực Địa"
+                        icon={<Hammer size={17} />}
+                        isActive={activeTab === 'construction'}
+                        onClick={() => handleSelectTab('construction')}
+                      />
+                    )}
+                  </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                  {hasPermission('plots:read') && (
-                    <SidebarNavItem
-                      id="plots"
-                      label="Sơ Đồ Ô Mộ & Bản Đồ"
-                      icon={<MapPin size={17} />}
-                      isActive={activeTab === 'plots'}
-                      onClick={() => handleSelectTab('plots')}
-                    />
-                  )}
-                  <SidebarNavItem
-                    id="profiles"
-                    label="Thân Nhân & Người Mất"
-                    icon={<Users size={17} />}
-                    isActive={activeTab === 'profiles'}
-                    onClick={() => handleSelectTab('profiles')}
-                  />
-                  {hasPermission('contracts:read') && (
-                    <SidebarNavItem
-                      id="contracts"
-                      label="Hợp Đồng & Khách Hàng"
-                      icon={<FileText size={17} />}
-                      isActive={activeTab === 'contracts'}
-                      onClick={() => handleSelectTab('contracts')}
-                    />
-                  )}
-                  {hasPermission('care:read') && (
-                    <SidebarNavItem
-                      id="care"
-                      label="Chăm Sóc Mộ Phần"
-                      icon={<Wrench size={17} />}
-                      isActive={activeTab === 'care'}
-                      onClick={() => handleSelectTab('care')}
-                    />
-                  )}
-                  {hasPermission('construction:read') && (
-                    <SidebarNavItem
-                      id="construction"
-                      label="Thi Công Thực Địa"
-                      icon={<Hammer size={17} />}
-                      isActive={activeTab === 'construction'}
-                      onClick={() => handleSelectTab('construction')}
-                    />
-                  )}
-                </div>
-              </div>
+              )}
 
               {/* Group 2: Tài Chính & Danh Mục */}
-              <div>
-                <div
-                  style={{
-                    fontSize: '10px',
-                    fontWeight: 700,
-                    color: 'rgba(255,255,255,0.45)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                    padding: '0 8px 8px',
-                  }}
-                >
-                  Tài Chính & Danh Mục
+              {(hasPermission('finance:read') || hasPermission('catalog:read')) && (
+                <div>
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      color: 'rgba(255,255,255,0.45)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      padding: '0 8px 8px',
+                    }}
+                  >
+                    Tài Chính & Danh Mục
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    {hasPermission('finance:read') && (
+                      <SidebarNavItem
+                        id="finance"
+                        label="Công Nợ & Thu Tiền"
+                        icon={<Coins size={17} />}
+                        isActive={activeTab === 'finance'}
+                        onClick={() => handleSelectTab('finance')}
+                      />
+                    )}
+                    {hasPermission('catalog:read') && (
+                      <SidebarNavItem
+                        id="catalog"
+                        label="Bảng Giá & Gói Dịch Vụ"
+                        icon={<Tag size={17} />}
+                        isActive={activeTab === 'catalog'}
+                        onClick={() => handleSelectTab('catalog')}
+                      />
+                    )}
+                  </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                  {hasPermission('finance:read') && (
-                    <SidebarNavItem
-                      id="finance"
-                      label="Công Nợ & Thu Tiền"
-                      icon={<Coins size={17} />}
-                      isActive={activeTab === 'finance'}
-                      onClick={() => handleSelectTab('finance')}
-                    />
-                  )}
-                  <SidebarNavItem
-                    id="catalog"
-                    label="Bảng Giá & Gói Dịch Vụ"
-                    icon={<Tag size={17} />}
-                    isActive={activeTab === 'catalog'}
-                    onClick={() => handleSelectTab('catalog')}
-                  />
-                </div>
-              </div>
+              )}
 
               {/* Group 3: Quản Trị & Hệ Thống */}
-              <div>
-                <div
-                  style={{
-                    fontSize: '10px',
-                    fontWeight: 700,
-                    color: 'rgba(255,255,255,0.45)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                    padding: '0 8px 8px',
-                  }}
-                >
-                  Quản Trị & Hệ Thống
+              {(hasPermission('users:read') ||
+                hasPermission('reports:read') ||
+                hasPermission('reports:revenue')) && (
+                <div>
+                  <div
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      color: 'rgba(255,255,255,0.45)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
+                      padding: '0 8px 8px',
+                    }}
+                  >
+                    Quản Trị & Hệ Thống
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    {hasPermission('users:read') && (
+                      <SidebarNavItem
+                        id="admin_users"
+                        label="Quản Trị Người Dùng"
+                        icon={<UserCog size={17} />}
+                        isActive={activeTab === 'admin_users'}
+                        onClick={() => handleSelectTab('admin_users')}
+                      />
+                    )}
+                    {(hasPermission('reports:read') || hasPermission('reports:revenue')) && (
+                      <SidebarNavItem
+                        id="reports"
+                        label="Báo Cáo Thống Kê"
+                        icon={<BarChart3 size={17} />}
+                        isActive={activeTab === 'reports'}
+                        onClick={() => handleSelectTab('reports')}
+                      />
+                    )}
+                    {hasPermission('users:read') && (
+                      <SidebarNavItem
+                        id="audit"
+                        label="Nhật Ký Kiểm Toán"
+                        icon={<Shield size={17} />}
+                        isActive={activeTab === 'audit'}
+                        onClick={() => handleSelectTab('audit')}
+                      />
+                    )}
+                  </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                  {hasPermission('users:read') && (
-                    <SidebarNavItem
-                      id="admin_users"
-                      label="Quản Trị Người Dùng"
-                      icon={<UserCog size={17} />}
-                      isActive={activeTab === 'admin_users'}
-                      onClick={() => handleSelectTab('admin_users')}
-                    />
-                  )}
-                  <SidebarNavItem
-                    id="reports"
-                    label="Báo Cáo Thống Kê"
-                    icon={<BarChart3 size={17} />}
-                    isActive={activeTab === 'reports'}
-                    onClick={() => handleSelectTab('reports')}
-                  />
-                  {hasPermission('users:read') && (
-                    <SidebarNavItem
-                      id="audit"
-                      label="Nhật Ký Kiểm Toán"
-                      icon={<Shield size={17} />}
-                      isActive={activeTab === 'audit'}
-                      onClick={() => handleSelectTab('audit')}
-                    />
-                  )}
-                </div>
-              </div>
+              )}
             </>
           )}
         </div>
@@ -926,39 +969,98 @@ function MainApp() {
           )}
 
           {/* Authenticated Staff Modules */}
-          {user && activeTab === 'plots' && (
+          {user && (!user.roles || user.roles.length === 0 || activeTab === 'unauthorized') && (
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: '400px',
+                backgroundColor: '#FFFFFF',
+                borderRadius: '12px',
+                border: '1px solid #FECACA',
+                padding: '40px 24px',
+                textAlign: 'center',
+                maxWidth: '600px',
+                margin: '40px auto',
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+              }}
+            >
+              <ShieldAlert size={52} color="#DC2626" style={{ marginBottom: '16px' }} />
+              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#991B1B', margin: '0 0 8px 0' }}>
+                Tài Khoản Chưa Được Gán Quyền Vận Hành
+              </h3>
+              <p style={{ fontSize: '14px', color: '#64748B', lineHeight: 1.6, margin: '0 0 24px 0' }}>
+                Tài khoản <strong>{user.username}</strong> ({user.full_name}) đã xác thực thành công nhưng hiện chưa được phân vai trò nào trong hệ thống (vai trò rỗng). Vui lòng liên hệ Quản trị viên để được cấp vai trò vận hành.
+              </p>
+              <button
+                onClick={() => logout()}
+                style={{
+                  padding: '10px 22px',
+                  backgroundColor: '#DC2626',
+                  color: '#FFFFFF',
+                  borderRadius: '8px',
+                  border: 'none',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <LogOut size={16} />
+                <span>Đăng Xuất Khỏi Hệ Thống</span>
+              </button>
+            </div>
+          )}
+
+          {user && user.roles && user.roles.length > 0 && activeTab === 'plots' && hasPermission('plots:read') && (
             <PlotMapModule token={accessToken} onRequireLogin={() => setIsLoginOpen(true)} />
           )}
 
-          {user && activeTab === 'profiles' && (
+          {user && user.roles && user.roles.length > 0 && activeTab === 'profiles' && hasPermission('customers:read') && (
             <ProfileModule
               token={accessToken}
               currentUserRoles={user?.roles ? user.roles.map((r) => r.role_name) : []}
             />
           )}
 
-          {user && activeTab === 'contracts' && (
+          {user && user.roles && user.roles.length > 0 && activeTab === 'contracts' && hasPermission('contracts:read') && (
             <ContractModule
               token={accessToken}
               currentUserRoles={user?.roles ? user.roles.map((r) => r.role_name) : []}
             />
           )}
 
-          {user && activeTab === 'catalog' && <CatalogModule />}
+          {user && user.roles && user.roles.length > 0 && activeTab === 'catalog' && hasPermission('catalog:read') && (
+            <CatalogModule />
+          )}
 
-          {user && activeTab === 'finance' && <FinanceModule />}
+          {user && user.roles && user.roles.length > 0 && activeTab === 'finance' && hasPermission('finance:read') && (
+            <FinanceModule />
+          )}
 
-          {user && activeTab === 'construction' && <ConstructionModule />}
+          {user && user.roles && user.roles.length > 0 && activeTab === 'construction' && hasPermission('construction:read') && (
+            <ConstructionModule />
+          )}
 
-          {user && activeTab === 'care' && <CareModule />}
+          {user && user.roles && user.roles.length > 0 && activeTab === 'care' && hasPermission('care:read') && (
+            <CareModule />
+          )}
 
-          {user && activeTab === 'admin_users' && (
+          {user && user.roles && user.roles.length > 0 && activeTab === 'admin_users' && hasPermission('users:read') && (
             <UserManagementModule />
           )}
 
-          {user && activeTab === 'reports' && <ReportsModule />}
+          {user && user.roles && user.roles.length > 0 && activeTab === 'reports' && (hasPermission('reports:read') || hasPermission('reports:revenue')) && (
+            <ReportsModule />
+          )}
 
-          {user && activeTab === 'audit' && <AuditModule />}
+          {user && user.roles && user.roles.length > 0 && activeTab === 'audit' && hasPermission('users:read') && (
+            <AuditModule />
+          )}
         </main>
       </div>
 

@@ -1,0 +1,37 @@
+{
+  "synthetic_rows_remaining": {
+    "customers": 0,
+    "contracts": 0,
+    "plots": 0,
+    "zones": 0,
+    "care_packages": 0,
+    "contract_templates": 0,
+    "users": 0
+  },
+  "main_business_counts_before": {
+    "customers": 1081,
+    "deceased_profiles": 707,
+    "contracts": 928,
+    "plots": 1027,
+    "care_schedules": 311,
+    "construction_orders": 141,
+    "payments": 30,
+    "receivables": 403
+  },
+  "main_business_counts_after": {
+    "customers": 1081,
+    "deceased_profiles": 707,
+    "contracts": 928,
+    "plots": 1027,
+    "care_schedules": 311,
+    "construction_orders": 141,
+    "payments": 30,
+    "receivables": 403
+  },
+  "main_counts_unchanged": true,
+  "main_role_permissions_unchanged": true,
+  "main_revision_unchanged": true,
+  "minio_objects_created_total": 4,
+  "minio_objects_removed_total": 4,
+  "limits": "Counts are not a bytewise comparison. Auth sessions/audit may be written by normal login; SQL identity/sequence values can advance despite rollback."
+}

@@ -1,0 +1,751 @@
+{
+  "commit": "7467905",
+  "date": "2026-10-16",
+  "fixture": "SYNTHETIC Test; real JWT; outer rollback with service commits to savepoints; real MinIO objects cleaned; not concurrency/durability proof",
+  "steps": [
+    {
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/profiles/customers",
+      "label": "/profiles/customers",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "actor": "caretaker",
+      "method": "GET",
+      "path": "/profiles/customers/446",
+      "label": "/profiles/customers/446",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "actor": "caretaker",
+      "method": "GET",
+      "path": "/contracts?search=RBAC-043749",
+      "label": "/contracts?search=RBAC-043749",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "actor": "caretaker",
+      "method": "GET",
+      "path": "/contracts/348",
+      "label": "/contracts/348",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "actor": "caretaker",
+      "method": "GET",
+      "path": "/contracts/348/pdf",
+      "label": "/contracts/348/pdf",
+      "status": 403,
+      "detail": "Quản trang không có quyền tải văn bản hợp đồng pháp lý đầy đủ. Vui lòng tham khảo Căn Cứ Công Việc."
+    },
+    {
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/profiles/customers",
+      "label": "Create customer",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'customers:write'."
+    },
+    {
+      "actor": "caretaker",
+      "method": "PUT",
+      "path": "/profiles/customers/446",
+      "label": "Update customer",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'customers:write'."
+    },
+    {
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/plots/zones",
+      "label": "Create zones",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'plots:write'."
+    },
+    {
+      "actor": "caretaker",
+      "method": "PUT",
+      "path": "/plots/zones/157",
+      "label": "Update zones",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'plots:write'."
+    },
+    {
+      "actor": "caretaker",
+      "method": "DELETE",
+      "path": "/plots/zones/157",
+      "label": "Delete zones",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'plots:write'."
+    },
+    {
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/plots",
+      "label": "Create plots",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'plots:write'."
+    },
+    {
+      "actor": "caretaker",
+      "method": "PUT",
+      "path": "/plots/409",
+      "label": "Update plots",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'plots:write'."
+    },
+    {
+      "actor": "caretaker",
+      "method": "DELETE",
+      "path": "/plots/409",
+      "label": "Delete plots",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'plots:write'."
+    },
+    {
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/catalog/care-packages",
+      "label": "Create catalog care package",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "actor": "caretaker",
+      "method": "PUT",
+      "path": "/catalog/care-packages/66",
+      "label": "Update catalog care price",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/catalog/contract-templates",
+      "label": "Create legal template",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'contracts:write'."
+    },
+    {
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/catalog/price-lists",
+      "label": "Create price list",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'finance:write'."
+    },
+    {
+      "actor": "marketing",
+      "method": "GET",
+      "path": "/profiles/customers/446",
+      "label": "/profiles/customers/446",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "actor": "marketing",
+      "method": "GET",
+      "path": "/contracts?search=RBAC-043749",
+      "label": "/contracts?search=RBAC-043749",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "actor": "marketing",
+      "method": "GET",
+      "path": "/contracts/348",
+      "label": "/contracts/348",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "actor": "marketing",
+      "method": "GET",
+      "path": "/contracts/348/pdf",
+      "label": "/contracts/348/pdf",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/profiles/customers",
+      "label": "Create customer",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "actor": "marketing",
+      "method": "PUT",
+      "path": "/profiles/customers/446",
+      "label": "Update customer",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/plots/zones",
+      "label": "Create zones",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "actor": "marketing",
+      "method": "PUT",
+      "path": "/plots/zones/158",
+      "label": "Update zones",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "actor": "marketing",
+      "method": "DELETE",
+      "path": "/plots/zones/158",
+      "label": "Delete zones",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/plots",
+      "label": "Create plots",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "actor": "marketing",
+      "method": "PUT",
+      "path": "/plots/410",
+      "label": "Update plots",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "actor": "marketing",
+      "method": "DELETE",
+      "path": "/plots/410",
+      "label": "Delete plots",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/catalog/care-packages",
+      "label": "Create catalog care package",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "actor": "marketing",
+      "method": "PUT",
+      "path": "/catalog/care-packages/67",
+      "label": "Update catalog care price",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/catalog/contract-templates",
+      "label": "Create legal template",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "actor": "marketing",
+      "method": "PUT",
+      "path": "/catalog/contract-templates/15",
+      "label": "Change legal template",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/catalog/price-lists",
+      "label": "Create price list",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'finance:write'."
+    },
+    {
+      "actor": "accountant",
+      "method": "GET",
+      "path": "/profiles/customers/446",
+      "label": "/profiles/customers/446",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "actor": "accountant",
+      "method": "GET",
+      "path": "/contracts?search=RBAC-043749",
+      "label": "/contracts?search=RBAC-043749",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "actor": "accountant",
+      "method": "GET",
+      "path": "/contracts/348",
+      "label": "/contracts/348",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "actor": "accountant",
+      "method": "GET",
+      "path": "/contracts/348/pdf",
+      "label": "/contracts/348/pdf",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/profiles/customers",
+      "label": "Create customer",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'customers:write'."
+    },
+    {
+      "actor": "accountant",
+      "method": "PUT",
+      "path": "/profiles/customers/446",
+      "label": "Update customer",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'customers:write'."
+    },
+    {
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/plots/zones",
+      "label": "Create zones",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'plots:write'."
+    },
+    {
+      "actor": "accountant",
+      "method": "PUT",
+      "path": "/plots/zones/160",
+      "label": "Update zones",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'plots:write'."
+    },
+    {
+      "actor": "accountant",
+      "method": "DELETE",
+      "path": "/plots/zones/160",
+      "label": "Delete zones",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'plots:write'."
+    },
+    {
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/plots",
+      "label": "Create plots",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'plots:write'."
+    },
+    {
+      "actor": "accountant",
+      "method": "PUT",
+      "path": "/plots/412",
+      "label": "Update plots",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'plots:write'."
+    },
+    {
+      "actor": "accountant",
+      "method": "DELETE",
+      "path": "/plots/412",
+      "label": "Delete plots",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'plots:write'."
+    },
+    {
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/catalog/care-packages",
+      "label": "Create catalog care package",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'care:write'."
+    },
+    {
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/catalog/contract-templates",
+      "label": "Create legal template",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'contracts:write'."
+    },
+    {
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/catalog/price-lists",
+      "label": "Create price list",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "actor": "accountant",
+      "method": "PUT",
+      "path": "/catalog/price-lists/12",
+      "label": "Update price list",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/catalog/price-items",
+      "label": "Create price item",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "actor": "accountant",
+      "method": "PUT",
+      "path": "/catalog/price-items/10",
+      "label": "Update price item",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "actor": "accountant",
+      "method": "DELETE",
+      "path": "/catalog/price-items/10",
+      "label": "Delete price item",
+      "status": 204,
+      "detail": null
+    },
+    {
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/documents/upload",
+      "label": "/documents/upload",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "actor": "marketing",
+      "method": "GET",
+      "path": "/documents/19ec5bec9aea42d3b301b47582e583a5/download",
+      "label": "Uploader reads own unbound draft",
+      "status": 500,
+      "detail": null
+    },
+    {
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/documents/versions",
+      "label": "/documents/versions",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "actor": "caretaker",
+      "method": "GET",
+      "path": "/documents/19ec5bec9aea42d3b301b47582e583a5/download",
+      "label": "Read legal scan",
+      "status": 403,
+      "detail": "Quản trang không có quyền truy cập bản scan hợp đồng/phụ lục pháp lý."
+    },
+    {
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/documents/versions",
+      "label": "Link legal version",
+      "status": 403,
+      "detail": "Bạn không có quyền liên kết tài liệu vào hợp đồng hoặc phụ lục."
+    },
+    {
+      "actor": "accountant",
+      "method": "GET",
+      "path": "/documents/19ec5bec9aea42d3b301b47582e583a5/download",
+      "label": "Read legal scan",
+      "status": 200,
+      "detail": null
+    },
+    {
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/documents/versions",
+      "label": "Link legal version",
+      "status": 403,
+      "detail": "Bạn không có quyền liên kết tài liệu vào hợp đồng hoặc phụ lục."
+    },
+    {
+      "actor": "caretaker",
+      "method": "GET",
+      "path": "/reports/operations",
+      "label": "Read OPERATIONS",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'reports:read'."
+    },
+    {
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/reports/export",
+      "label": "Export OPERATIONS",
+      "status": 201,
+      "detail": null
+    },
+    {
+      "actor": "caretaker",
+      "method": "GET",
+      "path": "/reports/contracts",
+      "label": "Read CONTRACTS",
+      "status": 403,
+      "detail": "Từ chối: Bạn không có quyền 'reports:read'."
+    },
+    {
+      "actor": "caretaker",
+      "method": "POST",
+      "path": "/reports/export",
+      "label": "Export CONTRACTS",
+      "status": 403,
+      "detail": "Bạn không có quyền xuất báo cáo CONTRACTS."
+    },
+    {
+      "actor": "marketing",
+      "method": "GET",
+      "path": "/reports/revenue",
+      "label": "Read REVENUE",
+      "status": 403,
+      "detail": "Bạn không có quyền xem báo cáo doanh thu tài chính."
+    },
+    {
+      "actor": "marketing",
+      "method": "POST",
+      "path": "/reports/export",
+      "label": "Export REVENUE",
+      "status": 403,
+      "detail": "Bạn không có quyền xuất báo cáo REVENUE."
+    },
+    {
+      "actor": "accountant",
+      "method": "GET",
+      "path": "/reports/occupancy",
+      "label": "Read OCCUPANCY",
+      "status": 403,
+      "detail": "Bạn không có quyền xem báo cáo tỷ lệ lấp đầy."
+    },
+    {
+      "actor": "accountant",
+      "method": "POST",
+      "path": "/reports/export",
+      "label": "Export OCCUPANCY",
+      "status": 403,
+      "detail": "Bạn không có quyền xuất báo cáo OCCUPANCY."
+    },
+    {
+      "actor": "public",
+      "method": "GET",
+      "path": "/profiles/customers",
+      "label": "/profiles/customers",
+      "status": 401,
+      "detail": "Yêu cầu xác thực tài khoản (thiếu Bearer token)"
+    },
+    {
+      "actor": "public",
+      "method": "GET",
+      "path": "/contracts",
+      "label": "/contracts",
+      "status": 401,
+      "detail": "Yêu cầu xác thực tài khoản (thiếu Bearer token)"
+    },
+    {
+      "actor": "public",
+      "method": "GET",
+      "path": "/catalog/price-lists",
+      "label": "/catalog/price-lists",
+      "status": 401,
+      "detail": "Yêu cầu xác thực tài khoản (thiếu Bearer token)"
+    },
+    {
+      "actor": "public",
+      "method": "GET",
+      "path": "/plots",
+      "label": "/plots",
+      "status": 401,
+      "detail": "Yêu cầu xác thực tài khoản (thiếu Bearer token)"
+    },
+    {
+      "actor": "public",
+      "method": "GET",
+      "path": "/care/schedules",
+      "label": "/care/schedules",
+      "status": 401,
+      "detail": "Yêu cầu xác thực tài khoản (thiếu Bearer token)"
+    },
+    {
+      "actor": "public",
+      "method": "GET",
+      "path": "/finance/summary",
+      "label": "/finance/summary",
+      "status": 401,
+      "detail": "Yêu cầu xác thực tài khoản (thiếu Bearer token)"
+    }
+  ],
+  "reads": [
+    {
+      "actor": "caretaker",
+      "resource": "customer",
+      "status": 200,
+      "citizen_id_unmasked": true,
+      "phone_present": true,
+      "address_present": true
+    },
+    {
+      "actor": "caretaker",
+      "resource": "contract_list",
+      "status": 200,
+      "total_amount_unmasked": true
+    },
+    {
+      "actor": "caretaker",
+      "resource": "contract_detail",
+      "status": 200,
+      "citizen_id_unmasked": false,
+      "total_amount": "0.00",
+      "customer_phone_present": true,
+      "keys": [
+        "contract_id",
+        "contract_code",
+        "contract_type",
+        "status",
+        "total_amount",
+        "signed_at",
+        "activated_at",
+        "activated_by",
+        "activator_name",
+        "activation_notes",
+        "template_id",
+        "template_version",
+        "signed_scan_file_id",
+        "signed_scan_url",
+        "notes",
+        "created_at",
+        "updated_at",
+        "customer",
+        "land_purchase",
+        "exhumation",
+        "transfer",
+        "cremation",
+        "plot",
+        "receivable",
+        "annexes"
+      ]
+    },
+    {
+      "actor": "marketing",
+      "resource": "customer",
+      "status": 200,
+      "citizen_id_unmasked": true,
+      "phone_present": true,
+      "address_present": true
+    },
+    {
+      "actor": "marketing",
+      "resource": "contract_list",
+      "status": 200,
+      "total_amount_unmasked": true
+    },
+    {
+      "actor": "marketing",
+      "resource": "contract_detail",
+      "status": 200,
+      "citizen_id_unmasked": true,
+      "total_amount": "123.45",
+      "customer_phone_present": true,
+      "keys": [
+        "contract_id",
+        "contract_code",
+        "contract_type",
+        "status",
+        "total_amount",
+        "signed_at",
+        "activated_at",
+        "activated_by",
+        "activator_name",
+        "activation_notes",
+        "template_id",
+        "template_version",
+        "signed_scan_file_id",
+        "signed_scan_url",
+        "notes",
+        "created_at",
+        "updated_at",
+        "customer",
+        "land_purchase",
+        "exhumation",
+        "transfer",
+        "cremation",
+        "plot",
+        "receivable",
+        "annexes"
+      ]
+    },
+    {
+      "actor": "accountant",
+      "resource": "customer",
+      "status": 200,
+      "citizen_id_unmasked": true,
+      "phone_present": true,
+      "address_present": true
+    },
+    {
+      "actor": "accountant",
+      "resource": "contract_list",
+      "status": 200,
+      "total_amount_unmasked": true
+    },
+    {
+      "actor": "accountant",
+      "resource": "contract_detail",
+      "status": 200,
+      "citizen_id_unmasked": true,
+      "total_amount": "123.45",
+      "customer_phone_present": true,
+      "keys": [
+        "contract_id",
+        "contract_code",
+        "contract_type",
+        "status",
+        "total_amount",
+        "signed_at",
+        "activated_at",
+        "activated_by",
+        "activator_name",
+        "activation_notes",
+        "template_id",
+        "template_version",
+        "signed_scan_file_id",
+        "signed_scan_url",
+        "notes",
+        "created_at",
+        "updated_at",
+        "customer",
+        "land_purchase",
+        "exhumation",
+        "transfer",
+        "cremation",
+        "plot",
+        "receivable",
+        "annexes"
+      ]
+    }
+  ],
+  "outer_active": true,
+  "objects_created": 2,
+  "objects_removed": 2
+}

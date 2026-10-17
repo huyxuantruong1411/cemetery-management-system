@@ -1,109 +1,123 @@
 # Hợp Đồng Dữ Liệu API & Giao Diện (API & UI Data Contracts)
 
 - **Dự án:** Hệ thống Quản lý Nghĩa trang Tư nhân
-- **Mục tiêu:** Quy định cấu trúc DTO, phân trang, xử lý lỗi nghiệp vụ và kiểm soát truy cập tệp tin (File ACL) giữa FastAPI Backend và Web/Mobile Frontend.
+- **Baseline:** 7467905
+- **Mục tiêu:** Quy định cấu trúc DTO, phân trang, các endpoint projection (WorkBasis, FinanceBasis), lệnh command thực địa và kiểm soát truy cập tệp tin (File ACL) giữa FastAPI Backend và Web/Mobile Frontend.
 
 ---
 
 ## 1. Chuẩn hóa cấu trúc lỗi nghiệp vụ (Business Error Response Contract)
 
-Mọi phản hồi lỗi (4xx, 5xx) từ API phải tuân thủ schema JSON thống nhất:
+Mọi phản hồi lỗi (4xx, 5xx) từ API tuân thủ schema JSON thống nhất:
 
 ```json
 {
-  "code": "ERROR_BUSINESS_CODE",
-  "detail": "Thông điệp mô tả lỗi chi tiết dành cho người dùng tiếng Việt",
-  "field": "tên_trường_lỗi_nếu_có",
-  "context": {
-    "resource_id": 123,
-    "current_status": "PENDING"
-  }
+  "detail": "Thông điệp mô tả lỗi chi tiết dành cho người dùng tiếng Việt"
 }
 ```
 
-Các mã lỗi tiêu biểu:
-- `KIM_TINH_LOCKED`: Ô mộ đã khóa Kim Tĩnh bất biến, cấm mọi thao tác sửa đổi.
-- `DEATH_CERTIFICATE_MISSING`: Thiếu giấy báo tử hợp lệ, không thể xác nhận an táng.
-- `RESERVATION_CONFLICT`: Ô mộ đang được giữ chỗ bởi giao dịch khác.
-- `TASK_INCOMPLETE`: Chưa hoàn thành đủ checklist bắt buộc hoặc thiếu ảnh bằng chứng.
-- `PAYMENT_EXCEEDS_BALANCE`: Số tiền thu vượt quá số nợ còn lại.
-- `FORBIDDEN_ACTOR_ACCESS`: Vai trò không có quyền truy cập tài nguyên này.
+Các mã HTTP status tiêu chuẩn:
+- `401 Unauthorized`: Chưa đăng nhập, thiếu Bearer token, token hết hạn hoặc `auth_version` đã bị thu hồi.
+- `403 Forbidden`: Người dùng đã xác thực nhưng vai trò/quyền hạn không thỏa mãn capability yêu cầu, hoặc tài khoản có `roles = []`.
+- `404 Not Found`: Không tìm thấy tài nguyên.
+- `409 Conflict`: Xung đột dữ liệu hoặc tranh chấp đồng thời (giữ chỗ ô mộ, trùng CCCD, xung đột ca trực, Kim Tĩnh đã khóa).
+- `422 Unprocessable Entity`: Dữ liệu đầu vào không hợp lệ theo Pydantic schema.
 
 ---
 
-## 2. Chuẩn hóa phân trang & danh sách (Pagination Standard)
+## 2. Danh mục API & DTO theo ngữ cảnh (Contextual API Contracts)
 
-Mọi endpoint danh sách nội bộ áp dụng cơ chế phân trang tiêu chuẩn:
+### 2.1. Phân hệ Cổng thông tin công khai (Public Portal - Zero PII)
+- `GET /api/v1/profiles/public/memorials?q={query}&limit=20`
+  - **Trả về:** Danh sách người mất đã công bố (họ tên, năm sinh, năm mất, quê quán, mã ô mộ, vị trí khu/hàng). Tuyệt đối không chứa CCCD, SĐT hay địa chỉ thân nhân.
+- `GET /api/v1/plots/public/{code}`
+  - **Trả về:** Thông tin ô mộ công khai tối thiểu.
+- `GET /api/v1/plots/public/{code}/route`
+  - **Trả về:** Tọa độ GPS chỉ khi đã được xác minh (`gps_verified = true`). Dữ liệu demo mô phỏng không bật liên kết Google Maps ngoài thực địa.
 
-```
-GET /api/v1/{resource}?page=1&size=20&search=keyword&status=ACTIVE
-```
+### 2.2. Phân hệ Tác nghiệp Quản trang & Căn Cứ Công Việc (WorkBasis - EX-01)
+- `GET /api/v1/contracts/work-bases`
+  - **Quyền:** `CARETAKER`, `ADMIN` (yêu cầu `plots:read` hoặc `construction:read` hoặc `care:read`).
+  - **Trả về:** Danh sách các căn cứ phụ lục hợp đồng (`BURIAL`, `CARE`, `CONSTRUCTION`, `EXHUMATION`) ở trạng thái có hiệu lực.
+  - **DTO Schema (`WorkBasisResponse`):**
+    ```json
+    {
+      "annex_id": 12,
+      "annex_code": "PL-AT-0001",
+      "contract_id": 5,
+      "contract_code": "HD-MD-2026-0001",
+      "annex_type": "BURIAL",
+      "status": "ACTIVE",
+      "signed_at": "2026-10-15",
+      "plot_id": 42,
+      "plot_code": "A-H01-05",
+      "zone_code": "A",
+      "slot_number": 1,
+      "deceased_id": 10,
+      "deceased_name": "Nguyễn Văn A",
+      "burial_date": "2026-10-20",
+      "is_burial_confirmed": false,
+      "service_summary": "An táng hình thức Kim Tĩnh huyệt số 1"
+    }
+    ```
+- `POST /api/v1/contracts/annexes/{annex_id}/confirm-burial`
+  - **Quyền:** `CARETAKER`, `ADMIN` (yêu cầu capability `plots:confirm_burial`).
+  - **Payload:** `{ "proof_file_id": "file_uuid_ready", "notes": "Đã hạ huyệt và hoàn tất an táng thực địa" }`
+  - **Hành động:** Chuyển slot và ô mộ sang `OCCUPIED`. Nếu Kim Tĩnh: khóa vĩnh viễn (`is_kim_tinh = true, is_locked = true`), ghi nhận `BurialHistory` và outbox event `BURIAL_COMPLETED`.
 
-Cấu trúc JSON phản hồi:
-```json
-{
-  "items": [],
-  "total": 142,
-  "page": 1,
-  "size": 20,
-  "pages": 8
-}
-```
+### 2.3. Phân hệ Kế toán & Căn Cứ Tài Chính (FinanceBasis - EX-02)
+- `GET /api/v1/finance/bases`
+  - **Quyền:** `ACCOUNTANT`, `ADMIN` (yêu cầu `finance:read`).
+  - **Trả về:** Danh sách các căn cứ nghĩa vụ tài chính từ Hợp đồng và Phụ lục.
+  - **DTO Schema (`FinanceBasisResponse`):**
+    ```json
+    {
+      "contract_id": 5,
+      "contract_code": "HD-MD-2026-0001",
+      "contract_type": "LAND_PURCHASE",
+      "annex_id": 12,
+      "annex_code": "PL-AT-0001",
+      "source_type": "ANNEX",
+      "status": "ACTIVE",
+      "signed_at": "2026-10-15",
+      "payer_name": "Trần Thị B",
+      "payer_phone": "0912345678",
+      "plot_code": "A-H01-05",
+      "total_amount": 15000000.00,
+      "paid_amount": 0.00,
+      "balance": 15000000.00,
+      "due_date": "2026-10-22",
+      "service_description": "Phụ lục an táng ô mộ A-H01-05"
+    }
+    ```
+- `POST /api/v1/finance/receivables/{id}/discount`
+  - **Quyền:** `ACCOUNTANT`, `ADMIN` (yêu cầu `finance:discount`).
+  - **Payload:** `{ "discount_amount": 500000.00, "reason": "Chính sách ưu đãi mở bán đợt 1", "policy_reference": "QD-2026-CS01" }`
+- `POST /api/v1/finance/payments/{payment_id}/regenerate-invoice`
+  - **Quyền:** `ACCOUNTANT`, `ADMIN` (yêu cầu `finance:collect`).
+
+### 2.4. Phân hệ Báo cáo Doanh thu (Revenue Report - UC-7.1 / UC-7.5)
+- `GET /api/v1/reports/revenue?start_date=...&end_date=...`
+  - **Quyền:** `ACCOUNTANT`, `ADMIN` (yêu cầu `reports:revenue`).
+- `POST /api/v1/reports/exports`
+  - **Quyền:**
+    - `REVENUE`: cho phép `ACCOUNTANT`, `ADMIN`.
+    - `OCCUPANCY`, `CONTRACTS`, `OPERATIONS`: chỉ dành cho `ADMIN` (yêu cầu `reports:read`).
+- `GET /api/v1/reports/exports/{id}/download`
+  - **Kiểm soát quyền:** Người yêu cầu tạo bản xuất (`requester_id == user.user_id`) hoặc `ADMIN`.
 
 ---
 
-## 3. Danh mục API & DTO theo ngữ cảnh (Contextual API Contracts)
+## 3. Kiểm soát quyền truy cập tệp tin (File Access Control / ACL)
 
-### 3.1. Phân hệ Cổng thông tin công khai (Public Portal)
-- `GET /api/v1/profiles/public/memorials?q={query}&year={year}&town={town}&page=1&size=20`
-  - **Trả về:** Danh sách người mất đã công bố (Zero PII).
-- `GET /api/v1/plots/public/{plot_code}`
-  - **Trả về:** Thông tin ô mộ công khai (mã ô, phân khu, hàng, số huyệt, trạng thái công bố).
-- `GET /api/v1/plots/public/{plot_code}/route`
-  - **Trả về:** Tọa độ Google Maps / Leaflet nếu `is_gps_verified == true`.
-- `GET /api/v1/care/public/{plot_code}`
-  - **Trả về:** Lịch sử chăm sóc đã được duyệt công bố (`PUBLISHED`).
-
-### 3.2. Phân hệ Tác nghiệp Quản trang (Caretaker Operations)
-- `GET /api/v1/construction/work-basis`
-  - **Trả về:** Danh sách các phụ lục thi công/an táng đủ điều kiện tiếp nhận (không có thông tin giá tiền hay CCCD).
-- `POST /api/v1/construction/orders`
-  - **Payload:** Tạo lệnh thi công kèm checklist các hạng mục từ căn cứ.
-- `POST /api/v1/construction/tasks/{task_id}/assign`
-  - **Payload:** `{ "work_party_type": "PERSON|TEAM|EXTERNAL", "party_name": "Tên thợ/tổ", "supervisor_id": 2, "planned_start": "...", "planned_end": "..." }`
-- `POST /api/v1/construction/orders/{order_id}/complete`
-  - **Payload:** Nghiệm thu thi công sau khi kiểm tra 100% việc bắt buộc và ảnh hiện trường MinIO.
-- `GET /api/v1/workforce` & `POST /api/v1/workforce`
-  - **Quản lý danh bạ:** Thợ thi công, tổ xây dựng, nhà thầu ngoài.
-
-### 3.3. Phân hệ Marketing & Hợp đồng (Marketing Journeys)
-- `POST /api/v1/contracts`
-  - **Payload:** Tạo hợp đồng mới theo 1 trong 4 loại (`LAND_PURCHASE`, `EXHUMATION`, `CREMATION`, `TRANSFER`).
-- `GET /api/v1/contracts/{id}/print`
-  - **Trả về:** DTO dữ liệu để in bản mẫu giấy tờ.
-- `POST /api/v1/contracts/{id}/scan`
-  - **Payload:** Tải lên bản scan đã ký ngoài đời (`file_id` từ MinIO).
-- `POST /api/v1/contracts/{id}/activate`
-  - **Hành động:** Kích hoạt hợp đồng sang `ACTIVE` và chuyển trạng thái ô mộ sang `OWNED_EMPTY`.
-- `POST /api/v1/contracts/{id}/annexes`
-  - **Payload:** Lập phụ lục (`BURIAL`, `CONSTRUCTION`, `CARE`).
-
-### 3.4. Phân hệ Kế toán & Công nợ (Finance Operations)
-- `GET /api/v1/finance/receivables`
-  - **Trả về:** Danh sách nghĩa vụ nợ kèm hợp đồng/phụ lục căn cứ.
-- `POST /api/v1/finance/payments`
-  - **Headers:** `Idempotency-Key: {uuid}`
-  - **Payload:** `{ "receivable_id": 1, "amount": "120000000.00", "payment_method": "BANK_TRANSFER|CASH", "reference_code": "..." }`
-- `GET /api/v1/finance/receipts/{id}/pdf`
-  - **Trả về:** Stream PDF biên lai có số phiếu duy nhất từ sequence.
-
----
-
-## 4. Kiểm soát quyền tệp tin (File Access Control / ACL)
-
-1. **Hợp đồng & Phụ lục ký:** Chỉ tài khoản có `contracts:read` hoặc `contracts:manage` mới được tải/xem.
-2. **Giấy báo tử:** Chỉ Marketing và Sếp được tải bản scan gốc. Quản trang chỉ nhận cờ trạng thái `VERIFIED`.
-3. **Biên lai tài chính:** Chỉ Kế toán và Sếp được tải bản in PDF.
-4. **Bằng chứng thi công / chăm sóc:**
-   - Ảnh gốc nội bộ: Chỉ lưu hành giữa Quản trang, Marketing (tiến độ) và Sếp.
-   - Ảnh công khai: Chỉ derivative hoặc ảnh đã được Quản trang gắn nhãn `PUBLISHED` mới được trả cho cổng thân nhân.
+1. **Tệp nháp chưa liên kết (Unbound Draft File):**
+   - Chỉ chính người tải lên (`file_obj.uploaded_by_user_id == user.user_id`) hoặc `ADMIN` mới có quyền xem trước/tải xuống.
+2. **Hợp đồng & Phụ lục ký (Signed Scan / PDF):**
+   - Chỉ tài khoản có `contracts:read` (Marketing, Admin) mới được tải/xem. Quản trang và Kế toán bị từ chối 403 Forbidden.
+3. **Giấy báo tử (Death Certificate Scan):**
+   - Chỉ Marketing và Admin được tải. Quản trang và Kế toán bị từ chối 403 Forbidden.
+4. **Biên lai tài chính (Invoice / Receipt PDF):**
+   - Chỉ Kế toán và Admin được tải (`finance:read`). Marketing và Quản trang bị từ chối 403 Forbidden.
+5. **Báo cáo xuất bản (Report Export File):**
+   - File xuất Báo cáo Doanh thu (`REVENUE`): Kế toán và Admin (đúng requester).
+   - File xuất Báo cáo Lấp đầy/Hợp đồng/Vận hành (`OCCUPANCY`/`CONTRACTS`/`OPERATIONS`): chỉ Admin.

@@ -859,33 +859,11 @@ class ContractService:
         annex.activation_notes = data.activation_notes
         annex.updated_at = now
 
-        # Legal activation vs physical execution (R05 / BA-09 / BA-14)
-        # If burial date is in the future, slot remains reserved via this active annex without setting OCCUPIED or locking Kim Tinh.
-        # DB check constraint CK_plot_slots_status strictly allows ('EMPTY', 'OCCUPIED'), so slot remains 'EMPTY' until confirmed on-site.
-        is_future_burial = burial.burial_date > date.today()
-        if is_future_burial:
-            pass
-        else:
-            slot.status = "OCCUPIED"
-            slot.current_deceased_id = burial.deceased_id
-            plot.status = "OCCUPIED"
-            if burial.is_kim_tinh:
-                plot.is_kim_tinh = True
-                plot.is_locked = True
-
-            history = BurialHistory(
-                plot_id=plot.plot_id,
-                slot_id=slot.slot_id,
-                deceased_id=burial.deceased_id,
-                action_type="BURIED",
-                action_date=now,
-                proof_url=scan_file.object_key,
-                proof_file_id=scan_file.file_id,
-                performed_by=current_user_id,
-                notes=f"An táng theo phụ lục {annex.annex_code}",
-                created_at=now,
-            )
-            db.add(history)
+        # Legal activation vs physical execution (FLOW-01 / R05 / BA-09 / BA-14)
+        # Legal activation only sets annex to ACTIVE and records receivable if any.
+        # Physical occupancy of slot/plot and permanent Kim Tinh lock are strictly executed
+        # via the on-site confirm_burial command by Caretaker, regardless of burial date.
+        # Slot remains EMPTY in DB, reserved via this active annex until confirmed on-site.
 
         if annex.additional_amount > 0:
             cls._create_receivable(
@@ -897,7 +875,8 @@ class ContractService:
                 amount=annex.additional_amount,
             )
 
-        outbox_event_type = "BURIAL_ANNEX_ACTIVATED" if is_future_burial else "BURIAL_COMPLETED"
+        is_future_burial = burial.burial_date > date.today()
+        outbox_event_type = "BURIAL_ANNEX_ACTIVATED"
         outbox = OutboxEvent(
             event_id=str(uuid.uuid4()),
             event_type=outbox_event_type,
@@ -1086,6 +1065,105 @@ class ContractService:
         db.commit()
         db.refresh(annex)
         return annex
+
+    @classmethod
+    def get_work_bases(cls, db: Session, status_filter: Optional[str] = None) -> List[dict]:
+        """Fetch operational work bases for Caretaker field execution (EX-01 / WorkBasis)."""
+        from app.modules.contracts.models import CareAnnex, ConstructionAnnex
+
+        query = (
+            db.query(ContractAnnex)
+            .options(
+                joinedload(ContractAnnex.contract).joinedload(Contract.land_purchase).joinedload(LandPurchaseContract.plot),
+                joinedload(ContractAnnex.contract).joinedload(Contract.transfer).joinedload(TransferContract.plot),
+                joinedload(ContractAnnex.burial).joinedload(BurialAnnex.plot),
+                joinedload(ContractAnnex.burial).joinedload(BurialAnnex.slot),
+                joinedload(ContractAnnex.burial).joinedload(BurialAnnex.deceased),
+                joinedload(ContractAnnex.care).joinedload(CareAnnex.package),
+                joinedload(ContractAnnex.construction).joinedload(ConstructionAnnex.plot),
+            )
+        )
+        if status_filter:
+            query = query.filter(ContractAnnex.status == status_filter)
+        else:
+            query = query.filter(ContractAnnex.status.in_(["ACTIVE", "PENDING_ACTIVATION"]))
+
+        annexes = query.order_by(ContractAnnex.created_at.desc()).all()
+        results = []
+        for a in annexes:
+            plot_id = None
+            plot_code = None
+            zone_code = None
+            slot_number = None
+            deceased_id = None
+            deceased_name = None
+            burial_date = None
+            is_burial_confirmed = False
+            service_summary = None
+
+            # Fallback contract plot
+            contract_plot = None
+            if a.contract:
+                if a.contract.land_purchase and a.contract.land_purchase.plot:
+                    contract_plot = a.contract.land_purchase.plot
+                elif a.contract.transfer and a.contract.transfer.plot:
+                    contract_plot = a.contract.transfer.plot
+
+            if a.annex_type == "BURIAL" and a.burial:
+                b = a.burial
+                plot_id = b.plot_id
+                if b.plot:
+                    plot_code = b.plot.plot_code
+                    if b.plot.row and b.plot.row.zone:
+                        zone_code = b.plot.row.zone.zone_code
+                if b.slot:
+                    slot_number = b.slot.slot_number
+                    if b.slot.status == "OCCUPIED" and b.slot.current_deceased_id == b.deceased_id:
+                        is_burial_confirmed = True
+                deceased_id = b.deceased_id
+                if b.deceased:
+                    deceased_name = b.deceased.full_name
+                burial_date = b.burial_date
+                service_summary = f"An táng huyệt số {slot_number or ''} ({'Kim Tĩnh' if b.is_kim_tinh else 'Thường'})"
+            elif a.annex_type == "CARE" and a.care:
+                c = a.care
+                if contract_plot:
+                    plot_id = contract_plot.plot_id
+                    plot_code = contract_plot.plot_code
+                    if contract_plot.row and contract_plot.row.zone:
+                        zone_code = contract_plot.row.zone.zone_code
+                pkg_name = c.package.package_name if c.package else ""
+                service_summary = f"Gói chăm sóc: {pkg_name}"
+            elif a.annex_type == "CONSTRUCTION" and a.construction:
+                cs = a.construction
+                plot_id = cs.plot_id
+                if cs.plot:
+                    plot_code = cs.plot.plot_code
+                    if cs.plot.row and cs.plot.row.zone:
+                        zone_code = cs.plot.row.zone.zone_code
+                service_summary = f"Thi công: {cs.order_type or 'Xây dựng'}"
+
+            results.append({
+                "annex_id": a.annex_id,
+                "annex_code": a.annex_code,
+                "annex_type": a.annex_type,
+                "contract_id": a.contract_id,
+                "contract_code": a.contract.contract_code if a.contract else "",
+                "status": a.status,
+                "signed_at": a.signed_at,
+                "target_date": a.valid_from,
+                "due_date": a.valid_to,
+                "plot_id": plot_id,
+                "plot_code": plot_code,
+                "zone_code": zone_code,
+                "slot_number": slot_number,
+                "deceased_id": deceased_id,
+                "deceased_name": deceased_name,
+                "service_summary": service_summary,
+                "is_burial_confirmed": is_burial_confirmed,
+                "burial_date": burial_date,
+            })
+        return results
 
     # ==============================================================================
     # 6. TRA CỨU DANH SÁCH & CHI TIẾT HỢP ĐỒNG

@@ -28,10 +28,15 @@ PERMISSIONS = [
     # Plots & Spatial
     ("plots", "read", "plots:read"),
     ("plots", "write", "plots:write"),
+    ("plots", "manage", "plots:manage"),
     ("plots", "lock", "plots:lock"),
+    ("plots", "confirm_burial", "plots:confirm_burial"),
     # Customers & Profiles
     ("customers", "read", "customers:read"),
     ("customers", "write", "customers:write"),
+    # Deceased
+    ("deceased", "read", "deceased:read"),
+    ("deceased", "write", "deceased:write"),
     # Contracts & Annexes
     ("contracts", "read", "contracts:read"),
     ("contracts", "write", "contracts:write"),
@@ -44,12 +49,17 @@ PERMISSIONS = [
     ("care", "read", "care:read"),
     ("care", "write", "care:write"),
     ("care", "execute", "care:execute"),
+    # Catalog & Pricing Master
+    ("catalog", "read", "catalog:read"),
+    ("catalog", "manage", "catalog:manage"),
     # Finance
     ("finance", "read", "finance:read"),
     ("finance", "write", "finance:write"),
     ("finance", "collect", "finance:collect"),
+    ("finance", "discount", "finance:discount"),
     # Reports & Audit
     ("reports", "read", "reports:read"),
+    ("reports", "revenue", "reports:revenue"),
     ("audit", "read", "audit:read"),
 ]
 
@@ -62,17 +72,16 @@ ROLE_CONFIGS = {
         "description": "Nhân viên kinh doanh & tiếp thị (khách hàng, hợp đồng, tư vấn)",
         "permissions": [
             "plots:read",
-            "plots:write",
             "customers:read",
             "customers:write",
+            "deceased:read",
+            "deceased:write",
             "contracts:read",
             "contracts:write",
             "contracts:activate",
+            "catalog:read",
             "care:read",
-            "care:write",
             "construction:read",
-            "finance:read",
-            "reports:read",
         ],
     },
     "ACCOUNTANT": {
@@ -81,9 +90,9 @@ ROLE_CONFIGS = {
             "finance:read",
             "finance:write",
             "finance:collect",
-            "contracts:read",
-            "customers:read",
-            "reports:read",
+            "finance:discount",
+            "catalog:read",
+            "reports:revenue",
         ],
     },
     "CARETAKER": {
@@ -91,14 +100,14 @@ ROLE_CONFIGS = {
         "permissions": [
             "plots:read",
             "plots:lock",
+            "plots:confirm_burial",
             "construction:read",
             "construction:write",
             "construction:execute",
             "care:read",
             "care:write",
             "care:execute",
-            "contracts:read",
-            "customers:read",
+            "deceased:read",
         ],
     },
 }
@@ -147,8 +156,10 @@ def seed_rbac(
             role.permissions = target_perms
             role_map[role_name] = role
 
+        # Bump auth_version for all users to force token refresh with new permissions
+        db.query(User).update({User.auth_version: User.auth_version + 1})
         db.commit()
-        print("[+] Hoàn tất seed Roles và Permissions thành công!")
+        print("[+] Hoàn tất seed Roles và Permissions (Đã bump auth_version) thành công!")
 
         # Create or update initial admin if provided
         username = admin_user or os.getenv("INITIAL_ADMIN_USERNAME")

@@ -1,0 +1,77 @@
+[
+  {
+    "actor": "SYNTHETIC_NO_ROLE",
+    "path": "/auth/me",
+    "status": 200,
+    "roles": []
+  },
+  {
+    "actor": "SYNTHETIC_NO_ROLE",
+    "path": "/plots?limit=1",
+    "status": 200,
+    "roles": null
+  },
+  {
+    "actor": "SYNTHETIC_NO_ROLE",
+    "path": "/plots/zones",
+    "status": 200,
+    "roles": null
+  },
+  {
+    "actor": "SYNTHETIC_NO_ROLE",
+    "path": "/plots/stats",
+    "status": 200,
+    "roles": null
+  },
+  {
+    "actor": "SYNTHETIC_NO_ROLE",
+    "path": "/catalog/price-lists",
+    "status": 200,
+    "roles": null
+  },
+  {
+    "actor": "SYNTHETIC_NO_ROLE",
+    "path": "/catalog/care-packages",
+    "status": 200,
+    "roles": null
+  },
+  {
+    "actor": "SYNTHETIC_NO_ROLE",
+    "path": "/catalog/contract-templates",
+    "status": 200,
+    "roles": null
+  },
+  {
+    "actor": "SYNTHETIC_NO_ROLE",
+    "path": "/auth/staff",
+    "status": 200,
+    "roles": null
+  },
+  {
+    "actor": "SYNTHETIC_NO_ROLE",
+    "path": "/profiles/customers",
+    "status": 403,
+    "roles": null
+  },
+  {
+    "actor": "SYNTHETIC_NO_ROLE",
+    "path": "/audit/logs",
+    "status": 403,
+    "roles": null
+  },
+  {
+    "actor": "marketing",
+    "path": "/audit/logs",
+    "status": 403
+  },
+  {
+    "actor": "caretaker",
+    "path": "/audit/logs",
+    "status": 403
+  },
+  {
+    "actor": "accountant",
+    "path": "/audit/logs",
+    "status": 403
+  }
+]

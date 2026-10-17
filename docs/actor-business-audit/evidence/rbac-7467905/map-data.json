@@ -1,0 +1,2613 @@
+{
+  "counts": [
+    {
+      "total": 1027,
+      "with_coordinates": 78,
+      "missing_coordinates": 949
+    }
+  ],
+  "zones": [
+    {
+      "zone_id": 261,
+      "zone_code": "ZC_7a6f5d",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 593,
+      "zone_code": "ZC_13cb6b",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 238,
+      "zone_code": "ZC_ffb1db",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 355,
+      "zone_code": "ZE_dc8ece",
+      "total": 0,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 378,
+      "zone_code": "ZC_54826b",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 547,
+      "zone_code": "ZC_44ccec",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 192,
+      "zone_code": "ZC_b4889d",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 401,
+      "zone_code": "ZC_2e7d78",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 524,
+      "zone_code": "ZC_b2955e",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 92,
+      "zone_code": "ZC_b5c731",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 501,
+      "zone_code": "ZC_23e7cf",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 138,
+      "zone_code": "ZC_f277c0",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 209,
+      "zone_code": "ZC_9aeeea",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 384,
+      "zone_code": "ZC_311a65",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 161,
+      "zone_code": "ZC_a5e552",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 284,
+      "zone_code": "ZC_f0af42",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 407,
+      "zone_code": "ZC_6dfd09",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 361,
+      "zone_code": "ZC_233744",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 564,
+      "zone_code": "ZC_a40e3a",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 576,
+      "zone_code": "ZP_a6a9eb",
+      "total": 1,
+      "with_coordinates": 1
+    },
+    {
+      "zone_id": 278,
+      "zone_code": "ZC_edb4b1",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 315,
+      "zone_code": "ZP_645aa6",
+      "total": 1,
+      "with_coordinates": 1
+    },
+    {
+      "zone_id": 610,
+      "zone_code": "ZC_80aed0",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 169,
+      "zone_code": "ZC_e5598f",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 175,
+      "zone_code": "ZC_11a704",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 418,
+      "zone_code": "ZC_9267ec",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 424,
+      "zone_code": "ZC_0370b8",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 324,
+      "zone_code": "ZC_36288e",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 75,
+      "zone_code": "ZC_99ccf0",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 344,
+      "zone_code": "ZC_136b9a",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 201,
+      "zone_code": "ZC_6b9520",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 464,
+      "zone_code": "ZC_e800de",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 438,
+      "zone_code": "ZC_a5bc12",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 487,
+      "zone_code": "ZC_bc9117",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 181,
+      "zone_code": "ZC_732299",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 507,
+      "zone_code": "ZC_185ad3",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 109,
+      "zone_code": "ZC_30b43a",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 158,
+      "zone_code": "ZC_957368",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 607,
+      "zone_code": "ZC_d9d4a3",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 650,
+      "zone_code": "ZC_f9fc7d",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 458,
+      "zone_code": "ZC_97627e",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 556,
+      "zone_code": "ZP_882823",
+      "total": 1,
+      "with_coordinates": 1
+    },
+    {
+      "zone_id": 630,
+      "zone_code": "ZC_deacd8",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 481,
+      "zone_code": "ZC_7c5dc1",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 89,
+      "zone_code": "ZC_5e198c",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 338,
+      "zone_code": "ZC_927a3f",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 587,
+      "zone_code": "ZC_a72879",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 195,
+      "zone_code": "ZC_9074ed",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 244,
+      "zone_code": "ZC_10fda3",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 301,
+      "zone_code": "ZC_08dc30",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 387,
+      "zone_code": "ZC_21a183",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 146,
+      "zone_code": "ZC_0d2752",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 152,
+      "zone_code": "ZC_49087e",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 295,
+      "zone_code": "ZC_d77ea0",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 544,
+      "zone_code": "ZC_002b75",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 444,
+      "zone_code": "ZC_68b7ad",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 95,
+      "zone_code": "ZC_c55608",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 427,
+      "zone_code": "ZC_c58083",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 189,
+      "zone_code": "ZC_fa3fdb",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 404,
+      "zone_code": "ZC_e31223",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 521,
+      "zone_code": "ZC_15a4ec",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 258,
+      "zone_code": "ZC_f7145f",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 264,
+      "zone_code": "ZC_5cee2f",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 335,
+      "zone_code": "ZE_a03b88",
+      "total": 0,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 281,
+      "zone_code": "ZC_dfb81d",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 381,
+      "zone_code": "ZC_24f597",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 358,
+      "zone_code": "ZC_80c12e",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 172,
+      "zone_code": "ZC_573b52",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 421,
+      "zone_code": "ZC_1a2077",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 78,
+      "zone_code": "ZC_b2e957",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 527,
+      "zone_code": "ZC_8f818f",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 375,
+      "zone_code": "ZE_2eedb0",
+      "total": 0,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 327,
+      "zone_code": "ZC_7839be",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 364,
+      "zone_code": "ZC_ecb1f7",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 275,
+      "zone_code": "ZC_d2949d",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 318,
+      "zone_code": "ZC_960cc0",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 613,
+      "zone_code": "ZC_64f01a",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 467,
+      "zone_code": "ZC_78b3e0",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 321,
+      "zone_code": "ZC_1b7fd0",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 567,
+      "zone_code": "ZC_b08178",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 178,
+      "zone_code": "ZC_709221",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 367,
+      "zone_code": "ZC_8a6f99",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 461,
+      "zone_code": "ZC_ca2d66",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 155,
+      "zone_code": "ZC_e7294d",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 86,
+      "zone_code": "ZC_80abde",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 584,
+      "zone_code": "ZC_ebac38",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 484,
+      "zone_code": "ZC_61a6f5",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 627,
+      "zone_code": "ZC_308bc2",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 112,
+      "zone_code": "ZC_e0dce7",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 604,
+      "zone_code": "ZC_21d487",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 653,
+      "zone_code": "ZC_26350d",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 504,
+      "zone_code": "ZC_676fff",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 398,
+      "zone_code": "ZC_fce1c4",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 292,
+      "zone_code": "ZC_6e1830",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 633,
+      "zone_code": "ZC_47f7e1",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 241,
+      "zone_code": "ZC_ff3f67",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 647,
+      "zone_code": "ZC_ffbbbb",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 98,
+      "zone_code": "ZC_2c8bf3",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 341,
+      "zone_code": "ZC_0b0314",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 347,
+      "zone_code": "ZC_f0ef78",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 590,
+      "zone_code": "ZC_e04c91",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 441,
+      "zone_code": "ZC_8c2eef",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 447,
+      "zone_code": "ZC_23ab37",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 298,
+      "zone_code": "ZC_c8cea4",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 149,
+      "zone_code": "ZC_2a0bf1",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 198,
+      "zone_code": "ZC_1acbe2",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 190,
+      "zone_code": "ZC_e0a07f",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 522,
+      "zone_code": "ZC_ea80cc",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 545,
+      "zone_code": "ZC_303480",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 144,
+      "zone_code": "ZC_2b40bc",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 476,
+      "zone_code": "ZP_78eaca",
+      "total": 1,
+      "with_coordinates": 1
+    },
+    {
+      "zone_id": 167,
+      "zone_code": "ZC_7da435",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 499,
+      "zone_code": "ZC_3c4ce4",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 359,
+      "zone_code": "ZC_383e64",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 336,
+      "zone_code": "ZP_9b0529",
+      "total": 1,
+      "with_coordinates": 1
+    },
+    {
+      "zone_id": 405,
+      "zone_code": "ZC_20ccfb",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 259,
+      "zone_code": "ZC_b2c7fd",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 382,
+      "zone_code": "ZC_a0007d",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 184,
+      "zone_code": "ZC_ef3c3b",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 267,
+      "zone_code": "ZC_415cc7",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 516,
+      "zone_code": "ZP_f5432e",
+      "total": 1,
+      "with_coordinates": 1
+    },
+    {
+      "zone_id": 528,
+      "zone_code": "ZC_91a7fb",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 422,
+      "zone_code": "ZC_ddb413",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 313,
+      "zone_code": "ZP_212d06",
+      "total": 1,
+      "with_coordinates": 1
+    },
+    {
+      "zone_id": 562,
+      "zone_code": "ZC_ede42f",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 376,
+      "zone_code": "ZP_43f965",
+      "total": 1,
+      "with_coordinates": 1
+    },
+    {
+      "zone_id": 622,
+      "zone_code": "ZP_b3381c",
+      "total": 1,
+      "with_coordinates": 1
+    },
+    {
+      "zone_id": 276,
+      "zone_code": "ZC_189fef",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 662,
+      "zone_code": "ZP_222002",
+      "total": 1,
+      "with_coordinates": 1
+    },
+    {
+      "zone_id": 319,
+      "zone_code": "ZC_fc6ce9",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 322,
+      "zone_code": "ZC_6625e6",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 568,
+      "zone_code": "ZC_e9949b",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 173,
+      "zone_code": "ZC_7da3ff",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 468,
+      "zone_code": "ZC_d78941",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 107,
+      "zone_code": "ZC_6d9557",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 605,
+      "zone_code": "ZC_7554aa",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 156,
+      "zone_code": "ZC_6d8614",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 485,
+      "zone_code": "ZC_2d8d9e",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 81,
+      "zone_code": "ZC_b818c4",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 462,
+      "zone_code": "ZC_543363",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 536,
+      "zone_code": "ZP_703816",
+      "total": 1,
+      "with_coordinates": 1
+    },
+    {
+      "zone_id": 436,
+      "zone_code": "ZP_7808e3",
+      "total": 1,
+      "with_coordinates": 1
+    },
+    {
+      "zone_id": 654,
+      "zone_code": "ZC_5daede",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 87,
+      "zone_code": "ZC_273819",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 505,
+      "zone_code": "ZC_a3dea5",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 579,
+      "zone_code": "ZC_34ae69",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 628,
+      "zone_code": "ZC_a55b08",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 101,
+      "zone_code": "ZC_292f8d",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 207,
+      "zone_code": "ZC_ba3dbf",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 256,
+      "zone_code": "ZC_fb1dc6",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 399,
+      "zone_code": "ZC_28ac46",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 648,
+      "zone_code": "ZC_a72ad4",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 585,
+      "zone_code": "ZC_a2a267",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 634,
+      "zone_code": "ZC_aab61e",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 193,
+      "zone_code": "ZC_1c7520",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 442,
+      "zone_code": "ZC_dfd555",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 293,
+      "zone_code": "ZC_e7e375",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 299,
+      "zone_code": "ZC_ca9a1c",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 342,
+      "zone_code": "ZC_1cc008",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 150,
+      "zone_code": "ZC_f119b0",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 642,
+      "zone_code": "ZP_a3cd0b",
+      "total": 1,
+      "with_coordinates": 1
+    },
+    {
+      "zone_id": 542,
+      "zone_code": "ZC_8f0f06",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 591,
+      "zone_code": "ZC_31f192",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 356,
+      "zone_code": "ZP_78b080",
+      "total": 1,
+      "with_coordinates": 1
+    },
+    {
+      "zone_id": 379,
+      "zone_code": "ZC_db801b",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 141,
+      "zone_code": "ZC_b90db5",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 239,
+      "zone_code": "ZC_bb84a8",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 402,
+      "zone_code": "ZC_f30ea7",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 93,
+      "zone_code": "ZC_10586b",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 425,
+      "zone_code": "ZC_c7b575",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 548,
+      "zone_code": "ZC_1f9daa",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 187,
+      "zone_code": "ZC_68025d",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 525,
+      "zone_code": "ZC_1d6ebf",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 164,
+      "zone_code": "ZC_13491f",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 502,
+      "zone_code": "ZC_49f326",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 479,
+      "zone_code": "ZC_a40350",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 310,
+      "zone_code": "ZE_d80deb",
+      "total": 0,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 210,
+      "zone_code": "ZC_f8d374",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 456,
+      "zone_code": "ZP_51f4c0",
+      "total": 1,
+      "with_coordinates": 1
+    },
+    {
+      "zone_id": 18,
+      "zone_code": "KHU-A",
+      "total": 634,
+      "with_coordinates": 52
+    },
+    {
+      "zone_id": 279,
+      "zone_code": "ZC_87bd79",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 362,
+      "zone_code": "ZC_022ab8",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 611,
+      "zone_code": "ZC_4d130f",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 316,
+      "zone_code": "ZE_ef3087",
+      "total": 0,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 519,
+      "zone_code": "ZC_495714",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 170,
+      "zone_code": "ZC_089f46",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 176,
+      "zone_code": "ZC_465400",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 465,
+      "zone_code": "ZC_539445",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 565,
+      "zone_code": "ZC_9997d5",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 419,
+      "zone_code": "ZC_c53dc5",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 439,
+      "zone_code": "ZC_75b376",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 84,
+      "zone_code": "ZC_d5c3bc",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 416,
+      "zone_code": "ZP_7aae19",
+      "total": 1,
+      "with_coordinates": 1
+    },
+    {
+      "zone_id": 582,
+      "zone_code": "ZC_9e8b2a",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 153,
+      "zone_code": "ZC_eb4bde",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 488,
+      "zone_code": "ZC_0c5166",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 559,
+      "zone_code": "ZC_22d8d9",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 204,
+      "zone_code": "ZC_6a400b",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 110,
+      "zone_code": "ZC_0ff31a",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 602,
+      "zone_code": "ZP_c25d35",
+      "total": 1,
+      "with_coordinates": 1
+    },
+    {
+      "zone_id": 608,
+      "zone_code": "ZC_af51c6",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 459,
+      "zone_code": "ZC_a2c5df",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 508,
+      "zone_code": "ZC_b47e16",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 625,
+      "zone_code": "ZC_9196d6",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 631,
+      "zone_code": "ZC_fea999",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 482,
+      "zone_code": "ZC_236992",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 651,
+      "zone_code": "ZC_01937b",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 196,
+      "zone_code": "ZC_4c6c29",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 445,
+      "zone_code": "ZC_37737a",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 90,
+      "zone_code": "ZC_02b3ee",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 539,
+      "zone_code": "ZC_bccb25",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 588,
+      "zone_code": "ZC_9cacc1",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 645,
+      "zone_code": "ZC_b9f599",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 339,
+      "zone_code": "ZC_1a6764",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 104,
+      "zone_code": "ZC_d88c42",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 496,
+      "zone_code": "ZP_f95d69",
+      "total": 1,
+      "with_coordinates": 1
+    },
+    {
+      "zone_id": 147,
+      "zone_code": "ZC_b940fc",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 396,
+      "zone_code": "ZP_978b26",
+      "total": 1,
+      "with_coordinates": 1
+    },
+    {
+      "zone_id": 247,
+      "zone_code": "ZC_271f58",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 296,
+      "zone_code": "ZC_aabe89",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 96,
+      "zone_code": "ZC_032e54",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 428,
+      "zone_code": "ZC_0f5a50",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 165,
+      "zone_code": "ZC_6e3c97",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 142,
+      "zone_code": "ZC_d7538b",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 211,
+      "zone_code": "ZC_ff2921",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 282,
+      "zone_code": "ZC_584e88",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 188,
+      "zone_code": "ZC_b5d0cf",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 311,
+      "zone_code": "ZP_8b4bb3",
+      "total": 1,
+      "with_coordinates": 1
+    },
+    {
+      "zone_id": 503,
+      "zone_code": "ZC_9650a6",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 480,
+      "zone_code": "ZC_d1afcc",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 79,
+      "zone_code": "ZC_69a6ab",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 328,
+      "zone_code": "ZC_fa279c",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 19,
+      "zone_code": "KHU-B",
+      "total": 3,
+      "with_coordinates": 3
+    },
+    {
+      "zone_id": 265,
+      "zone_code": "ZC_d4590a",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 365,
+      "zone_code": "ZC_668dc0",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 614,
+      "zone_code": "ZC_5c6525",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 317,
+      "zone_code": "ZP_3ead08",
+      "total": 1,
+      "with_coordinates": 1
+    },
+    {
+      "zone_id": 520,
+      "zone_code": "ZC_55e6bb",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 171,
+      "zone_code": "ZC_e52e01",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 420,
+      "zone_code": "ZC_868b43",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 566,
+      "zone_code": "ZC_5c6e27",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 368,
+      "zone_code": "ZC_22aee8",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 440,
+      "zone_code": "ZC_1802a9",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 583,
+      "zone_code": "ZC_fdb88a",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 105,
+      "zone_code": "ZC_133347",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 179,
+      "zone_code": "ZC_5cfd1b",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 560,
+      "zone_code": "ZC_5a1bf4",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 205,
+      "zone_code": "ZC_4c9b64",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 460,
+      "zone_code": "ZC_dc296d",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 626,
+      "zone_code": "ZC_a2b463",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 483,
+      "zone_code": "ZC_012953",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 85,
+      "zone_code": "ZC_38d3b3",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 540,
+      "zone_code": "ZC_2271dc",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 385,
+      "zone_code": "ZC_0b6dc3",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 242,
+      "zone_code": "ZC_ee1dd5",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 646,
+      "zone_code": "ZC_a8d53f",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 448,
+      "zone_code": "ZC_e9c970",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 348,
+      "zone_code": "ZC_807a96",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 248,
+      "zone_code": "ZC_a0453f",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 99,
+      "zone_code": "ZC_8ea409",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 148,
+      "zone_code": "ZC_e81423",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 285,
+      "zone_code": "ZC_78ca67",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 546,
+      "zone_code": "ZC_aa0a5d",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 262,
+      "zone_code": "ZC_837cde",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 594,
+      "zone_code": "ZC_28e737",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 168,
+      "zone_code": "ZC_6bd2a3",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 500,
+      "zone_code": "ZC_2f4e34",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 191,
+      "zone_code": "ZC_02d660",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 523,
+      "zone_code": "ZC_94e2f5",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 139,
+      "zone_code": "ZC_37883d",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 162,
+      "zone_code": "ZC_a1e0d1",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 408,
+      "zone_code": "ZC_ca994c",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 185,
+      "zone_code": "ZC_26f27e",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 563,
+      "zone_code": "ZC_582bd7",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 325,
+      "zone_code": "ZC_4d3019",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 314,
+      "zone_code": "ZE_b1d430",
+      "total": 0,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 76,
+      "zone_code": "ZC_a2e661",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 202,
+      "zone_code": "ZC_2f8bb9",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 463,
+      "zone_code": "ZC_e53df8",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 629,
+      "zone_code": "ZC_075345",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 108,
+      "zone_code": "ZC_25c1d6",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 274,
+      "zone_code": "ZC_4fac55",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 606,
+      "zone_code": "ZC_318a0b",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 82,
+      "zone_code": "ZC_7a017f",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 182,
+      "zone_code": "ZC_f9c229",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 649,
+      "zone_code": "ZC_bcb88e",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 88,
+      "zone_code": "ZC_3150e5",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 159,
+      "zone_code": "ZC_98e82e",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 580,
+      "zone_code": "ZC_20659f",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 208,
+      "zone_code": "ZC_e62c6b",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 102,
+      "zone_code": "ZC_8c18c0",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 586,
+      "zone_code": "ZC_0d4a97",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 302,
+      "zone_code": "ZC_1f2107",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 388,
+      "zone_code": "ZC_f1aae4",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 400,
+      "zone_code": "ZC_ec4df4",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 294,
+      "zone_code": "ZC_08de3a",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 543,
+      "zone_code": "ZC_012725",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 145,
+      "zone_code": "ZC_936d27",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 245,
+      "zone_code": "ZC_af9c88",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 345,
+      "zone_code": "ZC_f24743",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 380,
+      "zone_code": "ZC_1e2ca6",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 641,
+      "zone_code": "ZE_b93936",
+      "total": 0,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 403,
+      "zone_code": "ZC_50be63",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 94,
+      "zone_code": "ZC_2e0cbf",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 263,
+      "zone_code": "ZC_1cd1f3",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 426,
+      "zone_code": "ZC_071c87",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 595,
+      "zone_code": "ZC_c3bf7c",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 240,
+      "zone_code": "ZC_e154b6",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 449,
+      "zone_code": "ZC_803927",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 140,
+      "zone_code": "ZC_998873",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 478,
+      "zone_code": "ZC_b8f052",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 549,
+      "zone_code": "ZC_dddd0e",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 163,
+      "zone_code": "ZC_b2d219",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 526,
+      "zone_code": "ZC_a86238",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 257,
+      "zone_code": "ZC_404feb",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 455,
+      "zone_code": "ZE_4e348c",
+      "total": 0,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 77,
+      "zone_code": "ZC_ab7215",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 280,
+      "zone_code": "ZC_2a1466",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 409,
+      "zone_code": "ZC_2d9310",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 612,
+      "zone_code": "ZC_7fcd1c",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 624,
+      "zone_code": "ZC_89fe25",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 326,
+      "zone_code": "ZC_84772d",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 363,
+      "zone_code": "ZC_d1f3ab",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 466,
+      "zone_code": "ZC_5f7a9e",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 518,
+      "zone_code": "ZC_acf335",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 297,
+      "zone_code": "ZC_5279d5",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 558,
+      "zone_code": "ZC_677929",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 83,
+      "zone_code": "ZC_273387",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 581,
+      "zone_code": "ZC_a7f873",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 415,
+      "zone_code": "ZE_0b6e57",
+      "total": 0,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 177,
+      "zone_code": "ZC_971547",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 509,
+      "zone_code": "ZC_663438",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 154,
+      "zone_code": "ZC_40da43",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 203,
+      "zone_code": "ZC_8787a1",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 632,
+      "zone_code": "ZC_601fa2",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 183,
+      "zone_code": "ZC_0cb7fa",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 601,
+      "zone_code": "ZE_7bb216",
+      "total": 0,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 111,
+      "zone_code": "ZC_bacfb3",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 160,
+      "zone_code": "ZC_807b8c",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 652,
+      "zone_code": "ZC_a4a90e",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 303,
+      "zone_code": "ZC_cc9808",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 446,
+      "zone_code": "ZC_59e60b",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 91,
+      "zone_code": "ZC_aee1dd",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 103,
+      "zone_code": "ZC_b40df3",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 340,
+      "zone_code": "ZC_cef81f",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 389,
+      "zone_code": "ZC_a13869",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 644,
+      "zone_code": "ZC_bd9169",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 395,
+      "zone_code": "ZE_5d605a",
+      "total": 0,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 489,
+      "zone_code": "ZC_a94dad",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 538,
+      "zone_code": "ZC_2e1482",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 495,
+      "zone_code": "ZE_a05ee4",
+      "total": 0,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 97,
+      "zone_code": "ZC_9d7a1a",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 346,
+      "zone_code": "ZC_786f99",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 589,
+      "zone_code": "ZC_81c0eb",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 197,
+      "zone_code": "ZC_85a2b7",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 246,
+      "zone_code": "ZC_924daf",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 143,
+      "zone_code": "ZC_673499",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 475,
+      "zone_code": "ZE_b750c8",
+      "total": 0,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 569,
+      "zone_code": "ZC_4bacfb",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 166,
+      "zone_code": "ZC_81a1fd",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 498,
+      "zone_code": "ZC_ea7438",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 383,
+      "zone_code": "ZC_0f332b",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 312,
+      "zone_code": "ZE_18f606",
+      "total": 0,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 329,
+      "zone_code": "ZC_c02ba2",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 360,
+      "zone_code": "ZC_58e240",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 260,
+      "zone_code": "ZC_7d7f77",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 429,
+      "zone_code": "ZC_0e94be",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 283,
+      "zone_code": "ZC_6399ef",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 406,
+      "zone_code": "ZC_77fe56",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 469,
+      "zone_code": "ZC_3f6498",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 575,
+      "zone_code": "ZE_66097f",
+      "total": 0,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 20,
+      "zone_code": "KHU-VIP",
+      "total": 2,
+      "with_coordinates": 2
+    },
+    {
+      "zone_id": 266,
+      "zone_code": "ZC_bd0fa0",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 423,
+      "zone_code": "ZC_5e8d57",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 80,
+      "zone_code": "ZC_1014c3",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 277,
+      "zone_code": "ZC_d9b785",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 609,
+      "zone_code": "ZC_6fcfa9",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 621,
+      "zone_code": "ZE_ad7d85",
+      "total": 0,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 561,
+      "zone_code": "ZC_75884b",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 323,
+      "zone_code": "ZC_922c34",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 366,
+      "zone_code": "ZC_26d7bc",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 661,
+      "zone_code": "ZE_b1edbc",
+      "total": 0,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 174,
+      "zone_code": "ZC_08e5e5",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 515,
+      "zone_code": "ZE_cedb46",
+      "total": 0,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 320,
+      "zone_code": "ZC_943529",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 369,
+      "zone_code": "ZC_6b3d3e",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 615,
+      "zone_code": "ZC_f4b434",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 249,
+      "zone_code": "ZC_4fb3c1",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 180,
+      "zone_code": "ZC_ab4f68",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 486,
+      "zone_code": "ZC_173c1b",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 535,
+      "zone_code": "ZE_e4db17",
+      "total": 0,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 555,
+      "zone_code": "ZE_8168fa",
+      "total": 0,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 157,
+      "zone_code": "ZC_95b157",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 206,
+      "zone_code": "ZC_2775b4",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 655,
+      "zone_code": "ZC_cbcc4d",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 506,
+      "zone_code": "ZC_bf974a",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 529,
+      "zone_code": "ZC_49afa5",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 578,
+      "zone_code": "ZC_42f9c7",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 386,
+      "zone_code": "ZC_14cd2f",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 635,
+      "zone_code": "ZC_1b9c7e",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 243,
+      "zone_code": "ZC_e38237",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 349,
+      "zone_code": "ZC_6597f3",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 435,
+      "zone_code": "ZE_c2b1b0",
+      "total": 0,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 300,
+      "zone_code": "ZC_0978e2",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 151,
+      "zone_code": "ZC_ed2ceb",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 194,
+      "zone_code": "ZC_4d1f31",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 200,
+      "zone_code": "ZC_37dabe",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 100,
+      "zone_code": "ZC_8c2868",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 343,
+      "zone_code": "ZC_dad7b9",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 592,
+      "zone_code": "ZC_13fe10",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 443,
+      "zone_code": "ZC_226b1b",
+      "total": 1,
+      "with_coordinates": 0
+    },
+    {
+      "zone_id": 541,
+      "zone_code": "ZC_3ead59",
+      "total": 1,
+      "with_coordinates": 0
+    }
+  ],
+  "samples": [
+    {
+      "plot_id": 18,
+      "plot_code": "A-H01-01",
+      "latitude": "10.92510000",
+      "longitude": "106.82505000"
+    },
+    {
+      "plot_id": 19,
+      "plot_code": "A-H01-02",
+      "latitude": "10.92510000",
+      "longitude": "106.82510000"
+    },
+    {
+      "plot_id": 20,
+      "plot_code": "A-H01-03",
+      "latitude": "10.92510000",
+      "longitude": "106.82515000"
+    },
+    {
+      "plot_id": 21,
+      "plot_code": "A-H01-04",
+      "latitude": "10.92510000",
+      "longitude": "106.82520000"
+    },
+    {
+      "plot_id": 22,
+      "plot_code": "A-H02-01",
+      "latitude": "10.92520000",
+      "longitude": "106.82505000"
+    },
+    {
+      "plot_id": 23,
+      "plot_code": "A-H02-02",
+      "latitude": "10.92520000",
+      "longitude": "106.82510000"
+    },
+    {
+      "plot_id": 24,
+      "plot_code": "B-H01-01",
+      "latitude": "10.92540000",
+      "longitude": "106.82505000"
+    },
+    {
+      "plot_id": 25,
+      "plot_code": "B-H01-02",
+      "latitude": "10.92540000",
+      "longitude": "106.82512000"
+    },
+    {
+      "plot_id": 26,
+      "plot_code": "B-H01-03",
+      "latitude": "10.92540000",
+      "longitude": "106.82519000"
+    },
+    {
+      "plot_id": 27,
+      "plot_code": "VIP-H01-01",
+      "latitude": "10.92570000",
+      "longitude": "106.82510000"
+    },
+    {
+      "plot_id": 28,
+      "plot_code": "VIP-H01-02",
+      "latitude": "10.92570000",
+      "longitude": "106.82530000"
+    },
+    {
+      "plot_id": 29,
+      "plot_code": "TEST-P-B7C68F",
+      "latitude": "10.92550000",
+      "longitude": "106.82550000"
+    }
+  ],
+  "duplicate_coordinates": [
+    {
+      "latitude": "10.77688900",
+      "longitude": "106.70080600",
+      "n": 21
+    },
+    {
+      "latitude": "10.92550000",
+      "longitude": "106.82550000",
+      "n": 46
+    }
+  ],
+  "columns": [
+    {
+      "COLUMN_NAME": "plot_id"
+    },
+    {
+      "COLUMN_NAME": "plot_code"
+    },
+    {
+      "COLUMN_NAME": "row_id"
+    },
+    {
+      "COLUMN_NAME": "type_id"
+    },
+    {
+      "COLUMN_NAME": "owner_id"
+    },
+    {
+      "COLUMN_NAME": "latitude"
+    },
+    {
+      "COLUMN_NAME": "longitude"
+    },
+    {
+      "COLUMN_NAME": "status"
+    },
+    {
+      "COLUMN_NAME": "is_kim_tinh"
+    },
+    {
+      "COLUMN_NAME": "is_locked"
+    },
+    {
+      "COLUMN_NAME": "created_at"
+    },
+    {
+      "COLUMN_NAME": "updated_at"
+    },
+    {
+      "COLUMN_NAME": "orientation"
+    },
+    {
+      "COLUMN_NAME": "notes"
+    }
+  ]
+}

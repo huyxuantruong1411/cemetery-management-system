@@ -22,9 +22,13 @@ import type {
   Receivable,
 } from '../../types/finance'
 import { Pagination, usePagination } from '../common/Pagination'
+import { FinanceBasisView } from './FinanceBasisView'
 
 export const FinanceModule: React.FC = () => {
   const { accessToken, hasPermission } = useAuth()
+
+  // View tabs (EX-02)
+  const [activeViewTab, setActiveViewTab] = useState<'bases' | 'ledger'>('bases')
 
   // Data states
   const [summary, setSummary] = useState<FinanceSummary | null>(null)
@@ -477,7 +481,57 @@ export const FinanceModule: React.FC = () => {
         </button>
       </div>
 
-      {/* 2. KPI Summary Cards */}
+      {/* Sub-Tab Navigation: Căn Cứ Thu Tiền (EX-02) vs Sổ Cái Công Nợ */}
+      <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid #E2E8F0', paddingBottom: '8px' }}>
+        <button
+          type="button"
+          onClick={() => setActiveViewTab('bases')}
+          style={{
+            padding: '8px 18px',
+            borderRadius: '6px',
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: 600,
+            fontSize: '13px',
+            backgroundColor: activeViewTab === 'bases' ? 'var(--brand-primary, #1e3a8a)' : 'transparent',
+            color: activeViewTab === 'bases' ? '#FFFFFF' : '#64748B',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <FileCheck size={16} />
+          Căn Cứ Thu Tiền (Hợp đồng & Phụ lục)
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveViewTab('ledger')}
+          style={{
+            padding: '8px 18px',
+            borderRadius: '6px',
+            border: 'none',
+            cursor: 'pointer',
+            fontWeight: 600,
+            fontSize: '13px',
+            backgroundColor: activeViewTab === 'ledger' ? 'var(--brand-primary, #1e3a8a)' : 'transparent',
+            color: activeViewTab === 'ledger' ? '#FFFFFF' : '#64748B',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            transition: 'all 0.15s ease',
+          }}
+        >
+          <Receipt size={16} />
+          Sổ Cái Công Nợ & Khoản Thu
+        </button>
+      </div>
+
+      {activeViewTab === 'bases' ? (
+        <FinanceBasisView />
+      ) : (
+        <>
+          {/* 2. KPI Summary Cards */}
       {summary && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '10px' }}>
           <div
@@ -921,6 +975,8 @@ export const FinanceModule: React.FC = () => {
         </>
       )}
       </div>
+      </>
+      )}
 
       {/* 5. Payment Modal */}
       {isPaymentModalOpen && activeReceivable && (
