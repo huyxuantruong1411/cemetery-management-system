@@ -325,12 +325,12 @@ class ContractService:
         if not slot:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Không tìm thấy slot huyệt #{data.slot_id} thuộc ô mộ {plot.plot_code}.",
+                detail=f"Không tìm thấy huyệt #{data.slot_id} thuộc ô mộ {plot.plot_code}.",
             )
         if slot.status != "OCCUPIED" or slot.current_deceased_id != data.current_deceased_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Slot huyệt không chứa đúng người quá cố được yêu cầu cải táng!",
+                detail="Huyệt không chứa đúng người quá cố được yêu cầu cải táng!",
             )
 
         contract_code = cls.generate_contract_code(db, "HD-CT")
@@ -437,7 +437,7 @@ class ContractService:
         if occupied_slot or plot.status == "OCCUPIED":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Không thể chuyển nhượng ô mộ {plot.plot_code} đang có người an táng. Toàn bộ slot huyệt phải để trống!",
+                detail=f"Không thể chuyển nhượng ô mộ {plot.plot_code} đang có người an táng. Toàn bộ huyệt phải để trống!",
             )
 
         contract_code = cls.generate_contract_code(db, "HD-CN")
@@ -589,7 +589,7 @@ class ContractService:
         if contract.contract_type not in ("LAND_PURCHASE", "TRANSFER"):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Phụ lục an táng chỉ có thể gắn vào hợp đồng mua bán đất (LAND_PURCHASE) hoặc chuyển nhượng (TRANSFER).",
+                detail="Phụ lục an táng chỉ có thể gắn vào hợp đồng mua bán đất hoặc chuyển nhượng.",
             )
         if contract.status != "ACTIVE":
             raise HTTPException(
@@ -665,12 +665,12 @@ class ContractService:
         if not slot:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Không tìm thấy slot huyệt #{data.slot_id} thuộc ô mộ {plot.plot_code}.",
+                detail=f"Không tìm thấy huyệt #{data.slot_id} thuộc ô mộ {plot.plot_code}.",
             )
         if slot.status != "EMPTY":
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"Slot huyệt #{slot.slot_number} hiện ở trạng thái '{slot.status}', không khả dụng để an táng.",
+                detail=f"Huyệt #{slot.slot_number} hiện ở trạng thái '{slot.status}', không khả dụng để an táng.",
             )
 
         existing_slot_annex = (
@@ -685,7 +685,7 @@ class ContractService:
         if existing_slot_annex:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"Slot huyệt #{slot.slot_number} đã được đăng ký phụ lục an táng, không thể tạo thêm.",
+                detail=f"Huyệt #{slot.slot_number} đã được đăng ký phụ lục an táng, không thể tạo thêm.",
             )
 
         annex_code = cls.generate_annex_code(db, "PL-AT")
@@ -844,7 +844,7 @@ class ContractService:
         if not slot or slot.status != "EMPTY":
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Slot huyệt an táng không còn trống.",
+                detail="Huyệt an táng không còn trống.",
             )
 
         now = _utc_now_naive()
@@ -980,7 +980,7 @@ class ContractService:
             .first()
         )
         if not slot:
-            raise HTTPException(status_code=404, detail="Không tìm thấy slot huyệt an táng.")
+            raise HTTPException(status_code=404, detail="Không tìm thấy huyệt an táng.")
 
         if slot.status == "OCCUPIED" and slot.current_deceased_id == burial.deceased_id:
             return annex  # Already confirmed
@@ -1141,7 +1141,7 @@ class ContractService:
                     plot_code = cs.plot.plot_code
                     if cs.plot.row and cs.plot.row.zone:
                         zone_code = cs.plot.row.zone.zone_code
-                service_summary = f"Thi công: {cs.order_type or 'Xây dựng'}"
+                service_summary = "Xây dựng mộ"
 
             results.append({
                 "annex_id": a.annex_id,
@@ -1151,8 +1151,8 @@ class ContractService:
                 "contract_code": a.contract.contract_code if a.contract else "",
                 "status": a.status,
                 "signed_at": a.signed_at,
-                "target_date": a.valid_from,
-                "due_date": a.valid_to,
+                "target_date": a.construction.estimated_start_date if a.construction else a.valid_from,
+                "due_date": a.construction.estimated_end_date if a.construction else a.valid_to,
                 "plot_id": plot_id,
                 "plot_code": plot_code,
                 "zone_code": zone_code,

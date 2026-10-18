@@ -35,6 +35,14 @@ from app.modules.profiles.models import Customer
 
 
 class PlotService:
+    @staticmethod
+    def visible_to_actor(plot: PlotListResponse, roles: list[str]) -> PlotListResponse:
+        if not {"ADMIN", "MARKETING"}.intersection(roles):
+            plot.owner_id = None
+            plot.owner_name = None
+            plot.active_reservation = None
+        return plot
+
     # =========================================================================
     # 1. Zone Management
     # =========================================================================
@@ -319,6 +327,9 @@ class PlotService:
                     type_id=p.type_id,
                     type_name=p.plot_type.type_name if p.plot_type else "",
                     default_slots=p.plot_type.default_slots if p.plot_type else 1,
+                    plot_length=p.plot_type.length if p.plot_type else None,
+                    plot_width=p.plot_type.width if p.plot_type else None,
+                    is_synthetic="[SYNTHETIC_GIS" in (p.notes or ""),
                     status=p.status,
                     is_kim_tinh=p.is_kim_tinh,
                     is_locked=p.is_locked,
@@ -376,6 +387,9 @@ class PlotService:
             type_id=p.type_id,
             type_name=p.plot_type.type_name if p.plot_type else "",
             default_slots=p.plot_type.default_slots if p.plot_type else 1,
+            plot_length=p.plot_type.length if p.plot_type else None,
+            plot_width=p.plot_type.width if p.plot_type else None,
+            is_synthetic="[SYNTHETIC_GIS" in (p.notes or ""),
             status=p.status,
             is_kim_tinh=p.is_kim_tinh,
             is_locked=p.is_locked,

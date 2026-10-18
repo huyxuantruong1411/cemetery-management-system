@@ -553,7 +553,7 @@ class ProfileService:
             if not file_obj or file_obj.state != "READY":
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Tệp chứng từ '{cert.file_id}' chưa ở trạng thái sẵn sàng (READY).",
+                    detail=f"Tệp chứng từ '{cert.file_id}' chưa tải lên xong.",
                 )
             cert.is_verified = True
             cert.verified_at = datetime.now(timezone.utc)

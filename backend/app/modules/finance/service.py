@@ -901,7 +901,7 @@ class FinanceService:
                 "paid_amount": paid,
                 "balance": bal,
                 "due_date": due,
-                "service_description": f"Hợp đồng {c.contract_type} ({c.contract_code})",
+                "service_description": {"LAND_PURCHASE": "Mua quyền sử dụng đất", "TRANSFER": "Chuyển nhượng", "EXHUMATION": "Cải táng", "CREMATION": "Hỏa táng"}.get(c.contract_type, "Hợp đồng dịch vụ"),
             })
 
         # Annexes
@@ -946,6 +946,6 @@ class FinanceService:
                     "paid_amount": paid,
                     "balance": bal,
                     "due_date": due,
-                    "service_description": f"Phụ lục {a.annex_type} ({a.annex_code})",
+                    "service_description": {"BURIAL": "An táng", "CARE": "Chăm sóc mộ phần", "CONSTRUCTION": "Xây dựng mộ"}.get(a.annex_type, "Dịch vụ bổ sung"),
                 })
         return results

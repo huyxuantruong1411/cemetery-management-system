@@ -1,3 +1,4 @@
+import { apiFetch, responseError } from '../../services/apiClient'
 import React, { useCallback, useEffect, useState } from 'react'
 import {
   AlertCircle,
@@ -105,6 +106,8 @@ export const ReportsModule: React.FC = () => {
     switch (method?.toUpperCase()) {
       case 'BANK_TRANSFER':
         return 'Chuyển khoản'
+      case 'VIET_QR':
+        return 'VietQR'
       case 'CASH':
         return 'Tiền mặt'
       case 'CARD':
@@ -127,14 +130,14 @@ export const ReportsModule: React.FC = () => {
       if (endDate) queryParams.append('end_date', endDate)
 
       const url = `/api/v1/reports/${activeTab}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
-      const resp = await fetch(url, {
+      const resp = await apiFetch(url, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       })
 
       if (!resp.ok) {
-        throw new Error(`Lỗi tải báo cáo: ${resp.status} (${resp.statusText})`)
+        throw new Error(await responseError(resp, 'Chưa tải được báo cáo.'))
       }
 
       const data = await resp.json()
@@ -146,7 +149,7 @@ export const ReportsModule: React.FC = () => {
       if (err instanceof Error) {
         setError(err.message)
       } else {
-        setError('Không thể kết nối đến máy chủ API báo cáo')
+        setError('Không thể kết nối đến máy chủ')
       }
     } finally {
       setLoading(false)
@@ -174,7 +177,7 @@ export const ReportsModule: React.FC = () => {
         },
       }
 
-      const res = await fetch('/api/v1/reports/export', {
+      const res = await apiFetch('/api/v1/reports/export', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -190,7 +193,7 @@ export const ReportsModule: React.FC = () => {
       const exportRec: ReportExportResponse = await res.json()
 
       // Immediately initiate download
-      const dlRes = await fetch(`/api/v1/reports/exports/${exportRec.export_id}/download`, {
+      const dlRes = await apiFetch(`/api/v1/reports/exports/${exportRec.export_id}/download`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -237,10 +240,10 @@ export const ReportsModule: React.FC = () => {
       >
         <div>
           <h2 style={{ fontSize: '20px', fontWeight: 600, color: 'var(--text-main)', margin: '0 0 4px 0' }}>
-            Báo Cáo Thống Kê & Vận Hành Quản Trị
+            {canViewAllReports ? 'Báo cáo hoạt động' : 'Báo cáo doanh thu'}
           </h2>
           <p style={{ fontSize: '13px', color: '#64748B', margin: 0 }}>
-            Tổng hợp dữ liệu dòng tiền thực thu, tỷ lệ lấp đầy mộ phần, phân loại hợp đồng và tiến độ hiện trường.
+            {canViewAllReports ? 'Theo dõi doanh thu, tình trạng ô mộ và tiến độ công việc.' : 'Theo dõi các khoản đã thu trong thời gian được chọn.'}
           </p>
         </div>
 
@@ -569,7 +572,7 @@ export const ReportsModule: React.FC = () => {
               <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-main)', margin: '8px 0 4px 0' }}>
                 {revenueData?.total_transactions || 0} giao dịch
               </div>
-              <div style={{ fontSize: '12px', color: '#64748B' }}>Đã đối soát ghi nhận vào CSDL</div>
+              <div style={{ fontSize: '12px', color: '#64748B' }}>Đã ghi nhận thanh toán</div>
             </div>
 
             <div
@@ -603,10 +606,10 @@ export const ReportsModule: React.FC = () => {
                 Phương Thức Chủ Đạo
               </div>
               <div style={{ fontSize: '20px', fontWeight: 700, color: 'var(--text-main)', margin: '8px 0 4px 0' }}>
-                {revenueData?.by_method?.[0]?.method || 'Chưa có'}
+                {revenueData?.by_method?.length ? getPaymentMethodLabel([...revenueData.by_method].sort((a, b) => Number(b.percentage) - Number(a.percentage))[0].method) : 'Chưa có'}
               </div>
               <div style={{ fontSize: '12px', color: '#64748B' }}>
-                Chiếm {revenueData?.by_method?.[0]?.percentage || 0}% tỷ trọng
+                Chiếm {revenueData?.by_method?.length ? Math.max(...revenueData.by_method.map(item => Number(item.percentage))) : 0}% tỷ trọng
               </div>
             </div>
           </div>
@@ -1342,7 +1345,7 @@ export const ReportsModule: React.FC = () => {
                   color: '#64748B',
                 }}
               >
-                Tệp xuất được gắn mã chứng thực điện tử SHA-256, lưu trữ an toàn trên máy chủ và hỗ trợ tải trực tiếp về thiết bị.
+                Chọn nội dung và định dạng để tải báo cáo về thiết bị.
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '10px' }}>

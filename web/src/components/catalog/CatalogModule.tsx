@@ -1,3 +1,4 @@
+import { apiFetch } from '../../services/apiClient'
 import React, { useState, useEffect } from 'react'
 import {
   Tag,
@@ -75,9 +76,9 @@ export const CatalogModule: React.FC = () => {
     try {
       const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {}
       const [plRes, careRes, tmplRes] = await Promise.all([
-        fetch('/api/v1/catalog/price-lists', { headers }),
-        fetch('/api/v1/catalog/care-packages', { headers }),
-        fetch('/api/v1/catalog/contract-templates', { headers }),
+        apiFetch('/api/v1/catalog/price-lists', { headers }),
+        apiFetch('/api/v1/catalog/care-packages', { headers }),
+        apiFetch('/api/v1/catalog/contract-templates', { headers }),
       ])
 
       if (!plRes.ok || !careRes.ok || !tmplRes.ok) {
@@ -115,7 +116,7 @@ export const CatalogModule: React.FC = () => {
   const handleSimulatePrice = async () => {
     setSimLoading(true)
     try {
-      const res = await fetch('/api/v1/catalog/lookup-price', {
+      const res = await apiFetch('/api/v1/catalog/lookup-price', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -140,7 +141,7 @@ export const CatalogModule: React.FC = () => {
   const handleCreatePriceList = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const res = await fetch('/api/v1/catalog/price-lists', {
+      const res = await apiFetch('/api/v1/catalog/price-lists', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -171,7 +172,7 @@ export const CatalogModule: React.FC = () => {
     e.preventDefault()
     if (!selectedPriceListId) return
     try {
-      const res = await fetch('/api/v1/catalog/price-items', {
+      const res = await apiFetch('/api/v1/catalog/price-items', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -204,7 +205,7 @@ export const CatalogModule: React.FC = () => {
   // Toggle Care Package Active
   const handleTogglePackageActive = async (pkg: CarePackage) => {
     try {
-      const res = await fetch(`/api/v1/catalog/care-packages/${pkg.package_id}`, {
+      const res = await apiFetch(`/api/v1/catalog/care-packages/${pkg.package_id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -228,7 +229,7 @@ export const CatalogModule: React.FC = () => {
     if (!newContent || newContent === tmpl.content_html) return
 
     try {
-      const res = await fetch(`/api/v1/catalog/contract-templates/${tmpl.template_id}`, {
+      const res = await apiFetch(`/api/v1/catalog/contract-templates/${tmpl.template_id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -252,7 +253,7 @@ export const CatalogModule: React.FC = () => {
     e.preventDefault()
     try {
       const taskList = newPkgTasks.split(',').map((t) => t.trim()).filter(Boolean)
-      const res = await fetch('/api/v1/catalog/care-packages', {
+      const res = await apiFetch('/api/v1/catalog/care-packages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -952,7 +953,7 @@ export const CatalogModule: React.FC = () => {
                 Công Cụ Mô Phỏng Tra Cứu Đơn Giá Tức Thời (Realtime Pricing Simulator)
               </h3>
               <p style={{ fontSize: '13px', color: '#64748B', margin: '2px 0 0 0' }}>
-                Kiểm chứng tính snapshot giá tại thời điểm ký kết hợp đồng, đảm bảo không bị ảnh hưởng khi bảng giá tương lai thay đổi.
+                Xem đơn giá áp dụng theo ngày ký hợp đồng.
               </p>
             </div>
           </div>
@@ -1015,7 +1016,7 @@ export const CatalogModule: React.FC = () => {
                   <div>Bảng giá nguồn: <strong>{simResult.price_list_name}</strong></div>
                   <div>Khoản mục: <strong>[{simResult.item_code}] {simResult.item_name}</strong></div>
                   <div>
-                    Đơn giá snapshot hợp đồng:{' '}
+                    Đơn giá tại ngày ký:{' '}
                     <strong style={{ fontSize: '18px', color: 'var(--brand-primary)' }}>
                       {Number(simResult.unit_price).toLocaleString('vi-VN')} đ
                     </strong>{' '}

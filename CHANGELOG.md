@@ -2,6 +2,36 @@
 
 Tất cả những thay đổi quan trọng trong hệ thống Quản lý Nghĩa trang Tư nhân được ghi nhận tại đây theo định dạng [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.14.0-actor-workspace-and-fixes] - 2026-10-18
+
+### Added
+- **Ma trận phân quyền nghiêm ngặt 5 Actors:** Đồng bộ theo Lab 2 và `PLAN-RBAC-MAP-7467905.md` cho Marketing, Kế toán, Quản trang, Admin, Public / Role rỗng.
+- **Sơ đồ ô mộ kép (Simulated & Geographic Map):**
+  - Tích hợp `SimulatedPlotMap.tsx` mô phỏng 384 ô mộ thực địa theo chuẩn layout nội bộ, hỗ trợ vẽ lộ trình đi bộ.
+  - Tích hợp `GeographicPlotMap.tsx` hiển thị toàn bộ 1.286 ô có tọa độ trên nền bản đồ Leaflet kèm lưới dự phòng khi mất kết nối OSM.
+- **Chiếu dữ liệu phân quyền nghiệp vụ (WorkBasis & FinanceBasis):**
+  - `WorkBasisView.tsx`: Cung cấp căn cứ phụ lục hợp đồng hiệu lực cho Quản trang thực địa, nút xác nhận an táng hiện trường mà không làm lộ thông tin pháp lý hay tài chính.
+  - `FinanceBasisView.tsx`: Cung cấp căn cứ nghĩa vụ phát sinh công nợ cho Kế toán, kích hoạt thu tiền và hạch toán.
+- **Shortcut tra cứu vị trí nhanh:** Thêm `PlotDirectionsButton.tsx` trong danh sách và chi tiết ca chăm sóc, lệnh thi công, mở trực tiếp bản đồ ô mộ kèm dẫn đường.
+- **Cơ chế Single-Flight Refresh Token:** Triển khai `apiClient.ts` quản lý phiên làm việc tập trung, chống xung đột refresh token trong React 19 StrictMode và tự động thử lại khi 401.
+- **Dữ liệu demo an toàn:** Script `backend/scripts/seed_demo_workspace.py` hỗ trợ dry-run/apply với backup COPY_ONLY trên ổ D, bổ sung 12 nhân sự và 384 ô mô phỏng.
+
+### Changed
+- **Thu hồi quyền cấu hình:** Chuyển toàn bộ quyền tạo/sửa/xóa bảng giá, gói dịch vụ (`catalog:manage`) và không gian ô mộ (`plots:manage`) độc quyền cho Admin.
+- **Bảo mật danh bạ hồ sơ:** Thu hồi quyền `deceased:read` toàn bộ danh mục từ Quản trang; Quản trang chỉ xem nhận diện phần mộ qua WorkBasis và chi tiết ô mộ được phân công.
+- **Làm sạch thuật ngữ & Giao diện:**
+  - Loại bỏ hoàn toàn mã kỹ thuật (EX-01, EX-02, WorkBasis, FinanceBasis, "Slot" -> "Huyệt").
+  - Việt hóa chuẩn xác toàn bộ trạng thái nghiệp vụ, tên loại dịch vụ và phương thức thanh toán.
+  - Cải tiến biểu mẫu: chọn căn cứ bàn giao theo mã phụ lục/ô mộ thay vì nhập ID thủ công.
+
+### Fixed
+- **Tương tác sơ đồ SVG:** Khắc phục lỗi bắt sự kiện con trỏ khi nhấp chọn ô trên sơ đồ, hỗ trợ phím Enter/Space và bố cục co giãn tối ưu cho màn hình di động.
+- **Xác thực giấy báo tử Mobile:** Khôi phục hiển thị trạng thái xác thực G08 (`ĐÃ XÁC THỰC`, `CHỜ DUYỆT`, `BỊ TỪ CHỐI`) trong `deceased_profiles_view.dart`, 14/14 tests passed.
+- **Kiểm tra nhân sự phân công:** Ràng buộc chặt chẽ nhân viên được giao việc phải thuộc vai trò Quản trang/Admin đang hoạt động và không trùng lịch nghỉ (409 Conflict).
+- **Cấu hình mạng:** Thêm cấu hình hostname Ngrok vào `vite.config.ts`.
+
+---
+
 ## [0.13.0-feature-complete] - 2026-10-04 (M12)
 
 ### Added

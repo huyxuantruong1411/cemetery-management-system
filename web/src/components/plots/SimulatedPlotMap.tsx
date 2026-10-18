@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useCallback } from 'react'
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react'
 import {
   Search,
   Footprints,
@@ -83,6 +83,7 @@ export const SimulatedPlotMap: React.FC = () => {
   // Drag interaction
   const svgRef = useRef<SVGSVGElement | null>(null)
   const isDragging = useRef<boolean>(false)
+  const [dragging, setDragging] = useState(false)
   const dragStart = useRef<{ x: number; y: number; view: [number, number, number, number] }>({
     x: 0,
     y: 0,
@@ -126,10 +127,12 @@ export const SimulatedPlotMap: React.FC = () => {
   }, [])
 
   // Mouse wheel zoom
-  const handleWheel = (e: React.WheelEvent<SVGSVGElement>) => {
-    e.preventDefault()
-    handleZoom(e.deltaY > 0 ? 1.15 : 0.87)
-  }
+  useEffect(() => {
+    const svg = svgRef.current
+    const onWheel = (e: WheelEvent) => { e.preventDefault(); handleZoom(e.deltaY > 0 ? 1.15 : 0.87) }
+    svg?.addEventListener('wheel', onWheel, { passive: false })
+    return () => svg?.removeEventListener('wheel', onWheel)
+  }, [handleZoom])
 
   // Pointer drag
   const handlePointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
@@ -139,15 +142,17 @@ export const SimulatedPlotMap: React.FC = () => {
       y: e.clientY,
       view: [...viewBox],
     }
-    if (svgRef.current) {
-      svgRef.current.setPointerCapture(e.pointerId)
-    }
+    // Capture only after a drag threshold; a tap must reach the plot.
   }
 
   const handlePointerMove = (e: React.PointerEvent<SVGSVGElement>) => {
     if (!isDragging.current || !svgRef.current) return
+    const distance = Math.hypot(e.clientX - dragStart.current.x, e.clientY - dragStart.current.y)
+    if (distance < 5) return
+    setDragging(true)
+    svgRef.current.setPointerCapture(e.pointerId)
     const rect = svgRef.current.getBoundingClientRect()
-    const scale = dragStart.current.view[2] / rect.width
+    const scale = Math.max(dragStart.current.view[2] / rect.width, dragStart.current.view[3] / rect.height)
     const dx = (e.clientX - dragStart.current.x) * scale
     const dy = (e.clientY - dragStart.current.y) * scale
     setViewBox([
@@ -160,6 +165,7 @@ export const SimulatedPlotMap: React.FC = () => {
 
   const handlePointerUp = () => {
     isDragging.current = false
+    setDragging(false)
   }
 
   // Walking route path
@@ -205,11 +211,11 @@ export const SimulatedPlotMap: React.FC = () => {
             DỮ LIỆU MÔ PHỎNG
           </span>
           <span style={{ fontSize: '13px', color: '#78350F' }}>
-            Bố cục không gian 6 phân khu (A-F), 48 hàng và 384 ô mộ thực địa theo quy hoạch nội khu chuẩn.
+            6 khu, 48 hàng và 384 ô minh họa.
           </span>
         </div>
         <div style={{ fontSize: '12px', color: '#92400E', fontWeight: 600 }}>
-          Hệ tọa độ nội khu (mét) · Không mở định vị GPS ngoài thực địa
+          Sơ đồ minh họa, không phải vị trí thực.
         </div>
       </div>
 
@@ -295,7 +301,7 @@ export const SimulatedPlotMap: React.FC = () => {
       </div>
 
       {/* Main Layout: SVG Map Card + Side Detail Panel */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: '18px', alignItems: 'start' }}>
+      <div className="simulated-map-layout">
         {/* SVG Map Card */}
         <div
           style={{
@@ -324,8 +330,8 @@ export const SimulatedPlotMap: React.FC = () => {
               onClick={() => handleZoom(0.75)}
               title="Phóng to"
               style={{
-                width: '38px',
-                height: '38px',
+                width: '48px',
+                height: '48px',
                 borderRadius: '8px',
                 border: '1px solid #CBD5E1',
                 backgroundColor: '#FFFFFF',
@@ -344,8 +350,8 @@ export const SimulatedPlotMap: React.FC = () => {
               onClick={() => handleZoom(1.33)}
               title="Thu nhỏ"
               style={{
-                width: '38px',
-                height: '38px',
+                width: '48px',
+                height: '48px',
                 borderRadius: '8px',
                 border: '1px solid #CBD5E1',
                 backgroundColor: '#FFFFFF',
@@ -364,8 +370,8 @@ export const SimulatedPlotMap: React.FC = () => {
               onClick={handleReset}
               title="Xem toàn cảnh"
               style={{
-                width: '38px',
-                height: '38px',
+                width: '48px',
+                height: '48px',
                 borderRadius: '8px',
                 border: '1px solid #CBD5E1',
                 backgroundColor: '#FFFFFF',
@@ -382,7 +388,7 @@ export const SimulatedPlotMap: React.FC = () => {
           </div>
 
           {/* Top Label */}
-          <div
+          <div className="simulated-map-hint"
             style={{
               position: 'absolute',
               top: '14px',
@@ -406,13 +412,12 @@ export const SimulatedPlotMap: React.FC = () => {
             viewBox={viewBox.join(' ')}
             style={{
               width: '100%',
-              height: '620px',
+              height: 'clamp(400px, 65vh, 620px)',
               display: 'block',
-              cursor: isDragging.current ? 'grabbing' : 'grab',
+              cursor: dragging ? 'grabbing' : 'grab',
               userSelect: 'none',
               touchAction: 'none',
             }}
-            onWheel={handleWheel}
             onPointerDown={handlePointerDown}
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
@@ -486,6 +491,8 @@ export const SimulatedPlotMap: React.FC = () => {
                       transition: 'opacity 0.15s, stroke-width 0.15s',
                     }}
                     onClick={() => handleSelectPlot(p)}
+                    role="button" tabIndex={0} aria-label={`Chọn ô ${p.code}`}
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSelectPlot(p) } }}
                   >
                     <title>{`${p.code} · ${STATUS_NAMES[p.status]}`}</title>
                   </rect>

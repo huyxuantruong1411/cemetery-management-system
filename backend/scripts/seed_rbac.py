@@ -80,8 +80,6 @@ ROLE_CONFIGS = {
             "contracts:write",
             "contracts:activate",
             "catalog:read",
-            "care:read",
-            "construction:read",
         ],
     },
     "ACCOUNTANT": {
@@ -107,7 +105,6 @@ ROLE_CONFIGS = {
             "care:read",
             "care:write",
             "care:execute",
-            "deceased:read",
         ],
     },
 }

@@ -28,7 +28,7 @@ router = APIRouter(prefix="/auth", tags=["Authentication & RBAC"])
 )
 def list_staff(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: User = Depends(require_permission("construction", "read")),
 ) -> list[StaffBriefResponse]:
     """Lấy danh sách nhân sự đang hoạt động để phân công ca chăm sóc, thi công."""
     if not current_user.roles:
@@ -45,6 +45,7 @@ def list_staff(
             roles=[r.role_name for r in u.roles],
         )
         for u in users
+        if any(r.role_name == "CARETAKER" for r in u.roles)
     ]
 
 

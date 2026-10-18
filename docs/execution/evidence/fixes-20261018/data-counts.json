@@ -1,0 +1,37 @@
+{
+  "database": "QL_NghiaTrang",
+  "counts": {
+    "plots": 1411,
+    "located": 1286,
+    "locked": 146
+  },
+  "zones": [
+    {
+      "zone_code": "KHU-A",
+      "plots": 762,
+      "rows": 8
+    },
+    {
+      "zone_code": "KHU-B",
+      "plots": 131,
+      "rows": 8
+    },
+    {
+      "zone_code": "KHU-VIP",
+      "plots": 130,
+      "rows": 8
+    }
+  ],
+  "absences": [
+    {
+      "username": "demo.quantrang01",
+      "start_date": "2026-10-20",
+      "end_date": "2026-10-20"
+    },
+    {
+      "username": "demo.quantrang02",
+      "start_date": "2026-11-12",
+      "end_date": "2026-11-12"
+    }
+  ]
+}

@@ -170,6 +170,9 @@ class PlotListResponse(BaseModel):
     type_id: int
     type_name: str
     default_slots: int
+    plot_length: Optional[Decimal] = None
+    plot_width: Optional[Decimal] = None
+    is_synthetic: bool = False
     status: str
     is_kim_tinh: bool
     is_locked: bool

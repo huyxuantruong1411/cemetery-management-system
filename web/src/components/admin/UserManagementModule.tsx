@@ -1,3 +1,4 @@
+import { apiFetch } from '../../services/apiClient'
 import React, { useEffect, useState } from 'react'
 import {
   AlertCircle,
@@ -91,8 +92,8 @@ export const UserManagementModule: React.FC = () => {
         'Content-Type': 'application/json',
       }
       const [usersRes, rolesRes] = await Promise.all([
-        fetch('/api/v1/auth/users', { headers }),
-        fetch('/api/v1/auth/roles', { headers }),
+        apiFetch('/api/v1/auth/users', { headers }),
+        apiFetch('/api/v1/auth/roles', { headers }),
       ])
 
       if (!usersRes.ok) throw new Error('Không thể tải danh sách người dùng. Vui lòng kiểm tra quyền users:read.')
@@ -123,7 +124,7 @@ export const UserManagementModule: React.FC = () => {
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault()
     try {
-      const res = await fetch('/api/v1/auth/users', {
+      const res = await apiFetch('/api/v1/auth/users', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -173,7 +174,7 @@ export const UserManagementModule: React.FC = () => {
     e.preventDefault()
     if (!editUser) return
     try {
-      const res = await fetch(`/api/v1/auth/users/${editUser.user_id}`, {
+      const res = await apiFetch(`/api/v1/auth/users/${editUser.user_id}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -210,7 +211,7 @@ export const UserManagementModule: React.FC = () => {
     if (!window.confirm(confirmText)) return
 
     try {
-      const res = await fetch(`/api/v1/auth/users/${u.user_id}`, {
+      const res = await apiFetch(`/api/v1/auth/users/${u.user_id}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -238,7 +239,7 @@ export const UserManagementModule: React.FC = () => {
     e.preventDefault()
     if (!resetPwdUser) return
     try {
-      const res = await fetch(`/api/v1/auth/users/${resetPwdUser.user_id}`, {
+      const res = await apiFetch(`/api/v1/auth/users/${resetPwdUser.user_id}`, {
         method: 'PUT',
         headers: {
           Authorization: `Bearer ${accessToken}`,

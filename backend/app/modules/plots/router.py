@@ -230,7 +230,7 @@ def get_plots(
     current_user: User = Depends(require_permission("plots", "read")),
 ):
     """Tra cứu danh sách ô mộ kèm thông tin tọa độ GPS và trạng thái giữ chỗ."""
-    return PlotService.list_plots(
+    plots = PlotService.list_plots(
         db,
         zone_id=zone_id,
         row_id=row_id,
@@ -241,6 +241,8 @@ def get_plots(
         skip=skip,
         limit=limit,
     )
+    roles = [r.role_name for r in current_user.roles]
+    return [PlotService.visible_to_actor(plot, roles) for plot in plots]
 
 
 @router.get("/{plot_id}", response_model=PlotDetailResponse)
@@ -250,7 +252,8 @@ def get_plot_detail(
     current_user: User = Depends(require_permission("plots", "read")),
 ):
     """Xem chi tiết đầy đủ một ô mộ kèm các slot con, thông tin Kim Tĩnh và giữ chỗ."""
-    return PlotService.get_plot(db, plot_id)
+    plot = PlotService.get_plot(db, plot_id)
+    return PlotService.visible_to_actor(plot, [r.role_name for r in current_user.roles])
 
 
 @router.post(

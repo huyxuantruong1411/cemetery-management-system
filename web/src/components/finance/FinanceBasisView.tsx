@@ -1,3 +1,4 @@
+import { apiFetch, responseError } from '../../services/apiClient'
 import React, { useCallback, useEffect, useState } from 'react'
 import {
   AlertCircle,
@@ -48,11 +49,11 @@ export const FinanceBasisView: React.FC<FinanceBasisViewProps> = ({ onSelectPaym
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/v1/finance/bases', {
+      const res = await apiFetch('/api/v1/finance/bases', {
         headers: { Authorization: `Bearer ${accessToken}` },
       })
       if (!res.ok) {
-        throw new Error(`Lỗi tải danh sách căn cứ thu tiền (${res.status})`)
+        throw new Error(await responseError(res, 'Chưa tải được danh sách khoản thu.'))
       }
       const data: FinanceBasisItem[] = await res.json()
       setItems(data)
@@ -92,106 +93,10 @@ export const FinanceBasisView: React.FC<FinanceBasisViewProps> = ({ onSelectPaym
     return true
   })
 
-  const totalObligations = items.reduce((acc, item) => acc + (parseFloat(String(item.total_amount)) || 0), 0)
-  const totalCollected = items.reduce((acc, item) => acc + (parseFloat(String(item.paid_amount)) || 0), 0)
-  const totalRemaining = items.reduce((acc, item) => acc + (parseFloat(String(item.balance)) || 0), 0)
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
       {/* Header Banner */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          backgroundColor: '#FFFFFF',
-          padding: '18px 24px',
-          borderRadius: '12px',
-          border: '1px solid #E2E8F0',
-        }}
-      >
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#1E293B', margin: 0 }}>
-              Căn Cứ Tài Chính & Nghĩa Vụ Thu (FinanceBasis)
-            </h2>
-            <span
-              style={{
-                fontSize: '11px',
-                fontWeight: 700,
-                padding: '2px 8px',
-                borderRadius: '999px',
-                backgroundColor: '#DCFCE7',
-                color: '#15803D',
-              }}
-            >
-              Chuẩn Bảo Mật EX-02
-            </span>
-          </div>
-          <p style={{ fontSize: '13px', color: '#64748B', margin: '4px 0 0' }}>
-            Dành riêng cho Kế toán theo dõi toàn bộ nguồn phát sinh công nợ từ Hợp đồng mua đất, Chuyển nhượng và Phụ lục dịch vụ. Kế toán tra cứu đầy đủ người nộp, số tiền, tiến độ thanh toán mà không cần truy cập hợp đồng toàn văn hoặc hồ sơ thân nhân.
-          </p>
-        </div>
-        <button
-          onClick={fetchFinanceBases}
-          disabled={loading}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '8px 16px',
-            borderRadius: '6px',
-            border: '1px solid #CBD5E1',
-            backgroundColor: '#FFFFFF',
-            color: '#334155',
-            fontSize: '13px',
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-        >
-          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          <span>Làm mới</span>
-        </button>
-      </div>
-
-      {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px' }}>
-        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '10px', padding: '16px 20px', border: '1px solid #E2E8F0', borderLeft: '4px solid #3B82F6' }}>
-          <div style={{ fontSize: '11px', color: '#64748B', fontWeight: 700, textTransform: 'uppercase' }}>
-            Tổng Nghĩa Vụ Ghi Nhận
-          </div>
-          <div style={{ fontSize: '20px', fontWeight: 700, color: '#1E293B', marginTop: '6px' }}>
-            {formatVND(totalObligations)}
-          </div>
-          <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>
-            {items.length} căn cứ hợp đồng / phụ lục
-          </div>
-        </div>
-
-        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '10px', padding: '16px 20px', border: '1px solid #E2E8F0', borderLeft: '4px solid #10B981' }}>
-          <div style={{ fontSize: '11px', color: '#64748B', fontWeight: 700, textTransform: 'uppercase' }}>
-            Đã Thu Thực Tế
-          </div>
-          <div style={{ fontSize: '20px', fontWeight: 700, color: '#10B981', marginTop: '6px' }}>
-            {formatVND(totalCollected)}
-          </div>
-          <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>
-            Tỷ lệ thu hồi: {totalObligations > 0 ? ((totalCollected / totalObligations) * 100).toFixed(1) : 0}%
-          </div>
-        </div>
-
-        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '10px', padding: '16px 20px', border: '1px solid #E2E8F0', borderLeft: '4px solid #F59E0B' }}>
-          <div style={{ fontSize: '11px', color: '#64748B', fontWeight: 700, textTransform: 'uppercase' }}>
-            Còn Tồn Đọng Cần Thu
-          </div>
-          <div style={{ fontSize: '20px', fontWeight: 700, color: '#D97706', marginTop: '6px' }}>
-            {formatVND(totalRemaining)}
-          </div>
-          <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>
-            Theo dõi đôn đốc khách hàng
-          </div>
-        </div>
-      </div>
+      <header className="basis-header"><div><h2>Khoản thu theo hợp đồng</h2><p>Tra người nộp, số tiền còn thiếu và hạn thanh toán.</p></div><button type="button" onClick={fetchFinanceBases} disabled={loading}><RefreshCw size={16} />Làm mới</button></header>
 
       {/* Toolbar filters */}
       <div
@@ -241,7 +146,7 @@ export const FinanceBasisView: React.FC<FinanceBasisViewProps> = ({ onSelectPaym
           >
             <option value="ALL">Tất cả trạng thái nợ</option>
             <option value="UNPAID">Còn nợ / Chưa nộp đủ</option>
-            <option value="PAID">Đã tất toán (0 VNĐ)</option>
+            <option value="PAID">Đã thanh toán đủ</option>
           </select>
         </div>
       </div>
@@ -250,7 +155,7 @@ export const FinanceBasisView: React.FC<FinanceBasisViewProps> = ({ onSelectPaym
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px 20px', color: '#64748B' }}>
           <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto 12px auto' }} />
-          <div>Đang đối chiếu dữ liệu căn cứ tài chính...</div>
+          <div>Đang tải khoản thu…</div>
         </div>
       ) : error ? (
         <div
@@ -267,7 +172,7 @@ export const FinanceBasisView: React.FC<FinanceBasisViewProps> = ({ onSelectPaym
         >
           <AlertCircle size={24} />
           <div>
-            <strong>Lỗi tải dữ liệu:</strong> {error}
+            {error} <button type="button" onClick={fetchFinanceBases}>Thử lại</button>
           </div>
         </div>
       ) : filteredItems.length === 0 ? (
@@ -283,7 +188,7 @@ export const FinanceBasisView: React.FC<FinanceBasisViewProps> = ({ onSelectPaym
         >
           <FileCheck2 size={36} color="#94A3B8" style={{ margin: '0 auto 12px auto' }} />
           <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#334155', margin: '0 0 6px 0' }}>
-            Không tìm thấy căn cứ nghĩa vụ nào phù hợp
+            Không có khoản thu khớp bộ lọc
           </h3>
           <p style={{ fontSize: '13px', margin: 0 }}>
             Vui lòng kiểm tra lại từ khóa tìm kiếm hoặc bỏ chọn các bộ lọc trạng thái.
@@ -295,13 +200,14 @@ export const FinanceBasisView: React.FC<FinanceBasisViewProps> = ({ onSelectPaym
             backgroundColor: '#FFFFFF',
             borderRadius: '12px',
             border: '1px solid #E2E8F0',
-            overflow: 'hidden',
+            overflow: 'auto',
           }}
+          className="basis-table-wrap"
         >
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+          <table className="basis-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
             <thead>
               <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569' }}>
-                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Căn Cứ Nghĩa Vụ</th>
+                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Hợp đồng / phụ lục</th>
                 <th style={{ padding: '12px 16px', fontWeight: 600 }}>Người Nộp Tiền</th>
                 <th style={{ padding: '12px 16px', fontWeight: 600 }}>Vị Trí Mộ Phần</th>
                 <th style={{ padding: '12px 16px', fontWeight: 600, textAlign: 'right' }}>Tổng Giá Trị</th>
@@ -396,7 +302,8 @@ export const FinanceBasisView: React.FC<FinanceBasisViewProps> = ({ onSelectPaym
                         </span>
                       ) : (
                         <button
-                          onClick={() => onSelectPayment && onSelectPayment(item)}
+                          disabled={!onSelectPayment}
+                          onClick={() => onSelectPayment?.(item)}
                           style={{
                             padding: '6px 12px',
                             borderRadius: '6px',
@@ -412,7 +319,7 @@ export const FinanceBasisView: React.FC<FinanceBasisViewProps> = ({ onSelectPaym
                           }}
                         >
                           <Coins size={13} />
-                          Thu Tiền
+                          Xem khoản thu
                         </button>
                       )}
                     </td>

@@ -1,3 +1,5 @@
+import { apiFetch, responseError } from '../../services/apiClient'
+import { PlotDirectionsButton } from '../plots/PlotDirectionsButton'
 import React, { useCallback, useEffect, useState } from 'react'
 import {
   AlertCircle,
@@ -19,10 +21,10 @@ export interface WorkBasisItem {
   annex_code: string
   contract_id: number
   contract_code: string
-  work_type: 'BURIAL' | 'CARE' | 'CONSTRUCTION'
+  annex_type: 'BURIAL' | 'CARE' | 'CONSTRUCTION'
   status: string
-  valid_from: string
-  valid_to: string | null
+  target_date: string
+  due_date: string | null
   plot_id: number | null
   plot_code: string | null
   zone_code: string | null
@@ -36,7 +38,7 @@ export interface WorkBasisItem {
 }
 
 export const WorkBasisView: React.FC = () => {
-  const { accessToken } = useAuth()
+  const { accessToken, hasPermission } = useAuth()
   const [items, setItems] = useState<WorkBasisItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
@@ -47,6 +49,7 @@ export const WorkBasisView: React.FC = () => {
   const [confirmModalItem, setConfirmModalItem] = useState<WorkBasisItem | null>(null)
   const [confirmNotes, setConfirmNotes] = useState<string>('')
   const [confirmProofFileId, setConfirmProofFileId] = useState<string>('')
+  const [proofUploading, setProofUploading] = useState(false)
   const [confirming, setConfirming] = useState<boolean>(false)
   const [confirmSuccessMsg, setConfirmSuccessMsg] = useState<string | null>(null)
   const [confirmErrorMsg, setConfirmErrorMsg] = useState<string | null>(null)
@@ -56,11 +59,11 @@ export const WorkBasisView: React.FC = () => {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/v1/contracts/work-bases', {
+      const res = await apiFetch('/api/v1/contracts/work-bases', {
         headers: { Authorization: `Bearer ${accessToken}` },
       })
       if (!res.ok) {
-        throw new Error(`Lỗi tải danh sách căn cứ công việc (${res.status})`)
+        throw new Error(await responseError(res, 'Chưa tải được danh sách công việc.'))
       }
       const data: WorkBasisItem[] = await res.json()
       setItems(data)
@@ -81,7 +84,7 @@ export const WorkBasisView: React.FC = () => {
     setConfirming(true)
     setConfirmErrorMsg(null)
     try {
-      const res = await fetch(`/api/v1/contracts/annexes/${confirmModalItem.annex_id}/confirm-burial`, {
+      const res = await apiFetch(`/api/v1/contracts/annexes/${confirmModalItem.annex_id}/confirm-burial`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -96,9 +99,9 @@ export const WorkBasisView: React.FC = () => {
         const errJson = await res.json().catch(() => ({}))
         throw new Error(errJson.detail || 'Không thể xác nhận an táng thực địa.')
       }
-      const result = await res.json()
+      await res.json()
       setConfirmSuccessMsg(
-        `Xác nhận an táng thành công cho ô ${result.plot_code} (Huyệt ${result.slot_number}). Ô mộ đã cập nhật trạng thái đã an táng!`
+        `Đã xác nhận an táng tại ô ${confirmModalItem.plot_code}.`
       )
       setTimeout(() => {
         setConfirmModalItem(null)
@@ -115,7 +118,7 @@ export const WorkBasisView: React.FC = () => {
   }
 
   const filteredItems = items.filter((item) => {
-    if (filterType !== 'ALL' && item.work_type !== filterType) return false
+    if (filterType !== 'ALL' && item.annex_type !== filterType) return false
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase()
       const matchCode = item.annex_code.toLowerCase().includes(q)
@@ -192,61 +195,7 @@ export const WorkBasisView: React.FC = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      {/* Top Banner */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          backgroundColor: '#FFFFFF',
-          padding: '18px 24px',
-          borderRadius: '12px',
-          border: '1px solid #E2E8F0',
-        }}
-      >
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#1E293B', margin: 0 }}>
-              Căn Cứ Công Việc Thực Địa (WorkBasis)
-            </h2>
-            <span
-              style={{
-                fontSize: '11px',
-                fontWeight: 700,
-                padding: '2px 8px',
-                borderRadius: '999px',
-                backgroundColor: '#DCFCE7',
-                color: '#15803D',
-              }}
-            >
-              Chuẩn Bảo Mật EX-01
-            </span>
-          </div>
-          <p style={{ fontSize: '13px', color: '#64748B', margin: '4px 0 0' }}>
-            Tiếp nhận căn cứ dịch vụ được bàn giao cho Quản trang: loại công việc, vị trí ô/huyệt, thông tin người mất và xác nhận nghiệm thu hạ huyệt tại hiện trường. Tuyệt đối không kéo theo CCCD hoặc dữ liệu cá nhân nhạy cảm.
-          </p>
-        </div>
-        <button
-          onClick={fetchWorkBases}
-          disabled={loading}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '8px 16px',
-            borderRadius: '6px',
-            border: '1px solid #CBD5E1',
-            backgroundColor: '#FFFFFF',
-            color: '#334155',
-            fontSize: '13px',
-            fontWeight: 600,
-            cursor: 'pointer',
-          }}
-        >
-          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          <span>Làm mới</span>
-        </button>
-      </div>
+      <header className="basis-header"><div><h2>Công việc được bàn giao</h2><p>Xem vị trí, thời hạn và xác nhận an táng.</p></div><button type="button" onClick={fetchWorkBases} disabled={loading}><RefreshCw size={16} />Làm mới</button></header>
 
       {/* Toolbar filters */}
       <div
@@ -295,7 +244,7 @@ export const WorkBasisView: React.FC = () => {
             }}
           >
             <option value="ALL">Tất cả loại việc</option>
-            <option value="BURIAL">An táng (Hạ huyệt)</option>
+            <option value="BURIAL">An táng</option>
             <option value="CARE">Chăm sóc mộ phần</option>
             <option value="CONSTRUCTION">Xây dựng / Thi công</option>
           </select>
@@ -306,7 +255,7 @@ export const WorkBasisView: React.FC = () => {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '60px 20px', color: '#64748B' }}>
           <RefreshCw size={24} className="animate-spin" style={{ margin: '0 auto 12px auto' }} />
-          <div>Đang tải danh sách căn cứ công việc...</div>
+          <div>Đang tải công việc…</div>
         </div>
       ) : error ? (
         <div
@@ -323,7 +272,7 @@ export const WorkBasisView: React.FC = () => {
         >
           <AlertCircle size={24} />
           <div>
-            <strong>Lỗi tải dữ liệu:</strong> {error}
+            {error} <button type="button" onClick={fetchWorkBases}>Thử lại</button>
           </div>
         </div>
       ) : filteredItems.length === 0 ? (
@@ -339,10 +288,10 @@ export const WorkBasisView: React.FC = () => {
         >
           <FileCheck2 size={36} color="#94A3B8" style={{ margin: '0 auto 12px auto' }} />
           <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#334155', margin: '0 0 6px 0' }}>
-            Không có căn cứ công việc nào phù hợp
+            Chưa có công việc phù hợp
           </h3>
           <p style={{ fontSize: '13px', margin: 0 }}>
-            Tất cả các ca bàn giao hiện đã hoàn tất hoặc không có yêu cầu nào khớp bộ lọc.
+            Thử đổi bộ lọc hoặc làm mới danh sách.
           </p>
         </div>
       ) : (
@@ -351,13 +300,14 @@ export const WorkBasisView: React.FC = () => {
             backgroundColor: '#FFFFFF',
             borderRadius: '12px',
             border: '1px solid #E2E8F0',
-            overflow: 'hidden',
+            overflow: 'auto',
           }}
+          className="basis-table-wrap"
         >
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+          <table className="basis-table" style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
             <thead>
               <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569' }}>
-                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Mã Căn Cứ</th>
+                <th style={{ padding: '12px 16px', fontWeight: 600 }}>Mã công việc</th>
                 <th style={{ padding: '12px 16px', fontWeight: 600 }}>Loại Việc</th>
                 <th style={{ padding: '12px 16px', fontWeight: 600 }}>Vị Trí Mộ Phần</th>
                 <th style={{ padding: '12px 16px', fontWeight: 600 }}>Người Quá Cố</th>
@@ -384,7 +334,7 @@ export const WorkBasisView: React.FC = () => {
                       HĐ: {item.contract_code}
                     </div>
                   </td>
-                  <td style={{ padding: '14px 16px' }}>{getWorkTypeBadge(item.work_type)}</td>
+                  <td style={{ padding: '14px 16px' }}>{getWorkTypeBadge(item.annex_type)}</td>
                   <td style={{ padding: '14px 16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, color: '#24594D' }}>
                       <MapPin size={14} />
@@ -411,14 +361,14 @@ export const WorkBasisView: React.FC = () => {
                         {item.burial_date}
                       </div>
                     ) : (
-                      <div>{item.valid_from}</div>
+                      <div>{item.target_date}</div>
                     )}
                   </td>
                   <td style={{ padding: '14px 16px', color: '#475569', maxWidth: '240px' }}>
                     {item.service_summary}
                   </td>
                   <td style={{ padding: '14px 16px' }}>
-                    {item.work_type === 'BURIAL' ? (
+                    {item.annex_type === 'BURIAL' ? (
                       item.is_burial_confirmed ? (
                         <span
                           style={{
@@ -465,12 +415,13 @@ export const WorkBasisView: React.FC = () => {
                           color: '#475569',
                         }}
                       >
-                        {item.status}
+                        {({ ACTIVE: 'Đang hiệu lực', COMPLETED: 'Đã hoàn tất', CANCELLED: 'Đã hủy', EXPIRED: 'Hết hạn' } as Record<string, string>)[item.status] || 'Chưa cập nhật'}
                       </span>
                     )}
                   </td>
                   <td style={{ padding: '14px 16px', textAlign: 'center' }}>
-                    {item.work_type === 'BURIAL' && !item.is_burial_confirmed ? (
+                    <PlotDirectionsButton plotId={item.plot_id} plotCode={item.plot_code} />
+                    {hasPermission('plots:confirm_burial') && item.annex_type === 'BURIAL' && item.status === 'ACTIVE' && !item.is_burial_confirmed ? (
                       <button
                         onClick={() => {
                           setConfirmModalItem(item)
@@ -564,7 +515,7 @@ export const WorkBasisView: React.FC = () => {
               </div>
 
               <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>
-                Thao tác này xác nhận người quá cố đã được an táng thực tế vào huyệt mộ. Sau khi xác nhận, slot sẽ chuyển sang trạng thái <strong>ĐÃ AN TÁNG (OCCUPIED)</strong> và nếu là mộ Kim Tĩnh sẽ được <strong>KHÓA VĨNH VIỄN</strong>.
+                Chỉ xác nhận sau khi đã an táng. Mộ Kim tĩnh sau an táng không được cải táng hoặc thay đổi kết cấu.
               </div>
 
               <div>
@@ -590,13 +541,23 @@ export const WorkBasisView: React.FC = () => {
 
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
-                  Mã tệp ảnh minh chứng (tùy chọn):
+                  Ảnh hoặc biên bản xác nhận:
                 </label>
                 <input
-                  type="text"
-                  value={confirmProofFileId}
-                  onChange={(e) => setConfirmProofFileId(e.target.value)}
-                  placeholder="Mã file_id ảnh chụp hạ huyệt nếu có"
+                  type="file"
+                  accept="image/*,application/pdf"
+                  disabled={proofUploading || confirming}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]; if (!file) return
+                    setProofUploading(true); setConfirmErrorMsg(null); setConfirmProofFileId('')
+                    try {
+                      const body = new FormData(); body.append('file', file)
+                      const res = await apiFetch('/api/v1/documents/upload', { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` }, body })
+                      if (!res.ok) throw new Error('Chưa tải được ảnh xác nhận. Vui lòng thử lại.')
+                      setConfirmProofFileId((await res.json()).file_id)
+                    } catch (err) { setConfirmErrorMsg(err instanceof Error ? err.message : 'Chưa tải được ảnh.') }
+                    finally { setProofUploading(false) }
+                  }}
                   style={{
                     width: '100%',
                     padding: '8px 12px',
@@ -624,7 +585,7 @@ export const WorkBasisView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setConfirmModalItem(null)}
-                  disabled={confirming}
+                  disabled={confirming || proofUploading}
                   style={{
                     padding: '8px 16px',
                     borderRadius: '6px',

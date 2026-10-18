@@ -11,6 +11,7 @@ Verifies:
 
 import uuid
 from datetime import datetime, timezone
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -211,9 +212,9 @@ def test_caretaker_actor_permissions():
     resp = client.get("/api/v1/plots", headers=headers)
     assert resp.status_code == 200, resp.text
 
-    # ALLOWED: View Deceased list
+    # DENIED: Full deceased directory; field identification is in WorkBasis/plot details.
     resp = client.get("/api/v1/profiles/deceased", headers=headers)
-    assert resp.status_code == 200, resp.text
+    assert resp.status_code == 403, resp.text
 
     # DENIED: View Contracts list
     resp = client.get("/api/v1/contracts", headers=headers)

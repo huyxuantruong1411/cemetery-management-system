@@ -1,6 +1,7 @@
-import React, { useEffect, useState, useRef } from 'react';
+import { apiFetch } from '../../services/apiClient'
+import React, { useEffect, useState } from 'react';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet';
+import { GeographicPlotMap } from './GeographicPlotMap';
 import {
   MapPin,
   Shield,
@@ -42,7 +43,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
   const canManagePlots = hasPermission('plots:manage');
 
   // Tab state: Default to Simulated Layout
-  const [activeTab, setActiveTab] = useState<'simulated' | 'map' | 'grid' | 'catalog'>('simulated');
+  const [activeTab, setActiveTab] = useState<'simulated' | 'map' | 'grid' | 'catalog'>('map');
 
   // Data states
   const [plots, setPlots] = useState<Plot[]>([]);
@@ -104,9 +105,6 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Leaflet map container reference
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapInstanceRef = useRef<L.Map | null>(null);
-  const markersLayerRef = useRef<L.LayerGroup | null>(null);
 
   // 1. Fetch initial data
   const fetchData = async () => {
@@ -117,16 +115,25 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
     try {
       const headers = { Authorization: `Bearer ${token}` };
 
-      const [plotsRes, zonesRes, rowsRes, typesRes, statsRes] = await Promise.all([
-        fetch('/api/v1/plots?limit=500', { headers }),
-        fetch('/api/v1/plots/zones', { headers }),
-        fetch('/api/v1/plots/rows', { headers }),
-        fetch('/api/v1/plots/types', { headers }),
-        fetch('/api/v1/plots/stats', { headers }),
+      const loadPlots = async (): Promise<Plot[]> => {
+        const all: Plot[] = [];
+        for (let offset = 0; ; offset += 500) {
+          const res = await apiFetch(`/api/v1/plots?limit=500&skip=${offset}`, { headers });
+          if (!res.ok) throw new Error('Chưa tải được danh sách ô mộ.');
+          const page: Plot[] = await res.json();
+          all.push(...page);
+          if (page.length < 500) return all;
+        }
+      };
+      const [plotsData, zonesRes, rowsRes, typesRes, statsRes] = await Promise.all([
+        loadPlots(),
+        apiFetch('/api/v1/plots/zones', { headers }),
+        apiFetch('/api/v1/plots/rows', { headers }),
+        apiFetch('/api/v1/plots/types', { headers }),
+        apiFetch('/api/v1/plots/stats', { headers }),
       ]);
 
-      if (!plotsRes.ok) throw new Error('Không thể tải danh sách ô mộ.');
-      const plotsData = await plotsRes.json();
+      if (![zonesRes, rowsRes, typesRes, statsRes].every(res => res.ok)) throw new Error('Chưa tải đủ thông tin khu và hàng mộ.');
       const zonesData = await zonesRes.json();
       const rowsData = await rowsRes.json();
       const typesData = await typesRes.json();
@@ -152,7 +159,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
   const fetchPlotDetail = async (plotId: number) => {
     if (!token) return;
     try {
-      const res = await fetch(`/api/v1/plots/${plotId}`, {
+      const res = await apiFetch(`/api/v1/plots/${plotId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -187,112 +194,6 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
     });
   };
 
-  // 3. Leaflet Map Initialization and Marker Management
-  useEffect(() => {
-    if (activeTab !== 'map' || isLoading || !mapContainerRef.current) return;
-
-    // Clean up previous map instance if container changed or already bound
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.remove();
-      mapInstanceRef.current = null;
-      markersLayerRef.current = null;
-    }
-
-    // Initialize Map
-    const map = L.map(mapContainerRef.current, {
-      center: [10.925200, 106.825200],
-      zoom: 18,
-      maxZoom: 20,
-      minZoom: 15,
-    });
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors',
-    }).addTo(map);
-
-    const markersLayer = L.layerGroup().addTo(map);
-    markersLayerRef.current = markersLayer;
-    mapInstanceRef.current = map;
-
-    const filteredPlots = getFilteredPlots();
-    const bounds: L.LatLngTuple[] = [];
-
-    filteredPlots.forEach((p) => {
-      if (p.latitude && p.longitude) {
-        const lat = Number(p.latitude);
-        const lng = Number(p.longitude);
-        bounds.push([lat, lng]);
-
-        // Marker color based on status
-        let color = '#10B981'; // EMPTY_UNSOLD: Green
-        if (p.status === 'RESERVED') color = '#F59E0B'; // Orange
-        else if (p.status === 'OWNED_EMPTY') color = '#3B82F6'; // Blue
-        else if (p.status === 'UNDER_CONSTRUCTION') color = '#8B5CF6'; // Purple
-        else if (p.status === 'OCCUPIED') color = '#DC2626'; // Red
-        else if (p.status === 'UNDER_EXHUMATION') color = '#6B7280'; // Gray
-
-        const isKt = p.is_kim_tinh;
-        const isLocked = p.is_locked;
-
-        // Custom SVG icon
-        const iconHtml = `
-          <div style="
-            width: 32px;
-            height: 32px;
-            border-radius: 8px;
-            background-color: ${color};
-            border: ${isKt ? '3px solid #EAB308' : '2px solid white'};
-            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 11px;
-            font-weight: bold;
-            position: relative;
-            cursor: pointer;
-          ">
-            ${p.plot_code.split('-').pop() || 'P'}
-            ${isKt ? `<div style="position: absolute; top: -5px; right: -5px; background: #EAB308; border-radius: 50%; width: 12px; height: 12px; display: flex; align-items: center; justify-content: center; font-size: 8px; color: black;">🛡️</div>` : ''}
-            ${isLocked ? `<div style="position: absolute; bottom: -5px; right: -5px; background: #991B1B; border-radius: 50%; width: 12px; height: 12px; display: flex; align-items: center; justify-content: center; font-size: 8px;">🔒</div>` : ''}
-          </div>
-        `;
-
-        const customIcon = L.divIcon({
-          html: iconHtml,
-          className: 'custom-plot-marker',
-          iconSize: [32, 32],
-          iconAnchor: [16, 16],
-        });
-
-        const marker = L.marker([lat, lng], { icon: customIcon });
-        marker.on('click', () => {
-          handleSelectPlot(p.plot_id);
-        });
-        marker.bindTooltip(`<b>${p.plot_code}</b><br/>${p.type_name}<br/>${p.status}`, {
-          direction: 'top',
-        });
-
-        markersLayer.addLayer(marker);
-      }
-    });
-
-    if (bounds.length > 0 && mapInstanceRef.current) {
-      mapInstanceRef.current.fitBounds(L.latLngBounds(bounds), {
-        padding: [40, 40],
-        maxZoom: 18,
-      });
-    }
-
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-        markersLayerRef.current = null;
-      }
-    };
-  }, [activeTab, isLoading, plots, selectedZoneId, statusFilter, kimTinhFilter, searchQuery]);
-
   // 4. Handle Reserve Submission (Anti-Double Booking)
   const handleReserveSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -303,7 +204,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
     setReserveSuccess(null);
 
     try {
-      const res = await fetch(`/api/v1/plots/${selectedPlotId}/reserve`, {
+      const res = await apiFetch(`/api/v1/plots/${selectedPlotId}/reserve`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -347,7 +248,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
     if (!window.confirm('Bạn có chắc chắn muốn hủy giữ chỗ cho ô mộ này không?')) return;
 
     try {
-      const res = await fetch(`/api/v1/plots/${plotId}/cancel-reservation`, {
+      const res = await apiFetch(`/api/v1/plots/${plotId}/cancel-reservation`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -418,7 +319,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
     setCrudError(null);
     try {
       if (zoneModal.mode === 'create') {
-        const res = await fetch('/api/v1/plots/zones', {
+        const res = await apiFetch('/api/v1/plots/zones', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ zone_code: code, zone_name: name, total_rows: rowsCount, description: desc }),
@@ -428,7 +329,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
           throw new Error(err.detail || 'Không thể tạo khu vực.');
         }
       } else if (zoneModal.data) {
-        const res = await fetch(`/api/v1/plots/zones/${zoneModal.data.zone_id}`, {
+        const res = await apiFetch(`/api/v1/plots/zones/${zoneModal.data.zone_id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ zone_name: name, total_rows: rowsCount, description: desc }),
@@ -462,7 +363,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
     setCrudError(null);
     try {
       if (rowModal.mode === 'create') {
-        const res = await fetch('/api/v1/plots/rows', {
+        const res = await apiFetch('/api/v1/plots/rows', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ zone_id: zoneId, row_code: code, total_plots: plotsCount }),
@@ -472,7 +373,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
           throw new Error(err.detail || 'Không thể tạo hàng mộ.');
         }
       } else if (rowModal.data) {
-        const res = await fetch(`/api/v1/plots/rows/${rowModal.data.row_id}`, {
+        const res = await apiFetch(`/api/v1/plots/rows/${rowModal.data.row_id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ row_code: code, total_plots: plotsCount }),
@@ -508,7 +409,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
     setCrudError(null);
     try {
       if (plotTypeModal.mode === 'create') {
-        const res = await fetch('/api/v1/plots/types', {
+        const res = await apiFetch('/api/v1/plots/types', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ type_name: name, default_slots: defaultSlots, length, width, description: desc }),
@@ -518,7 +419,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
           throw new Error(err.detail || 'Không thể tạo loại mộ.');
         }
       } else if (plotTypeModal.data) {
-        const res = await fetch(`/api/v1/plots/types/${plotTypeModal.data.type_id}`, {
+        const res = await apiFetch(`/api/v1/plots/types/${plotTypeModal.data.type_id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({ type_name: name, default_slots: defaultSlots, length, width, description: desc }),
@@ -559,7 +460,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
     setCrudError(null);
     try {
       if (plotModal.mode === 'create') {
-        const res = await fetch('/api/v1/plots', {
+        const res = await apiFetch('/api/v1/plots', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({
@@ -579,7 +480,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
         }
       } else if (plotModal.data) {
         const pId = 'plot_id' in plotModal.data ? plotModal.data.plot_id : 0;
-        const res = await fetch(`/api/v1/plots/${pId}`, {
+        const res = await apiFetch(`/api/v1/plots/${pId}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
           body: JSON.stringify({
@@ -619,7 +520,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
       else if (deleteModal.type === 'plot_type') endpoint = `/api/v1/plots/types/${deleteModal.id}`;
       else if (deleteModal.type === 'plot') endpoint = `/api/v1/plots/${deleteModal.id}`;
 
-      const res = await fetch(endpoint, {
+      const res = await apiFetch(endpoint, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -823,10 +724,10 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
         <div style={{ minWidth: 0, flex: '1 1 240px' }}>
           <h2 style={{ fontSize: 'clamp(16px, 3.5vw, 20px)', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px', margin: 0 }}>
             <MapPin size={22} color="#24594D" style={{ flexShrink: 0 }} />
-            <span className="text-truncate-safe">Bản Đồ Số GIS & Quản Lý Ô Mộ</span>
+            <span className="text-truncate-safe">Vị trí ô mộ</span>
           </h2>
           <p className="line-clamp-2-safe" style={{ fontSize: '12px', color: '#64748B', margin: '4px 0 0 0' }}>
-            Không gian thực địa, phân lô, giám sát kết cấu Kim Tĩnh kiên cố và chống tranh chấp đặt chỗ.
+            Tra vị trí, tình trạng và thông tin ô mộ.
           </p>
         </div>
 
@@ -932,7 +833,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
             }}
           >
             <Layers size={16} />
-            <span>Sơ Đồ Quy Hoạch (384 Ô & Lối Đi)</span>
+            <span>Sơ đồ minh họa</span>
           </button>
           <button
             onClick={() => setActiveTab('map')}
@@ -951,7 +852,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
             }}
           >
             <MapPin size={16} />
-            <span>Bản Đồ Số GIS (Leaflet Map)</span>
+            <span>Bản đồ vị trí</span>
           </button>
           <button
             onClick={() => setActiveTab('grid')}
@@ -970,9 +871,9 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
             }}
           >
             <Grid size={16} />
-            <span>Ma Trận Phân Lô Thực Địa</span>
+            <span>Danh sách theo khu</span>
           </button>
-          <button
+          {canManagePlots && <button
             onClick={() => setActiveTab('catalog')}
             style={{
               padding: '12px 18px',
@@ -990,11 +891,11 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
           >
             <Layers size={16} />
             <span>Danh Mục Khu Vực & Loại Mộ</span>
-          </button>
+          </button>}
         </div>
 
         {/* Global Filters Bar */}
-        <div
+        {(activeTab === 'map' || activeTab === 'grid') && <div
           style={{
             padding: '12px 16px',
             backgroundColor: '#FFFFFF',
@@ -1117,6 +1018,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
           )}
         </div>
 
+        }
         {/* 3. Main Tab Contents */}
         {isLoading && (
           <div style={{ padding: '64px 24px', textAlign: 'center', color: '#64748B' }}>
@@ -1169,7 +1071,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
         {activeTab === 'map' && !isLoading && (
           <div className="plot-map-wrapper">
             {/* Left: Leaflet Map Container */}
-            <div ref={mapContainerRef} className="plot-map-container" />
+            <GeographicPlotMap plots={filteredPlots} onSelect={handleSelectPlot} focusId={selectedPlotId} />
 
             {/* Right: Floating Plot Detail Sidebar (Responsive Drawer/Panel) */}
             <div className="plot-detail-panel">
@@ -1211,9 +1113,9 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, color: '#B45309', marginBottom: '4px' }}>
                         <Shield size={14} color="#D97706" />
-                        <span>Quy Tắc Kim Tĩnh Bất Biến</span>
+                        <span>Mộ Kim tĩnh</span>
                       </div>
-                      Huyệt mộ được xây dựng kết cấu Kim Tĩnh kiên cố. Mọi can thiệp hạ cờ, cải táng hoặc mở khóa đều bị từ chối ở cấp CSDL.
+                      Mộ Kim tĩnh đã an táng không được cải táng hoặc thay đổi kết cấu.
                     </div>
                   )}
 
@@ -1236,7 +1138,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: '#64748B' }}>Dung lượng:</span>
-                      <strong style={{ color: '#1E293B' }}>{plotDetail.default_slots} slot an táng</strong>
+                      <strong style={{ color: '#1E293B' }}>{plotDetail.default_slots} huyệt an táng</strong>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: '#64748B' }}>Hướng phong thủy:</span>
@@ -1268,7 +1170,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                   </div>
 
                   {/* Active Reservation Banner */}
-                  {plotDetail.active_reservation && (
+                  {hasPermission('contracts:read') && plotDetail.active_reservation && (
                     <div
                       style={{
                         padding: '12px',
@@ -1283,7 +1185,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                     >
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#92400E', fontWeight: 700 }}>
                         <Clock size={14} color="#D97706" />
-                        <span>Lệnh giữ chỗ độc quyền (ACTIVE)</span>
+                        <span>Đang giữ chỗ</span>
                       </div>
                       <div style={{ color: '#334155' }}>
                         Khách hàng: <strong>{plotDetail.active_reservation.customer_name || 'Khách lẻ'}</strong>
@@ -1319,7 +1221,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                   {/* Slots list */}
                   <div>
                     <h4 style={{ fontSize: '12px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '8px' }}>
-                      Chi Tiết Các Huyệt / Slot ({plotDetail.slots.length})
+                      Các huyệt trong ô mộ ({plotDetail.slots.length})
                     </h4>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       {plotDetail.slots.map((s) => (
@@ -1336,7 +1238,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                             fontSize: '12px',
                           }}
                         >
-                          <strong style={{ color: '#1E293B' }}>Slot #{s.slot_number}</strong>
+                          <strong style={{ color: '#1E293B' }}>Huyệt số {s.slot_number}</strong>
                           <span
                             style={{
                               padding: '2px 8px',
@@ -1387,7 +1289,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                       </a>
                     )}
 
-                    {plotDetail.status === 'EMPTY_UNSOLD' && (
+                    {hasPermission('contracts:write') && plotDetail.status === 'EMPTY_UNSOLD' && (
                       <button
                         onClick={() => {
                           setReserveCustName('');
@@ -1486,7 +1388,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                 <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '24px', color: '#94A3B8' }}>
                   <MapPin size={40} strokeWidth={1.5} color="#CBD5E1" style={{ marginBottom: '12px' }} />
                   <p style={{ fontSize: '13px', color: '#64748B', lineHeight: '1.5', margin: 0 }}>
-                    Nhấp vào một điểm ô mộ trên bản đồ để xem chi tiết kết cấu Kim Tĩnh, danh sách slot và thao tác giữ chỗ.
+                    Chọn một ô trên bản đồ để xem thông tin.
                   </p>
                 </div>
               )}
@@ -1564,7 +1466,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                           {p.type_name}
                         </div>
                         <div style={{ fontSize: '10px', color: '#94A3B8', marginTop: '2px' }}>
-                          {p.zone_code} · {p.default_slots} slot
+                          {p.zone_code} · {p.default_slots} huyệt
                         </div>
                         <div style={{ marginTop: '6px', fontSize: '11px', fontWeight: 600, color: statusColor }}>
                           {statusLabel}
@@ -1593,7 +1495,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
         )}
 
         {/* TAB 3: Catalog & Specifications (Khu & Loại Mộ) */}
-        {activeTab === 'catalog' && !isLoading && (
+        {activeTab === 'catalog' && canManagePlots && !isLoading && (
           <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '32px' }}>
             {/* CRUD Feedback Alerts */}
             {crudSuccess && (
@@ -1886,7 +1788,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                         <strong style={{ fontSize: '15px', color: '#0F172A' }}>{pt.type_name}</strong>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ fontSize: '11px', backgroundColor: '#E8F1EE', color: '#24594D', padding: '3px 8px', borderRadius: '4px', fontWeight: 700 }}>
-                            {pt.default_slots} slot
+                            {pt.default_slots} huyệt
                           </span>
                           {token && canManagePlots && (
                             <>
@@ -2268,7 +2170,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
 
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                  Số slot an táng mặc định *
+                  Số huyệt an táng mặc định *
                 </label>
                 <input
                   type="number"
@@ -2413,7 +2315,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                 >
                   {plotTypes.map((pt) => (
                     <option key={pt.type_id} value={pt.type_id}>
-                      {pt.type_name} ({pt.default_slots} slot, {pt.length}m × {pt.width}m)
+                      {pt.type_name} ({pt.default_slots} huyệt, {pt.length}m × {pt.width}m)
                     </option>
                   ))}
                 </select>
@@ -2478,7 +2380,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                   <span>Kết cấu Kim Tĩnh kiên cố (Bất biến)</span>
                 </label>
                 <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#B45309', lineHeight: '1.4' }}>
-                  Lưu ý: Một khi đã bật cờ Kim Tĩnh, ô mộ sẽ bị khóa vĩnh viễn ở cấp CSDL, không thể hạ cờ hay xóa bỏ.
+                  Sau khi an táng, mộ Kim tĩnh không được cải táng hoặc thay đổi kết cấu.
                 </p>
               </div>
 

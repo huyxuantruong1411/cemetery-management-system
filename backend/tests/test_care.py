@@ -366,7 +366,8 @@ def test_close_schedule_gate_rejection_missing_evidence():
             json={"field_notes": "Tất cả công việc đã làm xong"},
         )
         assert resp.status_code == 400
-        assert "ảnh minh chứng hiện trường hợp lệ" in resp.json()["detail"]
+        assert "ảnh minh chứng hiện trường" in resp.json()["detail"]
+        assert "READY" not in resp.json()["detail"]
     finally:
         db.close()
 

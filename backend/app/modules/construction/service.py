@@ -35,6 +35,15 @@ from app.modules.plots.models import Plot, PlotSlot
 
 class ConstructionService:
     @staticmethod
+    def _field_staff(db: Session, user_id: int) -> User:
+        user = db.query(User).filter(User.user_id == user_id, User.is_active == True).first()  # noqa: E712
+        if not user:
+            raise HTTPException(status_code=404, detail="Không tìm thấy nhân viên đang làm việc.")
+        if not any(r.role_name in ("CARETAKER", "ADMIN") for r in user.roles):
+            raise HTTPException(status_code=400, detail="Hãy chọn nhân viên quản trang để phân công.")
+        return user
+
+    @staticmethod
     def _to_evidence_brief(ev: ConstructionTaskEvidence) -> ConstructionTaskEvidenceBrief:
         uploader_name = ev.uploader.full_name if ev.uploader else None
         file_name = ev.file_object.file_name if ev.file_object else None
@@ -301,9 +310,10 @@ class ConstructionService:
             )
 
         # 3. Validate Supervisor
-        supervisor = db.query(User).filter(User.user_id == data.supervisor_id).first()
-        if not supervisor:
-            raise HTTPException(status_code=404, detail="Giám sát viên (User) không tồn tại")
+        ConstructionService._field_staff(db, data.supervisor_id)
+        for task in data.custom_tasks or []:
+            if task.assignee_user_id is not None:
+                ConstructionService._field_staff(db, task.assignee_user_id)
 
         # 4. Check supervisor conflict (G13)
         start_d = data.start_date or date.today()
@@ -406,7 +416,7 @@ class ConstructionService:
         if order.status == "COMPLETED":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Lệnh thi công đã nghiệm thu hoàn thành (COMPLETED), không được phép chỉnh sửa.",
+                detail="Lệnh thi công đã nghiệm thu hoàn thành, không được phép chỉnh sửa.",
             )
 
         if data.status is not None:
@@ -418,9 +428,7 @@ class ConstructionService:
             order.status = new_status
 
         if data.supervisor_id is not None:
-            supervisor = db.query(User).filter(User.user_id == data.supervisor_id).first()
-            if not supervisor:
-                raise HTTPException(status_code=404, detail="Giám sát viên không tồn tại")
+            ConstructionService._field_staff(db, data.supervisor_id)
             order.supervisor_id = data.supervisor_id
 
         if data.start_date is not None:
@@ -467,7 +475,7 @@ class ConstructionService:
         if not ready_evidences:
             raise HTTPException(
                 status_code=400,
-                detail="Không thể nghiệm thu lệnh thi công: chưa có bất kỳ bằng chứng/ảnh hiện trường nào ở trạng thái READY.",
+                detail="Cần ít nhất một ảnh hoặc biên bản hiện trường trước khi nghiệm thu.",
             )
 
         # Gate Check: every required task must have at least 1 READY evidence (R06)
@@ -479,7 +487,7 @@ class ConstructionService:
                 if not task_ready_ev:
                     raise HTTPException(
                         status_code=400,
-                        detail=f"Hạng mục bắt buộc '{t.task_name}' chưa có ảnh/bằng chứng nghiệm thu ở trạng thái READY.",
+                        detail=f"Hạng mục bắt buộc '{t.task_name}' chưa có ảnh hoặc biên bản nghiệm thu.",
                     )
 
         # Mark completed
@@ -546,10 +554,12 @@ class ConstructionService:
         if order.status == "COMPLETED":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Lệnh thi công đã nghiệm thu hoàn thành (COMPLETED), không được phép thêm công việc mới.",
+                detail="Lệnh thi công đã nghiệm thu hoàn thành, không được phép thêm công việc mới.",
             )
 
         # G13 Conflict check if assignee provided
+        if data.assignee_user_id is not None:
+            ConstructionService._field_staff(db, data.assignee_user_id)
         if data.assignee_user_id and data.start_date and data.due_date:
             ConstructionService.check_staff_conflict(
                 db, data.assignee_user_id, data.start_date, data.due_date
@@ -594,6 +604,7 @@ class ConstructionService:
         if data.assigned_team_or_contractor is not None:
             task.assigned_team_or_contractor = data.assigned_team_or_contractor
         if data.assignee_user_id is not None:
+            ConstructionService._field_staff(db, data.assignee_user_id)
             task.assignee_user_id = data.assignee_user_id
         if data.is_required is not None:
             task.is_required = data.is_required
@@ -643,7 +654,7 @@ class ConstructionService:
             if not valid_evidence:
                 raise HTTPException(
                     status_code=400,
-                    detail="Công việc bắt buộc (is_required=True) phải có ít nhất 1 ảnh/chứng từ nghiệm thu ở trạng thái READY trước khi hoàn thành.",
+                    detail="Thêm ít nhất một ảnh hoặc biên bản nghiệm thu trước khi hoàn thành công việc này.",
                 )
 
         task.status = "DONE"
@@ -683,12 +694,12 @@ class ConstructionService:
         file_obj = db.query(FileObject).filter(FileObject.file_id == file_id).first()
         if not file_obj:
             raise HTTPException(
-                status_code=404, detail=f"Không tìm thấy tệp mã '{file_id}' trong hệ thống MinIO"
+                status_code=404, detail=f"Không tìm thấy tệp mã '{file_id}' trong hệ thống"
             )
         if file_obj.state != "READY":
             raise HTTPException(
                 status_code=400,
-                detail=f"Tệp bằng chứng '{file_id}' chưa ở trạng thái READY (trạng thái: {file_obj.state}). Vui lòng hoàn tất tải lên tệp trước.",
+                detail="Tệp chưa tải lên xong. Vui lòng thử lại.",
             )
         if not file_obj.mime_type.startswith("image/"):
             raise HTTPException(

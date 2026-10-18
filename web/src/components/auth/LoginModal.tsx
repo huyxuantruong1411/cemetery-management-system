@@ -179,7 +179,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({ isOpen, onClose }) => {
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Nhập username..."
+                  placeholder="Nhập tên đăng nhập..."
                   style={{
                     width: '100%',
                     padding: '10px 14px',

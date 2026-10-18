@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { authApi } from '../services/authApi'
 import type { User } from '../types/auth'
 import { AuthContext } from './authContextDef'
+import { beginSession, clearSession, refreshSession, SESSION_EVENT } from '../services/apiClient'
 
 const REFRESH_TOKEN_KEY = 'cemetery_refresh_token'
 
@@ -12,20 +13,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     const storedRefresh = localStorage.getItem(REFRESH_TOKEN_KEY)
-    if (storedRefresh) {
-      await authApi.logout(storedRefresh)
-      localStorage.removeItem(REFRESH_TOKEN_KEY)
-    }
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('cemetery_access_token')
+    clearSession()
     setUser(null)
     setAccessToken(null)
+    if (storedRefresh) {
+      await authApi.logout(storedRefresh)
+    }
   }
 
   const login = async (username: string, password: string) => {
     setIsLoading(true)
     try {
       const tokens = await authApi.login(username, password)
+      beginSession()
       setAccessToken(tokens.access_token)
       localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh_token)
       localStorage.setItem('access_token', tokens.access_token)
@@ -40,6 +40,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Restore session on initial load
   useEffect(() => {
+    const updateSession = () => {
+      const token = localStorage.getItem('access_token')
+      setAccessToken(token)
+      if (!token) setUser(null)
+    }
+    window.addEventListener(SESSION_EVENT, updateSession)
+    let cancelled = false
     const initAuth = async () => {
       const storedRefresh = localStorage.getItem(REFRESH_TOKEN_KEY)
       if (!storedRefresh) {
@@ -48,26 +55,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       try {
-        const tokens = await authApi.refreshToken(storedRefresh)
-        setAccessToken(tokens.access_token)
-        localStorage.setItem(REFRESH_TOKEN_KEY, tokens.refresh_token)
-        localStorage.setItem('access_token', tokens.access_token)
-        localStorage.setItem('cemetery_access_token', tokens.access_token)
-
-        const userInfo = await authApi.getMe(tokens.access_token)
-        setUser(userInfo)
+        const token = await refreshSession()
+        const userInfo = await authApi.getMe(token)
+        if (!cancelled && localStorage.getItem('access_token') === token) {
+          setAccessToken(token)
+          setUser(userInfo)
+        }
       } catch {
-        localStorage.removeItem(REFRESH_TOKEN_KEY)
-        localStorage.removeItem('access_token')
-        localStorage.removeItem('cemetery_access_token')
-        setUser(null)
-        setAccessToken(null)
+        if (!cancelled) {
+          clearSession()
+          setUser(null)
+          setAccessToken(null)
+        }
       } finally {
-        setIsLoading(false)
+        if (!cancelled) setIsLoading(false)
       }
     }
 
     initAuth()
+    return () => {
+      cancelled = true
+      window.removeEventListener(SESSION_EVENT, updateSession)
+    }
   }, [])
 
   const hasPermission = (permissionCode: string): boolean => {

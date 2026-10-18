@@ -1,0 +1,19 @@
+{
+  "restoreRefreshCount": 1,
+  "gisTap": "DEMO-B-H02-01",
+  "demoTap": "DEMO-B-H03-05",
+  "demoKeyboard": "DEMO-A-H01-01",
+  "refreshRetry": [
+    200,
+    200
+  ],
+  "concurrentRefreshCount": 1,
+  "forbidden": 403,
+  "forbiddenRefreshCount": 0,
+  "noUnderlyingModal": true,
+  "viewport": {
+    "width": 390,
+    "scroll": 390
+  },
+  "errors": []
+}

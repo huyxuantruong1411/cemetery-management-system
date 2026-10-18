@@ -169,9 +169,18 @@ class CareService:
         if not schedule:
             raise HTTPException(status_code=404, detail="Không tìm thấy lịch chăm sóc")
 
-        user = db.query(User).filter(User.user_id == caretaker_id, User.is_active == True).first()  # noqa: E712
+        if schedule.status == "CLOSED":
+            raise HTTPException(status_code=400, detail="Ca đã đóng, không thể đổi người phụ trách.")
+        user = (
+            db.query(User)
+            .with_hint(User, "WITH (UPDLOCK, HOLDLOCK)", dialect_name="mssql")
+            .filter(User.user_id == caretaker_id, User.is_active == True)  # noqa: E712
+            .first()
+        )
         if not user:
             raise HTTPException(status_code=404, detail="Không tìm thấy nhân viên quản trang")
+        if not any(r.role_name in ("CARETAKER", "ADMIN") for r in user.roles):
+            raise HTTPException(status_code=400, detail="Hãy chọn nhân viên quản trang để phân công.")
 
         # G13 Conflict Warning Check
         conflict = (
@@ -223,7 +232,7 @@ class CareService:
         if schedule and schedule.status == "CLOSED":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Ca chăm sóc đã ĐÓNG (CLOSED), không được phép chỉnh sửa checklist.",
+                detail="Ca đã đóng, không thể sửa danh sách công việc.",
             )
 
         if is_completed is not None:
@@ -254,13 +263,13 @@ class CareService:
         if schedule.status == "CLOSED":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Ca chăm sóc đã ĐÓNG (CLOSED), không thể thêm ảnh minh chứng mới.",
+                detail="Ca chăm sóc đã đóng, không thể thêm ảnh minh chứng mới.",
             )
 
         if not file_id:
             raise HTTPException(
                 status_code=400,
-                detail="Bắt buộc phải cung cấp file_id của tệp minh chứng hợp lệ (READY)",
+                detail="Vui lòng tải lên ảnh minh chứng.",
             )
 
         file_obj = db.query(FileObject).filter(FileObject.file_id == file_id).first()
@@ -269,7 +278,7 @@ class CareService:
         if file_obj.state != "READY":
             raise HTTPException(
                 status_code=400,
-                detail=f"Tệp minh chứng chưa sẵn sàng (trạng thái: {file_obj.state}). Chỉ chấp nhận tệp READY.",
+                detail="Ảnh chưa tải lên xong. Vui lòng thử lại.",
             )
         if not file_obj.mime_type or not file_obj.mime_type.startswith("image/"):
             raise HTTPException(
@@ -336,7 +345,7 @@ class CareService:
         if valid_evidence_count == 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Không thể đóng ca: Bắt buộc phải có ít nhất 1 ảnh minh chứng hiện trường hợp lệ (READY)",
+                detail="Cần ít nhất một ảnh minh chứng hiện trường trước khi đóng ca.",
             )
 
         now = datetime.now(timezone.utc)
@@ -503,7 +512,7 @@ class CareService:
         if contract.contract_type not in ("LAND_PURCHASE", "TRANSFER"):
             raise HTTPException(
                 status_code=400,
-                detail="Phụ lục chăm sóc chỉ có thể gắn vào hợp đồng mua bán đất (LAND_PURCHASE) hoặc hợp đồng chuyển nhượng (TRANSFER).",
+                detail="Phụ lục chăm sóc chỉ có thể gắn vào hợp đồng mua bán đất hoặc hợp đồng chuyển nhượng.",
             )
 
         pkg = db.query(CarePackage).filter(CarePackage.package_id == data.package_id).first()

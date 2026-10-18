@@ -157,9 +157,9 @@ function MainApp() {
         setActiveTab('plots')
       } else if (hasPermission('finance:read')) {
         setActiveTab('finance')
-      } else if (hasPermission('care:read')) {
+      } else if (hasPermission('care:execute')) {
         setActiveTab('care')
-      } else if (hasPermission('construction:read')) {
+      } else if (hasPermission('construction:execute')) {
         setActiveTab('construction')
       } else if (hasPermission('contracts:read')) {
         setActiveTab('contracts')
@@ -182,7 +182,7 @@ function MainApp() {
       case 'public_memorial':
         return 'Tra Cứu Phần Mộ Trực Tuyến (Công Khai)'
       case 'plots':
-        return 'Sơ Đồ Ô Mộ & Bản Đồ GIS Thực Địa'
+        return 'Sơ đồ & vị trí ô mộ'
       case 'profiles':
         return 'Hồ Sơ Thân Nhân & Người Đã Khuất'
       case 'contracts':
@@ -190,7 +190,7 @@ function MainApp() {
       case 'catalog':
         return 'Bảng Giá & Danh Mục Gói Dịch Vụ'
       case 'finance':
-        return 'Quản Lý Công Nợ & Thu Tiền Dịch Vụ'
+        return 'Công nợ & thu tiền'
       case 'construction':
         return 'Giám Sát & Thi Công Kim Tĩnh Thực Địa'
       case 'care':
@@ -339,8 +339,8 @@ function MainApp() {
               {(hasPermission('plots:read') ||
                 hasPermission('customers:read') ||
                 hasPermission('contracts:read') ||
-                hasPermission('care:read') ||
-                hasPermission('construction:read')) && (
+                hasPermission('care:execute') ||
+                hasPermission('construction:execute')) && (
                 <div>
                   <div
                     style={{
@@ -382,7 +382,7 @@ function MainApp() {
                         onClick={() => handleSelectTab('contracts')}
                       />
                     )}
-                    {hasPermission('care:read') && (
+                    {hasPermission('care:execute') && (
                       <SidebarNavItem
                         id="care"
                         label="Chăm Sóc Mộ Phần"
@@ -391,7 +391,7 @@ function MainApp() {
                         onClick={() => handleSelectTab('care')}
                       />
                     )}
-                    {hasPermission('construction:read') && (
+                    {hasPermission('construction:execute') && (
                       <SidebarNavItem
                         id="construction"
                         label="Thi Công Thực Địa"
@@ -405,7 +405,7 @@ function MainApp() {
               )}
 
               {/* Group 2: Tài Chính & Danh Mục */}
-              {(hasPermission('finance:read') || hasPermission('catalog:read')) && (
+              {(hasPermission('finance:read') || hasPermission('catalog:manage')) && (
                 <div>
                   <div
                     style={{
@@ -429,7 +429,7 @@ function MainApp() {
                         onClick={() => handleSelectTab('finance')}
                       />
                     )}
-                    {hasPermission('catalog:read') && (
+                    {hasPermission('catalog:manage') && (
                       <SidebarNavItem
                         id="catalog"
                         label="Bảng Giá & Gói Dịch Vụ"
@@ -544,7 +544,7 @@ function MainApp() {
                       textOverflow: 'ellipsis',
                     }}
                   >
-                    {user.roles.map((r) => r.role_name).join(', ')}
+                    {user.roles.map((r) => ({ ADMIN: 'Quản trị viên', MARKETING: 'Kinh doanh', ACCOUNTANT: 'Kế toán', CARETAKER: 'Quản trang' }[r.role_name] || r.description || 'Nhân viên')).join(', ')}
                   </div>
                 </div>
               </div>
@@ -1034,7 +1034,7 @@ function MainApp() {
             />
           )}
 
-          {user && user.roles && user.roles.length > 0 && activeTab === 'catalog' && hasPermission('catalog:read') && (
+          {user && user.roles && user.roles.length > 0 && activeTab === 'catalog' && hasPermission('catalog:manage') && (
             <CatalogModule />
           )}
 
@@ -1042,11 +1042,11 @@ function MainApp() {
             <FinanceModule />
           )}
 
-          {user && user.roles && user.roles.length > 0 && activeTab === 'construction' && hasPermission('construction:read') && (
+          {user && user.roles && user.roles.length > 0 && activeTab === 'construction' && hasPermission('construction:execute') && (
             <ConstructionModule />
           )}
 
-          {user && user.roles && user.roles.length > 0 && activeTab === 'care' && hasPermission('care:read') && (
+          {user && user.roles && user.roles.length > 0 && activeTab === 'care' && hasPermission('care:execute') && (
             <CareModule />
           )}
 

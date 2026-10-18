@@ -1,3 +1,4 @@
+import { apiFetch } from '../../services/apiClient'
 import React, { useState, useEffect } from 'react';
 import { ExternalLink, MapPin, Shield, RefreshCw, Link2, Trash2 } from 'lucide-react';
 import { Pagination, usePagination } from '../common/Pagination';
@@ -121,7 +122,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
     setErrorMsg(null);
     try {
       const q = customerSearch ? `?search=${encodeURIComponent(customerSearch)}` : '';
-      const res = await fetch(`/api/v1/profiles/customers${q}`, {
+      const res = await apiFetch(`/api/v1/profiles/customers${q}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error('Không thể tải danh sách khách hàng');
@@ -141,7 +142,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
     setErrorMsg(null);
     try {
       const q = deceasedSearch ? `?search=${encodeURIComponent(deceasedSearch)}` : '';
-      const res = await fetch(`/api/v1/profiles/deceased${q}`, {
+      const res = await apiFetch(`/api/v1/profiles/deceased${q}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error('Không thể tải danh sách người mất');
@@ -161,7 +162,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
     setErrorMsg(null);
     try {
       const q = relationSearch ? `?search=${encodeURIComponent(relationSearch)}` : '';
-      const res = await fetch(`/api/v1/profiles/relations${q}`, {
+      const res = await apiFetch(`/api/v1/profiles/relations${q}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error('Không thể tải danh sách liên kết hồ sơ');
@@ -208,7 +209,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
         relationship_type: relationForm.relationship_type.trim(),
         is_primary_contact: relationForm.is_primary_contact,
       };
-      const res = await fetch('/api/v1/profiles/relations', {
+      const res = await apiFetch('/api/v1/profiles/relations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -226,13 +227,13 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
       loadDeceased();
       loadRelations();
       if (selectedCustomer && selectedCustomer.customer_id === Number(relationForm.customer_id)) {
-        const cRes = await fetch(`/api/v1/profiles/customers/${selectedCustomer.customer_id}`, {
+        const cRes = await apiFetch(`/api/v1/profiles/customers/${selectedCustomer.customer_id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (cRes.ok) setSelectedCustomer(await cRes.json());
       }
       if (selectedDeceased && selectedDeceased.deceased_id === Number(relationForm.deceased_id)) {
-        const dRes = await fetch(`/api/v1/profiles/deceased/${selectedDeceased.deceased_id}`, {
+        const dRes = await apiFetch(`/api/v1/profiles/deceased/${selectedDeceased.deceased_id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (dRes.ok) setSelectedDeceased(await dRes.json());
@@ -252,7 +253,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
     }
     setErrorMsg(null);
     try {
-      const res = await fetch(`/api/v1/profiles/relations/${relationId}`, {
+      const res = await apiFetch(`/api/v1/profiles/relations/${relationId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -264,13 +265,13 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
       loadDeceased();
       loadRelations();
       if (selectedCustomer) {
-        const cRes = await fetch(`/api/v1/profiles/customers/${selectedCustomer.customer_id}`, {
+        const cRes = await apiFetch(`/api/v1/profiles/customers/${selectedCustomer.customer_id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (cRes.ok) setSelectedCustomer(await cRes.json());
       }
       if (selectedDeceased) {
-        const dRes = await fetch(`/api/v1/profiles/deceased/${selectedDeceased.deceased_id}`, {
+        const dRes = await apiFetch(`/api/v1/profiles/deceased/${selectedDeceased.deceased_id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (dRes.ok) setSelectedDeceased(await dRes.json());
@@ -291,7 +292,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
         date_of_birth: customerForm.date_of_birth || null,
         email: customerForm.email || null,
       };
-      const res = await fetch('/api/v1/profiles/customers', {
+      const res = await apiFetch('/api/v1/profiles/customers', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -343,7 +344,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
         customer_id: deceasedForm.customer_id ? Number(deceasedForm.customer_id) : null,
       };
 
-      const res = await fetch('/api/v1/profiles/deceased', {
+      const res = await apiFetch('/api/v1/profiles/deceased', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -371,7 +372,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
     if (!token || !selectedDeceased) return;
     setErrorMsg(null);
     try {
-      const res = await fetch(
+      const res = await apiFetch(
         `/api/v1/profiles/deceased/${selectedDeceased.deceased_id}/certificate`,
         {
           method: 'POST',
@@ -391,7 +392,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
       setSuccessMsg('Đã lưu thông tin giấy báo tử thành công!');
       setIsCertModalOpen(false);
       // Reload current deceased detail
-      const updatedRes = await fetch(
+      const updatedRes = await apiFetch(
         `/api/v1/profiles/deceased/${selectedDeceased.deceased_id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -495,7 +496,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
       setIsMemorialLoading(true);
       setErrorMsg(null);
       try {
-        const res = await fetch(`/api/v1/profiles/public/memorials?q=${encodeURIComponent(q)}`);
+        const res = await apiFetch(`/api/v1/profiles/public/memorials?q=${encodeURIComponent(q)}`);
         if (res.ok) {
           setErrorMsg(null);
           const data = await res.json();
@@ -995,7 +996,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                   <tr>
                     <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Mã KH</th>
                     <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Họ và Tên</th>
-                    <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Số CCCD (Duy Nhất)</th>
+                    <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Số CCCD</th>
                     <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Số Điện Thoại</th>
                     <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Ngày Sinh</th>
                     <th style={{ padding: '12px 16px', color: '#4B5563', fontWeight: 600 }}>Địa Chỉ</th>
@@ -1531,7 +1532,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                                   color: '#24594D',
                                 }}
                               >
-                                {d.burial_slot.plot_code} - Slot {d.burial_slot.slot_number}
+                                {d.burial_slot.plot_code} · Huyệt {d.burial_slot.slot_number}
                               </span>
                               {d.burial_slot.is_kim_tinh && (
                                 <span title="Ô mộ Kim Tĩnh bất biến" style={{ fontSize: '13px' }}>
@@ -2095,7 +2096,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                       setIsMemorialLoading(true);
                       setErrorMsg(null);
                       try {
-                        const res = await fetch(`/api/v1/profiles/public/memorials?q=${encodeURIComponent(memorialQuery.trim())}`);
+                        const res = await apiFetch(`/api/v1/profiles/public/memorials?q=${encodeURIComponent(memorialQuery.trim())}`);
                         if (res.ok) {
                           setErrorMsg(null);
                           const data = await res.json();
@@ -2172,7 +2173,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
           >
             <span style={{ fontSize: '18px' }}>🔒</span>
             <span>
-              <strong>Bảo đảm quyền riêng tư tuyệt đối:</strong> Cổng thông tin công khai không bao giờ cung cấp số CCCD, số điện thoại, địa chỉ thân nhân hay hồ sơ pháp lý theo quy chuẩn bảo vệ dữ liệu.
+              Chỉ hiển thị thông tin tưởng niệm được phép công khai.
             </span>
           </div>
 
@@ -2375,7 +2376,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
               <div className="responsive-form-row">
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>
-                    Số CCCD (Bắt buộc duy nhất) *
+                    Số CCCD *
                   </label>
                   <input
                     type="text"

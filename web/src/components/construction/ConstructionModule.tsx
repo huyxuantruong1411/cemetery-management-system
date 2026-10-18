@@ -1,3 +1,6 @@
+import type { WorkBasisItem } from '../contracts/WorkBasisView'
+import { apiFetch } from '../../services/apiClient'
+import { PlotDirectionsButton } from '../plots/PlotDirectionsButton'
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   Hammer,
@@ -44,6 +47,10 @@ export const ConstructionModule: React.FC = () => {
   // Modal states
   const [selectedOrder, setSelectedOrder] = useState<ConstructionOrderResponse | null>(null)
   const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false)
+  const [workBases, setWorkBases] = useState<WorkBasisItem[]>([])
+  const [basesLoading, setBasesLoading] = useState(false)
+  const [basisReload, setBasisReload] = useState(0)
+  const [basisError, setBasisError] = useState('')
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false)
   const [isEvidenceModalOpen, setIsEvidenceModalOpen] = useState<boolean>(false)
   const [evidenceTaskId, setEvidenceTaskId] = useState<number | null>(null)
@@ -96,7 +103,7 @@ export const ConstructionModule: React.FC = () => {
     try {
       setLoading(true)
       setError(null)
-      const res = await fetch('/api/v1/construction/orders', {
+      const res = await apiFetch('/api/v1/construction/orders', {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (!res.ok) {
@@ -115,7 +122,7 @@ export const ConstructionModule: React.FC = () => {
   const fetchUnavailabilities = useCallback(async () => {
     if (!token) return
     try {
-      const res = await fetch('/api/v1/construction/unavailability', {
+      const res = await apiFetch('/api/v1/construction/unavailability', {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (res.ok) {
@@ -134,7 +141,7 @@ export const ConstructionModule: React.FC = () => {
 
   useEffect(() => {
     if (!token) return
-    fetch('/api/v1/auth/staff', {
+    apiFetch('/api/v1/auth/staff', {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => (res.ok ? res.json() : []))
@@ -147,7 +154,7 @@ export const ConstructionModule: React.FC = () => {
     if (!token || !createForm.supervisor_id || !createForm.start_date || !createForm.expected_end_date) return
     const check = async () => {
       try {
-        const res = await fetch(
+        const res = await apiFetch(
           `/api/v1/construction/staff-conflict-check?user_id=${createForm.supervisor_id}&start_date=${createForm.start_date}&end_date=${createForm.expected_end_date}`,
           { headers: { Authorization: `Bearer ${token}` } }
         )
@@ -170,11 +177,24 @@ export const ConstructionModule: React.FC = () => {
   // Actions
   // ---------------------------------------------------------------------------
 
+  useEffect(() => {
+    if (!isCreateModalOpen || !token) return
+    const controller = new AbortController()
+    setBasisError('')
+    setBasesLoading(true)
+    apiFetch('/api/v1/contracts/work-bases?status=ACTIVE', { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal })
+      .then(async res => { if (!res.ok) throw new Error('Chưa tải được công việc được bàn giao.'); return res.json() })
+      .then((items: WorkBasisItem[]) => setWorkBases(items.filter(item => ['BURIAL', 'CONSTRUCTION'].includes(item.annex_type) && item.plot_id)))
+      .catch(err => { if (!controller.signal.aborted) setBasisError(err.message) })
+      .finally(() => { if (!controller.signal.aborted) setBasesLoading(false) })
+    return () => controller.abort()
+  }, [isCreateModalOpen, token, basisReload])
+
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!token) return
     try {
-      const res = await fetch('/api/v1/construction/orders', {
+      const res = await apiFetch('/api/v1/construction/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -204,7 +224,7 @@ export const ConstructionModule: React.FC = () => {
   const handleCompleteTask = async (task: ConstructionTaskBrief) => {
     if (!token || !selectedOrder) return
     try {
-      const res = await fetch(`/api/v1/construction/tasks/${task.task_id}/complete`, {
+      const res = await apiFetch(`/api/v1/construction/tasks/${task.task_id}/complete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -220,7 +240,7 @@ export const ConstructionModule: React.FC = () => {
       }
       showNotification(`Đã hoàn thành công việc '${task.task_name}'!`)
       // Refresh order detail
-      const updatedOrderRes = await fetch(`/api/v1/construction/orders/${selectedOrder.order_id}`, {
+      const updatedOrderRes = await apiFetch(`/api/v1/construction/orders/${selectedOrder.order_id}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (updatedOrderRes.ok) {
@@ -241,7 +261,7 @@ export const ConstructionModule: React.FC = () => {
       // Step 1: Upload file to MinIO
       const formData = new FormData()
       formData.append('file', evidenceFile)
-      const uploadRes = await fetch('/api/v1/documents/upload', {
+      const uploadRes = await apiFetch('/api/v1/documents/upload', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -254,7 +274,7 @@ export const ConstructionModule: React.FC = () => {
       const fileId = fileData.file_id
 
       // Step 2: Attach evidence to task
-      const attachRes = await fetch(`/api/v1/construction/tasks/${evidenceTaskId}/evidences`, {
+      const attachRes = await apiFetch(`/api/v1/construction/tasks/${evidenceTaskId}/evidences`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -277,7 +297,7 @@ export const ConstructionModule: React.FC = () => {
 
       // Refresh order detail
       if (selectedOrder) {
-        const updatedOrderRes = await fetch(`/api/v1/construction/orders/${selectedOrder.order_id}`, {
+        const updatedOrderRes = await apiFetch(`/api/v1/construction/orders/${selectedOrder.order_id}`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         if (updatedOrderRes.ok) {
@@ -311,7 +331,7 @@ export const ConstructionModule: React.FC = () => {
     }
 
     try {
-      const res = await fetch(`/api/v1/construction/orders/${selectedOrder.order_id}/reorder-tasks`, {
+      const res = await apiFetch(`/api/v1/construction/orders/${selectedOrder.order_id}/reorder-tasks`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -334,7 +354,7 @@ export const ConstructionModule: React.FC = () => {
       return
     }
     try {
-      const res = await fetch(`/api/v1/construction/orders/${orderId}/complete`, {
+      const res = await apiFetch(`/api/v1/construction/orders/${orderId}/complete`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -360,7 +380,7 @@ export const ConstructionModule: React.FC = () => {
     e.preventDefault()
     if (!token) return
     try {
-      const res = await fetch('/api/v1/construction/unavailability', {
+      const res = await apiFetch('/api/v1/construction/unavailability', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -388,7 +408,7 @@ export const ConstructionModule: React.FC = () => {
   const handleDeleteUnavailability = async (id: number) => {
     if (!token || !window.confirm('Xác nhận xóa bản ghi lịch nghỉ này?')) return
     try {
-      const res = await fetch(`/api/v1/construction/unavailability/${id}`, {
+      const res = await apiFetch(`/api/v1/construction/unavailability/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -596,7 +616,7 @@ export const ConstructionModule: React.FC = () => {
               Thi Công & Xây Dựng
             </span>
             <span style={{ fontSize: '12px', color: '#64748B' }}>
-              Chuẩn Quy Trình Nghiệm Thu & Quản Lý Công Trình
+              Theo dõi thi công và nghiệm thu
             </span>
           </div>
           <h2 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--brand-secondary)', margin: 0 }}>
@@ -1080,7 +1100,7 @@ export const ConstructionModule: React.FC = () => {
 
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--brand-secondary)', fontWeight: 600, marginBottom: '4px' }}>
                         <MapPin size={14} color="#64748B" />
-                        <span>{order.plot_code || `Plot #${order.plot_id}`}</span>
+                        <span>{order.plot_code || `Ô mộ #${order.plot_id}`}</span><PlotDirectionsButton plotId={order.plot_id} plotCode={order.plot_code} />
                         {order.zone_name && <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 400 }}>({order.zone_name})</span>}
                       </div>
 
@@ -1190,9 +1210,10 @@ export const ConstructionModule: React.FC = () => {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                               <MapPin size={14} color="#64748B" />
                               <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--brand-secondary)' }}>
-                                {order.plot_code || `Plot #${order.plot_id}`}
+                                {order.plot_code || `Ô mộ #${order.plot_id}`}
                               </span>
                             </div>
+                            <PlotDirectionsButton plotId={order.plot_id} plotCode={order.plot_code} />
                             {order.zone_name && (
                               <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
                                 {order.zone_name}
@@ -1418,6 +1439,7 @@ export const ConstructionModule: React.FC = () => {
                   Ô Mộ: <strong>{selectedOrder.plot_code || selectedOrder.plot_id}</strong> | Giám Sát:{' '}
                   <strong>{selectedOrder.supervisor_name || selectedOrder.supervisor_id}</strong> | Hạn:{' '}
                   <strong>{selectedOrder.expected_end_date}</strong>
+                  <PlotDirectionsButton plotId={selectedOrder.plot_id} plotCode={selectedOrder.plot_code} />
                 </div>
               </div>
               <button
@@ -1839,30 +1861,25 @@ export const ConstructionModule: React.FC = () => {
               <div className="responsive-form-row">
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                    Mã Phụ Lục Hợp Đồng Đang Hiệu Lực *
+                    Công việc được bàn giao *
                   </label>
-                  <input
-                    type="number"
-                    required
-                    placeholder="VD: 1, 2..."
-                    value={createForm.annex_id}
-                    onChange={(e) => setCreateForm({ ...createForm, annex_id: e.target.value })}
-                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px' }}
-                  />
+                  <select required disabled={basesLoading} value={createForm.annex_id} onChange={e => {
+                    const basis = workBases.find(item => item.annex_id === Number(e.target.value))
+                    setCreateForm({ ...createForm, annex_id: e.target.value, plot_id: basis?.plot_id?.toString() || '' })
+                  }} style={{ width: '100%', minHeight: '48px' }}>
+                    <option value="">{basesLoading ? 'Đang tải công việc…' : 'Chọn công việc đã bàn giao'}</option>
+                    {workBases.map(item => <option key={item.annex_id} value={item.annex_id}>{item.annex_code} · {item.plot_code}</option>)}
+                  </select>
+                  {basisError && <p role="alert">{basisError} <button type="button" onClick={() => setBasisReload(n => n + 1)}>Thử lại</button></p>}
+                  {!basesLoading && !basisError && !workBases.length && <p>Chưa có công việc được bàn giao. <button type="button" onClick={() => setBasisReload(n => n + 1)}>Tải lại</button></p>}
+
                 </div>
 
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                    Mã Ô Mộ (Plot ID) *
+                    Ô mộ
                   </label>
-                  <input
-                    type="number"
-                    required
-                    placeholder="VD: 1, 2..."
-                    value={createForm.plot_id}
-                    onChange={(e) => setCreateForm({ ...createForm, plot_id: e.target.value })}
-                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px' }}
-                  />
+                  <input readOnly value={workBases.find(item => item.annex_id === Number(createForm.annex_id))?.plot_code || ''} placeholder="Chọn công việc để xem ô mộ" style={{ width: '100%', minHeight: '48px' }} />
                 </div>
               </div>
 
@@ -1879,7 +1896,7 @@ export const ConstructionModule: React.FC = () => {
                   <option value="">-- Chọn giám sát viên --</option>
                   {staffList.map((s) => (
                     <option key={s.user_id} value={s.user_id}>
-                      {s.full_name} ({s.roles.join(', ') || 'Nhân sự'})
+                      {s.full_name}
                     </option>
                   ))}
                 </select>
@@ -2129,7 +2146,7 @@ export const ConstructionModule: React.FC = () => {
                   <option value="">-- Chọn nhân viên --</option>
                   {staffList.map((s) => (
                     <option key={s.user_id} value={s.user_id}>
-                      {s.full_name} ({s.roles.join(', ') || 'Nhân sự'})
+                      {s.full_name}
                     </option>
                   ))}
                 </select>

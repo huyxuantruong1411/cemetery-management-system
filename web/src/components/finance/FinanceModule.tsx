@@ -1,3 +1,4 @@
+import { apiFetch } from '../../services/apiClient'
 import React, { useCallback, useEffect, useState } from 'react'
 import {
   AlertCircle,
@@ -91,10 +92,10 @@ export const FinanceModule: React.FC = () => {
       const recUrl = `/api/v1/finance/receivables?${queryParams.toString()}`
 
       const [sumRes, recRes] = await Promise.all([
-        fetch(summaryUrl, {
+        apiFetch(summaryUrl, {
           headers: { Authorization: `Bearer ${accessToken}` },
         }),
-        fetch(recUrl, {
+        apiFetch(recUrl, {
           headers: { Authorization: `Bearer ${accessToken}` },
         }),
       ])
@@ -156,7 +157,7 @@ export const FinanceModule: React.FC = () => {
         idempotency_key: `PAY_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
       }
 
-      const res = await fetch(`/api/v1/finance/receivables/${activeReceivable.receivable_id}/payments`, {
+      const res = await apiFetch(`/api/v1/finance/receivables/${activeReceivable.receivable_id}/payments`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -217,7 +218,7 @@ export const FinanceModule: React.FC = () => {
         justification_reason: discReason.trim(),
       }
 
-      const res = await fetch(`/api/v1/finance/receivables/${activeReceivable.receivable_id}/discount`, {
+      const res = await apiFetch(`/api/v1/finance/receivables/${activeReceivable.receivable_id}/discount`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -245,7 +246,7 @@ export const FinanceModule: React.FC = () => {
   const handleDownloadReceipt = async (paymentId: number) => {
     if (!accessToken) return
     try {
-      const res = await fetch(`/api/v1/finance/payments/${paymentId}/receipt/download`, {
+      const res = await apiFetch(`/api/v1/finance/payments/${paymentId}/receipt/download`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       })
       if (!res.ok) {
@@ -271,7 +272,7 @@ export const FinanceModule: React.FC = () => {
     if (!accessToken) return
     setRegeneratingId(paymentId)
     try {
-      const res = await fetch(`/api/v1/finance/payments/${paymentId}/regenerate-invoice`, {
+      const res = await apiFetch(`/api/v1/finance/payments/${paymentId}/regenerate-invoice`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${accessToken}` },
       })
@@ -457,7 +458,7 @@ export const FinanceModule: React.FC = () => {
             Quản Lý Công Nợ & Thu Tiền
           </h2>
           <p style={{ fontSize: '13px', color: '#64748B', margin: '4px 0 0' }}>
-            Kiểm soát sổ cái công nợ theo hợp đồng, chiết khấu, thu ngân tiền mặt, ngân hàng và xuất biên lai PDF chuẩn xác.
+            Theo dõi khoản thu, ghi nhận thanh toán và xuất biên lai.
           </p>
         </div>
         <button
@@ -482,7 +483,7 @@ export const FinanceModule: React.FC = () => {
       </div>
 
       {/* Sub-Tab Navigation: Căn Cứ Thu Tiền (EX-02) vs Sổ Cái Công Nợ */}
-      <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid #E2E8F0', paddingBottom: '8px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', borderBottom: '2px solid #E2E8F0', paddingBottom: '8px' }}>
         <button
           type="button"
           onClick={() => setActiveViewTab('bases')}
@@ -502,7 +503,7 @@ export const FinanceModule: React.FC = () => {
           }}
         >
           <FileCheck size={16} />
-          Căn Cứ Thu Tiền (Hợp đồng & Phụ lục)
+          Khoản thu theo hợp đồng
         </button>
         <button
           type="button"
@@ -523,12 +524,12 @@ export const FinanceModule: React.FC = () => {
           }}
         >
           <Receipt size={16} />
-          Sổ Cái Công Nợ & Khoản Thu
+          Công nợ & thanh toán
         </button>
       </div>
 
       {activeViewTab === 'bases' ? (
-        <FinanceBasisView />
+        <FinanceBasisView onSelectPayment={(basis) => { setSearchTerm(basis.annex_code || basis.contract_code); setStatusFilter(''); setActiveViewTab('ledger') }} />
       ) : (
         <>
           {/* 2. KPI Summary Cards */}

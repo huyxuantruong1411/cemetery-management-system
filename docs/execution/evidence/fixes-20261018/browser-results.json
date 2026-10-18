@@ -1,0 +1,282 @@
+[
+  {
+    "name": "caretaker-menu",
+    "ok": true,
+    "value": {
+      "menu": [
+        "",
+        "Sơ Đồ Ô Mộ & Bản Đồ",
+        "Chăm Sóc Mộ Phần",
+        "Thi Công Thực Địa",
+        "Đăng xuất"
+      ],
+      "errors": []
+    }
+  },
+  {
+    "name": "gis-loaded",
+    "ok": true,
+    "value": {
+      "toolbar": "1286 / 1411 ô có vị trí\nNền đường phố\nXem tất cả",
+      "demo": 384,
+      "bounds": [
+        10.9252,
+        106.8252,
+        10.9308773,
+        106.8297287
+      ]
+    }
+  },
+  {
+    "name": "svg-click",
+    "ok": true,
+    "value": {
+      "selection": "DEMO-B-H03-05"
+    }
+  },
+  {
+    "name": "care-location",
+    "ok": true,
+    "value": {
+      "text": "PC_a7f873\n\nKhu Chăm Sóc Test · RC_a7f873\n\n1 / 1 ô có vị trí\nNền đơn giản\nXem tất cả\nPC_a7f873 · Đã an táng\nPC_a7f873 · Đã an táng\nPC_a7f873 · Đã an táng\n+\n−\n Leaflet | © OpenStreetMap\n\nCó vị trí mô phỏng dùng cho thực hành.\n\nÔ đang chọn\nĐã an táng"
+    }
+  },
+  {
+    "name": "care-bases",
+    "ok": true,
+    "value": {
+      "text": "Quản lý Dịch vụ Chăm sóc Định kỳ\nDịch Vụ & Thực Địa\n\nLịch chăm sóc khuôn viên mộ, phân công ca thực địa, danh mục công việc và kiểm tra minh chứng nghiệm thu\n\nLàm mới\nSinh Lịch Kỳ Mới\nLịch Chăm Sóc Thực Địa\nCông việc được bàn giao\nCông việc được bàn giao\n\nXem vị trí, thời hạn và xác nhận an táng.\n\nLàm mới\nTất cả loại việc\nAn táng\nChăm sóc mộ phần\nXây dựng / Thi công\nMã công việc\tLoại Việc\tVị Trí Mộ Phần\tNgười Quá Cố\tNgày Hẹn / Hiệu Lực\tMô Tả Công Việc\tTrạng Thái Thực Địa\tThao Tác Hiện Trường\nPL-AT-2026-001095\nHĐ: HD-MD-2026-001561\n\t\nAn Táng\t\nKT-934a2ab2\nHuyệt số: 1 (Khu KHU-A)\n\t\nNguyễn Cụ Thân Sinh\n\t\n2026-10-10\n\tAn táng huyệt số 1 (Kim Tĩnh)\t\nĐã An Táng\t\nVị trí ô mộ-\nPL-XD-cbcc4d\nHĐ: HD-TC-cbcc4d\n\t\nThi Công\t\nChưa gán ô\n\tKhông có\t\n2026-10-12\n\t\tĐang hiệu lực\t-\nPL-XD-5daede\nHĐ: HD-TC-5daede\n\t\nThi Công\t\nChưa gán ô\n\tKhông có\t\n2026-10-12\n\t\tĐang hiệu lực\t-\nPL-XD-26350d\nHĐ: HD-TC-26350d\n\t\nThi Công\t\nChưa gán ô\n\tKhông có\t\n2026-10-12\n\t\tĐang hiệu lực\t-\nPL-XD-a4a90e\nHĐ: HD-TC-a4a90e\n\t\nThi Công\t\nChưa gán ô\n\tKhông có\t\n2026-10-12\n\t\tĐang hiệu lực\t-\nPL-XD-01937b\nHĐ: HD-TC-01937b\n\t\nThi Công\t\nChưa gán ô\n\tKhông có\t\n2026-10-12\n\t\tĐang hiệu lực\t-\nPLC_bcb88e\nHĐ: HDC_bcb88e\n\t\nChăm Sóc\t\nPC_bcb88e\n\tKhông có\t\n2026-01-14\n\tGói chăm sóc: Gói Chăm Sóc Toàn Diện\tĐang hiệu lực\t\nVị trí ô mộ-\nPLC_a72ad4\nHĐ: HDC_a72ad4\n\t\nChăm Sóc\t\nPC_a72ad4\n\tKhông có\t\n2026-01-08\n\tGói chăm sóc: Gói Chăm Sóc Toàn Diện\tĐang hiệu lực\t\n"
+    }
+  },
+  {
+    "name": "construction-location",
+    "ok": true,
+    "value": {
+      "text": "PC_cbcc4d\n\nZone Constr cbcc4d · RC_cbcc4d\n\n1 / 1 ô có vị trí\nNền đơn giản\nXem tất cả\nPC_cbcc4d · Có chủ, chưa an táng\nPC_cbcc4d · Có chủ, chưa an táng\nPC_cbcc4d · Có chủ, chưa an táng\n+\n−\n Leaflet | © OpenStreetMap\n\nCó vị trí mô phỏng dùng cho thực hành.\n\nÔ đang chọn\nCó chủ, chưa an táng"
+    }
+  },
+  {
+    "name": "staff-options",
+    "ok": true,
+    "value": {
+      "status": 200,
+      "count": 9,
+      "names": [
+        "Quản Trang Thực Địa",
+        "Quản trang mô phỏng 01",
+        "Quản trang mô phỏng 02",
+        "Quản trang mô phỏng 03",
+        "Quản trang mô phỏng 04",
+        "Quản trang mô phỏng 05",
+        "Quản trang mô phỏng 06",
+        "Quản trang mô phỏng 07",
+        "Quản trang mô phỏng 08"
+      ]
+    }
+  },
+  {
+    "name": "caretaker-768",
+    "ok": true,
+    "value": {
+      "client": 768,
+      "scroll": 768,
+      "main": [
+        {
+          "width": 768,
+          "scroll": 768
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "name": "caretaker-390",
+    "ok": true,
+    "value": {
+      "client": 390,
+      "scroll": 390,
+      "main": [
+        {
+          "width": 390,
+          "scroll": 390
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "name": "mobile-location",
+    "ok": true,
+    "value": {
+      "width": 374
+    }
+  },
+  {
+    "name": "marketing-menu",
+    "ok": true,
+    "value": {
+      "menu": [
+        "",
+        "Sơ Đồ Ô Mộ & Bản Đồ",
+        "Thân Nhân & Người Mất",
+        "Hợp Đồng & Khách Hàng",
+        "Đăng xuất"
+      ],
+      "errors": []
+    }
+  },
+  {
+    "name": "marketing-768",
+    "ok": true,
+    "value": {
+      "client": 768,
+      "scroll": 768,
+      "main": [
+        {
+          "width": 768,
+          "scroll": 768
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "name": "marketing-390",
+    "ok": true,
+    "value": {
+      "client": 390,
+      "scroll": 390,
+      "main": [
+        {
+          "width": 390,
+          "scroll": 390
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "name": "accountant-menu",
+    "ok": true,
+    "value": {
+      "menu": [
+        "",
+        "Công Nợ & Thu Tiền",
+        "Báo Cáo Thống Kê",
+        "Đăng xuất"
+      ],
+      "errors": []
+    }
+  },
+  {
+    "name": "finance-bases",
+    "ok": true,
+    "value": {
+      "text": "Quản Lý Công Nợ & Thu Tiền\n\nTheo dõi khoản thu, ghi nhận thanh toán và xuất biên lai.\n\nLàm mới\nKhoản thu theo hợp đồng\nCông nợ & thanh toán\nKhoản thu theo hợp đồng\n\nTra người nộp, số tiền còn thiếu và hạn thanh toán.\n\nLàm mới\nTất cả trạng thái nợ\nCòn nợ / Chưa nộp đủ\nĐã thanh toán đủ\nHợp đồng / phụ lục\tNgười Nộp Tiền\tVị Trí Mộ Phần\tTổng Giá Trị\tĐã Thanh Toán\tCòn Nợ\tHạn Nộp\tThao Tác\n\nHD-HT-2026-001565\nHỏa táng\nHợp Đồng Chính\t\nNguyễn Văn Chủ Mộ\n0901112222\n\t\nChưa gán\n\t8.500.000 ₫\t0 ₫\t8.500.000 ₫\t2026-11-02\t\nXem khoản thu\n\nHD-CN-2026-001564\nChuyển nhượng\nHợp Đồng Chính\t\nNguyễn Văn Chủ Mộ\n0901112222\n\t\nSTD-1403c4d9\n\t3.000.000 ₫\t0 ₫\t3.000.000 ₫\t2026-11-02\t\nXem khoản thu\n\nHD-CT-2026-001563\nCải táng\nHợp Đồng Chính\t\nNguyễn Văn Chủ Mộ\n0901112222\n\t\nChưa gán\n\t12.000.000 ₫\t0 ₫\t12.000.000 ₫\t2026-11-02\t\nXem khoản thu\n\nHD-MD-2026-001562\nMua quyền sử dụng đất\nHợp Đồng Chính\t\nNguyễn Văn Chủ Mộ\n0901112222\n\t\nSTD-400e1343\n\t40.000.000 ₫\t0 ₫\t40.000.000 ₫\t-\t\nXem khoản thu\n\nHD-MD-2026-001561\nMua quyền sử dụng đất\nHợp Đồng Chính\t\nNguyễn Văn Chủ Mộ\n0901112222\n\t\nKT-934a2ab2\n\t50.000.000 ₫\t0 ₫\t50.000.000 ₫\t2026-11-02\t\nXem khoản thu\n\nHD-MD-2026-001560\nMua quyền sử dụng đất\nHợp Đồng Chính\t\nNguyễn Văn Chủ Mộ\n090111"
+    }
+  },
+  {
+    "name": "finance-ledger-link",
+    "ok": true,
+    "value": {
+      "inputs": [
+        {
+          "placeholder": "Tìm theo tên khách hàng, số điện thoại, mã hợp đồng hoặc mã phụ lục...",
+          "value": "HD-HT-2026-001565"
+        },
+        {
+          "placeholder": "1",
+          "value": ""
+        }
+      ]
+    }
+  },
+  {
+    "name": "accountant-reports",
+    "ok": true,
+    "value": {
+      "text": "Báo cáo doanh thu\n\nTheo dõi các khoản đã thu trong thời gian được chọn.\n\nXuất Báo Cáo (PDF / XLSX)\nLàm Mới\nDoanh Thu Thực Thu\nTừ:\nĐến:\nTỔNG DOANH THU THỰC THU\n500.532.000 ₫\nKhông bao gồm công nợ chưa trả hoặc giảm trừ\nSỐ LƯỢNG PHIẾU THU\n30 giao dịch\nĐã ghi nhận thanh toán\nGIÁ TRỊ THU TRUNG BÌNH\n16.684.400 ₫\nTrên mỗi phiếu thanh toán\nPHƯƠNG THỨC CHỦ ĐẠO\nVietQR\nChiếm 68.53% tỷ trọng\nCơ Cấu Thu Theo Phương Thức Thanh Toán\nChuyển khoản\n31.47%\n157.532.000 ₫\n16 phiếu thu\nVietQR\n68.53%\n343.000.000 ₫\n14 phiếu thu\nChi Tiết Nhật Ký Thu Tiền (30)\nMã Phiếu\tNgày Thu\tKhách Hàng\tNguồn Hợp Đồng / Phụ Lục\tPhương Thức\tSố Tiền\nREC-202610-0030\t2026-10-11 22:29\tNguyễn Văn Khách Hàng Test\tHợp đồngHD-MD-2026-001547\tVietQR\t24.500.000 ₫\nREC-202610-0029\t2026-10-11 22:29\tNguyễn Văn Khách Hàng Test\tHợp đồngHD-MD-2026-001547\tChuyển khoản\t10.500.000 ₫\nREC-202610-0028\t2026-10-11 22:16\tNguyễn Văn Khách Hàng Test\tHợp đồngHD-MD-2026-001528\tVietQR\t24.500.000 ₫\nREC-202610-0027\t2026-10-11 22:16\tNguyễn Văn Khách Hàng Test\tHợp đồngHD-MD-2026-001528\tChuyển khoản\t10.500.000 ₫\nREC-202610-0026\t2026-10-11 21:46\tNguyễn Văn Khách Hàng Test\tHợp đồngHD-MD-2026-001509\tVietQR\t24.500.000 ₫\nREC-202610-0025\t2026-10-11 21:46\tNguyễn Văn Khách Hàng Test\tHợp đồngHD-MD-2026-001509\tChuyển khoản\t10.500.000 ₫\nREC-202610-0024\t2026-10-11 21:13\tNguyễn Văn Khách Hàng Test\tHợp đồngHD-MD-2026-001490\tVietQR\t24.500.000 ₫\nREC-202610-0023\t2026-10-11 21:13\tNguyễn Văn Khách Hàng Test\tHợp đồngHD-MD-2026-001490\tChuyển khoản\t10.500.000 ₫\nREC-202610-0022\t2026-10-11 21:13\tNguyễn Văn Khách Hàng Test\tHợp đồngHD-MD-2026-001483\tVietQR\t24.500.000 ₫\nREC-20"
+    }
+  },
+  {
+    "name": "accountant-768",
+    "ok": true,
+    "value": {
+      "client": 768,
+      "scroll": 768,
+      "main": [
+        {
+          "width": 768,
+          "scroll": 768
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "name": "accountant-390",
+    "ok": true,
+    "value": {
+      "client": 390,
+      "scroll": 390,
+      "main": [
+        {
+          "width": 390,
+          "scroll": 390
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "name": "admin-menu",
+    "ok": true,
+    "value": {
+      "menu": [
+        "",
+        "Sơ Đồ Ô Mộ & Bản Đồ",
+        "Thân Nhân & Người Mất",
+        "Hợp Đồng & Khách Hàng",
+        "Chăm Sóc Mộ Phần",
+        "Thi Công Thực Địa",
+        "Công Nợ & Thu Tiền",
+        "Bảng Giá & Gói Dịch Vụ",
+        "Quản Trị Người Dùng",
+        "Báo Cáo Thống Kê",
+        "Nhật Ký Kiểm Toán",
+        "Đăng xuất"
+      ],
+      "errors": []
+    }
+  },
+  {
+    "name": "admin-768",
+    "ok": true,
+    "value": {
+      "client": 768,
+      "scroll": 768,
+      "main": [
+        {
+          "width": 768,
+          "scroll": 768
+        }
+      ],
+      "errors": []
+    }
+  },
+  {
+    "name": "admin-390",
+    "ok": true,
+    "value": {
+      "client": 390,
+      "scroll": 390,
+      "main": [
+        {
+          "width": 390,
+          "scroll": 390
+        }
+      ],
+      "errors": []
+    }
+  }
+]

@@ -1,3 +1,5 @@
+import { apiFetch } from '../../services/apiClient'
+import { PlotDirectionsButton } from '../plots/PlotDirectionsButton'
 import React, { useState, useEffect, useCallback } from 'react'
 import {
   Calendar,
@@ -25,7 +27,7 @@ import { Pagination, usePagination } from '../common/Pagination'
 import { WorkBasisView } from '../contracts/WorkBasisView'
 
 export const CareModule: React.FC = () => {
-  const { accessToken: token, user } = useAuth()
+  const { accessToken: token, user, hasPermission } = useAuth()
 
   // Tab state: Lịch Chăm Sóc vs Căn Cứ Nghiệp Vụ (EX-01)
   const [activeCareTab, setActiveCareTab] = useState<'schedules' | 'bases'>('schedules')
@@ -90,7 +92,7 @@ export const CareModule: React.FC = () => {
       if (statusFilter !== 'ALL') params.append('status', statusFilter)
       if (currentPeriod) params.append('period_key', currentPeriod)
 
-      const res = await fetch(`/api/v1/care/schedules?${params.toString()}`, {
+      const res = await apiFetch(`/api/v1/care/schedules?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (!res.ok) {
@@ -111,7 +113,7 @@ export const CareModule: React.FC = () => {
 
   useEffect(() => {
     if (!token) return
-    fetch('/api/v1/auth/staff', {
+    apiFetch('/api/v1/auth/staff', {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((res) => (res.ok ? res.json() : []))
@@ -124,7 +126,7 @@ export const CareModule: React.FC = () => {
     try {
       setDetailLoading(true)
       setIsDetailOpen(true)
-      const res = await fetch(`/api/v1/care/schedules/${scheduleId}`, {
+      const res = await apiFetch(`/api/v1/care/schedules/${scheduleId}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       if (!res.ok) {
@@ -149,7 +151,7 @@ export const CareModule: React.FC = () => {
     if (!token) return
     try {
       setGenLoading(true)
-      const res = await fetch('/api/v1/care/schedules/generate', {
+      const res = await apiFetch('/api/v1/care/schedules/generate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -182,7 +184,7 @@ export const CareModule: React.FC = () => {
     if (!token || !selectedSchedule || !caretakerInputId) return
     try {
       setAssignLoading(true)
-      const res = await fetch(`/api/v1/care/schedules/${selectedSchedule.schedule_id}/assign`, {
+      const res = await apiFetch(`/api/v1/care/schedules/${selectedSchedule.schedule_id}/assign`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -213,7 +215,7 @@ export const CareModule: React.FC = () => {
     if (!token || !selectedSchedule) return
     const newStatus = !item.is_completed
     try {
-      const res = await fetch(`/api/v1/care/checklist-items/${item.item_id}`, {
+      const res = await apiFetch(`/api/v1/care/checklist-items/${item.item_id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -253,7 +255,7 @@ export const CareModule: React.FC = () => {
       const formData = new FormData()
       formData.append('file', evidenceFile)
 
-      const uploadRes = await fetch('/api/v1/documents/upload', {
+      const uploadRes = await apiFetch('/api/v1/documents/upload', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData,
@@ -266,7 +268,7 @@ export const CareModule: React.FC = () => {
       const uploadData = await uploadRes.json()
       const fileId = uploadData.file_id
 
-      const attachRes = await fetch(`/api/v1/care/schedules/${selectedSchedule.schedule_id}/evidence`, {
+      const attachRes = await apiFetch(`/api/v1/care/schedules/${selectedSchedule.schedule_id}/evidence`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -301,7 +303,7 @@ export const CareModule: React.FC = () => {
 
     try {
       setClosingShift(true)
-      const res = await fetch(`/api/v1/care/schedules/${selectedSchedule.schedule_id}/close`, {
+      const res = await apiFetch(`/api/v1/care/schedules/${selectedSchedule.schedule_id}/close`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -357,7 +359,8 @@ export const CareModule: React.FC = () => {
   // Only ADMIN and CARETAKER have field coordination rights (R09 / actor-policy)
   const isCareCoordinator =
     user?.roles ? user.roles.some((r) => ['ADMIN', 'CARETAKER'].includes(r.role_name.toUpperCase())) : false
-  const canManageCare = isCareCoordinator
+  const canManageCare = isCareCoordinator && hasPermission('care:write')
+  const canExecuteCare = isCareCoordinator && hasPermission('care:execute')
 
   // ---------------------------------------------------------------------------
   // Render
@@ -495,7 +498,7 @@ export const CareModule: React.FC = () => {
       </div>
 
       {/* Sub-Tab Navigation: Lịch Chăm Sóc vs Căn Cứ Nghiệp Vụ (EX-01) */}
-      <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid #E2E8F0', paddingBottom: '8px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', borderBottom: '2px solid #E2E8F0', paddingBottom: '8px' }}>
         <button
           type="button"
           onClick={() => setActiveCareTab('schedules')}
@@ -536,7 +539,7 @@ export const CareModule: React.FC = () => {
           }}
         >
           <FileCheck2 size={16} />
-          Căn Cứ Nghiệp Vụ & An Táng (EX-01)
+          Công việc được bàn giao
         </button>
       </div>
 
@@ -956,7 +959,7 @@ export const CareModule: React.FC = () => {
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 600, color: '#1E293B', marginBottom: '4px' }}>
                   <MapPin size={14} color="#64748B" />
-                  <span>{item.plot_code || `Plot #${item.plot_id}`}</span>
+                  <span>{item.plot_code || `Ô mộ #${item.plot_id}`}</span><PlotDirectionsButton plotId={item.plot_id} plotCode={item.plot_code} />
                   <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 400 }}>({item.zone_name || 'Khu chung'})</span>
                 </div>
 
@@ -1068,7 +1071,7 @@ export const CareModule: React.FC = () => {
                     <td style={{ padding: '14px 16px' }}>
                       <div style={{ fontWeight: 600, color: '#1E293B', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <MapPin size={14} color="#64748B" />
-                        <span>{item.plot_code || `Plot #${item.plot_id}`}</span>
+                        <span>{item.plot_code || `Ô mộ #${item.plot_id}`}</span><PlotDirectionsButton plotId={item.plot_id} plotCode={item.plot_code} />
                       </div>
                       <div style={{ fontSize: '12px', color: '#64748B' }}>{item.zone_name || 'Khu chung'}</div>
                     </td>
@@ -1271,6 +1274,7 @@ export const CareModule: React.FC = () => {
                   </h2>
                   <p style={{ fontSize: '12px', color: '#64748B', margin: '2px 0 0 0' }}>
                     Mộ: {selectedSchedule?.plot_code} • {selectedSchedule?.package_name}
+                    <PlotDirectionsButton plotId={selectedSchedule?.plot_id} plotCode={selectedSchedule?.plot_code} />
                   </p>
                 </div>
               </div>
@@ -1406,7 +1410,7 @@ export const CareModule: React.FC = () => {
                           <option value="">-- Chọn nhân viên phụ trách --</option>
                           {staffList.map((s) => (
                             <option key={s.user_id} value={s.user_id}>
-                              {s.full_name} ({s.roles.join(', ') || 'Nhân viên'})
+                              {s.full_name}
                             </option>
                           ))}
                         </select>
@@ -1473,7 +1477,7 @@ export const CareModule: React.FC = () => {
                               type="checkbox"
                               checked={task.is_completed}
                               onChange={() => handleToggleChecklistItem(task)}
-                              disabled={selectedSchedule.status === 'CLOSED'}
+                              disabled={!canExecuteCare || selectedSchedule.status === 'CLOSED'}
                               style={{ marginTop: '2px', cursor: 'pointer', width: '16px', height: '16px' }}
                             />
                             <div>
@@ -1531,7 +1535,7 @@ export const CareModule: React.FC = () => {
                         <Camera size={16} color="var(--brand-primary, #24594D)" />
                         <span>Minh chứng hình ảnh ({selectedSchedule.media_evidences.length})</span>
                       </h3>
-                      {selectedSchedule.status !== 'CLOSED' && (
+                      {canExecuteCare && selectedSchedule.status !== 'CLOSED' && (
                         <button
                           onClick={() => setIsEvidenceModalOpen(true)}
                           style={{
@@ -1635,7 +1639,7 @@ export const CareModule: React.FC = () => {
                 Đóng
               </button>
 
-              {selectedSchedule && selectedSchedule.status !== 'CLOSED' && (
+              {canExecuteCare && selectedSchedule && selectedSchedule.status !== 'CLOSED' && (
                 <button
                   onClick={() => setIsCloseModalOpen(true)}
                   style={{

@@ -350,7 +350,8 @@ def test_task_evidence_ready_file_check():
             headers={"Authorization": f"Bearer {token}"},
         )
         assert bad_resp.status_code == 400
-        assert "chưa ở trạng thái READY" in bad_resp.json()["detail"]
+        assert "chưa tải lên xong" in bad_resp.json()["detail"]
+        assert "READY" not in bad_resp.json()["detail"]
 
         # 2. Attaching READY file succeeds
         ok_resp = client.post(
@@ -392,7 +393,8 @@ def test_complete_task_required_without_evidence_rejected():
             headers={"Authorization": f"Bearer {token}"},
         )
         assert resp_no_ev.status_code == 400
-        assert "phải có ít nhất 1 ảnh" in resp_no_ev.json()["detail"]
+        assert "ảnh hoặc biên bản nghiệm thu" in resp_no_ev.json()["detail"]
+        assert "is_required" not in resp_no_ev.json()["detail"]
 
         # Attempt to complete with proof_media_url without READY evidence -> still 400 (R06: URL shortcut blocked)
         resp_url_only = client.post(

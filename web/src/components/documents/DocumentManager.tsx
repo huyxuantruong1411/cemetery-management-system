@@ -1,3 +1,4 @@
+import { apiFetch } from '../../services/apiClient'
 import React, { useState, useRef } from 'react'
 import {
   FileText,
@@ -51,7 +52,7 @@ export const DocumentManager: React.FC = () => {
     formData.append('file', file)
 
     try {
-      const res = await fetch('/api/v1/documents/upload', {
+      const res = await apiFetch('/api/v1/documents/upload', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${getAuthToken()}`,
@@ -84,7 +85,7 @@ export const DocumentManager: React.FC = () => {
   // Preview file in modal
   const handlePreview = async (file: FileObject) => {
     try {
-      const res = await fetch(`/api/v1/documents/${file.file_id}/preview`, {
+      const res = await apiFetch(`/api/v1/documents/${file.file_id}/preview`, {
         headers: {
           Authorization: `Bearer ${getAuthToken()}`,
         },
@@ -118,7 +119,7 @@ export const DocumentManager: React.FC = () => {
   // Authenticated file download
   const handleDownload = async (file: FileObject) => {
     try {
-      const res = await fetch(`/api/v1/documents/${file.file_id}/download`, {
+      const res = await apiFetch(`/api/v1/documents/${file.file_id}/download`, {
         headers: {
           Authorization: `Bearer ${getAuthToken()}`,
         },
@@ -147,7 +148,7 @@ export const DocumentManager: React.FC = () => {
 
     setVersionSubmitting(true)
     try {
-      const res = await fetch('/api/v1/documents/versions', {
+      const res = await apiFetch('/api/v1/documents/versions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -218,7 +219,7 @@ export const DocumentManager: React.FC = () => {
                 Quản Trị Hồ Sơ Chứng Từ & Lưu Trữ Số
               </h2>
               <p style={{ fontSize: '13px', color: '#64748B', margin: '2px 0 0 0' }}>
-                Hỗ trợ tải lên kiểm tra Magic Bytes, mã băm SHA-256 chống giả mạo, tạo PDF Tiếng Việt & Quản lý phiên bản
+                Tải lên, tra cứu và tải xuống hồ sơ chứng từ.
               </p>
             </div>
           </div>
@@ -343,7 +344,6 @@ export const DocumentManager: React.FC = () => {
                   <th style={{ padding: '10px 14px' }}>Tên Tệp</th>
                   <th style={{ padding: '10px 14px' }}>Định Dạng</th>
                   <th style={{ padding: '10px 14px' }}>Dung Lượng</th>
-                  <th style={{ padding: '10px 14px' }}>Mã Băm SHA-256</th>
                   <th style={{ padding: '10px 14px' }}>Trạng Thái</th>
                   <th style={{ padding: '10px 14px', textAlign: 'right' }}>Thao Tác</th>
                 </tr>
@@ -361,11 +361,6 @@ export const DocumentManager: React.FC = () => {
                     <td style={{ padding: '12px 14px', color: '#64748B' }}>
                       {(file.file_size_bytes / 1024).toFixed(1)} KB
                     </td>
-                    <td style={{ padding: '12px 14px', fontFamily: 'monospace', fontSize: '11px', color: '#475569' }}>
-                      <span title={file.sha256_hash}>
-                        {file.sha256_hash.substring(0, 16)}...
-                      </span>
-                    </td>
                     <td style={{ padding: '12px 14px' }}>
                       <span
                         style={{
@@ -377,7 +372,7 @@ export const DocumentManager: React.FC = () => {
                           color: '#15803D',
                         }}
                       >
-                        {file.state}
+                        {{ READY: 'Đã lưu', QUARANTINED: 'Tệp không hợp lệ', UPLOADING: 'Đang tải lên', PENDING: 'Đang xử lý', FAILED: 'Lưu thất bại', DELETED: 'Đã xóa' }[file.state] || 'Đang xử lý'}
                       </span>
                     </td>
                     <td style={{ padding: '12px 14px', textAlign: 'right' }}>
@@ -480,9 +475,9 @@ export const DocumentManager: React.FC = () => {
                 <tr style={{ borderBottom: '2px solid #E2E8F0', textAlign: 'left', color: '#64748B' }}>
                   <th style={{ padding: '10px 14px' }}>Version #</th>
                   <th style={{ padding: '10px 14px' }}>Loại Tài Liệu</th>
-                  <th style={{ padding: '10px 14px' }}>Hợp Đồng ID</th>
+                  <th style={{ padding: '10px 14px' }}>Mã hợp đồng</th>
                   <th style={{ padding: '10px 14px' }}>Ghi Chú</th>
-                  <th style={{ padding: '10px 14px' }}>Mã Tệp (File ID)</th>
+                  <th style={{ padding: '10px 14px' }}>Mã tệp</th>
                 </tr>
               </thead>
               <tbody>
@@ -703,13 +698,13 @@ export const DocumentManager: React.FC = () => {
                   <option value="SIGNED_CONTRACT">SIGNED_CONTRACT (Hợp Đồng Đã Ký Quét Scan)</option>
                   <option value="DEATH_CERTIFICATE">DEATH_CERTIFICATE (Giấy Báo Tử Pháp Lý)</option>
                   <option value="ANNEX">ANNEX (Phụ Lục Hợp Đồng An Táng)</option>
-                  <option value="IDENTITY_CARD">IDENTITY_CARD (CCCD / Giấy Tờ Tùy Thân)</option>
+                  <option value="IDENTITY_CARD">Giấy tờ tùy thân</option>
                 </select>
               </div>
 
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px', color: '#334155' }}>
-                  Mã ID Hợp Đồng (Nếu có)
+                  Mã hợp đồng liên quan
                 </label>
                 <input
                   type="number"

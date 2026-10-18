@@ -1,3 +1,4 @@
+import { apiFetch } from '../../services/apiClient'
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   AlertCircle,
@@ -189,7 +190,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
       if (typeFilter) url += `&contract_type=${encodeURIComponent(typeFilter)}`;
       if (searchQuery.trim()) url += `&search=${encodeURIComponent(searchQuery.trim())}`;
 
-      const res = await fetch(url, {
+      const res = await apiFetch(url, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) {
@@ -214,7 +215,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
     setDetailLoading(true);
     setDetailError(null);
     try {
-      const res = await fetch(`/api/v1/contracts/${contractId}`, {
+      const res = await apiFetch(`/api/v1/contracts/${contractId}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) {
@@ -234,7 +235,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
   const searchCustomers = async (keyword: string) => {
     setCustLoading(true);
     try {
-      const res = await fetch(`/api/v1/profiles/customers?search=${encodeURIComponent(keyword)}&limit=10`, {
+      const res = await apiFetch(`/api/v1/profiles/customers?search=${encodeURIComponent(keyword)}&limit=10`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
@@ -252,7 +253,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
   const fetchAvailablePlots = async () => {
     setPlotLoading(true);
     try {
-      const res = await fetch('/api/v1/plots?status=EMPTY_UNSOLD&limit=100', {
+      const res = await apiFetch('/api/v1/plots?status=EMPTY_UNSOLD&limit=100', {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
@@ -302,7 +303,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
         payload.land_unit_price = Number(wizardPrice);
       }
 
-      const res = await fetch('/api/v1/contracts/land-purchase', {
+      const res = await apiFetch('/api/v1/contracts/land-purchase', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -331,7 +332,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
   const handleSubmitForSigning = async (contractId: number) => {
     if (!window.confirm('Chuyển hợp đồng này sang trạng thái Chờ Ký Kết?')) return;
     try {
-      const res = await fetch(`/api/v1/contracts/${contractId}/submit-signing`, {
+      const res = await apiFetch(`/api/v1/contracts/${contractId}/submit-signing`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -353,7 +354,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
   // Action: Download PDF
   const handleDownloadPDF = async (contractId: number, contractCode: string) => {
     try {
-      const res = await fetch(`/api/v1/contracts/${contractId}/pdf`, {
+      const res = await apiFetch(`/api/v1/contracts/${contractId}/pdf`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (!res.ok) throw new Error('Không thể tạo file in PDF');
@@ -383,7 +384,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
       // 1. Upload scan file to MinIO
       const formData = new FormData();
       formData.append('file', activateScanFile);
-      const upRes = await fetch('/api/v1/documents/upload', {
+      const upRes = await apiFetch('/api/v1/documents/upload', {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
@@ -396,7 +397,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
       const fileId = upData.file_id;
 
       // 2. Call activate endpoint
-      const actRes = await fetch(`/api/v1/contracts/${contractDetail.contract_id}/activate`, {
+      const actRes = await apiFetch(`/api/v1/contracts/${contractDetail.contract_id}/activate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -430,7 +431,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
     if (!contractDetail || !cancelReason.trim()) return;
     setCancelSubmitting(true);
     try {
-      const res = await fetch(`/api/v1/contracts/${contractDetail.contract_id}/cancel`, {
+      const res = await apiFetch(`/api/v1/contracts/${contractDetail.contract_id}/cancel`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -458,7 +459,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
   // ==========================================
   const searchBurialDeceased = async (keyword: string) => {
     try {
-      const res = await fetch(`/api/v1/profiles/deceased?search=${encodeURIComponent(keyword)}&limit=15`, {
+      const res = await apiFetch(`/api/v1/profiles/deceased?search=${encodeURIComponent(keyword)}&limit=15`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
@@ -490,7 +491,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
     setBurialError(null);
 
     try {
-      const res = await fetch(`/api/v1/plots/${plotId}`, {
+      const res = await apiFetch(`/api/v1/plots/${plotId}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
@@ -512,7 +513,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
 
   const handleCreateBurialAnnex = async () => {
     if (!contractDetail || !selectedDeceased || !burialSlotId) {
-      setBurialError('Vui lòng chọn người quá cố và vị trí slot an táng');
+      setBurialError('Vui lòng chọn người quá cố và huyệt an táng');
       return;
     }
     setBurialSubmitting(true);
@@ -526,7 +527,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
         additional_amount: Number(burialAmount) || 0,
         construction_notes: burialConstructionNotes.trim() || undefined,
       };
-      const res = await fetch(`/api/v1/contracts/${contractDetail.contract_id}/annexes/burial`, {
+      const res = await apiFetch(`/api/v1/contracts/${contractDetail.contract_id}/annexes/burial`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -551,7 +552,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
   const handleSubmitAnnexSigning = async (annexId: number) => {
     if (!window.confirm('Chuyển phụ lục này sang trạng thái Chờ Ký Kết?')) return;
     try {
-      const res = await fetch(`/api/v1/contracts/annexes/${annexId}/submit-signing`, {
+      const res = await apiFetch(`/api/v1/contracts/annexes/${annexId}/submit-signing`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -588,7 +589,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
     try {
       const formData = new FormData();
       formData.append('file', annexScanFile);
-      const upRes = await fetch('/api/v1/documents/upload', {
+      const upRes = await apiFetch('/api/v1/documents/upload', {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: formData,
@@ -600,7 +601,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
       const upData = await upRes.json();
       const fileId = upData.file_id;
 
-      const actRes = await fetch(`/api/v1/contracts/annexes/${activeAnnexToActivate.annex_id}/activate`, {
+      const actRes = await apiFetch(`/api/v1/contracts/annexes/${activeAnnexToActivate.annex_id}/activate`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -629,7 +630,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
   const handleConfirmBurial = async (annexId: number) => {
     if (!window.confirm('Xác nhận: Quản trang đã thực hiện hạ huyệt an táng thực tế tại ô mộ này?')) return;
     try {
-      const res = await fetch(`/api/v1/contracts/annexes/${annexId}/confirm-burial`, {
+      const res = await apiFetch(`/api/v1/contracts/annexes/${annexId}/confirm-burial`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -672,7 +673,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
     setExhumationSlotId('');
     setExhumationDeceasedId('');
     try {
-      const res = await fetch(`/api/v1/plots?limit=100`, {
+      const res = await apiFetch(`/api/v1/plots?limit=100`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
@@ -690,7 +691,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
     setExhumationSlotId('');
     setExhumationDeceasedId('');
     try {
-      const res = await fetch(`/api/v1/plots/${plot.plot_id}`, {
+      const res = await apiFetch(`/api/v1/plots/${plot.plot_id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
@@ -710,13 +711,13 @@ function parseApiError(errJson: unknown, fallback: string): string {
 
   const handleCreateExhumationContract = async () => {
     if (!exhumationCustomer || !selectedExhumationPlot || !exhumationSlotId || !exhumationDeceasedId) {
-      setExhumationError('Vui lòng chọn khách hàng chủ mộ, ô mộ và slot có hài cốt');
+      setExhumationError('Vui lòng chọn khách hàng chủ mộ, ô mộ và huyệt có hài cốt');
       return;
     }
     setExhumationSubmitting(true);
     setExhumationError(null);
     try {
-      const res = await fetch('/api/v1/contracts/exhumation', {
+      const res = await apiFetch('/api/v1/contracts/exhumation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -766,7 +767,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
     setTransferSeller(seller);
     setSelectedTransferPlot(null);
     try {
-      const res = await fetch(`/api/v1/plots?limit=100`, {
+      const res = await apiFetch(`/api/v1/plots?limit=100`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
@@ -791,7 +792,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
     setTransferSubmitting(true);
     setTransferError(null);
     try {
-      const res = await fetch('/api/v1/contracts/transfer', {
+      const res = await apiFetch('/api/v1/contracts/transfer', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -825,7 +826,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
   // ==========================================
   const searchCremationDeceased = async (keyword: string) => {
     try {
-      const res = await fetch(`/api/v1/profiles/deceased?search=${encodeURIComponent(keyword)}&limit=15`, {
+      const res = await apiFetch(`/api/v1/profiles/deceased?search=${encodeURIComponent(keyword)}&limit=15`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
@@ -859,7 +860,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
     setCremationSubmitting(true);
     setCremationError(null);
     try {
-      const res = await fetch('/api/v1/contracts/cremation', {
+      const res = await apiFetch('/api/v1/contracts/cremation', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -2293,7 +2294,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', fontSize: '13px' }}>
                         <div><strong>Người quá cố:</strong> {contractDetail.exhumation.deceased_name || `ID #${contractDetail.exhumation.current_deceased_id}`}</div>
-                        <div><strong>Vị trí:</strong> {contractDetail.exhumation.plot_code} (Slot #{contractDetail.exhumation.slot_number})</div>
+                        <div><strong>Vị trí:</strong> {contractDetail.exhumation.plot_code} (Huyệt số {contractDetail.exhumation.slot_number})</div>
                         <div><strong>Ngày cải táng:</strong> {contractDetail.exhumation.exhumation_date}</div>
                         <div><strong>Phí cải táng:</strong> {formatCurrency(contractDetail.exhumation.exhumation_fee)}</div>
                         <div style={{ gridColumn: '1 / -1' }}><strong>Lý do cải táng:</strong> {contractDetail.exhumation.reason || 'Không ghi chú'}</div>
@@ -2423,7 +2424,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
                                 <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '6px', padding: '10px 12px', marginBottom: '8px' }}>
                                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
                                     <div><strong>Người quá cố:</strong> {annex.burial.deceased_name} ({annex.burial.deceased_code})</div>
-                                    <div><strong>Vị trí:</strong> Slot #{annex.burial.slot_number}</div>
+                                    <div><strong>Vị trí:</strong> Huyệt số {annex.burial.slot_number}</div>
                                     <div><strong>Ngày an táng:</strong> {annex.burial.burial_date}</div>
                                     {annex.burial.is_kim_tinh && (
                                       <span
@@ -3110,17 +3111,17 @@ function parseApiError(errJson: unknown, fallback: string): string {
             {/* Step 2: Slot Selection */}
             <div style={{ marginBottom: '14px' }}>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
-                2. Chọn Vị Trí Slot Trong Ô Mộ (*)
+                2. Chọn huyệt an táng
               </label>
               <select
                 value={burialSlotId}
                 onChange={(e) => setBurialSlotId(Number(e.target.value))}
                 style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px', backgroundColor: '#FFFFFF' }}
               >
-                <option value="">-- Chọn slot an táng --</option>
+                <option value="">-- Chọn huyệt an táng --</option>
                 {contractPlotSlots.map((s) => (
                   <option key={s.slot_id} value={s.slot_id}>
-                    Slot #{s.slot_number} ({s.status === 'EMPTY' ? 'Trống' : `Đang an táng: ${s.deceased_name || 'Đã có hài cốt'}`})
+                    Huyệt số {s.slot_number} ({s.status === 'EMPTY' ? 'Trống' : `Đang an táng: ${s.deceased_name || 'Đã có hài cốt'}`})
                   </option>
                 ))}
               </select>

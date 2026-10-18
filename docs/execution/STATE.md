@@ -1,13 +1,17 @@
 # Nhật Ký Thực Thi Dự Án (Project Execution State)
 
 **Dự án:** Hệ thống Quản lý Nghĩa trang Tư nhân  
-**Ngày cập nhật:** 16/10/2026
+**Ngày cập nhật:** 18/10/2026
 **Kế hoạch thực thi:** [`docs/EXECUTION_PLAN.md`](../EXECUTION_PLAN.md)
 
 ---
 
 ## 1. Trạng thái tổng quan
 
+- **Cập nhật sửa lỗi web 18/10/2026:** Đã sửa lỗi chọn ô trên sơ đồ, tải căn cứ công việc/khoản thu và báo cáo kế toán; đồng bộ phân quyền UI/API của Marketing, Kế toán, Quản trang; thêm shortcut vị trí từ công việc và cấu hình hostname ngrok. Báo cáo, giới hạn và hướng dẫn kiểm tra tiếp: [FIXES-20261018.md](../actor-business-audit/FIXES-20261018.md).
+  - Đã bổ sung 12 nhân viên demo (8 quản trang), 384 ô và 18 hàng; DB chính có 1.411 ô, trong đó 1.286 ô có tọa độ. Backup trước apply trên ổ D, không thay đổi 146 ô khóa, không sửa schema hoặc quyền Admin. Marketing/Quản trang cần đăng nhập lại sau cập nhật quyền.
+  - Kiểm chứng hiện tại: **67 tests passed, 6 deselected**, loại 5 file tích hợp phụ thuộc MinIO khỏi lượt chạy; Ruff phạm vi sửa đạt; web build đạt, lint 0 lỗi/38 cảnh báo. Trình duyệt kiểm desktop/tablet/mobile, cả chạm GIS/SVG và làm mới phiên. Đây không phải gate toàn bộ hệ thống hay nghiệm thu 39 UC.
+  - MinIO chưa hoạt động trong lượt kiểm cuối; thao tác mở Docker Desktop bị xét duyệt tự động từ chối (`blocked by policy`). Upload, biên lai, export và lifecycle đầy đủ cần kiểm lại khi dịch vụ chạy. Nền OSM lỗi kết nối; Leaflet có nền lưới dự phòng vẫn dùng đúng lat/long.
 - **Milestone hiện tại:** Đợt Cải Tiến Giao Diện Theo Actor (Kế hoạch `02_PLAN_ANTIGRAVITY_CAI_THIEN_GIAO_DIEN.md`).
   - **UI-M00 (Baseline & Traceability):** Cần đối chiếu lại mã UC và actor theo review 16/10/2026; giữ baseline cũ để truy vết.
   - **Làm sạch UI triển khai thực tế (Section 5.4):** ĐẠT (Done) -> Gỡ bỏ toàn bộ test UI, demo accounts/passwords trên web & mobile, loại bỏ dev health grid và RBAC permissions tag cloud, làm sạch worker triggers/demo PDF, chuyển đổi giao diện công khai P01 sang cổng thông tin tôn nghiêm.
@@ -21,13 +25,13 @@
   - 37 bảng nghiệp vụ + 12 bảng mở rộng: `auth_sessions` (G01), `file_objects` (G02), `document_versions` (G02), `background_jobs` (G17), `outbox_events` (G17), `contract_templates` (G03), `plot_reservations` (G04), `plot_ownerships` (G05), `construction_task_evidences` (G11), `staff_unavailability` (G13), `idempotency_requests` (G15), `report_exports` (G17) + Mở rộng G12 trên `care_schedules` + Mở rộng G14/G16 trên `receivables`, `discount_records`, `invoices` + Sequence `seq_contract_number` (G09) + Sequence `seq_annex_number` (G10/G18/G20) + Sequence `seq_payment_number` (G15) + Sequence `seq_report_export_number` (G17).
   - Kết nối native qua pyodbc và `ODBC Driver 18 for SQL Server` hoạt động 100%.
 - **Hạ tầng lưu trữ:**
-  - MinIO Docker Container (`elestio/minio:latest`) đang chạy trên máy.
+  - MinIO Docker Container (`elestio/minio:latest`) đã được cấu hình; tại lượt kiểm 18/10/2026 dịch vụ chưa hoạt động, cổng 9000 không lắng nghe.
   - Bind mount trực tiếp vào `D:\work\TH-PTTK\QL-NghiaTrang\backend\runtime\minio\data` trên ổ D.
 - **Bộ công cụ & Chất lượng mã nguồn:**
   - **Lưu ý nghiệm thu 16/10/2026:** Các chỉ số quality gate dưới đây là báo cáo của đợt triển khai trước. Review độc lập tại `7467905` chưa chạy lại toàn bộ gate và xác nhận phân quyền còn sai ở cả ba actor non-admin; xem mục 2.5. Không dùng test xanh để kết luận đủ quyền/39 UC.
   - Backend: Python 3.12 (`uv`). 91 tests passed (7 Business Lifecycle E2E + 9 reports/audit + 7 finance + 7 care + 7 construction + 7 lifecycle + 6 contracts + 7 profiles + 6 plots + 6 auth + 6 catalog + 6 documents + 2 jobs + 2 triggers + 4 health/storage), ruff check/format clean.
   - Web: React 19 + TypeScript + Vite (`pnpm`). Build thành công (0 errors), oxlint clean (0 errors), đã hoàn tất xử lý xác nhận an táng thực địa, tạo lại biên lai, phân quyền điều phối chăm sóc, phím Escape drawer và accessibility dialog.
-  - Mobile: Flutter 3.41.6 / Dart 3.11.4 Android. Analyze 0 issues, 14/14 tests passed, đồng bộ hóa ranh giới khách vãng lai chỉ xem Tra Cứu Tưởng Niệm Zero PII.
+  - Mobile: Flutter 3.41.6 / Dart 3.11.4 Android. Analyze 0 issues, 14/14 tests passed, đồng bộ hóa ranh giới khách vãng lai chỉ xem Tra Cứu Tưởng Niệm Zero PII, khôi phục huy hiệu trạng thái xác thực giấy báo tử G08.
   - CSDL & Unicode: Đã rà soát và sửa chữa 100% lỗi font tiếng Việt Mojibake trên CSDL (`repair_corrupted_unicode.py`), `scan_corrupted_unicode.py` trả về 0 lỗi trên toàn bộ các bảng.
   - Tối ưu UX/UI Responsive & Ngôn Ngữ Nghiệp Vụ:
     - Loại bỏ 100% thuật ngữ kỹ thuật/mã hệ thống (`OWNED_EMPTY`, `HOA_TANG_...`, `(Cremation)`, `(Exhumation)`, `(Ownership Transfer)`, `(EMPTY_UNSOLD)`, `(RESERVED)`, `An Táng Hình Thức Kim Tĩnh (Quy tắc bất biến)` -> `Kim tĩnh`).

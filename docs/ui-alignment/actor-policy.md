@@ -2,6 +2,7 @@
 
 - **Dự án:** Hệ thống Quản lý Nghĩa trang Tư nhân
 - **Baseline kiểm chứng:** 7467905
+- **Cập nhật triển khai 18/10/2026:** [Kết quả sửa web và phân quyền](../actor-business-audit/FIXES-20261018.md). Marketing không được đọc toàn bộ công việc; Quản trang không có quyền đọc danh bạ người mất hoặc danh mục giá. Các ngoại lệ bên dưới phải đi qua dữ liệu bàn giao/lookup đúng phạm vi, không mở quyền đọc module đầy đủ.
 - **Mục tiêu:** Định nghĩa quyền đọc/ghi, phạm vi tài nguyên (Resource Scope), DTO Allowlist và danh sách hành vi cấm tuyệt đối (Deny Policy) cho các nhóm Actor: Marketing, Kế toán, Quản trang, Public và Tài khoản role rỗng.
 - **Nguyên tắc bất biến:** Server-side Enforcement — Frontend chỉ render giao diện và gửi command; FastAPI backend chịu trách nhiệm 100% kiểm tra quyền và lọc dữ liệu. Mặc định từ chối (Default Deny) mọi quyền ngoài phạm vi được phân công.
 
@@ -15,11 +16,11 @@
 | **Khách hàng/thân nhân, người mất, quan hệ** | C/R/U và liên kết theo UC (`customers:*`, `deceased:*`); xác minh đúng luồng | Không vào danh bạ; chỉ người trả/liên hệ cần thu trong FinanceBasis | Không vào danh bạ; chỉ thông tin nhận diện phần mộ/công việc trong WorkBasis | Tra cứu thông tin tưởng niệm được công bố Zero PII | Toàn quyền kiểm soát (`customers:*`, `deceased:*`) |
 | **Hợp đồng/phụ lục** | Tạo/sửa bản nháp, in, nạp bản ký, kích hoạt (`contracts:*`); hủy bằng command | Không vào module pháp lý; đọc căn cứ khoản phải thu qua FinanceBasis | Không vào module pháp lý; đọc căn cứ công việc qua WorkBasis | Không truy cập nội bộ | Toàn quyền giám sát & quản trị |
 | **Đăng ký chăm sóc** | Đăng ký/gia hạn qua phụ lục; chọn gói có hiệu lực (`contracts:write`, `catalog:read`) | Nhận nghĩa vụ tài chính phát sinh | Nhận phạm vi, chu kỳ, thời hạn đã bàn giao | Xem kết quả được công bố | Toàn quyền giám sát |
-| **Thi công, ca chăm sóc** | Chỉ xem tóm tắt tiến độ/kết quả của hồ sơ dịch vụ liên quan (`construction:read`) | Không điều phối | Lập checklist/lịch, phân công, cập nhật, ảnh minh chứng, đóng ca (`construction:*`, `care:*`) | Không điều phối | Giám sát vận hành |
+| **Thi công, ca chăm sóc** | Chỉ tóm tắt tiến độ/kết quả của hồ sơ liên quan qua projection EX-03; không cấp `construction:read`/`care:read` toàn bộ | Không điều phối | Lập checklist/lịch, phân công, cập nhật, ảnh minh chứng, đóng ca (`construction:*`, `care:*`) | Không điều phối | Giám sát vận hành |
 | **Trạng thái an táng thực địa** | Không xác nhận thay Quản trang | Không thao tác | Xác nhận bằng command hiện trường có căn cứ hợp lệ (`plots:confirm_burial`); không sửa status tùy ý | Không thao tác | Xác nhận dự phòng khi cần; không bypass Kim Tĩnh |
 | **Thu tiền, chiết khấu, biên lai** | Không vào sổ tài chính; chỉ xem trạng thái thanh toán của hồ sơ | Tạo khoản thu hợp lệ, ghi nhận thanh toán, chiết khấu theo policy, xuất/tạo lại biên lai (`finance:*`) | Không truy cập tài chính | Thanh toán ngoài hệ thống | Giám sát & phê duyệt chính sách |
 | **Báo cáo** | Không báo cáo doanh nghiệp | Xem/xuất doanh thu (`reports:revenue`) | Không báo cáo doanh nghiệp; xem số việc trong workspace riêng | Không truy cập | Toàn bộ 4 loại báo cáo doanh nghiệp (`reports:read`) |
-| **Gói mẫu, mẫu HĐ, bảng giá** | Chọn dữ liệu có hiệu lực (`catalog:read`); không C/U/D cấu hình | Đọc snapshot giá của nghĩa vụ (`catalog:read`); không C/U/D cấu hình | Nhận yêu cầu kỹ thuật snapshot (`catalog:read`); không C/U/D cấu hình | Chỉ nội dung công bố nếu có | Toàn quyền cấu hình bảng giá, gói, mẫu HĐ (`catalog:manage`) |
+| **Gói mẫu, mẫu HĐ, bảng giá** | Chọn dữ liệu có hiệu lực (`catalog:read`); không C/U/D cấu hình | Đọc snapshot giá của nghĩa vụ (`catalog:read`); không C/U/D cấu hình | Nhận yêu cầu kỹ thuật trong dữ liệu công việc bàn giao; không đọc toàn bộ danh mục, không C/U/D cấu hình | Chỉ nội dung công bố nếu có | Toàn quyền cấu hình bảng giá, gói, mẫu HĐ (`catalog:manage`) |
 | **Tài khoản, phân quyền, audit** | Không truy cập | Không truy cập | Không truy cập; danh sách thợ là lookup điều phối riêng | Không truy cập | Toàn quyền quản trị tài khoản, quyền và nhật ký kiểm toán |
 
 ---
@@ -69,7 +70,7 @@ Các ngoại lệ phối hợp phải được hiện thực bằng endpoint/pro
   - Toàn bộ danh sách công việc của nghĩa trang, lịch nghỉ/vắng mặt của nhân sự, evidence của các công việc không liên quan.
   - Quyền phân công thợ, sửa checklist hoặc đóng ca.
 
-### EX-04 — Lookup Bán hàng & Dịch vụ (Dành cho Marketing / Quản trang)
+### EX-04 — Lookup Bán hàng & Dịch vụ (Dành cho Marketing)
 - **Mục đích:** Tra cứu bảng giá niêm yết, gói chăm sóc và mẫu hợp đồng hiệu lực để tư vấn và lập giao dịch.
 - **Dữ liệu cho phép (Allowlist):**
   - Danh sách bảng giá, khoản mục giá đang `is_active = True`.
@@ -77,6 +78,8 @@ Các ngoại lệ phối hợp phải được hiện thực bằng endpoint/pro
   - Danh sách mẫu hợp đồng đang hiệu lực (`is_active = True`).
 - **Dữ liệu tuyệt đối cấm (Deny / Strip):**
   - Màn hình cấu hình, thêm/sửa/xóa bảng giá, sửa đơn giá, tạo gói mẫu, bump version hợp đồng.
+
+Quản trang nhận nội dung gói và yêu cầu thực hiện qua EX-01/công việc đã bàn giao; không dùng lookup bán hàng để đọc giá, mẫu hợp đồng hoặc toàn bộ danh mục.
 
 ### EX-05 — Danh bạ người thực hiện (Staff Lookup cho Điều phối)
 - **Mục đích:** Lấy danh sách nhân viên đủ điều kiện để phân công ca chăm sóc hoặc giám sát thi công.

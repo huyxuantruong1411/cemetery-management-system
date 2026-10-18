@@ -1,3 +1,4 @@
+import { apiFetch } from '../../services/apiClient'
 import React, { useCallback, useEffect, useState } from 'react'
 import {
   AlertCircle,
@@ -51,9 +52,9 @@ export const AuditModule: React.FC = () => {
     if (!accessToken) return
     try {
       const [sumRes, entRes, actRes] = await Promise.all([
-        fetch('/api/v1/audit/summary', { headers: { Authorization: `Bearer ${accessToken}` } }),
-        fetch('/api/v1/audit/entities', { headers: { Authorization: `Bearer ${accessToken}` } }),
-        fetch('/api/v1/audit/actions', { headers: { Authorization: `Bearer ${accessToken}` } }),
+        apiFetch('/api/v1/audit/summary', { headers: { Authorization: `Bearer ${accessToken}` } }),
+        apiFetch('/api/v1/audit/entities', { headers: { Authorization: `Bearer ${accessToken}` } }),
+        apiFetch('/api/v1/audit/actions', { headers: { Authorization: `Bearer ${accessToken}` } }),
       ])
 
       if (sumRes.ok) setSummary(await sumRes.json())
@@ -76,7 +77,7 @@ export const AuditModule: React.FC = () => {
       if (searchTerm.trim()) q.append('search', searchTerm.trim())
       q.append('limit', limit.toString())
 
-      const resp = await fetch(`/api/v1/audit/logs?${q.toString()}`, {
+      const resp = await apiFetch(`/api/v1/audit/logs?${q.toString()}`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
@@ -92,7 +93,7 @@ export const AuditModule: React.FC = () => {
       if (err instanceof Error) {
         setError(err.message)
       } else {
-        setError('Không thể kết nối đến máy chủ API nhật ký')
+        setError('Không thể kết nối đến máy chủ')
       }
     } finally {
       setLoading(false)
@@ -261,7 +262,7 @@ export const AuditModule: React.FC = () => {
           <div style={{ fontSize: '24px', fontWeight: 700, color: 'var(--brand-primary)', margin: '8px 0 4px 0' }}>
             {summary?.total_logs || 0}
           </div>
-          <div style={{ fontSize: '12px', color: '#15803D' }}>Lưu trữ an toàn trên CSDL MSSQL</div>
+          <div style={{ fontSize: '12px', color: '#15803D' }}>Theo dõi lịch sử thao tác</div>
         </div>
 
         <div
@@ -391,7 +392,7 @@ export const AuditModule: React.FC = () => {
           <Search size={14} color="#94A3B8" style={{ position: 'absolute', left: '10px', top: '9px' }} />
           <input
             type="text"
-            placeholder="Tìm theo mã đối tượng (Target ID)..."
+            placeholder="Tìm theo mã hồ sơ…"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{
@@ -604,7 +605,7 @@ export const AuditModule: React.FC = () => {
                   <th style={{ padding: '12px 16px', textAlign: 'left' }}>Tài Khoản</th>
                   <th style={{ padding: '12px 16px', textAlign: 'left' }}>Hành Động</th>
                   <th style={{ padding: '12px 16px', textAlign: 'left' }}>Thực Thể</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left' }}>Mã Đối Tượng (ID)</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'left' }}>Mã hồ sơ</th>
                   <th style={{ padding: '12px 16px', textAlign: 'left' }}>Địa Chỉ IP</th>
                   <th style={{ padding: '12px 16px', textAlign: 'center' }}>Thao Tác</th>
                 </tr>
@@ -773,7 +774,7 @@ export const AuditModule: React.FC = () => {
                 <strong>{activeLog.target_entity}</strong>
               </div>
               <div>
-                <span style={{ color: '#64748B' }}>Khóa định danh (ID): </span>
+                <span style={{ color: '#64748B' }}>Mã hồ sơ: </span>
                 <strong style={{ color: 'var(--brand-primary)' }}>{activeLog.target_id}</strong>
               </div>
             </div>
@@ -782,14 +783,14 @@ export const AuditModule: React.FC = () => {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
                 <div style={{ fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
-                  Giá Trị Trước Thay Đổi (Pre-change Snapshot)
+                  Thông tin trước thay đổi
                 </div>
                 {renderJsonPretty(activeLog.pre_change_values)}
               </div>
 
               <div>
                 <div style={{ fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
-                  Giá Trị Sau Thay Đổi (Post-change Snapshot)
+                  Thông tin sau thay đổi
                 </div>
                 {renderJsonPretty(activeLog.post_change_values)}
               </div>

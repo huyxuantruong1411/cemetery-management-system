@@ -68,6 +68,9 @@ export interface Plot {
   latitude?: number | null;
   longitude?: number | null;
   orientation?: string | null;
+  plot_length?: number | string;
+  plot_width?: number | string;
+  is_synthetic?: boolean;
   owner_id?: number | null;
   owner_name?: string | null;
   active_reservation?: PlotReservation | null;
