@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import List, Optional
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.modules.audit.models import AuditLog
 from app.modules.auth.models import User
@@ -30,7 +30,7 @@ from app.modules.construction.schemas import (
 from app.modules.contracts.models import ContractAnnex
 from app.modules.documents.models import FileObject
 from app.modules.jobs.service import OutboxService
-from app.modules.plots.models import Plot, PlotSlot
+from app.modules.plots.models import Plot, PlotSlot, Row
 
 
 class ConstructionService:
@@ -250,7 +250,11 @@ class ConstructionService:
         plot_id: Optional[int] = None,
         supervisor_id: Optional[int] = None,
     ) -> List[ConstructionOrderResponse]:
-        query = db.query(ConstructionOrder)
+        query = db.query(ConstructionOrder).options(
+            joinedload(ConstructionOrder.plot).joinedload(Plot.row).joinedload(Row.zone),
+            joinedload(ConstructionOrder.supervisor),
+            selectinload(ConstructionOrder.tasks).selectinload(ConstructionTask.evidences),
+        )
         if status_filter:
             if status_filter.upper() == "OVERDUE":
                 query = query.filter(
@@ -269,7 +273,16 @@ class ConstructionService:
 
     @staticmethod
     def get_order_by_id(db: Session, order_id: int) -> ConstructionOrderResponse:
-        order = db.query(ConstructionOrder).filter(ConstructionOrder.order_id == order_id).first()
+        order = (
+            db.query(ConstructionOrder)
+            .options(
+                joinedload(ConstructionOrder.plot).joinedload(Plot.row).joinedload(Row.zone),
+                joinedload(ConstructionOrder.supervisor),
+                selectinload(ConstructionOrder.tasks).selectinload(ConstructionTask.evidences),
+            )
+            .filter(ConstructionOrder.order_id == order_id)
+            .first()
+        )
         if not order:
             raise HTTPException(status_code=404, detail="Không tìm thấy lệnh thi công")
         return ConstructionService._to_order_response(order)

@@ -296,21 +296,46 @@ def test_apply_discount_invariants():
         assert float(data["final_payable_amount"]) == 9000000.0
         assert float(data["remaining_balance"]) == 9000000.0
 
-        # 2. Re-applying discount must be rejected (single discount allowed)
+        # 2. Re-applying / editing discount before payment must succeed and recalculate
         resp_disc2 = client.post(
+            f"/api/v1/finance/receivables/{rec_id}/discount",
+            json={
+                "discount_type": "PERCENTAGE",
+                "discount_value": 15.0,
+                "justification_reason": "Sửa lại mức chiết khấu thành 15%",
+            },
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp_disc2.status_code == 200, resp_disc2.text
+        data2 = resp_disc2.json()
+        assert float(data2["discount_amount"]) == 1500000.0
+        assert float(data2["final_payable_amount"]) == 8500000.0
+        assert float(data2["remaining_balance"]) == 8500000.0
+
+        # 3. Customer makes first partial payment of 2,000,000
+        resp_pay = client.post(
+            f"/api/v1/finance/receivables/{rec_id}/payments",
+            json={
+                "paid_amount": 2000000.0,
+                "payment_method": "BANK_TRANSFER",
+                "payment_reference": "TT-LAN-01",
+            },
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp_pay.status_code == 201, resp_pay.text
+
+        # 4. Re-applying / editing discount after payment must be rejected with 400
+        resp_disc3 = client.post(
             f"/api/v1/finance/receivables/{rec_id}/discount",
             json={
                 "discount_type": "FIXED_AMOUNT",
                 "discount_value": 500000,
-                "justification_reason": "Giảm thêm",
+                "justification_reason": "Cố tình giảm thêm sau khi đã thu tiền",
             },
             headers={"Authorization": f"Bearer {token}"},
         )
-        assert resp_disc2.status_code == 400
-        assert (
-            "chỉ chấp nhận một chiết khấu" in resp_disc2.text
-            or "đã được áp dụng" in resp_disc2.text
-        )
+        assert resp_disc3.status_code == 400
+        assert "phát sinh thanh toán" in resp_disc3.text or "bị khóa" in resp_disc3.text
 
     finally:
         cleanup_finance_fixture(db, fix)

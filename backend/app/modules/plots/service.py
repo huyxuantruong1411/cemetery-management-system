@@ -300,13 +300,16 @@ class PlotService:
             .all()
         )
 
+        # Batch load owners to eliminate N+1 query
+        owner_ids = {p.owner_id for p in plots if p.owner_id}
+        owner_map = {}
+        if owner_ids:
+            owners = db.query(Customer).filter(Customer.customer_id.in_(owner_ids)).all()
+            owner_map = {o.customer_id: o.full_name for o in owners}
+
         results = []
         for p in plots:
-            owner_name = None
-            if p.owner_id:
-                owner = db.query(Customer).filter(Customer.customer_id == p.owner_id).first()
-                if owner:
-                    owner_name = owner.full_name
+            owner_name = owner_map.get(p.owner_id) if p.owner_id else None
 
             # Find active reservation if any
             active_res = None

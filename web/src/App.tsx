@@ -35,6 +35,7 @@ import { ProfileModule } from './components/profiles/ProfileModule'
 import { ReportsModule } from './components/reports/ReportsModule'
 import { ErrorBoundary } from './components/common/ErrorBoundary'
 import { AuthProvider } from './context/AuthContext'
+import { NotificationModalProvider } from './context/NotificationModalContext'
 import { useAuth } from './context/useAuth'
 
 interface NavItemProps {
@@ -1074,7 +1075,9 @@ export function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <MainApp />
+        <NotificationModalProvider>
+          <MainApp />
+        </NotificationModalProvider>
       </AuthProvider>
     </ErrorBoundary>
   )

@@ -448,8 +448,45 @@ button {
 .basis-header { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; padding:18px; background:white; border:1px solid #dce5df; border-radius:12px; }
 .basis-header h2 { margin:0; color:#24594d; font-size:18px; }
 .basis-header p { margin:4px 0 0; color:#63756f; font-size:13px; }
-.basis-header button, .plot-directions-button, .gis-map-toolbar button, .map-notice button, .map-overlap-list button { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:48px; padding:8px 12px; border:1px solid #cbd9d0; border-radius:8px; background:white; color:#24594d; font:inherit; font-size:13px; cursor:pointer; text-decoration:none; }
-.plot-directions-button { margin:4px 0; flex-shrink:0; }
+.basis-header button, .gis-map-toolbar button, .map-notice button, .map-overlap-list button { display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:44px; padding:8px 14px; border:1px solid #cbd9d0; border-radius:8px; background:white; color:#24594d; font:inherit; font-size:13px; cursor:pointer; text-decoration:none; }
+.plot-directions-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 26px;
+  padding: 3px 8px;
+  border: 1px solid #dce5df;
+  border-radius: 6px;
+  background: #f7f9f8;
+  color: #24594d;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.plot-directions-button:hover {
+  background: #e9f2ee;
+  border-color: #24594d;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.plot-nav-primary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
 .basis-table-wrap { max-width:100%; overflow:auto; }
 .basis-table { min-width:760px; }
 .gis-map-shell { min-width:0; width:100%; border:1px solid #dce5df; border-radius:12px; overflow:hidden; background:#f7f8f5; }

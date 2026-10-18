@@ -2,6 +2,7 @@ import { apiFetch } from '../../services/apiClient'
 import React, { useEffect, useState } from 'react'
 import {
   AlertCircle,
+  ArrowUpDown,
   CheckCircle2,
   KeyRound,
   Lock,
@@ -16,6 +17,7 @@ import {
   UserX,
 } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
+import { useNotificationModal } from '../../context/NotificationModalContext'
 import { Pagination } from '../common/Pagination'
 
 interface RoleItem {
@@ -44,6 +46,7 @@ interface UserItem {
 
 export const UserManagementModule: React.FC = () => {
   const { accessToken, user: currentUser } = useAuth()
+  const { confirm, alert: modalAlert } = useNotificationModal()
   const [activeTab, setActiveTab] = useState<'users' | 'rbac'>('users')
   const [users, setUsers] = useState<UserItem[]>([])
   const [roles, setRoles] = useState<RoleItem[]>([])
@@ -51,10 +54,11 @@ export const UserManagementModule: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
-  // Filter & Search
+  // Filter & Search & Sort
   const [searchTerm, setSearchTerm] = useState<string>('')
   const [roleFilter, setRoleFilter] = useState<string>('ALL')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
+  const [sortBy, setSortBy] = useState<'created_desc' | 'created_asc' | 'name_asc' | 'name_desc' | 'username_asc'>('created_desc')
 
   // Pagination
   const [page, setPage] = useState<number>(1)
@@ -155,7 +159,7 @@ export const UserManagementModule: React.FC = () => {
       setNewRoleIds([])
       fetchUsersAndRoles()
     } catch (err: any) {
-      alert(`Lỗi: ${err.message}`)
+      await modalAlert({ message: `Lỗi: ${err.message}`, type: 'error' })
     }
   }
 
@@ -198,7 +202,7 @@ export const UserManagementModule: React.FC = () => {
       setEditUser(null)
       fetchUsersAndRoles()
     } catch (err: any) {
-      alert(`Lỗi: ${err.message}`)
+      await modalAlert({ message: `Lỗi: ${err.message}`, type: 'error' })
     }
   }
 
@@ -208,7 +212,15 @@ export const UserManagementModule: React.FC = () => {
     const confirmText = nextActive
       ? `Bạn có chắc muốn MỞ KHÓA tài khoản '${u.username}'?`
       : `Bạn có chắc muốn KHÓA tài khoản '${u.username}'? (Các phiên đăng nhập hiện tại sẽ bị hủy ngay lập tức)`
-    if (!window.confirm(confirmText)) return
+
+    const confirmed = await confirm({
+      title: nextActive ? 'Xác nhận mở khóa tài khoản' : 'Xác nhận khóa tài khoản',
+      message: confirmText,
+      confirmText: nextActive ? 'Mở khóa' : 'Khóa tài khoản',
+      cancelText: 'Hủy bỏ',
+      isDestructive: !nextActive,
+    })
+    if (!confirmed) return
 
     try {
       const res = await apiFetch(`/api/v1/auth/users/${u.user_id}`, {
@@ -230,7 +242,7 @@ export const UserManagementModule: React.FC = () => {
       showSuccess(`Đã ${nextActive ? 'mở khóa' : 'khóa'} tài khoản '${u.username}'!`)
       fetchUsersAndRoles()
     } catch (err: any) {
-      alert(`Lỗi: ${err.message}`)
+      await modalAlert({ message: `Lỗi: ${err.message}`, type: 'error' })
     }
   }
 
@@ -260,29 +272,37 @@ export const UserManagementModule: React.FC = () => {
       setAdminNewPassword('')
       fetchUsersAndRoles()
     } catch (err: any) {
-      alert(`Lỗi: ${err.message}`)
+      await modalAlert({ message: `Lỗi: ${err.message}`, type: 'error' })
     }
   }
 
-  // Filtered Users
-  const filteredUsers = users.filter((u) => {
-    const term = searchTerm.toLowerCase()
-    const matchesSearch =
-      u.username.toLowerCase().includes(term) ||
-      u.full_name.toLowerCase().includes(term) ||
-      u.email.toLowerCase().includes(term) ||
-      (u.phone_number && u.phone_number.includes(term))
+  // Filtered & Sorted Users
+  const filteredUsers = users
+    .filter((u) => {
+      const term = searchTerm.toLowerCase()
+      const matchesSearch =
+        u.username.toLowerCase().includes(term) ||
+        u.full_name.toLowerCase().includes(term) ||
+        u.email.toLowerCase().includes(term) ||
+        (u.phone_number && u.phone_number.includes(term))
 
-    const matchesRole =
-      roleFilter === 'ALL' || u.roles.some((r) => r.role_name === roleFilter)
+      const matchesRole =
+        roleFilter === 'ALL' || u.roles.some((r) => r.role_name === roleFilter)
 
-    const matchesStatus =
-      statusFilter === 'ALL' ||
-      (statusFilter === 'ACTIVE' && u.is_active) ||
-      (statusFilter === 'LOCKED' && !u.is_active)
+      const matchesStatus =
+        statusFilter === 'ALL' ||
+        (statusFilter === 'ACTIVE' && u.is_active) ||
+        (statusFilter === 'LOCKED' && !u.is_active)
 
-    return matchesSearch && matchesRole && matchesStatus
-  })
+      return matchesSearch && matchesRole && matchesStatus
+    })
+    .sort((a, b) => {
+      if (sortBy === 'name_asc') return a.full_name.localeCompare(b.full_name)
+      if (sortBy === 'name_desc') return b.full_name.localeCompare(a.full_name)
+      if (sortBy === 'username_asc') return a.username.localeCompare(b.username)
+      if (sortBy === 'created_asc') return a.user_id - b.user_id
+      return b.user_id - a.user_id // created_desc default
+    })
 
   // Paginated Users
   const paginatedUsers = filteredUsers.slice((page - 1) * pageSize, page * pageSize)
@@ -571,6 +591,34 @@ export const UserManagementModule: React.FC = () => {
                 <option value="ALL">Tất cả trạng thái</option>
                 <option value="ACTIVE">Đang hoạt động</option>
                 <option value="LOCKED">Đã bị khóa</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ArrowUpDown size={14} color="#64748B" />
+              <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 500 }}>Sắp xếp:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => {
+                  setSortBy(e.target.value as any)
+                  setPage(1)
+                }}
+                style={{
+                  padding: '7px 12px',
+                  borderRadius: '7px',
+                  border: '1px solid #CBD5E1',
+                  backgroundColor: '#FFFFFF',
+                  fontSize: '12px',
+                  color: '#1E293B',
+                  outline: 'none',
+                  fontWeight: 500,
+                }}
+              >
+                <option value="created_desc">Mới nhất trước</option>
+                <option value="created_asc">Cũ nhất trước</option>
+                <option value="name_asc">Họ tên (A → Z)</option>
+                <option value="name_desc">Họ tên (Z → A)</option>
+                <option value="username_asc">Tài khoản (A → Z)</option>
               </select>
             </div>
           </div>

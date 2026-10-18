@@ -28,6 +28,7 @@ import type {
 } from '../../types/plots';
 import { Pagination, usePagination } from '../common/Pagination';
 import { useAuth } from '../../context/useAuth';
+import { useNotificationModal } from '../../context/NotificationModalContext';
 import { SimulatedPlotMap } from './SimulatedPlotMap';
 
 interface PlotMapModuleProps {
@@ -40,6 +41,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
   onRequireLogin,
 }) => {
   const { hasPermission } = useAuth();
+  const { confirm, alert: modalAlert } = useNotificationModal();
   const canManagePlots = hasPermission('plots:manage');
 
   // Tab state: Default to Simulated Layout
@@ -245,7 +247,14 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
   // 5. Handle Cancel Reservation
   const handleCancelReservation = async (plotId: number) => {
     if (!token) return;
-    if (!window.confirm('Bạn có chắc chắn muốn hủy giữ chỗ cho ô mộ này không?')) return;
+    const confirmed = await confirm({
+      title: 'Hủy giữ chỗ ô mộ',
+      message: 'Bạn có chắc chắn muốn hủy giữ chỗ cho ô mộ này không? Ô mộ sẽ quay về trạng thái Trống và mở lại cho khách hàng khác.',
+      confirmText: 'Hủy giữ chỗ',
+      cancelText: 'Quay lại',
+      isDestructive: true,
+    });
+    if (!confirmed) return;
 
     try {
       const res = await apiFetch(`/api/v1/plots/${plotId}/cancel-reservation`, {
@@ -254,13 +263,13 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
       });
       if (!res.ok) {
         const data = await res.json();
-        alert(data.detail || 'Không thể hủy giữ chỗ.');
+        await modalAlert({ message: data.detail || 'Không thể hủy giữ chỗ.', type: 'error' });
         return;
       }
       await fetchData();
       await fetchPlotDetail(plotId);
     } catch {
-      alert('Lỗi kết nối khi hủy giữ chỗ.');
+      await modalAlert({ message: 'Lỗi kết nối khi hủy giữ chỗ.', type: 'error' });
     }
   };
 

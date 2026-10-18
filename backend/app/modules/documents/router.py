@@ -92,6 +92,119 @@ def preview_document(
     )
 
 
+@router.get(
+    "/versions",
+    response_model=list[DocumentVersionResponse],
+    summary="Lấy danh sách các phiên bản tài liệu đính kèm",
+)
+def list_document_versions(
+    contract_id: int | None = None,
+    annex_id: int | None = None,
+    certificate_id: int | None = None,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[DocumentVersionResponse]:
+    """Trả về danh sách tài liệu scan / đính kèm liên kết với Hợp đồng, Phụ lục hoặc Giấy báo tử."""
+    from sqlalchemy.orm import joinedload
+
+    from app.modules.contracts.models import Contract, ContractAnnex
+    from app.modules.documents.models import DocumentVersion, FileObject
+    from app.modules.profiles.models import DeathCertificate
+
+    q = db.query(DocumentVersion).options(joinedload(DocumentVersion.file))
+    if contract_id is not None:
+        q = q.filter(DocumentVersion.contract_id == contract_id)
+    if annex_id is not None:
+        q = q.filter(DocumentVersion.annex_id == annex_id)
+    if certificate_id is not None:
+        q = q.filter(DocumentVersion.certificate_id == certificate_id)
+
+    versions = q.order_by(DocumentVersion.version_no.desc()).all()
+    results = list(versions)
+
+    existing_file_ids = {v.file_id for v in versions}
+
+    if contract_id is not None:
+        contract = db.get(Contract, contract_id)
+        if contract and contract.signed_scan_file_id and contract.signed_scan_file_id not in existing_file_ids:
+            file_obj = db.get(FileObject, contract.signed_scan_file_id)
+            if file_obj:
+                existing_file_ids.add(contract.signed_scan_file_id)
+                results.append(
+                    DocumentVersion(
+                        document_id=-1,
+                        document_type="SIGNED_CONTRACT",
+                        contract_id=contract_id,
+                        version_no=1,
+                        file_id=contract.signed_scan_file_id,
+                        notes="Bản scan hợp đồng có chữ ký (Kích hoạt hiệu lực)",
+                        verified_at=contract.activated_at,
+                        created_at=contract.activated_at or contract.created_at,
+                        file=file_obj,
+                    )
+                )
+        if contract and contract.annexes:
+            for an in contract.annexes:
+                if an.signed_scan_file_id and an.signed_scan_file_id not in existing_file_ids:
+                    file_obj = db.get(FileObject, an.signed_scan_file_id)
+                    if file_obj:
+                        existing_file_ids.add(an.signed_scan_file_id)
+                        results.append(
+                            DocumentVersion(
+                                document_id=-100 - an.annex_id,
+                                document_type="SIGNED_ANNEX",
+                                contract_id=contract_id,
+                                annex_id=an.annex_id,
+                                version_no=1,
+                                file_id=an.signed_scan_file_id,
+                                notes=f"Bản scan phụ lục #{an.annex_id} ({an.annex_type})",
+                                verified_at=an.activated_at,
+                                created_at=an.activated_at or an.created_at,
+                                file=file_obj,
+                            )
+                        )
+
+    if annex_id is not None:
+        annex = db.get(ContractAnnex, annex_id)
+        if annex and annex.signed_scan_file_id and annex.signed_scan_file_id not in existing_file_ids:
+            file_obj = db.get(FileObject, annex.signed_scan_file_id)
+            if file_obj:
+                results.append(
+                    DocumentVersion(
+                        document_id=-2,
+                        document_type="SIGNED_ANNEX",
+                        annex_id=annex_id,
+                        version_no=1,
+                        file_id=annex.signed_scan_file_id,
+                        notes="Bản scan phụ lục có chữ ký (Kích hoạt hiệu lực)",
+                        verified_at=annex.activated_at,
+                        created_at=annex.activated_at or annex.created_at,
+                        file=file_obj,
+                    )
+                )
+
+    if certificate_id is not None:
+        cert = db.get(DeathCertificate, certificate_id)
+        if cert and cert.file_id and cert.file_id not in existing_file_ids:
+            file_obj = db.get(FileObject, cert.file_id)
+            if file_obj:
+                results.append(
+                    DocumentVersion(
+                        document_id=-3,
+                        document_type="DEATH_CERTIFICATE",
+                        certificate_id=certificate_id,
+                        version_no=1,
+                        file_id=cert.file_id,
+                        notes=f"Giấy báo tử số {cert.certificate_number} do {cert.issuing_authority} cấp",
+                        verified_at=cert.verified_at,
+                        created_at=cert.created_at,
+                        file=file_obj,
+                    )
+                )
+
+    return results
+
+
 @router.post(
     "/versions",
     response_model=DocumentVersionResponse,

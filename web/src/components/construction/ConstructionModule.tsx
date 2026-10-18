@@ -17,11 +17,13 @@ import {
   MapPin,
   ArrowUp,
   ArrowDown,
+  ArrowUpDown,
   X,
   ExternalLink,
   Trash2,
 } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
+import { useNotificationModal } from '../../context/NotificationModalContext'
 import type {
   ConstructionOrderResponse,
   ConstructionTaskBrief,
@@ -31,6 +33,7 @@ import { Pagination, usePagination } from '../common/Pagination'
 
 export const ConstructionModule: React.FC = () => {
   const { accessToken: token, user, hasPermission } = useAuth()
+  const { confirm } = useNotificationModal()
 
   // Main state
   const [orders, setOrders] = useState<ConstructionOrderResponse[]>([])
@@ -43,6 +46,7 @@ export const ConstructionModule: React.FC = () => {
   const [activeSubView, setActiveSubView] = useState<'ORDERS' | 'SCHEDULING'>('ORDERS')
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState<string>('')
+  const [sortBy, setSortBy] = useState<'id_desc' | 'id_asc' | 'start_desc' | 'start_asc' | 'target_asc' | 'target_desc'>('id_desc')
 
   // Modal states
   const [selectedOrder, setSelectedOrder] = useState<ConstructionOrderResponse | null>(null)
@@ -350,9 +354,13 @@ export const ConstructionModule: React.FC = () => {
 
   const handleCompleteOrder = async (orderId: number) => {
     if (!token) return
-    if (!window.confirm('Xác nhận nghiệm thu toàn bộ công trình? Lưu ý: Nghiệm thu công trình không tự ý an táng hay thay đổi người mất.')) {
-      return
-    }
+    const confirmed = await confirm({
+      title: 'Xác nhận nghiệm thu công trình',
+      message: 'Xác nhận nghiệm thu toàn bộ công trình? Lưu ý: Nghiệm thu công trình không tự ý an táng hay thay đổi người mất.',
+      confirmText: 'Xác nhận nghiệm thu',
+      cancelText: 'Quay lại',
+    })
+    if (!confirmed) return
     try {
       const res = await apiFetch(`/api/v1/construction/orders/${orderId}/complete`, {
         method: 'POST',
@@ -406,7 +414,15 @@ export const ConstructionModule: React.FC = () => {
   }
 
   const handleDeleteUnavailability = async (id: number) => {
-    if (!token || !window.confirm('Xác nhận xóa bản ghi lịch nghỉ này?')) return
+    if (!token) return
+    const confirmed = await confirm({
+      title: 'Xóa lịch nghỉ phép',
+      message: 'Xác nhận xóa bản ghi lịch nghỉ này khỏi hệ thống phân công?',
+      confirmText: 'Xóa bản ghi',
+      cancelText: 'Quay lại',
+      isDestructive: true,
+    })
+    if (!confirmed) return
     try {
       const res = await apiFetch(`/api/v1/construction/unavailability/${id}`, {
         method: 'DELETE',
@@ -424,17 +440,42 @@ export const ConstructionModule: React.FC = () => {
   // Filtering & Stats
   // ---------------------------------------------------------------------------
 
-  const filteredOrders = orders.filter((o) => {
-    const matchesStatus =
-      statusFilter === 'ALL' ||
-      (statusFilter === 'OVERDUE' ? o.is_overdue : o.status === statusFilter)
-    const matchesSearch =
-      !searchQuery ||
-      o.plot_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      o.supervisor_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      o.order_id.toString().includes(searchQuery)
-    return matchesStatus && matchesSearch
-  })
+  const filteredOrders = orders
+    .filter((o) => {
+      const matchesStatus =
+        statusFilter === 'ALL' ||
+        (statusFilter === 'OVERDUE' ? o.is_overdue : o.status === statusFilter)
+      const matchesSearch =
+        !searchQuery ||
+        o.plot_code?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        o.supervisor_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        o.order_id.toString().includes(searchQuery)
+      return matchesStatus && matchesSearch
+    })
+    .sort((a, b) => {
+      if (sortBy === 'start_desc') {
+        const dateA = a.start_date ? new Date(a.start_date).getTime() : 0
+        const dateB = b.start_date ? new Date(b.start_date).getTime() : 0
+        return dateB - dateA
+      }
+      if (sortBy === 'start_asc') {
+        const dateA = a.start_date ? new Date(a.start_date).getTime() : 0
+        const dateB = b.start_date ? new Date(b.start_date).getTime() : 0
+        return dateA - dateB
+      }
+      if (sortBy === 'target_asc') {
+        const dateA = a.expected_end_date ? new Date(a.expected_end_date).getTime() : 0
+        const dateB = b.expected_end_date ? new Date(b.expected_end_date).getTime() : 0
+        return dateA - dateB
+      }
+      if (sortBy === 'target_desc') {
+        const dateA = a.expected_end_date ? new Date(a.expected_end_date).getTime() : 0
+        const dateB = b.expected_end_date ? new Date(b.expected_end_date).getTime() : 0
+        return dateB - dateA
+      }
+      if (sortBy === 'id_asc') return a.order_id - b.order_id
+      return b.order_id - a.order_id
+    })
 
   const ordersPagination = usePagination(filteredOrders, { initialPageSize: 10 })
 
@@ -967,6 +1008,32 @@ export const ConstructionModule: React.FC = () => {
                   boxSizing: 'border-box',
                 }}
               />
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ArrowUpDown size={14} color="#64748B" />
+              <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 500 }}>Sắp xếp:</span>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as any)}
+                style={{
+                  padding: '7px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid #CBD5E1',
+                  backgroundColor: '#FFFFFF',
+                  fontSize: '12px',
+                  color: '#1E293B',
+                  outline: 'none',
+                  fontWeight: 500,
+                }}
+              >
+                <option value="id_desc">Lệnh mới nhất trước</option>
+                <option value="id_asc">Lệnh cũ nhất trước</option>
+                <option value="start_desc">Ngày bắt đầu mới nhất</option>
+                <option value="start_asc">Ngày bắt đầu cũ nhất</option>
+                <option value="target_asc">Hạn hoàn thành gần nhất</option>
+                <option value="target_desc">Hạn hoàn thành xa nhất</option>
+              </select>
             </div>
           </div>
 

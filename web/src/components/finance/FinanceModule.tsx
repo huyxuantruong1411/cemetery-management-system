@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
+import { useNotificationModal } from '../../context/NotificationModalContext'
 import type {
   DiscountApplyPayload,
   FinanceSummary,
@@ -27,6 +28,7 @@ import { FinanceBasisView } from './FinanceBasisView'
 
 export const FinanceModule: React.FC = () => {
   const { accessToken, hasPermission } = useAuth()
+  const { alert: modalAlert } = useNotificationModal()
 
   // View tabs (EX-02)
   const [activeViewTab, setActiveViewTab] = useState<'bases' | 'ledger'>('bases')
@@ -34,7 +36,17 @@ export const FinanceModule: React.FC = () => {
   // Data states
   const [summary, setSummary] = useState<FinanceSummary | null>(null)
   const [receivables, setReceivables] = useState<Receivable[]>([])
-  const pagination = usePagination<Receivable>(receivables, { initialPageSize: 10 })
+  const [sortBy, setSortBy] = useState<'due_desc' | 'due_asc' | 'amount_desc' | 'amount_asc' | 'id_desc'>('due_desc')
+
+  const sortedReceivables = [...receivables].sort((a, b) => {
+    if (sortBy === 'due_desc') return new Date(b.due_date).getTime() - new Date(a.due_date).getTime()
+    if (sortBy === 'due_asc') return new Date(a.due_date).getTime() - new Date(b.due_date).getTime()
+    if (sortBy === 'amount_desc') return b.remaining_balance - a.remaining_balance
+    if (sortBy === 'amount_asc') return a.remaining_balance - b.remaining_balance
+    return b.receivable_id - a.receivable_id
+  })
+
+  const pagination = usePagination<Receivable>(sortedReceivables, { initialPageSize: 10 })
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -140,11 +152,14 @@ export const FinanceModule: React.FC = () => {
 
     const amountNum = parseFloat(payAmount)
     if (isNaN(amountNum) || amountNum <= 0) {
-      alert('Vui lòng nhập số tiền thanh toán hợp lệ lớn hơn 0.')
+      await modalAlert({ message: 'Vui lòng nhập số tiền thanh toán hợp lệ lớn hơn 0.', type: 'warning' })
       return
     }
     if (amountNum > activeReceivable.remaining_balance) {
-      alert(`Số tiền thanh toán không được vượt quá dư nợ (${formatCurrency(activeReceivable.remaining_balance)})`)
+      await modalAlert({
+        message: `Số tiền thanh toán không được vượt quá dư nợ (${formatCurrency(activeReceivable.remaining_balance)})`,
+        type: 'warning',
+      })
       return
     }
 
@@ -176,18 +191,25 @@ export const FinanceModule: React.FC = () => {
       setPaymentSuccessReceipt(newPayment)
       loadData()
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Lỗi khi ghi nhận thanh toán')
+      await modalAlert({ message: err instanceof Error ? err.message : 'Lỗi khi ghi nhận thanh toán', type: 'error' })
     } finally {
       setSubmittingPayment(false)
     }
   }
 
-  // Open Discount Dialog
+  // Open Discount Dialog (Prefills existing discount if modifying before first payment)
   const handleOpenDiscount = (rec: Receivable) => {
     setActiveReceivable(rec)
-    setDiscType('PERCENTAGE')
-    setDiscValue('5')
-    setDiscReason('')
+    const existing = rec.discounts && rec.discounts.length > 0 ? rec.discounts[rec.discounts.length - 1] : null
+    if (existing) {
+      setDiscType(existing.discount_type as any)
+      setDiscValue(existing.discount_value.toString())
+      setDiscReason(existing.justification_reason || '')
+    } else {
+      setDiscType('PERCENTAGE')
+      setDiscValue('5')
+      setDiscReason('')
+    }
     setIsDiscountModalOpen(true)
   }
 
@@ -198,15 +220,15 @@ export const FinanceModule: React.FC = () => {
 
     const valNum = parseFloat(discValue)
     if (isNaN(valNum) || valNum <= 0) {
-      alert('Giá trị chiết khấu phải lớn hơn 0.')
+      await modalAlert({ message: 'Giá trị chiết khấu phải lớn hơn 0.', type: 'warning' })
       return
     }
     if (discType === 'PERCENTAGE' && valNum > 100) {
-      alert('Chiết khấu phần trăm tối đa là 100%.')
+      await modalAlert({ message: 'Chiết khấu phần trăm tối đa là 100%.', type: 'warning' })
       return
     }
     if (!discReason || discReason.trim().length < 5) {
-      alert('Vui lòng nhập lý do giảm trừ cụ thể (tối thiểu 5 ký tự).')
+      await modalAlert({ message: 'Vui lòng nhập lý do giảm trừ cụ thể (tối thiểu 5 ký tự).', type: 'warning' })
       return
     }
 
@@ -232,11 +254,11 @@ export const FinanceModule: React.FC = () => {
         throw new Error(errJson.detail || `Lỗi duyệt chiết khấu: ${res.status}`)
       }
 
-      alert('Đã áp dụng chiết khấu thành công cho khoản thu.')
+      await modalAlert({ message: 'Đã cập nhật chiết khấu thành công cho khoản thu.', type: 'success' })
       setIsDiscountModalOpen(false)
       loadData()
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Lỗi áp dụng chiết khấu')
+      await modalAlert({ message: err instanceof Error ? err.message : 'Lỗi áp dụng chiết khấu', type: 'error' })
     } finally {
       setSubmittingDiscount(false)
     }
@@ -262,7 +284,7 @@ export const FinanceModule: React.FC = () => {
       a.remove()
       window.URL.revokeObjectURL(url)
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Lỗi khi tải tệp biên lai')
+      await modalAlert({ message: err instanceof Error ? err.message : 'Lỗi khi tải tệp biên lai', type: 'error' })
     }
   }
 
@@ -281,13 +303,13 @@ export const FinanceModule: React.FC = () => {
         throw new Error(errJson.detail || 'Không thể tạo lại biên lai')
       }
       const invData = await res.json()
-      alert(`Đã khởi tạo biên lai ${invData.invoice_number} thành công!`)
+      await modalAlert({ message: `Đã khởi tạo biên lai ${invData.invoice_number} thành công!`, type: 'success' })
       if (paymentSuccessReceipt && paymentSuccessReceipt.payment_id === paymentId) {
         setPaymentSuccessReceipt((prev) => (prev ? { ...prev, invoice: invData } : null))
       }
       loadData()
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Lỗi tạo lại biên lai')
+      await modalAlert({ message: err instanceof Error ? err.message : 'Lỗi tạo lại biên lai', type: 'error' })
     } finally {
       setRegeneratingId(null)
     }
@@ -678,6 +700,27 @@ export const FinanceModule: React.FC = () => {
           <option value="PARTIALLY_PAID">Thu một phần</option>
           <option value="PAID">Đã thanh toán</option>
         </select>
+
+        <select
+          value={sortBy}
+          onChange={(e) => setSortBy(e.target.value as any)}
+          style={{
+            padding: '9px 12px',
+            borderRadius: '6px',
+            border: '1px solid #CBD5E1',
+            fontSize: '13px',
+            color: '#334155',
+            backgroundColor: '#FFFFFF',
+            outline: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          <option value="due_desc">Hạn nộp: Mới nhất</option>
+          <option value="due_asc">Hạn nộp: Cũ nhất</option>
+          <option value="amount_desc">Dư nợ: Cao xuống thấp</option>
+          <option value="amount_asc">Dư nợ: Thấp lên cao</option>
+          <option value="id_desc">Mã khoản: Mới nhất</option>
+        </select>
       </div>
 
       {/* 4. Receivables List */}
@@ -777,6 +820,31 @@ export const FinanceModule: React.FC = () => {
                             Thu Tiền
                           </button>
                         )}
+                        {hasPermission('finance:discount') &&
+                          rec.total_paid_amount === 0 &&
+                          rec.status !== 'PAID' &&
+                          rec.status !== 'CANCELLED' && (
+                            <button
+                              onClick={() => handleOpenDiscount(rec)}
+                              className="touch-target"
+                              style={{
+                                padding: '6px 10px',
+                                backgroundColor: '#F3E8FF',
+                                color: '#7C3AED',
+                                border: '1px solid #D8B4FE',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                            >
+                              <Percent size={13} />
+                              {rec.discounts && rec.discounts.length > 0 ? 'Sửa CK' : 'Chiết Khấu'}
+                            </button>
+                          )}
                         <button
                           onClick={() => {
                             setActiveReceivable(rec);
@@ -909,12 +977,12 @@ export const FinanceModule: React.FC = () => {
                           )}
 
                           {hasPermission('finance:discount') &&
-                            rec.discounts.length === 0 &&
+                            rec.total_paid_amount === 0 &&
                             rec.status !== 'PAID' &&
                             rec.status !== 'CANCELLED' && (
                               <button
                                 onClick={() => handleOpenDiscount(rec)}
-                                title="Áp dụng chiết khấu"
+                                title={rec.discounts && rec.discounts.length > 0 ? 'Sửa chiết khấu (chưa thu tiền)' : 'Áp dụng chiết khấu'}
                                 style={{
                                   padding: '6px 10px',
                                   backgroundColor: '#F3E8FF',
@@ -930,7 +998,7 @@ export const FinanceModule: React.FC = () => {
                                 }}
                               >
                                 <Percent size={13} />
-                                Chiết Khấu
+                                {rec.discounts && rec.discounts.length > 0 ? 'Sửa CK' : 'Chiết Khấu'}
                               </button>
                             )}
 

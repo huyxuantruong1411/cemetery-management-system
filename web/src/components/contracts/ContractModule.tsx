@@ -35,6 +35,8 @@ import type {
 import type { Customer, DeceasedProfile } from '../../types/profiles';
 import type { Plot, PlotSlot } from '../../types/plots';
 import { Pagination, usePagination } from '../common/Pagination';
+import { useNotificationModal } from '../../context/NotificationModalContext';
+import { DocumentAttachmentList } from '../documents/DocumentAttachmentList';
 
 interface ContractModuleProps {
   token: string | null;
@@ -56,13 +58,39 @@ const getCremationPackageName = (code?: string): string => {
 };
 
 export const ContractModule: React.FC<ContractModuleProps> = ({ token, currentUserRoles = [] }) => {
+  const { confirm: modalConfirm, alert: modalAlert } = useNotificationModal();
+
   // Master List State
   const [contracts, setContracts] = useState<ContractBriefResponse[]>([]);
+  const [sortBy, setSortBy] = useState<'date_desc' | 'date_asc' | 'code_asc' | 'amount_desc' | 'amount_asc'>('date_desc');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [typeFilter, setTypeFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const sortedContracts = [...contracts].sort((a, b) => {
+    if (sortBy === 'date_desc') {
+      const da = a.signed_at || a.created_at || '';
+      const db = b.signed_at || b.created_at || '';
+      return new Date(db).getTime() - new Date(da).getTime();
+    }
+    if (sortBy === 'date_asc') {
+      const da = a.signed_at || a.created_at || '';
+      const db = b.signed_at || b.created_at || '';
+      return new Date(da).getTime() - new Date(db).getTime();
+    }
+    if (sortBy === 'code_asc') {
+      return a.contract_code.localeCompare(b.contract_code);
+    }
+    if (sortBy === 'amount_desc') {
+      return Number(b.total_amount) - Number(a.total_amount);
+    }
+    if (sortBy === 'amount_asc') {
+      return Number(a.total_amount) - Number(b.total_amount);
+    }
+    return 0;
+  });
 
   // Detail Modal State
   const [selectedContractId, setSelectedContractId] = useState<number | null>(null);
@@ -330,7 +358,12 @@ function parseApiError(errJson: unknown, fallback: string): string {
 
   // Action: Submit for signing
   const handleSubmitForSigning = async (contractId: number) => {
-    if (!window.confirm('Chuyển hợp đồng này sang trạng thái Chờ Ký Kết?')) return;
+    const ok = await modalConfirm({
+      title: 'Xác Nhận Chuyển Ký Kết',
+      message: 'Chuyển hợp đồng này sang trạng thái Chờ Ký Kết để khách hàng duyệt ký?',
+      confirmText: 'Chuyển Chờ Ký',
+    });
+    if (!ok) return;
     try {
       const res = await apiFetch(`/api/v1/contracts/${contractId}/submit-signing`, {
         method: 'POST',
@@ -347,7 +380,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
       await fetchContracts();
       fetchContractDetail(contractId);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Lỗi không xác định');
+      await modalAlert({ message: err instanceof Error ? err.message : 'Lỗi không xác định', type: 'error' });
     }
   };
 
@@ -368,7 +401,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
       a.remove();
       window.URL.revokeObjectURL(url);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Lỗi khi tải file PDF');
+      await modalAlert({ message: err instanceof Error ? err.message : 'Lỗi khi tải file PDF', type: 'error' });
     }
   };
 
@@ -448,7 +481,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
       await fetchContracts();
       fetchContractDetail(contractDetail.contract_id);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Lỗi khi hủy hợp đồng');
+      await modalAlert({ message: err instanceof Error ? err.message : 'Lỗi khi hủy hợp đồng', type: 'error' });
     } finally {
       setCancelSubmitting(false);
     }
@@ -478,7 +511,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
       contractDetail.land_purchase?.plot_id ||
       contractDetail.transfer?.plot_id;
     if (!plotId) {
-      alert('Không tìm thấy thông tin ô mộ của hợp đồng');
+      await modalAlert({ message: 'Không tìm thấy thông tin ô mộ của hợp đồng', type: 'warning' });
       return;
     }
     setBurialSlotId('');
@@ -550,7 +583,12 @@ function parseApiError(errJson: unknown, fallback: string): string {
   };
 
   const handleSubmitAnnexSigning = async (annexId: number) => {
-    if (!window.confirm('Chuyển phụ lục này sang trạng thái Chờ Ký Kết?')) return;
+    const ok = await modalConfirm({
+      title: 'Xác Nhận Ký Phụ Lục',
+      message: 'Chuyển phụ lục này sang trạng thái Chờ Ký Kết?',
+      confirmText: 'Chuyển Chờ Ký',
+    });
+    if (!ok) return;
     try {
       const res = await apiFetch(`/api/v1/contracts/annexes/${annexId}/submit-signing`, {
         method: 'POST',
@@ -566,7 +604,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
       }
       if (contractDetail) fetchContractDetail(contractDetail.contract_id);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Lỗi không xác định');
+      await modalAlert({ message: err instanceof Error ? err.message : 'Lỗi không xác định', type: 'error' });
     }
   };
 
@@ -628,7 +666,12 @@ function parseApiError(errJson: unknown, fallback: string): string {
   };
 
   const handleConfirmBurial = async (annexId: number) => {
-    if (!window.confirm('Xác nhận: Quản trang đã thực hiện hạ huyệt an táng thực tế tại ô mộ này?')) return;
+    const ok = await modalConfirm({
+      title: 'Xác Nhận An Táng Thực Địa',
+      message: 'Xác nhận: Quản trang đã thực hiện hạ huyệt an táng thực tế tại ô mộ này?',
+      confirmText: 'Xác Nhận An Táng',
+    });
+    if (!ok) return;
     try {
       const res = await apiFetch(`/api/v1/contracts/annexes/${annexId}/confirm-burial`, {
         method: 'POST',
@@ -642,11 +685,11 @@ function parseApiError(errJson: unknown, fallback: string): string {
         const errJson = await res.json().catch(() => ({}));
         throw new Error(errJson.detail || 'Xác nhận an táng thất bại');
       }
-      alert('Đã xác nhận an táng thực địa và cập nhật trạng thái ô mộ thành công!');
+      await modalAlert({ message: 'Đã xác nhận an táng thực địa và cập nhật trạng thái ô mộ thành công!', type: 'success' });
       await fetchContracts();
       if (contractDetail) fetchContractDetail(contractDetail.contract_id);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Lỗi xác nhận an táng');
+      await modalAlert({ message: err instanceof Error ? err.message : 'Lỗi xác nhận an táng', type: 'error' });
     }
   };
 
@@ -964,7 +1007,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
     setPageSize: setContractPageSize,
     startIndex: contractStartIndex,
     endIndex: contractEndIndex,
-  } = usePagination(contracts, 10);
+  } = usePagination(sortedContracts, 10);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -1142,6 +1185,25 @@ function parseApiError(errJson: unknown, fallback: string): string {
             <option value="EXHUMATION">Cải Táng</option>
             <option value="TRANSFER">Chuyển Nhượng</option>
             <option value="CREMATION">Hỏa Táng</option>
+          </select>
+
+          {/* Sort Filter */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            style={{
+              padding: '8px 12px',
+              borderRadius: '6px',
+              border: '1px solid #CBD5E1',
+              fontSize: '13px',
+              backgroundColor: '#FFFFFF',
+            }}
+          >
+            <option value="date_desc">Ngày: Mới nhất</option>
+            <option value="date_asc">Ngày: Cũ nhất</option>
+            <option value="code_asc">Mã hợp đồng (A-Z)</option>
+            <option value="amount_desc">Giá trị: Cao xuống thấp</option>
+            <option value="amount_asc">Giá trị: Thấp lên cao</option>
           </select>
 
           <button
@@ -2584,6 +2646,17 @@ function parseApiError(errJson: unknown, fallback: string): string {
                       </div>
                     </div>
                   )}
+
+                  {/* Attached Documents & Scan Files */}
+                  <div style={{ border: '1px solid #E2E8F0', borderRadius: '8px', padding: '16px', backgroundColor: '#F8FAFC' }}>
+                    <DocumentAttachmentList
+                      contractId={contractDetail.contract_id}
+                      token={token}
+                      title={`Tài Liệu & File Scan Đính Kèm (${contractDetail.contract_code})`}
+                      canUpload={canManage}
+                      onUploaded={() => fetchContractDetail(contractDetail.contract_id)}
+                    />
+                  </div>
 
                   {/* Timeline & Metadata */}
                   <div style={{ fontSize: '12px', color: '#64748B', display: 'flex', flexDirection: 'column', gap: '4px', borderTop: '1px solid #E2E8F0', paddingTop: '12px' }}>

@@ -13,11 +13,13 @@ import {
   Sparkles,
 } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
+import { useNotificationModal } from '../../context/NotificationModalContext'
 import { Pagination } from '../common/Pagination'
 import type { CarePackage, ContractTemplate, PriceList, PriceLookupResult } from '../../types/catalog'
 
 export const CatalogModule: React.FC = () => {
   const { accessToken } = useAuth()
+  const { alert: modalAlert } = useNotificationModal()
   const [subTab, setSubTab] = useState<'prices' | 'care' | 'templates' | 'simulator'>('prices')
   const [priceLists, setPriceLists] = useState<PriceList[]>([])
   const [carePackages, setCarePackages] = useState<CarePackage[]>([])
@@ -131,7 +133,7 @@ export const CatalogModule: React.FC = () => {
       const result: PriceLookupResult = await res.json()
       setSimResult(result)
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Lỗi tra cứu')
+      modalAlert({ message: err instanceof Error ? err.message : 'Lỗi tra cứu', type: 'error' })
     } finally {
       setSimLoading(false)
     }
@@ -163,7 +165,7 @@ export const CatalogModule: React.FC = () => {
       setNewPlName('')
       loadAllData()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Lỗi')
+      modalAlert({ message: err instanceof Error ? err.message : 'Lỗi tạo bảng giá', type: 'error' })
     }
   }
 
@@ -198,7 +200,7 @@ export const CatalogModule: React.FC = () => {
       setNewItemPrice('')
       loadAllData()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Lỗi')
+      modalAlert({ message: err instanceof Error ? err.message : 'Lỗi thêm hạng mục', type: 'error' })
     }
   }
 
@@ -219,7 +221,7 @@ export const CatalogModule: React.FC = () => {
       setStatusMessage(`Đã ${pkg.is_active ? 'ngừng kích hoạt' : 'kích hoạt lại'} gói ${pkg.package_code}`)
       loadAllData()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Lỗi')
+      modalAlert({ message: err instanceof Error ? err.message : 'Lỗi cập nhật gói', type: 'error' })
     }
   }
 
@@ -244,7 +246,7 @@ export const CatalogModule: React.FC = () => {
       setStatusMessage(`Đã nâng cấp mẫu ${updated.template_code} lên Phiên bản v${updated.version_no} (Không hồi tố)!`)
       loadAllData()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Lỗi')
+      modalAlert({ message: err instanceof Error ? err.message : 'Lỗi nâng cấp mẫu điều khoản', type: 'error' })
     }
   }
 
@@ -279,7 +281,7 @@ export const CatalogModule: React.FC = () => {
       setNewPkgPrice('')
       loadAllData()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Lỗi')
+      modalAlert({ message: err instanceof Error ? err.message : 'Lỗi tạo gói chăm sóc', type: 'error' })
     }
   }
 

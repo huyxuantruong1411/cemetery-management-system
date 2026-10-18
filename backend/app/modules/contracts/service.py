@@ -45,7 +45,14 @@ from app.modules.contracts.schemas import (
 from app.modules.documents.models import FileObject
 from app.modules.finance.models import Receivable
 from app.modules.jobs.models import OutboxEvent
-from app.modules.plots.models import BurialHistory, Plot, PlotOwnership, PlotReservation, PlotSlot
+from app.modules.plots.models import (
+    BurialHistory,
+    Plot,
+    PlotOwnership,
+    PlotReservation,
+    PlotSlot,
+    Row,
+)
 from app.modules.profiles.models import Customer, DeceasedProfile
 from app.modules.profiles.service import ProfileService
 from app.services.pdf_service import PDFService
@@ -1235,6 +1242,26 @@ class ContractService:
 
         results = query.order_by(Contract.created_at.desc()).offset(offset).limit(limit).all()
 
+        # Batch load all target plots to eliminate N+1 queries
+        target_plot_ids = set()
+        for c in results:
+            if c.land_purchase and c.land_purchase.plot_id:
+                target_plot_ids.add(c.land_purchase.plot_id)
+            elif c.exhumation and c.exhumation.plot_id:
+                target_plot_ids.add(c.exhumation.plot_id)
+            elif c.transfer and c.transfer.plot_id:
+                target_plot_ids.add(c.transfer.plot_id)
+
+        plot_map = {}
+        if target_plot_ids:
+            plots = (
+                db.query(Plot)
+                .options(joinedload(Plot.row).joinedload(Row.zone))
+                .filter(Plot.plot_id.in_(target_plot_ids))
+                .all()
+            )
+            plot_map = {p.plot_id: p for p in plots}
+
         briefs: List[ContractBriefResponse] = []
         for c in results:
             plot_id_target: Optional[int] = None
@@ -1245,9 +1272,7 @@ class ContractService:
             elif c.transfer:
                 plot_id_target = c.transfer.plot_id
 
-            plot_obj = None
-            if plot_id_target:
-                plot_obj = db.query(Plot).filter(Plot.plot_id == plot_id_target).first()
+            plot_obj = plot_map.get(plot_id_target) if plot_id_target else None
 
             briefs.append(
                 ContractBriefResponse(

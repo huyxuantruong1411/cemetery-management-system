@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   ListTodo,
   Camera,
+  ArrowUpDown,
 } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
 import type {
@@ -40,6 +41,7 @@ export const CareModule: React.FC = () => {
   // Filters & search
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState<string>('')
+  const [sortBy, setSortBy] = useState<'date_desc' | 'date_asc' | 'id_desc' | 'id_asc' | 'plot_asc'>('date_desc')
   const [currentPeriod, setCurrentPeriod] = useState<string>(() => {
     const now = new Date()
     return `${now.getFullYear()}-M${String(now.getMonth() + 1).padStart(2, '0')}`
@@ -333,17 +335,35 @@ export const CareModule: React.FC = () => {
   // ---------------------------------------------------------------------------
   // Filtering & Pagination
   // ---------------------------------------------------------------------------
-  const filteredSchedules = schedules.filter((s) => {
-    if (!searchQuery.trim()) return true
-    const q = searchQuery.toLowerCase()
-    return (
-      s.plot_code?.toLowerCase().includes(q) ||
-      s.zone_name?.toLowerCase().includes(q) ||
-      s.package_name?.toLowerCase().includes(q) ||
-      s.caretaker_name?.toLowerCase().includes(q) ||
-      s.period_key?.toLowerCase().includes(q)
-    )
-  })
+  const filteredSchedules = schedules
+    .filter((s) => {
+      if (!searchQuery.trim()) return true
+      const q = searchQuery.toLowerCase()
+      return (
+        s.plot_code?.toLowerCase().includes(q) ||
+        s.zone_name?.toLowerCase().includes(q) ||
+        s.package_name?.toLowerCase().includes(q) ||
+        s.caretaker_name?.toLowerCase().includes(q) ||
+        s.period_key?.toLowerCase().includes(q)
+      )
+    })
+    .sort((a, b) => {
+      if (sortBy === 'date_desc') {
+        const dA = a.scheduled_date ? new Date(a.scheduled_date).getTime() : 0
+        const dB = b.scheduled_date ? new Date(b.scheduled_date).getTime() : 0
+        return dB - dA
+      }
+      if (sortBy === 'date_asc') {
+        const dA = a.scheduled_date ? new Date(a.scheduled_date).getTime() : 0
+        const dB = b.scheduled_date ? new Date(b.scheduled_date).getTime() : 0
+        return dA - dB
+      }
+      if (sortBy === 'plot_asc') {
+        return (a.plot_code || '').localeCompare(b.plot_code || '')
+      }
+      if (sortBy === 'id_asc') return a.schedule_id - b.schedule_id
+      return b.schedule_id - a.schedule_id
+    })
 
   const pagination = usePagination<CareScheduleBrief>(filteredSchedules, { initialPageSize: 10 })
 
@@ -775,6 +795,32 @@ export const CareModule: React.FC = () => {
               boxSizing: 'border-box',
             }}
           />
+        </div>
+
+        {/* Sort */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ArrowUpDown size={14} color="#64748B" />
+          <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 500 }}>Sắp xếp:</span>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            style={{
+              padding: '7px 12px',
+              borderRadius: '8px',
+              border: '1px solid #CBD5E1',
+              backgroundColor: '#FFFFFF',
+              fontSize: '12px',
+              color: '#1E293B',
+              outline: 'none',
+              fontWeight: 500,
+            }}
+          >
+            <option value="date_desc">Ngày thực hiện (Mới nhất)</option>
+            <option value="date_asc">Ngày thực hiện (Cũ nhất)</option>
+            <option value="id_desc">Mã ca (Mới nhất)</option>
+            <option value="id_asc">Mã ca (Cũ nhất)</option>
+            <option value="plot_asc">Mã ô mộ (A → Z)</option>
+          </select>
         </div>
       </div>
 

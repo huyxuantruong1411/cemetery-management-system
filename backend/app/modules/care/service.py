@@ -5,7 +5,7 @@ from typing import List, Optional, Tuple
 
 from fastapi import HTTPException, status
 from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.modules.audit.models import AuditLog
 from app.modules.auth.models import User
@@ -26,6 +26,7 @@ from app.modules.construction.models import StaffUnavailability
 from app.modules.contracts.models import Contract, ContractAnnex
 from app.modules.documents.models import FileObject
 from app.modules.jobs.service import OutboxService
+from app.modules.plots.models import Plot, Row
 
 
 class CareService:
@@ -406,7 +407,13 @@ class CareService:
         skip: int = 0,
         limit: int = 100,
     ) -> List[CareSchedule]:
-        query = db.query(CareSchedule)
+        query = db.query(CareSchedule).options(
+            joinedload(CareSchedule.plot).joinedload(Plot.row).joinedload(Row.zone),
+            joinedload(CareSchedule.package),
+            joinedload(CareSchedule.caretaker),
+            selectinload(CareSchedule.checklist_items),
+            selectinload(CareSchedule.media_evidences),
+        )
         if plot_id:
             query = query.filter(CareSchedule.plot_id == plot_id)
         if caretaker_id:

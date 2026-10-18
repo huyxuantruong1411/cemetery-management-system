@@ -5,7 +5,7 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from fastapi import HTTPException, status
 from sqlalchemy import func
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.modules.audit.models import AuditLog
 from app.modules.auth.models import User
@@ -126,7 +126,14 @@ class FinanceService:
         skip: int = 0,
         limit: int = 100,
     ) -> list[ReceivableResponse]:
-        query = db.query(Receivable)
+        query = db.query(Receivable).options(
+            joinedload(Receivable.customer),
+            joinedload(Receivable.contract),
+            joinedload(Receivable.annex),
+            selectinload(Receivable.discounts),
+            selectinload(Receivable.payments).joinedload(Payment.invoice),
+            selectinload(Receivable.payments).joinedload(Payment.recorder),
+        )
 
         if status_filter:
             query = query.filter(Receivable.status == status_filter)
@@ -161,7 +168,19 @@ class FinanceService:
 
     @classmethod
     def get_receivable_by_id(cls, db: Session, receivable_id: int) -> ReceivableResponse:
-        receivable = db.query(Receivable).filter(Receivable.receivable_id == receivable_id).first()
+        receivable = (
+            db.query(Receivable)
+            .options(
+                joinedload(Receivable.customer),
+                joinedload(Receivable.contract),
+                joinedload(Receivable.annex),
+                selectinload(Receivable.discounts),
+                selectinload(Receivable.payments).joinedload(Payment.invoice),
+                selectinload(Receivable.payments).joinedload(Payment.recorder),
+            )
+            .filter(Receivable.receivable_id == receivable_id)
+            .first()
+        )
         if not receivable:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -321,10 +340,10 @@ class FinanceService:
                 detail=f"Khoản thu đang ở trạng thái {receivable.status}, không được phép áp dụng chiết khấu.",
             )
 
-        if receivable.discounts:
+        if receivable.total_paid_amount > 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Khoản thu này đã được áp dụng chiết khấu trước đó. Mỗi khoản thu chỉ chấp nhận một chiết khấu chính thức.",
+                detail="Khoản thu đã phát sinh thanh toán (toàn bộ hoặc một phần). Chiết khấu đã bị khóa và không thể chỉnh sửa.",
             )
 
         # Calculate discount amount
@@ -350,16 +369,31 @@ class FinanceService:
             )
 
         now = _utc_now_naive()
-        discount_record = DiscountRecord(
-            receivable_id=receivable.receivable_id,
-            discount_type=payload.discount_type,
-            discount_value=payload.discount_value,
-            calculated_amount=calc,
-            justification_reason=payload.justification_reason,
-            approved_by_user_id=user_id,
-            applied_at=now,
+        existing_discount = (
+            db.query(DiscountRecord)
+            .filter(DiscountRecord.receivable_id == receivable.receivable_id)
+            .order_by(DiscountRecord.applied_at.desc())
+            .first()
         )
-        db.add(discount_record)
+        if existing_discount:
+            existing_discount.discount_type = payload.discount_type
+            existing_discount.discount_value = payload.discount_value
+            existing_discount.calculated_amount = calc
+            existing_discount.justification_reason = payload.justification_reason
+            existing_discount.approved_by_user_id = user_id
+            existing_discount.applied_at = now
+            discount_record = existing_discount
+        else:
+            discount_record = DiscountRecord(
+                receivable_id=receivable.receivable_id,
+                discount_type=payload.discount_type,
+                discount_value=payload.discount_value,
+                calculated_amount=calc,
+                justification_reason=payload.justification_reason,
+                approved_by_user_id=user_id,
+                applied_at=now,
+            )
+            db.add(discount_record)
 
         # Update receivable amounts and recompute status
         receivable.discount_amount = calc

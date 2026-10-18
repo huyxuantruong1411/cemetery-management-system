@@ -2,6 +2,8 @@ import { apiFetch } from '../../services/apiClient'
 import React, { useState, useEffect } from 'react';
 import { ExternalLink, MapPin, Shield, RefreshCw, Link2, Trash2 } from 'lucide-react';
 import { Pagination, usePagination } from '../common/Pagination';
+import { useNotificationModal } from '../../context/NotificationModalContext';
+import { DocumentAttachmentList } from '../documents/DocumentAttachmentList';
 import type {
   Customer,
   CustomerCreate,
@@ -19,6 +21,7 @@ interface ProfileModuleProps {
 }
 
 export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUserRoles: _currentUserRoles = [] }) => {
+  const { confirm: modalConfirm, alert: modalAlert } = useNotificationModal();
   const [activeTab, setActiveTab] = useState<'CUSTOMERS' | 'DECEASED' | 'RELATIONS' | 'MEMORIAL_PUBLIC'>(
     token ? 'CUSTOMERS' : 'MEMORIAL_PUBLIC'
   );
@@ -66,6 +69,8 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
 
   // Certificate attach & verify
   const [isCertModalOpen, setIsCertModalOpen] = useState(false);
+  const [certScanFile, setCertScanFile] = useState<File | null>(null);
+  const [certUploading, setCertUploading] = useState<boolean>(false);
   const [certForm, setCertForm] = useState<DeathCertificateCreate>({
     certificate_number: '',
     issuing_authority: '',
@@ -248,9 +253,13 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
   // Delete Relation
   const handleDeleteRelation = async (relationId: number) => {
     if (!token) return;
-    if (!window.confirm('Bạn có chắc chắn muốn gỡ bỏ mối liên kết hồ sơ này?')) {
-      return;
-    }
+    const ok = await modalConfirm({
+      title: 'Gỡ Bỏ Mối Liên Kết',
+      message: 'Bạn có chắc chắn muốn gỡ bỏ mối liên kết hồ sơ thân nhân này?',
+      isDestructive: true,
+      confirmText: 'Gỡ Bỏ',
+    });
+    if (!ok) return;
     setErrorMsg(null);
     try {
       const res = await apiFetch(`/api/v1/profiles/relations/${relationId}`, {
@@ -371,7 +380,30 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
     e.preventDefault();
     if (!token || !selectedDeceased) return;
     setErrorMsg(null);
+    setCertUploading(true);
     try {
+      let uploadedFileId: string | undefined = undefined;
+      if (certScanFile) {
+        const formData = new FormData();
+        formData.append('file', certScanFile);
+        const upRes = await apiFetch('/api/v1/documents/upload', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        if (!upRes.ok) {
+          const upErr = await upRes.json().catch(() => ({}));
+          throw new Error(upErr.detail || 'Không thể tải lên tệp giấy báo tử scan');
+        }
+        const fileObj = await upRes.json();
+        uploadedFileId = fileObj.file_id;
+      }
+
+      const payload = {
+        ...certForm,
+        file_id: uploadedFileId || certForm.file_id || undefined,
+      };
+
       const res = await apiFetch(
         `/api/v1/profiles/deceased/${selectedDeceased.deceased_id}/certificate`,
         {
@@ -380,7 +412,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
           },
-          body: JSON.stringify(certForm),
+          body: JSON.stringify(payload),
         }
       );
 
@@ -389,8 +421,27 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
         throw new Error(errData.detail || 'Không thể cập nhật giấy báo tử');
       }
 
-      setSuccessMsg('Đã lưu thông tin giấy báo tử thành công!');
+      const updatedCert = await res.json();
+
+      if (uploadedFileId && updatedCert.cert_id) {
+        await apiFetch('/api/v1/documents/versions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            file_id: uploadedFileId,
+            certificate_id: updatedCert.cert_id,
+            document_type: 'DEATH_CERTIFICATE',
+            notes: `Bản scan giấy báo tử số ${certForm.certificate_number}`,
+          }),
+        }).catch(() => {});
+      }
+
+      await modalAlert({ message: 'Đã lưu và xác thực bản scan giấy báo tử thành công!', type: 'success' });
       setIsCertModalOpen(false);
+      setCertScanFile(null);
       // Reload current deceased detail
       const updatedRes = await apiFetch(
         `/api/v1/profiles/deceased/${selectedDeceased.deceased_id}`,
@@ -403,12 +454,16 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
       loadDeceased();
     } catch (err: unknown) {
       setErrorMsg((err as Error).message);
+    } finally {
+      setCertUploading(false);
     }
   };
 
 
   // Customer relation filter
   const [customerFilter, setCustomerFilter] = useState<'ALL' | 'HAS_RELATIONS' | 'NO_RELATIONS'>('ALL');
+  const [sortCustomer, setSortCustomer] = useState<'name_asc' | 'name_desc' | 'created_desc' | 'code_asc'>('name_asc');
+  const [sortDeceased, setSortDeceased] = useState<'name_asc' | 'name_desc' | 'death_desc' | 'death_asc' | 'created_desc'>('name_asc');
 
   const filteredCustomers = customers.filter((c) => {
     if (customerFilter === 'HAS_RELATIONS') return c.relations && c.relations.length > 0;
@@ -416,11 +471,26 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
     return true;
   });
 
+  const sortedCustomers = [...filteredCustomers].sort((a, b) => {
+    if (sortCustomer === 'name_asc') return a.full_name.localeCompare(b.full_name, 'vi');
+    if (sortCustomer === 'name_desc') return b.full_name.localeCompare(a.full_name, 'vi');
+    if (sortCustomer === 'code_asc') return a.customer_code.localeCompare(b.customer_code);
+    return new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime();
+  });
+
   // Filtered deceased list
   const filteredDeceased = deceasedList.filter((d) => {
     if (deceasedFilter === 'VERIFIED') return !!d.death_certificate;
     if (deceasedFilter === 'UNVERIFIED') return !d.death_certificate;
     return true;
+  });
+
+  const sortedDeceased = [...filteredDeceased].sort((a, b) => {
+    if (sortDeceased === 'name_asc') return a.full_name.localeCompare(b.full_name, 'vi');
+    if (sortDeceased === 'name_desc') return b.full_name.localeCompare(a.full_name, 'vi');
+    if (sortDeceased === 'death_desc') return new Date(b.date_of_death).getTime() - new Date(a.date_of_death).getTime();
+    if (sortDeceased === 'death_asc') return new Date(a.date_of_death).getTime() - new Date(b.date_of_death).getTime();
+    return new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime();
   });
 
   // Pagination for customers
@@ -434,7 +504,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
     setPageSize: setCustPageSize,
     startIndex: custStartIndex,
     endIndex: custEndIndex,
-  } = usePagination(filteredCustomers, 10);
+  } = usePagination(sortedCustomers, 10);
 
   // Pagination for deceased
   const {
@@ -447,7 +517,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
     setPageSize: setDecPageSize,
     startIndex: decStartIndex,
     endIndex: decEndIndex,
-  } = usePagination(filteredDeceased, 10);
+  } = usePagination(sortedDeceased, 10);
 
   // Pagination for memorial results
   const {
@@ -799,6 +869,25 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 >
                   Chưa liên kết
                 </button>
+
+                <select
+                  value={sortCustomer}
+                  onChange={(e) => setSortCustomer(e.target.value as any)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '16px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '12px',
+                    backgroundColor: '#FFFFFF',
+                    color: '#374151',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="name_asc">Tên (A-Z)</option>
+                  <option value="name_desc">Tên (Z-A)</option>
+                  <option value="created_desc">Ngày tạo: Mới nhất</option>
+                  <option value="code_asc">Mã khách hàng</option>
+                </select>
               </div>
 
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -1245,6 +1334,26 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 >
                   Chưa có giấy báo tử
                 </button>
+
+                <select
+                  value={sortDeceased}
+                  onChange={(e) => setSortDeceased(e.target.value as any)}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '20px',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '12px',
+                    backgroundColor: '#FFFFFF',
+                    color: '#374151',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="name_asc">Họ tên (A-Z)</option>
+                  <option value="name_desc">Họ tên (Z-A)</option>
+                  <option value="death_desc">Ngày mất: Gần nhất</option>
+                  <option value="death_asc">Ngày mất: Cũ nhất</option>
+                  <option value="created_desc">Ngày lập hồ sơ: Mới nhất</option>
+                </select>
               </div>
 
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -2986,6 +3095,24 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                       </div>
                     )}
                   </div>
+
+                  <div style={{ marginTop: '16px' }}>
+                    <DocumentAttachmentList
+                      certificateId={selectedDeceased.death_certificate.cert_id}
+                      token={token}
+                      title={`Tệp Scan Giấy Báo Tử (${selectedDeceased.death_certificate.certificate_number})`}
+                      canUpload={true}
+                      onUploaded={async () => {
+                        const updatedRes = await apiFetch(`/api/v1/profiles/deceased/${selectedDeceased.deceased_id}`, {
+                          headers: { Authorization: `Bearer ${token}` },
+                        });
+                        if (updatedRes.ok) {
+                          const updated = await updatedRes.json();
+                          setSelectedDeceased(updated);
+                        }
+                      }}
+                    />
+                  </div>
                 </div>
               ) : (
                 <div style={{ color: '#6B7280', fontSize: '13px' }}>
@@ -3250,10 +3377,33 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 />
               </div>
 
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>
+                  Tệp Bản Scan Giấy Báo Tử (PDF, JPG, PNG) *
+                </label>
+                <input
+                  type="file"
+                  accept=".pdf,image/png,image/jpeg,image/webp"
+                  onChange={(e) => setCertScanFile(e.target.files?.[0] || null)}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '6px',
+                    border: '1px dashed #CBD5E1',
+                    backgroundColor: '#F8FAFC',
+                    fontSize: '12px',
+                  }}
+                />
+                <p style={{ fontSize: '11px', color: '#16A34A', marginTop: '4px', margin: 0 }}>
+                  ✓ Đính kèm bản scan sẽ tự động kích hoạt trạng thái "Đã xác thực giấy báo tử" trên hệ thống.
+                </p>
+              </div>
+
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                 <button
                   type="button"
                   onClick={() => setIsCertModalOpen(false)}
+                  disabled={certUploading}
                   style={{
                     padding: '8px 16px',
                     borderRadius: '6px',
@@ -3266,6 +3416,7 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                 </button>
                 <button
                   type="submit"
+                  disabled={certUploading}
                   style={{
                     padding: '8px 18px',
                     borderRadius: '6px',
@@ -3273,10 +3424,10 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                     backgroundColor: '#24594D',
                     color: 'white',
                     fontWeight: 600,
-                    cursor: 'pointer',
+                    cursor: certUploading ? 'not-allowed' : 'pointer',
                   }}
                 >
-                  Lưu Hồ Sơ Giấy Báo Tử
+                  {certUploading ? 'Đang Tải Lên & Xác Thực...' : 'Lưu Hồ Sơ Giấy Báo Tử'}
                 </button>
               </div>
             </form>

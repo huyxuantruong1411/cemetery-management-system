@@ -13,10 +13,12 @@ import {
   HardDrive,
 } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
+import { useNotificationModal } from '../../context/NotificationModalContext'
 import type { DocumentVersion, FileObject } from '../../types/document'
 
 export const DocumentManager: React.FC = () => {
   const { accessToken } = useAuth()
+  const { alert: modalAlert } = useNotificationModal()
   const [files, setFiles] = useState<FileObject[]>([])
   const [versions, setVersions] = useState<DocumentVersion[]>([])
   const [uploading, setUploading] = useState<boolean>(false)
@@ -104,7 +106,7 @@ export const DocumentManager: React.FC = () => {
         url,
       })
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : 'Lỗi xem trước')
+      modalAlert({ message: err instanceof Error ? err.message : 'Lỗi xem trước', type: 'error' })
     }
   }
 
@@ -137,7 +139,7 @@ export const DocumentManager: React.FC = () => {
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Tải xuống thất bại')
+      modalAlert({ message: err instanceof Error ? err.message : 'Tải xuống thất bại', type: 'error' })
     }
   }
 
@@ -174,7 +176,7 @@ export const DocumentManager: React.FC = () => {
       setVersionContractId('')
       setUploadSuccess(`Đã lưu Phiên bản #${newVer.version_no} cho hồ sơ chứng từ!`)
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Lỗi liên kết phiên bản')
+      modalAlert({ message: err instanceof Error ? err.message : 'Lỗi liên kết phiên bản', type: 'error' })
     } finally {
       setVersionSubmitting(false)
     }
