@@ -11,9 +11,12 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.modules.audit.models import AuditLog
 from app.modules.auth.models import User
+from app.modules.care.models import CarePackage
 from app.modules.catalog.models import PriceItem, PriceList
 from app.modules.contracts.models import (
     BurialAnnex,
+    CareAnnex,
+    ConstructionAnnex,
     Contract,
     ContractAnnex,
     ContractTemplate,
@@ -26,6 +29,10 @@ from app.modules.contracts.schemas import (
     AnnexActivateRequest,
     BurialAnnexCreate,
     BurialAnnexDetailBrief,
+    CareAnnexCreate,
+    CareAnnexDetailBrief,
+    ConstructionAnnexCreate,
+    ConstructionAnnexDetailBrief,
     ContractActivateRequest,
     ContractAnnexResponse,
     ContractBriefResponse,
@@ -746,6 +753,180 @@ class ContractService:
         db.refresh(annex)
         return annex
 
+    # ==============================================================================
+    # 5B. PHỤ LỤC CHĂM SÓC (CARE ANNEX)
+    # ==============================================================================
+    @classmethod
+    def create_care_annex(
+        cls,
+        db: Session,
+        contract_id: int,
+        data: CareAnnexCreate,
+        current_user_id: int,
+    ) -> ContractAnnex:
+        contract = cls.get_contract(db, contract_id)
+        if contract.contract_type not in ("LAND_PURCHASE", "TRANSFER"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Phụ lục chăm sóc chỉ có thể gắn vào hợp đồng mua bán đất hoặc chuyển nhượng.",
+            )
+        if contract.status != "ACTIVE":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Hợp đồng gốc {contract.contract_code} chưa ở trạng thái ACTIVE (hiện tại: {contract.status}).",
+            )
+
+        package = db.query(CarePackage).filter(CarePackage.package_id == data.package_id).first()
+        if not package or not package.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Gói dịch vụ chăm sóc không tồn tại hoặc đã ngừng hoạt động.",
+            )
+
+        now = _utc_now_naive()
+        annex_code = cls.generate_annex_code(db, "PL-CS")
+        rec_price = data.recurring_price if data.recurring_price is not None else package.unit_price
+        add_amount = data.additional_amount or Decimal("0.00")
+        v_from = data.valid_from or date.today()
+        v_to = data.valid_to or (v_from + timedelta(days=data.cycle_months * 30))
+
+        annex = ContractAnnex(
+            annex_code=annex_code,
+            contract_id=contract.contract_id,
+            annex_type="CARE",
+            status="DRAFT",
+            additional_amount=add_amount,
+            valid_from=v_from,
+            valid_to=v_to,
+            notes=data.notes,
+            created_at=now,
+            updated_at=now,
+        )
+        db.add(annex)
+        db.flush()
+
+        care = CareAnnex(
+            annex_id=annex.annex_id,
+            package_id=package.package_id,
+            cycle_months=data.cycle_months,
+            recurring_price=rec_price,
+        )
+        db.add(care)
+
+        audit = AuditLog(
+            user_id=current_user_id,
+            action_type="CREATE_CARE_ANNEX",
+            target_entity="ContractAnnex",
+            target_id=str(annex.annex_id),
+            post_change_values=json.dumps(
+                {
+                    "annex_code": annex.annex_code,
+                    "contract_id": contract.contract_id,
+                    "package_id": package.package_id,
+                    "cycle_months": data.cycle_months,
+                    "recurring_price": str(rec_price),
+                    "additional_amount": str(add_amount),
+                },
+                ensure_ascii=False,
+            ),
+        )
+        db.add(audit)
+        db.commit()
+        db.refresh(annex)
+        return annex
+
+    # ==============================================================================
+    # 5C. PHỤ LỤC THI CÔNG (CONSTRUCTION ANNEX)
+    # ==============================================================================
+    @classmethod
+    def create_construction_annex(
+        cls,
+        db: Session,
+        contract_id: int,
+        data: ConstructionAnnexCreate,
+        current_user_id: int,
+    ) -> ContractAnnex:
+        contract = cls.get_contract(db, contract_id)
+        if contract.contract_type not in ("LAND_PURCHASE", "TRANSFER"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Phụ lục thi công chỉ có thể gắn vào hợp đồng mua bán đất hoặc chuyển nhượng.",
+            )
+        if contract.status != "ACTIVE":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Hợp đồng gốc {contract.contract_code} chưa ở trạng thái ACTIVE (hiện tại: {contract.status}).",
+            )
+
+        target_plot_id = None
+        if contract.contract_type == "LAND_PURCHASE" and contract.land_purchase:
+            target_plot_id = contract.land_purchase.plot_id
+        elif contract.contract_type == "TRANSFER" and contract.transfer:
+            target_plot_id = contract.transfer.plot_id
+
+        if not target_plot_id:
+            raise HTTPException(status_code=400, detail="Hợp đồng không liên kết với ô mộ hợp lệ.")
+
+        plot = db.query(Plot).filter(Plot.plot_id == target_plot_id).first()
+        if not plot:
+            raise HTTPException(status_code=404, detail="Không tìm thấy ô mộ của hợp đồng.")
+
+        if plot.is_locked:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Ô mộ đã bị khóa vĩnh viễn, không thể lập phụ lục thi công!",
+            )
+
+        now = _utc_now_naive()
+        annex_code = cls.generate_annex_code(db, "PL-TC")
+        add_amount = data.additional_amount or Decimal("0.00")
+
+        annex = ContractAnnex(
+            annex_code=annex_code,
+            contract_id=contract.contract_id,
+            annex_type="CONSTRUCTION",
+            status="DRAFT",
+            additional_amount=add_amount,
+            valid_from=data.estimated_start_date,
+            valid_to=data.estimated_end_date,
+            notes=data.notes,
+            created_at=now,
+            updated_at=now,
+        )
+        db.add(annex)
+        db.flush()
+
+        construction = ConstructionAnnex(
+            annex_id=annex.annex_id,
+            plot_id=plot.plot_id,
+            estimated_start_date=data.estimated_start_date,
+            estimated_end_date=data.estimated_end_date,
+            checklist_specifications=data.checklist_specifications,
+        )
+        db.add(construction)
+
+        audit = AuditLog(
+            user_id=current_user_id,
+            action_type="CREATE_CONSTRUCTION_ANNEX",
+            target_entity="ContractAnnex",
+            target_id=str(annex.annex_id),
+            post_change_values=json.dumps(
+                {
+                    "annex_code": annex.annex_code,
+                    "contract_id": contract.contract_id,
+                    "plot_id": plot.plot_id,
+                    "estimated_start_date": data.estimated_start_date.isoformat(),
+                    "estimated_end_date": data.estimated_end_date.isoformat(),
+                    "additional_amount": str(add_amount),
+                },
+                ensure_ascii=False,
+            ),
+        )
+        db.add(audit)
+        db.commit()
+        db.refresh(annex)
+        return annex
+
     @classmethod
     def submit_annex_for_signing(
         cls,
@@ -807,6 +988,122 @@ class ContractService:
                 status_code=400,
                 detail="Tệp scan phụ lục đã ký chưa sẵn sàng hoặc không tồn tại.",
             )
+
+        if annex.annex_type == "CARE":
+            now = _utc_now_naive()
+            signed_date = data.signed_at or date.today()
+
+            annex.status = "ACTIVE"
+            annex.signed_scan_file_id = scan_file.file_id
+            annex.signed_scan_url = scan_file.object_key
+            annex.signed_at = signed_date
+            annex.activated_at = now
+            annex.activated_by = current_user_id
+            annex.activation_notes = data.activation_notes
+            annex.updated_at = now
+
+            if annex.additional_amount > 0:
+                cls._create_receivable(
+                    db,
+                    annex.contract,
+                    signed_date,
+                    now,
+                    annex_id=annex.annex_id,
+                    amount=annex.additional_amount,
+                )
+
+            outbox = OutboxEvent(
+                event_id=str(uuid.uuid4()),
+                event_type="CARE_ANNEX_ACTIVATED",
+                aggregate_type="ANNEX",
+                aggregate_id=str(annex.annex_id),
+                payload=json.dumps(
+                    {
+                        "annex_id": annex.annex_id,
+                        "annex_code": annex.annex_code,
+                        "contract_id": annex.contract_id,
+                        "activated_at": now.isoformat(),
+                        "activated_by": current_user_id,
+                    },
+                    ensure_ascii=False,
+                ),
+                state="PENDING",
+                created_at=now,
+            )
+            db.add(outbox)
+
+            audit = AuditLog(
+                user_id=current_user_id,
+                action_type="ACTIVATE_CARE_ANNEX",
+                target_entity="ContractAnnex",
+                target_id=str(annex.annex_id),
+                post_change_values=json.dumps(
+                    {"annex_code": annex.annex_code, "status": annex.status},
+                    ensure_ascii=False,
+                ),
+            )
+            db.add(audit)
+            db.commit()
+            db.refresh(annex)
+            return annex
+
+        elif annex.annex_type == "CONSTRUCTION":
+            now = _utc_now_naive()
+            signed_date = data.signed_at or date.today()
+
+            annex.status = "ACTIVE"
+            annex.signed_scan_file_id = scan_file.file_id
+            annex.signed_scan_url = scan_file.object_key
+            annex.signed_at = signed_date
+            annex.activated_at = now
+            annex.activated_by = current_user_id
+            annex.activation_notes = data.activation_notes
+            annex.updated_at = now
+
+            if annex.additional_amount > 0:
+                cls._create_receivable(
+                    db,
+                    annex.contract,
+                    signed_date,
+                    now,
+                    annex_id=annex.annex_id,
+                    amount=annex.additional_amount,
+                )
+
+            outbox = OutboxEvent(
+                event_id=str(uuid.uuid4()),
+                event_type="CONSTRUCTION_ANNEX_ACTIVATED",
+                aggregate_type="ANNEX",
+                aggregate_id=str(annex.annex_id),
+                payload=json.dumps(
+                    {
+                        "annex_id": annex.annex_id,
+                        "annex_code": annex.annex_code,
+                        "contract_id": annex.contract_id,
+                        "activated_at": now.isoformat(),
+                        "activated_by": current_user_id,
+                    },
+                    ensure_ascii=False,
+                ),
+                state="PENDING",
+                created_at=now,
+            )
+            db.add(outbox)
+
+            audit = AuditLog(
+                user_id=current_user_id,
+                action_type="ACTIVATE_CONSTRUCTION_ANNEX",
+                target_entity="ContractAnnex",
+                target_id=str(annex.annex_id),
+                post_change_values=json.dumps(
+                    {"annex_code": annex.annex_code, "status": annex.status},
+                    ensure_ascii=False,
+                ),
+            )
+            db.add(audit)
+            db.commit()
+            db.refresh(annex)
+            return annex
 
         burial = db.query(BurialAnnex).filter(BurialAnnex.annex_id == annex.annex_id).first()
         if not burial:
@@ -1081,6 +1378,7 @@ class ContractService:
         query = (
             db.query(ContractAnnex)
             .options(
+                joinedload(ContractAnnex.contract).joinedload(Contract.customer),
                 joinedload(ContractAnnex.contract).joinedload(Contract.land_purchase).joinedload(LandPurchaseContract.plot),
                 joinedload(ContractAnnex.contract).joinedload(Contract.transfer).joinedload(TransferContract.plot),
                 joinedload(ContractAnnex.burial).joinedload(BurialAnnex.plot),
@@ -1156,6 +1454,7 @@ class ContractService:
                 "annex_type": a.annex_type,
                 "contract_id": a.contract_id,
                 "contract_code": a.contract.contract_code if a.contract else "",
+                "customer_name": a.contract.customer.full_name if (a.contract and a.contract.customer) else None,
                 "status": a.status,
                 "signed_at": a.signed_at,
                 "target_date": a.construction.estimated_start_date if a.construction else a.valid_from,
@@ -1169,6 +1468,7 @@ class ContractService:
                 "service_summary": service_summary,
                 "is_burial_confirmed": is_burial_confirmed,
                 "burial_date": burial_date,
+                "checklist_specifications": a.construction.checklist_specifications if a.construction else None,
             })
         return results
 
@@ -2031,6 +2331,28 @@ class ContractService:
                     construction_notes=a.burial.construction_notes,
                 )
 
+            care_dto = None
+            if a.care:
+                pkg = a.care.package or db.query(CarePackage).filter(CarePackage.package_id == a.care.package_id).first()
+                care_dto = CareAnnexDetailBrief(
+                    package_id=a.care.package_id,
+                    package_name=pkg.package_name if pkg else None,
+                    package_code=pkg.package_code if pkg else None,
+                    cycle_months=a.care.cycle_months,
+                    recurring_price=Decimal("0.00") if is_caretaker else a.care.recurring_price,
+                )
+
+            construction_dto = None
+            if a.construction:
+                c_plot = a.construction.plot or db.query(Plot).filter(Plot.plot_id == a.construction.plot_id).first()
+                construction_dto = ConstructionAnnexDetailBrief(
+                    plot_id=a.construction.plot_id,
+                    plot_code=c_plot.plot_code if c_plot else None,
+                    estimated_start_date=a.construction.estimated_start_date,
+                    estimated_end_date=a.construction.estimated_end_date,
+                    checklist_specifications=a.construction.checklist_specifications,
+                )
+
             annexes_dto.append(
                 ContractAnnexResponse(
                     annex_id=a.annex_id,
@@ -2052,6 +2374,8 @@ class ContractService:
                     created_at=a.created_at,
                     updated_at=a.updated_at,
                     burial=burial_dto,
+                    care=care_dto,
+                    construction=construction_dto,
                 )
             )
 

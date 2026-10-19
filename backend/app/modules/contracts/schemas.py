@@ -95,6 +95,26 @@ class BurialAnnexDetailBrief(BaseModel):
     construction_notes: Optional[str] = None
 
 
+class CareAnnexDetailBrief(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    package_id: int
+    package_name: Optional[str] = None
+    package_code: Optional[str] = None
+    cycle_months: int
+    recurring_price: Decimal
+
+
+class ConstructionAnnexDetailBrief(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    plot_id: int
+    plot_code: Optional[str] = None
+    estimated_start_date: date
+    estimated_end_date: date
+    checklist_specifications: Optional[str] = None
+
+
 class ContractAnnexResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -118,6 +138,8 @@ class ContractAnnexResponse(BaseModel):
     updated_at: datetime
 
     burial: Optional[BurialAnnexDetailBrief] = None
+    care: Optional[CareAnnexDetailBrief] = None
+    construction: Optional[ConstructionAnnexDetailBrief] = None
 
 
 class ReceivableBrief(BaseModel):
@@ -209,6 +231,24 @@ class BurialAnnexCreate(BaseModel):
     construction_notes: Optional[str] = Field(
         None, max_length=1000, description="Ghi chú thi công kim tĩnh"
     )
+    notes: Optional[str] = Field(None, max_length=1000)
+
+
+class CareAnnexCreate(BaseModel):
+    package_id: int = Field(..., description="ID gói dịch vụ chăm sóc")
+    cycle_months: int = Field(12, ge=1, le=120, description="Kỳ hạn chăm sóc (số tháng)")
+    recurring_price: Optional[Decimal] = Field(None, ge=0, description="Đơn giá định kỳ")
+    additional_amount: Optional[Decimal] = Field(Decimal("0.00"), ge=0, description="Phí dịch vụ ban đầu / phát sinh")
+    valid_from: Optional[date] = Field(None, description="Ngày bắt đầu hiệu lực")
+    valid_to: Optional[date] = Field(None, description="Ngày kết thúc hiệu lực")
+    notes: Optional[str] = Field(None, max_length=1000)
+
+
+class ConstructionAnnexCreate(BaseModel):
+    estimated_start_date: date = Field(..., description="Ngày dự kiến bắt đầu thi công")
+    estimated_end_date: date = Field(..., description="Ngày dự kiến hoàn thành")
+    additional_amount: Decimal = Field(Decimal("0.00"), ge=0, description="Dự toán chi phí thi công")
+    checklist_specifications: Optional[str] = Field(None, max_length=10000, description="Quy chuẩn và hạng mục thi công")
     notes: Optional[str] = Field(None, max_length=1000)
 
 
@@ -342,3 +382,5 @@ class WorkBasisResponse(BaseModel):
     service_summary: Optional[str] = None
     is_burial_confirmed: bool = False
     burial_date: Optional[date] = None
+    checklist_specifications: Optional[str] = None
+    customer_name: Optional[str] = None

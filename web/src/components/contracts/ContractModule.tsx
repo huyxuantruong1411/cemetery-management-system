@@ -14,6 +14,7 @@ import {
   Layers,
   Lock,
   MapPin,
+  Percent,
   Plus,
   RefreshCw,
   Search,
@@ -23,6 +24,12 @@ import {
   User,
   X,
   XCircle,
+  Grid,
+  ListFilter,
+  Sparkles,
+  UserPlus,
+  Wrench,
+  Trash2,
 } from 'lucide-react';
 import type {
   ContractAnnexResponse,
@@ -31,7 +38,10 @@ import type {
   ContractStatus,
   ContractType,
   BurialAnnexCreate,
+  CareAnnexCreate,
+  ConstructionAnnexCreate,
 } from '../../types/contracts';
+import type { CarePackage } from '../../types/catalog';
 import type { Customer, DeceasedProfile } from '../../types/profiles';
 import type { Plot, PlotSlot } from '../../types/plots';
 import { Pagination, usePagination } from '../common/Pagination';
@@ -55,6 +65,102 @@ const getCremationPackageName = (code?: string): string => {
     default:
       return code.replace(/_/g, ' ');
   }
+};
+
+export interface AnnexChecklistItem {
+  task_name: string;
+  specs: string;
+  is_required: boolean;
+}
+
+export const DEFAULT_CONSTRUCTION_CHECKLIST: AnnexChecklistItem[] = [
+  { task_name: 'Khảo sát hiện trường & định vị tim mốc khuôn viên ô mộ', specs: 'Đo đạc thực địa, cắm mốc ranh giới, kiểm tra tim mốc', is_required: true },
+  { task_name: 'Đào móng & đổ bê tông lót nền móng', specs: 'Đào sâu 0.8m, bê tông mác M250 dày 100mm, cốt thép D10', is_required: true },
+  { task_name: 'Xây tường gạch & đúc hố kim tĩnh (nếu có)', specs: 'Gạch đặc thẻ nung, vữa xi măng M100, chống thấm 2 lớp', is_required: true },
+  { task_name: 'Ốp đá hoa cương granite & hoàn thiện chi tiết', specs: 'Đá granite tự nhiên Bình Định 20mm, mài bóng gương', is_required: true },
+  { task_name: 'Lắp bia mộ men sứ, dọn dẹp & nghiệm thu bàn giao', specs: 'Bia đá men sứ chịu nhiệt, vệ sinh sạch cảnh quan', is_required: true },
+];
+
+const renderConstructionSpecs = (rawSpec?: string | null) => {
+  if (!rawSpec) return null;
+  try {
+    const parsed = JSON.parse(rawSpec);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return (
+        <div style={{ marginTop: '8px' }}>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Wrench size={13} style={{ color: 'var(--brand-primary)' }} />
+            <span>Hạng mục &amp; Quy chuẩn kỹ thuật ({parsed.length} hạng mục):</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '6px' }}>
+            {parsed.map((item: any, idx: number) => (
+              <div
+                key={idx}
+                style={{
+                  padding: '8px 10px',
+                  backgroundColor: '#F8FAFC',
+                  borderRadius: '6px',
+                  border: '1px solid #E2E8F0',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'flex-start',
+                  gap: '8px',
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: '12px', fontWeight: 600, color: '#1E293B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ color: 'var(--brand-primary)', fontWeight: 700 }}>#{idx + 1}</span>
+                    <span>{item.task_name || item.name || 'Hạng mục thi công'}</span>
+                  </div>
+                  {item.specs && (
+                    <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px', paddingLeft: '18px' }}>
+                      <strong style={{ color: '#475569' }}>Quy cách:</strong> {item.specs}
+                    </div>
+                  )}
+                </div>
+                {item.is_required !== undefined && (
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 600,
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      backgroundColor: item.is_required ? '#FEE2E2' : '#F1F5F9',
+                      color: item.is_required ? '#DC2626' : '#64748B',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {item.is_required ? 'Bắt buộc' : 'Tùy chọn'}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+  } catch {
+    // Fall back to plain text
+  }
+
+  const items = rawSpec.includes(';')
+    ? rawSpec.split(';').map((s) => s.trim()).filter(Boolean)
+    : [rawSpec];
+
+  return (
+    <div style={{ marginTop: '6px', fontSize: '12px', color: '#475569' }}>
+      <strong>Hạng mục / Thông số kỹ thuật:</strong>
+      {items.length > 1 ? (
+        <ul style={{ margin: '4px 0 0', paddingLeft: '20px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+          {items.map((item, idx) => (
+            <li key={idx} style={{ color: '#334155' }}>{item}</li>
+          ))}
+        </ul>
+      ) : (
+        <span style={{ marginLeft: '4px' }}>{rawSpec}</span>
+      )}
+    </div>
+  );
 };
 
 export const ContractModule: React.FC<ContractModuleProps> = ({ token, currentUserRoles = [] }) => {
@@ -113,10 +219,51 @@ export const ContractModule: React.FC<ContractModuleProps> = ({ token, currentUs
   const [custResults, setCustResults] = useState<Customer[]>([]);
   const [custLoading, setCustLoading] = useState<boolean>(false);
 
+  // Quick Customer Creation State
+  const [isQuickCustModalOpen, setIsQuickCustModalOpen] = useState<boolean>(false);
+  const [quickCustFullName, setQuickCustFullName] = useState<string>('');
+  const [quickCustCitizenId, setQuickCustCitizenId] = useState<string>('');
+  const [quickCustPhone, setQuickCustPhone] = useState<string>('');
+  const [quickCustAddress, setQuickCustAddress] = useState<string>('');
+  const [quickCustDob, setQuickCustDob] = useState<string>('');
+  const [quickCustEmail, setQuickCustEmail] = useState<string>('');
+  const [quickCustSubmitting, setQuickCustSubmitting] = useState<boolean>(false);
+  const [quickCustError, setQuickCustError] = useState<string | null>(null);
+
   // Available plots state for wizard
   const [availablePlots, setAvailablePlots] = useState<Plot[]>([]);
   const [plotFilterZone, setPlotFilterZone] = useState<string>('');
+  const [plotFilterRow, setPlotFilterRow] = useState<string>('');
+  const [plotFilterType, setPlotFilterType] = useState<string>('');
+  const [plotFilterOrientation, setPlotFilterOrientation] = useState<string>('');
+  const [plotSearchCode, setPlotSearchCode] = useState<string>('');
+  const [plotViewMode, setPlotViewMode] = useState<'cards' | 'matrix'>('cards');
   const [plotLoading, setPlotLoading] = useState<boolean>(false);
+  const [plotError, setPlotError] = useState<string | null>(null);
+
+  // Care Annex Modal State
+  const [isCareAnnexModalOpen, setIsCareAnnexModalOpen] = useState<boolean>(false);
+  const [carePackages, setCarePackages] = useState<CarePackage[]>([]);
+  const [selectedCarePackageId, setSelectedCarePackageId] = useState<number | ''>('');
+  const [careCycleMonths, setCareCycleMonths] = useState<number>(12);
+  const [careRecurringPrice, setCareRecurringPrice] = useState<string>('0');
+  const [careNotes, setCareNotes] = useState<string>('');
+  const [careSubmitting, setCareSubmitting] = useState<boolean>(false);
+  const [careError, setCareError] = useState<string | null>(null);
+
+  // Construction Annex Modal State
+  const [isConstructionAnnexModalOpen, setIsConstructionAnnexModalOpen] = useState<boolean>(false);
+  const [constStartDate, setConstStartDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [constEndDate, setConstEndDate] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().split('T')[0];
+  });
+  const [checklistItems, setChecklistItems] = useState<AnnexChecklistItem[]>(DEFAULT_CONSTRUCTION_CHECKLIST);
+  const [constAmount, setConstAmount] = useState<string>('0');
+  const [constNotes, setConstNotes] = useState<string>('');
+  const [constSubmitting, setConstSubmitting] = useState<boolean>(false);
+  const [constError, setConstError] = useState<string | null>(null);
 
   // Activation Modal State
   const [isActivateModalOpen, setIsActivateModalOpen] = useState<boolean>(false);
@@ -280,20 +427,34 @@ function parseApiError(errJson: unknown, fallback: string): string {
   // Fetch available plots for Step 2
   const fetchAvailablePlots = async () => {
     setPlotLoading(true);
+    setPlotError(null);
     try {
-      const res = await apiFetch('/api/v1/plots?status=EMPTY_UNSOLD&limit=100', {
+      const res = await apiFetch('/api/v1/plots?status=EMPTY_UNSOLD&limit=2500', {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
         const data = await res.json();
-        setAvailablePlots(data);
+        setAvailablePlots(Array.isArray(data) ? data : []);
+      } else {
+        const errJson = await res.json().catch(() => ({}));
+        const errMsg = parseApiError(errJson, `Không thể tải danh sách ô mộ (${res.status})`);
+        setPlotError(errMsg);
+        console.error('Không thể tải danh sách ô mộ:', errJson);
       }
-    } catch {
-      // ignore
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'Lỗi kết nối khi nạp danh sách ô mộ';
+      setPlotError(errMsg);
+      console.error('Lỗi kết nối khi nạp danh sách ô mộ:', err);
     } finally {
       setPlotLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isWizardOpen && wizardStep === 2 && availablePlots.length === 0) {
+      fetchAvailablePlots();
+    }
+  }, [isWizardOpen, wizardStep, availablePlots.length]);
 
   // Open Wizard
   const handleOpenWizard = () => {
@@ -582,6 +743,192 @@ function parseApiError(errJson: unknown, fallback: string): string {
     }
   };
 
+  const handleQuickCreateCustomer = async () => {
+    if (!quickCustFullName.trim() || !quickCustCitizenId.trim() || !quickCustPhone.trim() || !quickCustAddress.trim()) {
+      setQuickCustError('Vui lòng điền đầy đủ các thông tin bắt buộc (*)');
+      return;
+    }
+    setQuickCustSubmitting(true);
+    setQuickCustError(null);
+    try {
+      const res = await apiFetch('/api/v1/profiles/customers', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          full_name: quickCustFullName.trim(),
+          citizen_id: quickCustCitizenId.trim(),
+          phone_number: quickCustPhone.trim(),
+          address: quickCustAddress.trim(),
+          date_of_birth: quickCustDob || undefined,
+          email: quickCustEmail.trim() || undefined,
+        }),
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.detail || 'Thêm khách hàng thất bại');
+      }
+      const newCust: Customer = await res.json();
+      setWizardCustomer(newCust);
+      setCustResults((prev) => [newCust, ...prev]);
+      setIsQuickCustModalOpen(false);
+      setQuickCustFullName('');
+      setQuickCustCitizenId('');
+      setQuickCustPhone('');
+      setQuickCustAddress('');
+      setQuickCustDob('');
+      setQuickCustEmail('');
+      await modalAlert({
+        message: `Đã tạo khách hàng "${newCust.full_name}" (${newCust.customer_code}) thành công và tự động chọn cho hợp đồng!`,
+        type: 'success',
+      });
+    } catch (err: unknown) {
+      setQuickCustError(err instanceof Error ? err.message : 'Lỗi khi tạo hồ sơ khách hàng');
+    } finally {
+      setQuickCustSubmitting(false);
+    }
+  };
+
+  const handleOpenCareAnnex = async () => {
+    if (!contractDetail) return;
+    setCareError(null);
+    setCareNotes('');
+    setCareCycleMonths(12);
+    setCareRecurringPrice('0');
+    setSelectedCarePackageId('');
+    try {
+      const res = await apiFetch('/api/v1/catalog/care-packages?active_only=true', {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (res.ok) {
+        const pkgs: CarePackage[] = await res.json();
+        setCarePackages(pkgs);
+        if (pkgs.length > 0) {
+          setSelectedCarePackageId(pkgs[0].package_id);
+          setCareRecurringPrice(String(pkgs[0].unit_price));
+        }
+      }
+    } catch {
+      // ignore
+    }
+    setIsCareAnnexModalOpen(true);
+  };
+
+  const handleCreateCareAnnex = async () => {
+    if (!contractDetail || !selectedCarePackageId) {
+      setCareError('Vui lòng chọn gói dịch vụ chăm sóc');
+      return;
+    }
+    setCareSubmitting(true);
+    setCareError(null);
+    try {
+      const payload: CareAnnexCreate = {
+        package_id: Number(selectedCarePackageId),
+        cycle_months: careCycleMonths,
+        recurring_price: Number(careRecurringPrice) || 0,
+        notes: careNotes.trim() || undefined,
+      };
+      const res = await apiFetch(`/api/v1/contracts/${contractDetail.contract_id}/annexes/care`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.detail || 'Tạo phụ lục chăm sóc thất bại');
+      }
+      setIsCareAnnexModalOpen(false);
+      await modalAlert({ message: 'Lập phụ lục chăm sóc thành công!', type: 'success' });
+      await fetchContracts();
+      if (contractDetail) fetchContractDetail(contractDetail.contract_id);
+    } catch (err: unknown) {
+      setCareError(err instanceof Error ? err.message : 'Lỗi khi tạo phụ lục chăm sóc');
+    } finally {
+      setCareSubmitting(false);
+    }
+  };
+
+  const handleOpenConstructionAnnex = () => {
+    if (!contractDetail) return;
+    setConstError(null);
+    setConstNotes('');
+    setChecklistItems(DEFAULT_CONSTRUCTION_CHECKLIST.map((it) => ({ ...it })));
+    setConstAmount('0');
+    setConstStartDate(new Date().toISOString().split('T')[0]);
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    setConstEndDate(d.toISOString().split('T')[0]);
+    setIsConstructionAnnexModalOpen(true);
+  };
+
+  const handleUpdateChecklistItem = (index: number, field: keyof AnnexChecklistItem, val: string | boolean) => {
+    setChecklistItems((prev) => {
+      const next = [...prev];
+      next[index] = { ...next[index], [field]: val };
+      return next;
+    });
+  };
+
+  const handleAddChecklistItem = () => {
+    setChecklistItems((prev) => [...prev, { task_name: '', specs: '', is_required: true }]);
+  };
+
+  const handleRemoveChecklistItem = (index: number) => {
+    setChecklistItems((prev) => prev.filter((_, idx) => idx !== index));
+  };
+
+  const handleResetDefaultChecklist = () => {
+    setChecklistItems(DEFAULT_CONSTRUCTION_CHECKLIST.map((it) => ({ ...it })));
+  };
+
+  const handleCreateConstructionAnnex = async () => {
+    if (!contractDetail || !constStartDate || !constEndDate) {
+      setConstError('Vui lòng nhập ngày bắt đầu và kết thúc thi công');
+      return;
+    }
+    const validItems = checklistItems.filter((it) => it.task_name.trim());
+    if (validItems.length === 0) {
+      setConstError('Vui lòng thiết lập ít nhất 1 hạng mục thi công trong checklist quy cách kỹ thuật');
+      return;
+    }
+    setConstSubmitting(true);
+    setConstError(null);
+    try {
+      const payload: ConstructionAnnexCreate = {
+        estimated_start_date: constStartDate,
+        estimated_end_date: constEndDate,
+        checklist_specifications: JSON.stringify(validItems),
+        additional_amount: Number(constAmount) || 0,
+        notes: constNotes.trim() || undefined,
+      };
+      const res = await apiFetch(`/api/v1/contracts/${contractDetail.contract_id}/annexes/construction`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.detail || 'Tạo phụ lục thi công thất bại');
+      }
+      setIsConstructionAnnexModalOpen(false);
+      await modalAlert({ message: 'Lập phụ lục thi công xây dựng thành công!', type: 'success' });
+      await fetchContracts();
+      if (contractDetail) fetchContractDetail(contractDetail.contract_id);
+    } catch (err: unknown) {
+      setConstError(err instanceof Error ? err.message : 'Lỗi khi tạo phụ lục thi công');
+    } finally {
+      setConstSubmitting(false);
+    }
+  };
+
   const handleSubmitAnnexSigning = async (annexId: number) => {
     const ok = await modalConfirm({
       title: 'Xác Nhận Ký Phụ Lục',
@@ -662,34 +1009,6 @@ function parseApiError(errJson: unknown, fallback: string): string {
       setAnnexActivateError(err instanceof Error ? err.message : 'Lỗi khi kích hoạt phụ lục');
     } finally {
       setAnnexActivateSubmitting(false);
-    }
-  };
-
-  const handleConfirmBurial = async (annexId: number) => {
-    const ok = await modalConfirm({
-      title: 'Xác Nhận An Táng Thực Địa',
-      message: 'Xác nhận: Quản trang đã thực hiện hạ huyệt an táng thực tế tại ô mộ này?',
-      confirmText: 'Xác Nhận An Táng',
-    });
-    if (!ok) return;
-    try {
-      const res = await apiFetch(`/api/v1/contracts/annexes/${annexId}/confirm-burial`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ notes: 'Quản trang xác nhận an táng thực địa hoàn tất' }),
-      });
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.detail || 'Xác nhận an táng thất bại');
-      }
-      await modalAlert({ message: 'Đã xác nhận an táng thực địa và cập nhật trạng thái ô mộ thành công!', type: 'success' });
-      await fetchContracts();
-      if (contractDetail) fetchContractDetail(contractDetail.contract_id);
-    } catch (err: unknown) {
-      await modalAlert({ message: err instanceof Error ? err.message : 'Lỗi xác nhận an táng', type: 'error' });
     }
   };
 
@@ -1679,7 +1998,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',
               width: '100%',
-              maxWidth: '780px',
+              maxWidth: '960px',
               maxHeight: '90vh',
               display: 'flex',
               flexDirection: 'column',
@@ -1796,15 +2115,176 @@ function parseApiError(errJson: unknown, fallback: string): string {
               {/* STEP 1: SELECT CUSTOMER */}
               {wizardStep === 1 && (
                 <div>
-                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B', marginBottom: '8px' }}>
-                    1. Tra cứu hoặc chọn khách hàng đứng tên hợp đồng:
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B' }}>
+                      1. Tra cứu hoặc chọn khách hàng đứng tên hợp đồng:
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuickCustError(null);
+                        setIsQuickCustModalOpen(true);
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--brand-primary)',
+                        backgroundColor: '#F0FDF4',
+                        color: 'var(--brand-primary)',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <UserPlus size={14} />
+                      <span>+ Thêm Khách Hàng Nhanh</span>
+                    </button>
                   </div>
+
+                  {/* Inline Quick Add Customer Modal / Card */}
+                  {isQuickCustModalOpen && (
+                    <div
+                      style={{
+                        padding: '16px',
+                        borderRadius: '8px',
+                        backgroundColor: '#F8FAFC',
+                        border: '1.5px dashed var(--brand-primary)',
+                        marginBottom: '16px',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--brand-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <UserPlus size={16} />
+                          <span>Hồ Sơ Khách Hàng Mới Nhanh</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setIsQuickCustModalOpen(false)}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}
+                        >
+                          <X size={16} />
+                        </button>
+                      </div>
+
+                      {quickCustError && (
+                        <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: '#FEF2F2', color: '#B91C1C', fontSize: '12px', marginBottom: '10px' }}>
+                          {quickCustError}
+                        </div>
+                      )}
+
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '12px' }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                            Họ và Tên (*)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Ví dụ: Nguyễn Văn An"
+                            value={quickCustFullName}
+                            onChange={(e) => setQuickCustFullName(e.target.value)}
+                            style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                            Số CCCD / CMND (*)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="12 chữ số CCCD"
+                            value={quickCustCitizenId}
+                            onChange={(e) => setQuickCustCitizenId(e.target.value)}
+                            style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                            Số Điện Thoại (*)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="0912xxxxxx"
+                            value={quickCustPhone}
+                            onChange={(e) => setQuickCustPhone(e.target.value)}
+                            style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                            Ngày Sinh (tuỳ chọn)
+                          </label>
+                          <input
+                            type="date"
+                            value={quickCustDob}
+                            onChange={(e) => setQuickCustDob(e.target.value)}
+                            style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                            Địa Chỉ Thường Trú (*)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="Số nhà, đường, quận/huyện, tỉnh/thành"
+                            value={quickCustAddress}
+                            onChange={(e) => setQuickCustAddress(e.target.value)}
+                            style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                            Email (tuỳ chọn)
+                          </label>
+                          <input
+                            type="email"
+                            placeholder="khachhang@email.com"
+                            value={quickCustEmail}
+                            onChange={(e) => setQuickCustEmail(e.target.value)}
+                            style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                          />
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setIsQuickCustModalOpen(false)}
+                          style={{ padding: '6px 14px', borderRadius: '5px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontSize: '12px', cursor: 'pointer' }}
+                        >
+                          Hủy Bỏ
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleQuickCreateCustomer}
+                          disabled={quickCustSubmitting}
+                          style={{
+                            padding: '6px 16px',
+                            borderRadius: '5px',
+                            border: 'none',
+                            backgroundColor: 'var(--brand-primary)',
+                            color: '#FFFFFF',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {quickCustSubmitting ? 'Đang Tạo...' : 'Tạo & Chọn Khách Hàng Ngay'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
                     <div style={{ position: 'relative', flex: 1 }}>
                       <Search size={16} color="#94A3B8" style={{ position: 'absolute', left: '10px', top: '10px' }} />
                       <input
                         type="text"
-                        placeholder="Nhập họ tên, số CCCD hoặc SĐT khách hàng..."
+                        placeholder="Tìm theo họ tên, CCCD hoặc số điện thoại..."
                         value={custSearch}
                         onChange={(e) => {
                           setCustSearch(e.target.value);
@@ -1854,8 +2334,29 @@ function parseApiError(errJson: unknown, fallback: string): string {
                         Đang tìm kiếm khách hàng...
                       </div>
                     ) : custResults.length === 0 ? (
-                      <div style={{ padding: '20px', textAlign: 'center', color: '#94A3B8', fontSize: '13px' }}>
-                        Không tìm thấy khách hàng. Vui lòng tạo hồ sơ khách hàng mới ở tab &apos;Thân Nhân &amp; Người Mất&apos;.
+                      <div style={{ padding: '24px 20px', textAlign: 'center' }}>
+                        <div style={{ color: '#94A3B8', fontSize: '13px', marginBottom: '8px' }}>
+                          Không tìm thấy khách hàng phù hợp.
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuickCustError(null);
+                            setIsQuickCustModalOpen(true);
+                          }}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            border: '1px solid var(--brand-primary)',
+                            backgroundColor: '#F0FDF4',
+                            color: 'var(--brand-primary)',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          + Thêm Khách Hàng Mới Ngay
+                        </button>
                       </div>
                     ) : (
                       custResults.map((c) => (
@@ -1875,7 +2376,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
                           <div>
                             <div style={{ fontWeight: 600, fontSize: '13px', color: '#1E293B' }}>{c.full_name}</div>
                             <div style={{ fontSize: '12px', color: '#64748B' }}>
-                              CCCD: {c.citizen_id} • SĐT: {c.phone_number}
+                              CCCD: {c.citizen_id} • SĐT: {c.phone_number} • {c.address}
                             </div>
                           </div>
                           <button
@@ -1899,97 +2400,430 @@ function parseApiError(errJson: unknown, fallback: string): string {
                 </div>
               )}
 
-              {/* STEP 2: SELECT AVAILABLE PLOT */}
-              {wizardStep === 2 && (
-                <div>
-                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B', marginBottom: '8px' }}>
-                    2. Chọn vị trí ô mộ trống cần mua (chống xung đột đặt chỗ tức thời):
-                  </div>
+              {/* STEP 2: ADVANCED CEMETERY PLOT SELECTOR & MANAGER */}
+              {wizardStep === 2 && (() => {
+                const filteredPlots = availablePlots.filter((p) => {
+                  if (plotFilterZone && p.zone_code !== plotFilterZone) return false;
+                  if (plotFilterRow && p.row_code !== plotFilterRow) return false;
+                  if (plotFilterType && p.type_name !== plotFilterType) return false;
+                  if (plotFilterOrientation && p.orientation !== plotFilterOrientation) return false;
+                  if (plotSearchCode && !p.plot_code.toLowerCase().includes(plotSearchCode.toLowerCase())) return false;
+                  return true;
+                });
 
-                  {wizardPlot && (
-                    <div
-                      style={{
-                        padding: '14px 18px',
-                        borderRadius: '8px',
-                        backgroundColor: '#EFF6FF',
-                        border: '1px solid #BFDBFE',
-                        marginBottom: '16px',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div>
-                          <span style={{ fontSize: '11px', fontWeight: 600, color: '#1E40AF', textTransform: 'uppercase' }}>
-                            Đã Chọn Ô Mộ
-                          </span>
-                          <div style={{ fontSize: '16px', fontWeight: 700, color: '#1E40AF', marginTop: '2px' }}>
-                            {wizardPlot.plot_code}
-                          </div>
-                          <div style={{ fontSize: '12px', color: '#1D4ED8', marginTop: '2px' }}>
-                            Khu: {wizardPlot.zone_name} | Hàng: {wizardPlot.row_code} | Loại mộ: {wizardPlot.type_name} | Hướng: {wizardPlot.orientation || 'Tự do'}
-                          </div>
-                        </div>
-                        <MapPin size={24} color="#2563EB" />
+                const uniqueZones = Array.from(new Set(availablePlots.map((p) => p.zone_code).filter((z): z is string => Boolean(z)))).sort();
+                const uniqueRows = Array.from(
+                  new Set(
+                    availablePlots
+                      .filter((p) => !plotFilterZone || p.zone_code === plotFilterZone)
+                      .map((p) => p.row_code)
+                      .filter((r): r is string => Boolean(r))
+                  )
+                ).sort();
+                const uniqueTypes = Array.from(new Set(availablePlots.map((p) => p.type_name).filter((t): t is string => Boolean(t)))).sort();
+                const uniqueOrientations = Array.from(new Set(availablePlots.map((p) => p.orientation).filter((o): o is string => Boolean(o)))).sort();
+
+                // Group by row for matrix view
+                const rowGroups: { [rowCode: string]: Plot[] } = {};
+                filteredPlots.forEach((p) => {
+                  const rc = p.row_code || 'Chưa phân hàng';
+                  if (!rowGroups[rc]) rowGroups[rc] = [];
+                  rowGroups[rc].push(p);
+                });
+
+                return (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B' }}>
+                        2. Trình Quản Lý &amp; Chọn Ô Mộ Khả Dụng (Chống Xung Đột Tức Thời):
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setPlotViewMode('cards')}
+                          style={{
+                            padding: '5px 10px',
+                            borderRadius: '5px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            border: '1px solid #CBD5E1',
+                            backgroundColor: plotViewMode === 'cards' ? 'var(--brand-primary)' : '#FFFFFF',
+                            color: plotViewMode === 'cards' ? '#FFFFFF' : '#475569',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          <ListFilter size={14} />
+                          <span>Thẻ Chi Tiết</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPlotViewMode('matrix')}
+                          style={{
+                            padding: '5px 10px',
+                            borderRadius: '5px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            border: '1px solid #CBD5E1',
+                            backgroundColor: plotViewMode === 'matrix' ? 'var(--brand-primary)' : '#FFFFFF',
+                            color: plotViewMode === 'matrix' ? '#FFFFFF' : '#475569',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          <Grid size={14} />
+                          <span>Sơ Đồ Dãy Mộ</span>
+                        </button>
                       </div>
                     </div>
-                  )}
 
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
-                    <select
-                      value={plotFilterZone}
-                      onChange={(e) => setPlotFilterZone(e.target.value)}
+                    {/* Selected Plot Banner */}
+                    {wizardPlot && (
+                      <div
+                        style={{
+                          padding: '12px 16px',
+                          borderRadius: '8px',
+                          backgroundColor: '#EFF6FF',
+                          border: '1.5px solid #3B82F6',
+                          marginBottom: '14px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          flexWrap: 'wrap',
+                          gap: '10px',
+                        }}
+                      >
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 700, color: '#1E40AF', textTransform: 'uppercase', backgroundColor: '#DBEAFE', padding: '2px 8px', borderRadius: '4px' }}>
+                              Ô ĐÃ CHỌN: {wizardPlot.plot_code}
+                            </span>
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#1E3A8A' }}>
+                              {wizardPlot.type_name}
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#1D4ED8', marginTop: '4px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                            <span><strong>Khu:</strong> {wizardPlot.zone_name}</span>
+                            <span><strong>Hàng:</strong> {wizardPlot.row_code}</span>
+                            <span><strong>Quy cách:</strong> {wizardPlot.plot_length || 2.5}m × {wizardPlot.plot_width || 1.2}m</span>
+                            <span><strong>Số huyệt:</strong> {wizardPlot.default_slots || 1}</span>
+                            <span><strong>Hướng phong thủy:</strong> {wizardPlot.orientation || 'Tự do'}</span>
+                          </div>
+                        </div>
+                        <CheckCircle size={24} color="#2563EB" />
+                      </div>
+                    )}
+
+                    {/* Advanced Filter Toolbar */}
+                    <div
                       style={{
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        border: '1px solid #CBD5E1',
-                        fontSize: '13px',
-                        backgroundColor: '#FFFFFF',
+                        backgroundColor: '#F8FAFC',
+                        border: '1px solid #E2E8F0',
+                        borderRadius: '8px',
+                        padding: '12px',
+                        marginBottom: '14px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '8px',
                       }}
                     >
-                      <option value="">Tất cả các khu</option>
-                      {Array.from(new Set(availablePlots.map((p) => p.zone_code))).map((zc) => (
-                        <option key={zc} value={zc}>
-                          Khu {zc}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '8px' }}>
+                        {/* Search code */}
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748B', marginBottom: '2px' }}>
+                            Mã ô mộ
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="VD: A-H04, M07..."
+                            value={plotSearchCode}
+                            onChange={(e) => setPlotSearchCode(e.target.value)}
+                            style={{ width: '100%', padding: '6px 8px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '12px' }}
+                          />
+                        </div>
 
-                  <div style={{ maxHeight: '250px', overflowY: 'auto', border: '1px solid #E2E8F0', borderRadius: '6px' }}>
-                    {plotLoading ? (
-                      <div style={{ padding: '20px', textAlign: 'center', color: '#64748B', fontSize: '13px' }}>
-                        Đang tải danh sách ô mộ trống...
+                        {/* Zone Filter */}
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748B', marginBottom: '2px' }}>
+                            Khu vực
+                          </label>
+                          <select
+                            value={plotFilterZone}
+                            onChange={(e) => {
+                              const newZone = e.target.value;
+                              setPlotFilterZone(newZone);
+                              if (newZone && plotFilterRow) {
+                                const validRows = new Set(
+                                  availablePlots.filter((p) => p.zone_code === newZone).map((p) => p.row_code)
+                                );
+                                if (!validRows.has(plotFilterRow)) {
+                                  setPlotFilterRow('');
+                                }
+                              }
+                            }}
+                            style={{ width: '100%', padding: '6px 8px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '12px', backgroundColor: '#FFFFFF' }}
+                          >
+                            <option value="">Tất cả các khu</option>
+                            {uniqueZones.map((zc) => (
+                              <option key={zc} value={zc}>Khu {zc}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Row Filter (Cascading) */}
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748B', marginBottom: '2px' }}>
+                            Hàng / Dãy {plotFilterZone ? `(Khu ${plotFilterZone})` : ''}
+                          </label>
+                          <select
+                            value={plotFilterRow}
+                            onChange={(e) => setPlotFilterRow(e.target.value)}
+                            style={{ width: '100%', padding: '6px 8px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '12px', backgroundColor: '#FFFFFF' }}
+                          >
+                            <option value="">{plotFilterZone ? `-- Tất cả hàng trong Khu ${plotFilterZone} --` : 'Tất cả hàng'}</option>
+                            {uniqueRows.map((rc) => (
+                              <option key={rc} value={rc}>Dãy {rc}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Type Filter */}
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748B', marginBottom: '2px' }}>
+                            Loại mộ
+                          </label>
+                          <select
+                            value={plotFilterType}
+                            onChange={(e) => setPlotFilterType(e.target.value)}
+                            style={{ width: '100%', padding: '6px 8px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '12px', backgroundColor: '#FFFFFF' }}
+                          >
+                            <option value="">Tất cả loại mộ</option>
+                            {uniqueTypes.map((t) => (
+                              <option key={t} value={t}>{t}</option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Orientation Filter */}
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11px', fontWeight: 600, color: '#64748B', marginBottom: '2px' }}>
+                            Hướng phong thủy
+                          </label>
+                          <select
+                            value={plotFilterOrientation}
+                            onChange={(e) => setPlotFilterOrientation(e.target.value)}
+                            style={{ width: '100%', padding: '6px 8px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '12px', backgroundColor: '#FFFFFF' }}
+                          >
+                            <option value="">Tất cả hướng</option>
+                            {uniqueOrientations.map((o) => (
+                              <option key={o} value={o}>Hướng {o}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
-                    ) : availablePlots.length === 0 ? (
-                      <div style={{ padding: '20px', textAlign: 'center', color: '#94A3B8', fontSize: '13px' }}>
-                        Không có ô mộ trống khả dụng để bán.
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '6px', borderTop: '1px solid #E2E8F0', fontSize: '12px', color: '#64748B' }}>
+                        <div>
+                          Tìm thấy <strong>{filteredPlots.length}</strong> / {availablePlots.length} ô mộ trống khả dụng
+                        </div>
+                        {(plotSearchCode || plotFilterZone || plotFilterRow || plotFilterType || plotFilterOrientation) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPlotSearchCode('');
+                              setPlotFilterZone('');
+                              setPlotFilterRow('');
+                              setPlotFilterType('');
+                              setPlotFilterOrientation('');
+                            }}
+                            style={{ background: 'none', border: 'none', color: '#DC2626', fontSize: '12px', cursor: 'pointer', fontWeight: 600 }}
+                          >
+                            Xóa bộ lọc
+                          </button>
+                        )}
                       </div>
-                    ) : (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px', padding: '10px' }}>
-                        {availablePlots
-                          .filter((p) => !plotFilterZone || p.zone_code === plotFilterZone)
-                          .map((p) => (
-                            <div
-                              key={p.plot_id}
-                              onClick={() => setWizardPlot(p)}
+                    </div>
+
+                    {/* Plots Content */}
+                    <div style={{ maxHeight: '340px', overflowY: 'auto', border: '1px solid #E2E8F0', borderRadius: '8px', padding: '12px', backgroundColor: '#FAFAFA' }}>
+                      {plotLoading ? (
+                        <div style={{ padding: '36px', textAlign: 'center', color: '#64748B', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                          <RefreshCw className="animate-spin" size={20} style={{ color: 'var(--brand-primary)' }} />
+                          <span>Đang tải dữ liệu ô mộ trống khả dụng...</span>
+                        </div>
+                      ) : plotError ? (
+                        <div style={{ padding: '30px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#DC2626', fontSize: '13px', fontWeight: 600 }}>
+                            <AlertCircle size={18} />
+                            <span>{plotError}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => fetchAvailablePlots()}
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '6px 14px',
+                              borderRadius: '6px',
+                              border: '1px solid #CBD5E1',
+                              background: '#FFFFFF',
+                              color: '#1E293B',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <RefreshCw size={14} />
+                            Thử lại
+                          </button>
+                        </div>
+                      ) : filteredPlots.length === 0 ? (
+                        <div style={{ padding: '30px', textAlign: 'center', color: '#94A3B8', fontSize: '13px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                          <p style={{ margin: 0 }}>
+                            {availablePlots.length === 0
+                              ? 'Hiện chưa có dữ liệu ô mộ trống nào trong hệ thống.'
+                              : 'Không tìm thấy ô mộ trống phù hợp với bộ lọc hiện tại.'}
+                          </p>
+                          {availablePlots.length === 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => fetchAvailablePlots()}
                               style={{
-                                padding: '10px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '6px',
+                                padding: '6px 14px',
                                 borderRadius: '6px',
-                                border: wizardPlot?.plot_id === p.plot_id ? '2px solid var(--brand-primary)' : '1px solid #E2E8F0',
-                                backgroundColor: wizardPlot?.plot_id === p.plot_id ? '#F0FDFA' : '#FFFFFF',
+                                border: '1px solid #CBD5E1',
+                                background: '#FFFFFF',
+                                color: '#1E293B',
+                                fontSize: '12px',
+                                fontWeight: 600,
                                 cursor: 'pointer',
                               }}
                             >
-                              <div style={{ fontWeight: 700, fontSize: '13px', color: '#0F172A' }}>{p.plot_code}</div>
-                              <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
-                                {p.zone_name} - {p.type_name}
+                              <RefreshCw size={14} />
+                              Tải Lại Danh Sách Ô Mộ
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPlotSearchCode('');
+                                setPlotFilterZone('');
+                                setPlotFilterRow('');
+                                setPlotFilterType('');
+                                setPlotFilterOrientation('');
+                              }}
+                              style={{
+                                padding: '6px 14px',
+                                borderRadius: '6px',
+                                border: '1px solid #CBD5E1',
+                                background: '#FFFFFF',
+                                color: '#DC2626',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Xóa tất cả bộ lọc
+                            </button>
+                          )}
+                        </div>
+                      ) : plotViewMode === 'cards' ? (
+                        /* CARDS VIEW */
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
+                          {filteredPlots.map((p) => {
+                            const isSelected = wizardPlot?.plot_id === p.plot_id;
+                            return (
+                              <div
+                                key={p.plot_id}
+                                onClick={() => setWizardPlot(p)}
+                                style={{
+                                  padding: '12px 14px',
+                                  borderRadius: '8px',
+                                  border: isSelected ? '2px solid var(--brand-primary)' : '1px solid #E2E8F0',
+                                  backgroundColor: isSelected ? '#F0FDFA' : '#FFFFFF',
+                                  cursor: 'pointer',
+                                  boxShadow: isSelected ? '0 4px 6px -1px rgba(13, 148, 136, 0.15)' : 'none',
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                  <span style={{ fontWeight: 700, fontSize: '14px', color: isSelected ? 'var(--brand-primary)' : '#0F172A' }}>
+                                    {p.plot_code}
+                                  </span>
+                                  <span style={{ padding: '2px 8px', borderRadius: '10px', fontSize: '10px', fontWeight: 600, backgroundColor: '#DCFCE7', color: '#166534' }}>
+                                    Trống Khả Dụng
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                                  {p.type_name}
+                                </div>
+                                <div style={{ fontSize: '11px', color: '#64748B', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                  <div>Vị trí: {p.zone_name} • Dãy {p.row_code}</div>
+                                  <div style={{ display: 'flex', gap: '10px' }}>
+                                    <span>🪦 {p.default_slots || 1} huyệt</span>
+                                    <span>📐 {p.plot_length || 2.5}m × {p.plot_width || 1.2}m</span>
+                                    <span>🧭 {p.orientation || 'Tự do'}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        /* MATRIX / ROW MAP VIEW */
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                          {Object.keys(rowGroups).sort().map((rowCode) => (
+                            <div key={rowCode} style={{ backgroundColor: '#FFFFFF', padding: '12px', borderRadius: '6px', border: '1px solid #E2E8F0' }}>
+                              <div style={{ fontSize: '12px', fontWeight: 700, color: '#334155', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Grid size={13} color="var(--brand-primary)" />
+                                <span>Dãy {rowCode} ({rowGroups[rowCode].length} ô khả dụng)</span>
+                              </div>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                {rowGroups[rowCode].map((p) => {
+                                  const isSelected = wizardPlot?.plot_id === p.plot_id;
+                                  return (
+                                    <button
+                                      key={p.plot_id}
+                                      type="button"
+                                      onClick={() => setWizardPlot(p)}
+                                      title={`${p.plot_code} • ${p.type_name} • Hướng: ${p.orientation || 'Tự do'}`}
+                                      style={{
+                                        padding: '8px 10px',
+                                        borderRadius: '6px',
+                                        border: isSelected ? '2px solid var(--brand-primary)' : '1px solid #CBD5E1',
+                                        backgroundColor: isSelected ? '#CCFBF1' : '#F8FAFC',
+                                        color: isSelected ? 'var(--brand-primary)' : '#1E293B',
+                                        fontWeight: 700,
+                                        fontSize: '12px',
+                                        cursor: 'pointer',
+                                        minWidth: '55px',
+                                        textAlign: 'center',
+                                      }}
+                                    >
+                                      <div>{p.plot_code.split('-').pop() || p.plot_code}</div>
+                                      <div style={{ fontSize: '9px', fontWeight: 500, color: '#64748B' }}>
+                                        {p.orientation || 'Tự do'}
+                                      </div>
+                                    </button>
+                                  );
+                                })}
                               </div>
                             </div>
                           ))}
-                      </div>
-                    )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )}
+                );
+              })()}
 
               {/* STEP 3: PRICING & TEMPLATE */}
               {wizardStep === 3 && (
@@ -2407,26 +3241,68 @@ function parseApiError(errJson: unknown, fallback: string): string {
                         (contractDetail.contract_type === 'LAND_PURCHASE' ||
                           contractDetail.contract_type === 'TRANSFER') &&
                         canManage && (
-                        <button
-                          onClick={handleOpenBurialAnnex}
-                          style={{
-                            padding: '6px 12px',
-                            borderRadius: '6px',
-                            border: 'none',
-                            backgroundColor: 'var(--brand-primary)',
-                            color: '#FFFFFF',
-                            fontSize: '12px',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '4px',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          <Plus size={14} />
-                          <span>Thêm Phụ Lục An Táng</span>
-                        </button>
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                          <button
+                            type="button"
+                            onClick={handleOpenBurialAnnex}
+                            style={{
+                              padding: '6px 10px',
+                              borderRadius: '6px',
+                              border: 'none',
+                              backgroundColor: 'var(--brand-primary)',
+                              color: '#FFFFFF',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            <Plus size={14} />
+                            <span>+ Phụ Lục An Táng</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleOpenCareAnnex}
+                            style={{
+                              padding: '6px 10px',
+                              borderRadius: '6px',
+                              border: 'none',
+                              backgroundColor: '#0284C7',
+                              color: '#FFFFFF',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            <Sparkles size={14} />
+                            <span>+ Phụ Lục Chăm Sóc</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleOpenConstructionAnnex}
+                            style={{
+                              padding: '6px 10px',
+                              borderRadius: '6px',
+                              border: 'none',
+                              backgroundColor: '#D97706',
+                              color: '#FFFFFF',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            <Wrench size={14} />
+                            <span>+ Phụ Lục Thi Công</span>
+                          </button>
+                        </div>
                       )}
                     </div>
 
@@ -2443,7 +3319,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
                             : annex.annex_type === 'CARE' 
                             ? 'Chăm Sóc' 
                             : annex.annex_type === 'CONSTRUCTION' 
-                            ? 'Xây Dựng' 
+                            ? 'Thi Công Xây Dựng' 
                             : (annex.annex_type || 'Phụ Lục');
                           return (
                             <div
@@ -2482,7 +3358,8 @@ function parseApiError(errJson: unknown, fallback: string): string {
                                 </div>
                               </div>
 
-                              {annex.burial && (
+                              {/* BURIAL ANNEX DETAILS */}
+                              {annex.annex_type === 'BURIAL' && annex.burial && (
                                 <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '6px', padding: '10px 12px', marginBottom: '8px' }}>
                                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center' }}>
                                     <div><strong>Người quá cố:</strong> {annex.burial.deceased_name} ({annex.burial.deceased_code})</div>
@@ -2516,13 +3393,45 @@ function parseApiError(errJson: unknown, fallback: string): string {
                                 </div>
                               )}
 
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+                              {/* CARE ANNEX DETAILS */}
+                              {annex.annex_type === 'CARE' && annex.care && (
+                                <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '6px', padding: '10px 12px', marginBottom: '8px' }}>
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
+                                    <div><strong>Gói chăm sóc:</strong> {annex.care.package_name || annex.care.package_code}</div>
+                                    <div><strong>Chu kỳ:</strong> {annex.care.cycle_months} tháng</div>
+                                    <div><strong>Đơn giá định kỳ:</strong> {formatCurrency(annex.care.recurring_price)}</div>
+                                  </div>
+                                  {annex.notes && (
+                                    <div style={{ marginTop: '6px', fontSize: '12px', color: '#64748B' }}>
+                                      <strong>Ghi chú:</strong> {annex.notes}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* CONSTRUCTION ANNEX DETAILS */}
+                              {annex.annex_type === 'CONSTRUCTION' && annex.construction && (
+                                <div style={{ backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: '6px', padding: '10px 12px', marginBottom: '8px' }}>
+                                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', alignItems: 'center' }}>
+                                    <div><strong>Khởi công dự kiến:</strong> {annex.construction.estimated_start_date}</div>
+                                    <div><strong>Hoàn thành dự kiến:</strong> {annex.construction.estimated_end_date}</div>
+                                  </div>
+                                  {renderConstructionSpecs(annex.construction.checklist_specifications)}
+                                  {annex.notes && (
+                                    <div style={{ marginTop: '4px', fontSize: '12px', color: '#64748B' }}>
+                                      <strong>Ghi chú:</strong> {annex.notes}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px', flexWrap: 'wrap', gap: '6px' }}>
                                 <div style={{ fontSize: '11px', color: '#64748B' }}>
                                   Ngày tạo: {new Date(annex.created_at).toLocaleDateString('vi-VN')}
                                   {annex.signed_at && ` • Ký: ${annex.signed_at}`}
                                   {annex.activated_at && ` • Kích hoạt: ${new Date(annex.activated_at).toLocaleDateString('vi-VN')}`}
                                 </div>
-                                <div style={{ display: 'flex', gap: '6px' }}>
+                                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
                                   {annex.signed_scan_url && (
                                     <a
                                       href={annex.signed_scan_url}
@@ -2548,6 +3457,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
                                   )}
                                   {annex.status === 'DRAFT' && canManage && (
                                     <button
+                                      type="button"
                                       onClick={() => handleSubmitAnnexSigning(annex.annex_id)}
                                       style={{
                                         padding: '4px 10px',
@@ -2565,6 +3475,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
                                   )}
                                   {['DRAFT', 'PENDING_SIGN'].includes(annex.status) && canManage && (
                                     <button
+                                      type="button"
                                       onClick={() => handleOpenActivateAnnex(annex)}
                                       style={{
                                         padding: '4px 10px',
@@ -2584,33 +3495,28 @@ function parseApiError(errJson: unknown, fallback: string): string {
                                       <span>Kích Hoạt Phụ Lục</span>
                                     </button>
                                   )}
-                                  {annex.annex_type === 'BURIAL' &&
-                                    annex.status === 'ACTIVE' &&
-                                    (currentUserRoles.some((r) =>
-                                      ['ADMIN', 'CARETAKER'].includes(r.toUpperCase())
-                                    ) ||
-                                      canManage) && (
-                                      <button
-                                        onClick={() => handleConfirmBurial(annex.annex_id)}
-                                        title="Quản trang xác nhận đã hoàn tất hạ huyệt thực địa"
-                                        style={{
-                                          padding: '4px 10px',
-                                          borderRadius: '4px',
-                                          border: '1px solid #15803D',
-                                          backgroundColor: '#DCFCE7',
-                                          color: '#15803D',
-                                          fontSize: '11px',
-                                          fontWeight: 600,
-                                          cursor: 'pointer',
-                                          display: 'inline-flex',
-                                          alignItems: 'center',
-                                          gap: '4px',
-                                        }}
-                                      >
-                                        <CheckCircle size={12} />
-                                        <span>Xác Nhận Thực Địa</span>
-                                      </button>
-                                    )}
+                                  {/* Role Separation for Physical Confirmation:
+                                      Marketing does NOT have a button to confirm field burial.
+                                      Field confirmation is carried out by Quản Trang when work order completes. */}
+                                  {annex.annex_type === 'BURIAL' && annex.status === 'ACTIVE' && (
+                                    <span
+                                      style={{
+                                        padding: '4px 8px',
+                                        borderRadius: '4px',
+                                        fontSize: '11px',
+                                        fontWeight: 600,
+                                        backgroundColor: '#FEF3C7',
+                                        color: '#92400E',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '4px',
+                                        border: '1px solid #FDE68A',
+                                      }}
+                                    >
+                                      <Clock size={12} />
+                                      <span>Chờ Quản trang xác nhận thực địa khi hoàn tất thi công</span>
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -2623,13 +3529,23 @@ function parseApiError(errJson: unknown, fallback: string): string {
                   {/* Financial Receivable Card */}
                   {contractDetail.receivable && (
                     <div style={{ border: '1px solid #E2E8F0', borderRadius: '8px', padding: '16px', backgroundColor: '#F8FAFC' }}>
-                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A', marginBottom: '10px' }}>
-                        Nghĩa Vụ Tài Chính &amp; Công Nợ (Receivable)
+                      <div style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        <span>Nghĩa Vụ Tài Chính &amp; Công Nợ (Receivable)</span>
+                        {Number(contractDetail.receivable.discount_amount) > 0 && (
+                          <span style={{ fontSize: '12px', fontWeight: 600, color: '#7C3AED', backgroundColor: '#F3E8FF', padding: '2px 8px', borderRadius: '4px', border: '1px solid #D8B4FE', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                            <Percent size={12} />
+                            Đã chiết khấu: {formatCurrency(contractDetail.receivable.discount_amount)}
+                          </span>
+                        )}
                       </div>
                       <div className="responsive-metric-grid-4" style={{ fontSize: '13px' }}>
                         <div>
-                          <div style={{ fontSize: '11px', color: '#64748B' }}>Số tiền phải thu</div>
-                          <div style={{ fontWeight: 600 }}>{formatCurrency(contractDetail.receivable.final_payable_amount)}</div>
+                          <div style={{ fontSize: '11px', color: '#64748B' }}>Số tiền gốc</div>
+                          <div style={{ fontWeight: 600 }}>{formatCurrency(contractDetail.receivable.original_amount)}</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '11px', color: '#64748B' }}>Số tiền phải thu sau giảm</div>
+                          <div style={{ fontWeight: 600, color: '#0F172A' }}>{formatCurrency(contractDetail.receivable.final_payable_amount)}</div>
                         </div>
                         <div>
                           <div style={{ fontSize: '11px', color: '#64748B' }}>Đã thanh toán</div>
@@ -2638,10 +3554,6 @@ function parseApiError(errJson: unknown, fallback: string): string {
                         <div>
                           <div style={{ fontSize: '11px', color: '#64748B' }}>Trạng thái nợ</div>
                           <div style={{ fontWeight: 600 }}>{contractDetail.receivable.status}</div>
-                        </div>
-                        <div>
-                          <div style={{ fontSize: '11px', color: '#64748B' }}>Hạn chót thanh toán</div>
-                          <div style={{ fontWeight: 600 }}>{contractDetail.receivable.due_date}</div>
                         </div>
                       </div>
                     </div>
@@ -3186,18 +4098,24 @@ function parseApiError(errJson: unknown, fallback: string): string {
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
                 2. Chọn huyệt an táng
               </label>
-              <select
-                value={burialSlotId}
-                onChange={(e) => setBurialSlotId(Number(e.target.value))}
-                style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px', backgroundColor: '#FFFFFF' }}
-              >
-                <option value="">-- Chọn huyệt an táng --</option>
-                {contractPlotSlots.map((s) => (
-                  <option key={s.slot_id} value={s.slot_id}>
-                    Huyệt số {s.slot_number} ({s.status === 'EMPTY' ? 'Trống' : `Đang an táng: ${s.deceased_name || 'Đã có hài cốt'}`})
-                  </option>
-                ))}
-              </select>
+              {contractPlotSlots.length === 0 ? (
+                <div style={{ padding: '10px 14px', borderRadius: '6px', backgroundColor: '#FEF3C7', border: '1px solid #FDE68A', color: '#92400E', fontSize: '12px' }}>
+                  Đang đồng bộ dữ liệu huyệt hoặc ô mộ này chưa có huyệt khả dụng. Vui lòng tải lại trang.
+                </div>
+              ) : (
+                <select
+                  value={burialSlotId}
+                  onChange={(e) => setBurialSlotId(Number(e.target.value))}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px', backgroundColor: '#FFFFFF' }}
+                >
+                  <option value="">-- Chọn huyệt an táng --</option>
+                  {contractPlotSlots.map((s) => (
+                    <option key={s.slot_id} value={s.slot_id} disabled={s.status !== 'EMPTY'}>
+                      Huyệt số {s.slot_number} ({s.status === 'EMPTY' ? 'Trống khả dụng' : `Đã an táng: ${s.deceased_name || 'Đã có hài cốt'}`})
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             {/* Step 3: Burial Date */}
@@ -3247,7 +4165,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
             {/* Construction Notes */}
             <div style={{ marginBottom: '14px' }}>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
-                Ghi Chú Thi Công & Xây Dựng
+                Ghi Chú Thi Công &amp; Xây Dựng
               </label>
               <textarea
                 rows={2}
@@ -3286,6 +4204,445 @@ function parseApiError(errJson: unknown, fallback: string): string {
               >
                 {burialSubmitting ? <RefreshCw size={14} className="animate-spin" /> : <FilePlus size={15} />}
                 <span>Tạo Dự Thảo Phụ Lục</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* Care Annex Modal */}
+      {/* ========================================================================= */}
+      {isCareAnnexModalOpen && contractDetail && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1100,
+            padding: '20px',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '12px',
+              width: '100%',
+              maxWidth: '600px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '24px',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={20} color="#0284C7" />
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0F172A' }}>
+                  Lập Phụ Lục Chăm Sóc Định Kỳ ({contractDetail.contract_code})
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsCareAnnexModalOpen(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {careError && (
+              <div style={{ padding: '10px 14px', backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '6px', color: '#991B1B', fontSize: '13px', marginBottom: '14px' }}>
+                {careError}
+              </div>
+            )}
+
+            {/* Package Selection */}
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                1. Chọn Gói Dịch Vụ Chăm Sóc (*)
+              </label>
+              <select
+                value={selectedCarePackageId}
+                onChange={(e) => {
+                  const pid = Number(e.target.value);
+                  setSelectedCarePackageId(pid);
+                  const pkg = carePackages.find((p) => p.package_id === pid);
+                  if (pkg) {
+                    setCareRecurringPrice(String(pkg.unit_price));
+                  }
+                }}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px', backgroundColor: '#FFFFFF' }}
+              >
+                <option value="">-- Chọn gói dịch vụ chăm sóc --</option>
+                {carePackages.map((pkg) => (
+                  <option key={pkg.package_id} value={pkg.package_id}>
+                    {pkg.package_name} ({pkg.package_code}) - {formatCurrency(pkg.unit_price)} / chu kỳ
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Cycle Months */}
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                2. Chu Kỳ Thời Gian Chăm Sóc (Tháng)
+              </label>
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                {[12, 24, 36, 60].map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setCareCycleMonths(m)}
+                    style={{
+                      padding: '6px 12px',
+                      borderRadius: '6px',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      border: '1px solid #CBD5E1',
+                      backgroundColor: careCycleMonths === m ? '#0284C7' : '#FFFFFF',
+                      color: careCycleMonths === m ? '#FFFFFF' : '#334155',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {m} Tháng ({m / 12} Năm)
+                  </button>
+                ))}
+              </div>
+              <input
+                type="number"
+                min={1}
+                max={120}
+                value={careCycleMonths}
+                onChange={(e) => setCareCycleMonths(Math.max(1, Number(e.target.value)))}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+              />
+            </div>
+
+            {/* Recurring Price */}
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                3. Đơn Giá Định Kỳ Phụ Lục (VNĐ) (*)
+              </label>
+              <input
+                type="number"
+                value={careRecurringPrice}
+                onChange={(e) => setCareRecurringPrice(e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+              />
+            </div>
+
+            {/* Notes */}
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                Ghi Chú Yêu Cầu Chăm Sóc Đặc Biệt
+              </label>
+              <textarea
+                rows={2}
+                placeholder="Ví dụ: Thắp hương và thay hoa tươi ngày mùng một, rằm âm lịch hàng tháng; dọn cỏ tỉa cây định kỳ..."
+                value={careNotes}
+                onChange={(e) => setCareNotes(e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>
+              <button
+                type="button"
+                onClick={() => setIsCareAnnexModalOpen(false)}
+                style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontSize: '13px', cursor: 'pointer' }}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateCareAnnex}
+                disabled={careSubmitting || !selectedCarePackageId}
+                style={{
+                  padding: '8px 18px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: '#0284C7',
+                  color: '#FFFFFF',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                {careSubmitting ? <RefreshCw size={14} className="animate-spin" /> : <FilePlus size={15} />}
+                <span>Tạo Dự Thảo Phụ Lục Chăm Sóc</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* Construction Annex Modal */}
+      {/* ========================================================================= */}
+      {isConstructionAnnexModalOpen && contractDetail && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(15, 23, 42, 0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1100,
+            padding: '20px',
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '12px',
+              width: '100%',
+              maxWidth: '720px',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '24px',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)',
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Wrench size={20} color="#D97706" />
+                <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: '#0F172A' }}>
+                  Lập Phụ Lục Thi Công Xây Dựng ({contractDetail.contract_code})
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsConstructionAnnexModalOpen(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {constError && (
+              <div style={{ padding: '10px 14px', backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '6px', color: '#991B1B', fontSize: '13px', marginBottom: '14px' }}>
+                {constError}
+              </div>
+            )}
+
+            {/* Dates */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '14px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                  Khởi Công Dự Kiến (*)
+                </label>
+                <input
+                  type="date"
+                  value={constStartDate}
+                  onChange={(e) => setConstStartDate(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                  Hoàn Thành Dự Kiến (*)
+                </label>
+                <input
+                  type="date"
+                  value={constEndDate}
+                  onChange={(e) => setConstEndDate(e.target.value)}
+                  style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                />
+              </div>
+            </div>
+
+            {/* Checklist Specifications */}
+            <div style={{ marginBottom: '18px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+                  Hạng Mục &amp; Quy Cách Kỹ Thuật Thi Công (*)
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={handleResetDefaultChecklist}
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      borderRadius: '4px',
+                      border: '1px solid #CBD5E1',
+                      backgroundColor: '#F8FAFC',
+                      color: '#475569',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Tải mẫu chuẩn
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAddChecklistItem}
+                    style={{
+                      padding: '4px 10px',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      borderRadius: '4px',
+                      border: 'none',
+                      backgroundColor: '#FEF3C7',
+                      color: '#92400E',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <Plus size={13} />
+                    <span>Thêm hạng mục</span>
+                  </button>
+                </div>
+              </div>
+
+              <div style={{ border: '1px solid #E2E8F0', borderRadius: '8px', overflow: 'hidden', backgroundColor: '#F8FAFC' }}>
+                <div style={{ maxHeight: '280px', overflowY: 'auto' }}>
+                  {checklistItems.map((item, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        padding: '10px 12px',
+                        borderBottom: idx === checklistItems.length - 1 ? 'none' : '1px solid #E2E8F0',
+                        backgroundColor: idx % 2 === 0 ? '#FFFFFF' : '#FAFAFA',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', width: '22px' }}>
+                          #{idx + 1}
+                        </span>
+                        <input
+                          type="text"
+                          placeholder="Tên hạng mục thi công (VD: Đào móng bê tông, xây tường gạch...)"
+                          value={item.task_name}
+                          onChange={(e) => handleUpdateChecklistItem(idx, 'task_name', e.target.value)}
+                          style={{
+                            flex: 1,
+                            padding: '6px 10px',
+                            borderRadius: '5px',
+                            border: '1px solid #CBD5E1',
+                            fontSize: '13px',
+                            fontWeight: 500,
+                          }}
+                        />
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#475569', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                          <input
+                            type="checkbox"
+                            checked={item.is_required}
+                            onChange={(e) => handleUpdateChecklistItem(idx, 'is_required', e.target.checked)}
+                          />
+                          Bắt buộc
+                        </label>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveChecklistItem(idx)}
+                          disabled={checklistItems.length <= 1}
+                          title="Xóa hạng mục"
+                          style={{
+                            padding: '4px',
+                            border: 'none',
+                            backgroundColor: 'transparent',
+                            color: checklistItems.length <= 1 ? '#CBD5E1' : '#EF4444',
+                            cursor: checklistItems.length <= 1 ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                      <div style={{ paddingLeft: '30px' }}>
+                        <input
+                          type="text"
+                          placeholder="Quy cách kỹ thuật / vật liệu (VD: Bê tông mác M250 dày 100mm, thép D10, chống thấm...)"
+                          value={item.specs}
+                          onChange={(e) => handleUpdateChecklistItem(idx, 'specs', e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '5px 8px',
+                            borderRadius: '4px',
+                            border: '1px solid #E2E8F0',
+                            fontSize: '12px',
+                            color: '#475569',
+                            backgroundColor: '#FFFFFF',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Additional Amount */}
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                Chi Phí Thi Công Xây Dựng (VNĐ)
+              </label>
+              <input
+                type="number"
+                value={constAmount}
+                onChange={(e) => setConstAmount(e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+              />
+            </div>
+
+            {/* Notes */}
+            <div style={{ marginBottom: '14px' }}>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                Ghi Chú Thêm
+              </label>
+              <textarea
+                rows={2}
+                placeholder="Yêu cầu cụ thể của thân nhân, vật liệu chỉ định..."
+                value={constNotes}
+                onChange={(e) => setConstNotes(e.target.value)}
+                style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '20px' }}>
+              <button
+                type="button"
+                onClick={() => setIsConstructionAnnexModalOpen(false)}
+                style={{ padding: '8px 16px', borderRadius: '6px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontSize: '13px', cursor: 'pointer' }}
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateConstructionAnnex}
+                disabled={constSubmitting || !constStartDate || !constEndDate}
+                style={{
+                  padding: '8px 18px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  backgroundColor: '#D97706',
+                  color: '#FFFFFF',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                }}
+              >
+                {constSubmitting ? <RefreshCw size={14} className="animate-spin" /> : <FilePlus size={15} />}
+                <span>Tạo Dự Thảo Phụ Lục Thi Công</span>
               </button>
             </div>
           </div>

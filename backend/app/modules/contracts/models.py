@@ -218,7 +218,7 @@ class ConstructionAnnex(Base):
     plot_id = Column(Integer, ForeignKey("plots.plot_id"), nullable=False)
     estimated_start_date = Column(Date, nullable=False)
     estimated_end_date = Column(Date, nullable=False)
-    checklist_specifications = Column(Text, nullable=True)
+    checklist_specifications = Column(UnicodeText, nullable=True)
 
     annex = relationship("ContractAnnex", back_populates="construction")
     plot = relationship("Plot", foreign_keys=[plot_id])

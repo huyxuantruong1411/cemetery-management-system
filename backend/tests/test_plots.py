@@ -69,7 +69,6 @@ def test_plot_slot_auto_generation_in_acid_transaction():
             "latitude": 10.925500,
             "longitude": 106.825500,
             "orientation": "ĐÔNG",
-            "is_kim_tinh": True,
             "notes": "Ô mộ thử nghiệm auto generation",
         },
     )
@@ -77,7 +76,7 @@ def test_plot_slot_auto_generation_in_acid_transaction():
     plot_data = create_resp.json()
     assert plot_data["plot_code"] == unique_code
     assert plot_data["status"] == "EMPTY_UNSOLD"
-    assert plot_data["is_kim_tinh"] is True
+    assert plot_data["is_kim_tinh"] is False
 
     # Check automatically generated slots
     slots = plot_data["slots"]
@@ -117,13 +116,13 @@ def test_kim_tinh_locked_immutability():
     pt = db.query(PlotType).filter(PlotType.default_slots == 2).first()
     assert row is not None and pt is not None
 
-    # Create a dedicated Kim Tĩnh plot that is locked
+    # Create a dedicated Kim Tĩnh plot that is locked (status must be OCCUPIED)
     locked_code = f"KT-LOCKED-{uuid.uuid4().hex[:6].upper()}"
     p = Plot(
         plot_code=locked_code,
         row_id=row.row_id,
         type_id=pt.type_id,
-        status="EMPTY_UNSOLD",
+        status="OCCUPIED",
         is_kim_tinh=True,
         is_locked=True,
     )
@@ -227,3 +226,25 @@ def test_plot_statistics_endpoint():
     assert stats["total_plots"] >= 10
     assert stats["empty_unsold"] >= 1
     assert stats["kim_tinh_count"] >= 3
+
+
+def test_reject_manual_kim_tinh_on_empty_plot():
+    """Verify that manually setting is_kim_tinh on an EMPTY_UNSOLD plot is rejected."""
+    token = get_admin_token()
+    db = SessionLocal()
+    empty_plot = (
+        db.query(Plot)
+        .filter(Plot.status == "EMPTY_UNSOLD", Plot.is_kim_tinh == False)  # noqa: E712
+        .first()
+    )
+    db.close()
+    assert empty_plot is not None
+
+    update_resp = client.put(
+        f"/api/v1/plots/{empty_plot.plot_id}",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"is_kim_tinh": True},
+    )
+    assert update_resp.status_code == 400
+    assert "QUY TẮC NGHIỆP VỤ" in update_resp.json()["detail"]
+

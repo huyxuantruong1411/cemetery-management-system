@@ -45,6 +45,22 @@ export interface BurialAnnexDetailBrief {
   construction_notes?: string | null;
 }
 
+export interface CareAnnexDetailBrief {
+  package_id: number;
+  package_name?: string | null;
+  package_code?: string | null;
+  cycle_months: number;
+  recurring_price: number | string;
+}
+
+export interface ConstructionAnnexDetailBrief {
+  plot_id: number;
+  plot_code?: string | null;
+  estimated_start_date: string;
+  estimated_end_date: string;
+  checklist_specifications?: string | null;
+}
+
 export interface ContractAnnexResponse {
   annex_id: number;
   annex_code: string;
@@ -65,6 +81,8 @@ export interface ContractAnnexResponse {
   created_at: string;
   updated_at: string;
   burial?: BurialAnnexDetailBrief | null;
+  care?: CareAnnexDetailBrief | null;
+  construction?: ConstructionAnnexDetailBrief | null;
 }
 
 export interface ExhumationDetailBrief {
@@ -203,6 +221,21 @@ export interface BurialAnnexCreate {
   is_kim_tinh?: boolean;
   additional_amount?: number | null;
   construction_notes?: string | null;
+  notes?: string | null;
+}
+
+export interface CareAnnexCreate {
+  package_id: number;
+  cycle_months: number;
+  recurring_price: number | string;
+  notes?: string | null;
+}
+
+export interface ConstructionAnnexCreate {
+  estimated_start_date: string;
+  estimated_end_date: string;
+  checklist_specifications?: string | null;
+  additional_amount?: number | string | null;
   notes?: string | null;
 }
 

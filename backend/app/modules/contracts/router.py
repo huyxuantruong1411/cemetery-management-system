@@ -13,7 +13,9 @@ from app.modules.contracts.schemas import (
     AnnexSubmitSigningRequest,
     BurialAnnexCreate,
     BurialConfirmationResponse,
+    CareAnnexCreate,
     ConfirmBurialRequest,
+    ConstructionAnnexCreate,
     ContractActivateRequest,
     ContractBriefResponse,
     ContractCancelRequest,
@@ -306,6 +308,44 @@ def create_burial_annex(
     - Kiểm tra ô mộ không bị khóa vĩnh viễn (Kim Tĩnh Immutability).
     """
     ContractService.create_burial_annex(db, contract_id, data, current_user.user_id)
+    return ContractService.get_contract_detail_dto(db, contract_id, current_user=current_user)
+
+
+@router.post(
+    "/{contract_id}/annexes/care",
+    response_model=ContractDetailResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Lập phụ lục dịch vụ chăm sóc cho hợp đồng",
+)
+def create_care_annex(
+    contract_id: int,
+    data: CareAnnexCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("contracts", "write")),
+):
+    """
+    Lập phụ lục dịch vụ chăm sóc định kỳ cho hợp đồng mua đất hoặc chuyển nhượng.
+    """
+    ContractService.create_care_annex(db, contract_id, data, current_user.user_id)
+    return ContractService.get_contract_detail_dto(db, contract_id, current_user=current_user)
+
+
+@router.post(
+    "/{contract_id}/annexes/construction",
+    response_model=ContractDetailResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Lập phụ lục thi công xây dựng / cải tạo cho hợp đồng",
+)
+def create_construction_annex(
+    contract_id: int,
+    data: ConstructionAnnexCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("contracts", "write")),
+):
+    """
+    Lập phụ lục thi công xây dựng kim tĩnh, lăng mộ, ốp đá cho hợp đồng mua đất hoặc chuyển nhượng.
+    """
+    ContractService.create_construction_annex(db, contract_id, data, current_user.user_id)
     return ContractService.get_contract_detail_dto(db, contract_id, current_user=current_user)
 
 

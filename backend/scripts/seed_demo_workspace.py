@@ -113,8 +113,9 @@ def populate(db):
     db.flush()
     types = db.query(PlotType).order_by(PlotType.type_id).all()
     by_name = {p.type_name: p for p in types}
+    doi_name = "Mộ Đôi Tiêu Chuẩn" if "Mộ Đôi Tiêu Chuẩn" in by_name else "Mộ Đôi Kim Tĩnh"
     selected_types = [
-        by_name[name] for name in ("Mộ Đơn Tiêu Chuẩn", "Mộ Đôi Kim Tĩnh", "Khuôn Viên Gia Tộc")
+        by_name[name] for name in ("Mộ Đơn Tiêu Chuẩn", doi_name, "Khuôn Viên Gia Tộc")
     ]
     for z_index, code in enumerate(ZONE_CODES):
         zone = db.query(Zone).filter_by(zone_code=code).one()

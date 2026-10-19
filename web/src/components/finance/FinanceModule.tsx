@@ -7,6 +7,7 @@ import {
   CreditCard,
   Download,
   FileCheck,
+  Lock,
   Percent,
   Receipt,
   RefreshCw,
@@ -163,12 +164,20 @@ export const FinanceModule: React.FC = () => {
       return
     }
 
+    if (payMethod !== 'CASH' && !payRef.trim()) {
+      await modalAlert({
+        message: 'Hình thức Chuyển khoản / VietQR bắt buộc phải nhập mã giao dịch hoặc mã tham chiếu ngân hàng để đối soát.',
+        type: 'warning',
+      })
+      return
+    }
+
     setSubmittingPayment(true)
     try {
       const payload: PaymentRecordPayload = {
         paid_amount: amountNum,
         payment_method: payMethod,
-        transaction_reference: payRef || undefined,
+        transaction_reference: payRef.trim() ? payRef.trim() : undefined,
         idempotency_key: `PAY_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`,
       }
 
@@ -225,6 +234,13 @@ export const FinanceModule: React.FC = () => {
     }
     if (discType === 'PERCENTAGE' && valNum > 100) {
       await modalAlert({ message: 'Chiết khấu phần trăm tối đa là 100%.', type: 'warning' })
+      return
+    }
+    if (discType === 'FIXED_AMOUNT' && valNum > Number(activeReceivable.original_amount)) {
+      await modalAlert({
+        message: `Số tiền chiết khấu cố định không được vượt quá số tiền gốc (${formatCurrency(activeReceivable.original_amount)}).`,
+        type: 'warning',
+      })
       return
     }
     if (!discReason || discReason.trim().length < 5) {
@@ -393,6 +409,27 @@ export const FinanceModule: React.FC = () => {
       default:
         return <span>{status}</span>
     }
+  }
+
+  // Check if a receivable has NOT had any payments recorded yet (Decimal safe: handles string '0.00' from backend)
+  const isReceivableUnpaid = (r: Receivable): boolean => {
+    const paid = Number(r.total_paid_amount || 0)
+    const hasPayments = Array.isArray(r.payments) && r.payments.length > 0
+    return paid <= 0 && !hasPayments
+  }
+
+  // Check if accountant can apply or modify discount
+  const canDiscountReceivable = (r: Receivable): boolean => {
+    if (!hasPermission('finance:discount')) return false
+    if (r.status === 'PAID' || r.status === 'CANCELLED') return false
+    return isReceivableUnpaid(r)
+  }
+
+  // Check if discount is locked due to payments made or full settlement
+  const isDiscountLocked = (r: Receivable): boolean => {
+    if (!hasPermission('finance:discount')) return false
+    if (r.status === 'CANCELLED') return false
+    return !isReceivableUnpaid(r) || r.status === 'PAID'
   }
 
   // Render 4 UI states
@@ -648,25 +685,27 @@ export const FinanceModule: React.FC = () => {
       )}
 
       {/* 3. Search & Filter Bar */}
+      {/* 3. Search & Filter Bar (Responsive for Mobile & Desktop) */}
       <div
         style={{
           display: 'flex',
-          gap: '12px',
+          flexWrap: 'wrap',
+          gap: '10px',
           alignItems: 'center',
           backgroundColor: '#FFFFFF',
-          padding: '16px 20px',
+          padding: '12px 16px',
           borderRadius: '10px',
           border: '1px solid #E2E8F0',
         }}
       >
-        <div style={{ position: 'relative', flex: 1 }}>
+        <div style={{ position: 'relative', flex: '1 1 240px', minWidth: '200px' }}>
           <Search
             size={16}
             style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }}
           />
           <input
             type="text"
-            placeholder="Tìm theo tên khách hàng, số điện thoại, mã hợp đồng hoặc mã phụ lục..."
+            placeholder="Tìm theo khách hàng, SĐT, mã HĐ hoặc phụ lục..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{
@@ -681,46 +720,52 @@ export const FinanceModule: React.FC = () => {
           />
         </div>
 
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          style={{
-            padding: '9px 12px',
-            borderRadius: '6px',
-            border: '1px solid #CBD5E1',
-            fontSize: '13px',
-            color: '#334155',
-            backgroundColor: '#FFFFFF',
-            outline: 'none',
-            cursor: 'pointer',
-          }}
-        >
-          <option value="">Tất cả trạng thái</option>
-          <option value="UNPAID">Chưa thanh toán</option>
-          <option value="PARTIALLY_PAID">Thu một phần</option>
-          <option value="PAID">Đã thanh toán</option>
-        </select>
+        <div style={{ display: 'flex', gap: '8px', flex: '1 1 240px', minWidth: '220px' }}>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            style={{
+              flex: 1,
+              minWidth: '110px',
+              padding: '9px 10px',
+              borderRadius: '6px',
+              border: '1px solid #CBD5E1',
+              fontSize: '13px',
+              color: '#334155',
+              backgroundColor: '#FFFFFF',
+              outline: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <option value="">Tất cả trạng thái</option>
+            <option value="UNPAID">Chưa thanh toán</option>
+            <option value="PARTIALLY_PAID">Thu một phần</option>
+            <option value="PAID">Đã thanh toán</option>
+          </select>
 
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as any)}
-          style={{
-            padding: '9px 12px',
-            borderRadius: '6px',
-            border: '1px solid #CBD5E1',
-            fontSize: '13px',
-            color: '#334155',
-            backgroundColor: '#FFFFFF',
-            outline: 'none',
-            cursor: 'pointer',
-          }}
-        >
-          <option value="due_desc">Hạn nộp: Mới nhất</option>
-          <option value="due_asc">Hạn nộp: Cũ nhất</option>
-          <option value="amount_desc">Dư nợ: Cao xuống thấp</option>
-          <option value="amount_asc">Dư nợ: Thấp lên cao</option>
-          <option value="id_desc">Mã khoản: Mới nhất</option>
-        </select>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            style={{
+              flex: 1,
+              minWidth: '120px',
+              padding: '9px 10px',
+              borderRadius: '6px',
+              border: '1px solid #CBD5E1',
+              fontSize: '13px',
+              color: '#334155',
+              backgroundColor: '#FFFFFF',
+              outline: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <option value="due_desc">Hạn nộp: Mới nhất</option>
+            <option value="due_asc">Hạn nộp: Cũ nhất</option>
+            <option value="amount_desc">Dư nợ: Cao $\rightarrow$ Thấp</option>
+            <option value="amount_asc">Dư nợ: Thấp $\rightarrow$ Cao</option>
+            <option value="id_desc">Mã: Mới nhất</option>
+          </select>
+        </div>
       </div>
 
       {/* 4. Receivables List */}
@@ -784,12 +829,43 @@ export const FinanceModule: React.FC = () => {
                       Khách hàng: <strong>{rec.customer_name}</strong>
                     </div>
 
+                    {/* Financial details breakdown on mobile */}
+                    <div
+                      style={{
+                        backgroundColor: '#F8FAFC',
+                        borderRadius: '6px',
+                        padding: '8px 10px',
+                        fontSize: '12px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px',
+                        border: '1px solid #F1F5F9',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748B' }}>
+                        <span>Số tiền gốc ban đầu:</span>
+                        <span style={{ fontWeight: 600, color: '#334155' }}>{formatCurrency(rec.original_amount)}</span>
+                      </div>
+                      {Number(rec.discount_amount || 0) > 0 && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#7C3AED' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '3px', fontWeight: 600 }}>
+                            <Percent size={12} /> Tiền trừ chiết khấu:
+                          </span>
+                          <span style={{ fontWeight: 700 }}>-{formatCurrency(rec.discount_amount)}</span>
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#0F172A', fontWeight: 600 }}>
+                        <span>Phải thu sau chiết khấu:</span>
+                        <span>{formatCurrency(rec.final_payable_amount)}</span>
+                      </div>
+                    </div>
+
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#64748B' }}>
                       <span>Hạn nộp: <strong style={{ color: isOverdue ? '#DC2626' : '#334155' }}>{formatDate(rec.due_date)}</strong></span>
                       <span>Đã thu: <strong style={{ color: '#10B981' }}>{formatCurrency(rec.total_paid_amount)}</strong></span>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #F1F5F9' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #F1F5F9', flexWrap: 'wrap', gap: '8px' }}>
                       <div>
                         <span style={{ fontSize: '11px', color: '#64748B' }}>Dư nợ: </span>
                         <strong style={{ fontSize: '15px', color: rec.remaining_balance > 0 ? '#D97706' : '#94A3B8' }}>
@@ -820,31 +896,52 @@ export const FinanceModule: React.FC = () => {
                             Thu Tiền
                           </button>
                         )}
-                        {hasPermission('finance:discount') &&
-                          rec.total_paid_amount === 0 &&
-                          rec.status !== 'PAID' &&
-                          rec.status !== 'CANCELLED' && (
-                            <button
-                              onClick={() => handleOpenDiscount(rec)}
-                              className="touch-target"
-                              style={{
-                                padding: '6px 10px',
-                                backgroundColor: '#F3E8FF',
-                                color: '#7C3AED',
-                                border: '1px solid #D8B4FE',
-                                borderRadius: '6px',
-                                fontSize: '12px',
-                                fontWeight: 600,
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                              }}
-                            >
-                              <Percent size={13} />
-                              {rec.discounts && rec.discounts.length > 0 ? 'Sửa CK' : 'Chiết Khấu'}
-                            </button>
-                          )}
+                        {canDiscountReceivable(rec) ? (
+                          <button
+                            onClick={() => handleOpenDiscount(rec)}
+                            className="touch-target"
+                            title={rec.discounts && rec.discounts.length > 0 ? 'Sửa chiết khấu (khoản chưa phát sinh thu tiền)' : 'Áp dụng chiết khấu'}
+                            style={{
+                              padding: '6px 10px',
+                              backgroundColor: '#F3E8FF',
+                              color: '#7C3AED',
+                              border: '1px solid #D8B4FE',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                          >
+                            <Percent size={13} />
+                            {rec.discounts && rec.discounts.length > 0 ? 'Sửa CK' : 'Chiết Khấu'}
+                          </button>
+                        ) : isDiscountLocked(rec) ? (
+                          <button
+                            disabled
+                            title="Khoản thu đã phát sinh thanh toán (toàn bộ hoặc một phần). Chiết khấu đã bị khóa theo quy tắc nghiệp vụ."
+                            className="touch-target"
+                            style={{
+                              padding: '6px 10px',
+                              backgroundColor: '#F1F5F9',
+                              color: '#94A3B8',
+                              border: '1px solid #CBD5E1',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: 500,
+                              cursor: 'not-allowed',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              opacity: 0.8,
+                            }}
+                          >
+                            <Lock size={12} />
+                            <span style={{ fontSize: '11px' }}>Khóa CK</span>
+                          </button>
+                        ) : null}
                         <button
                           onClick={() => {
                             setActiveReceivable(rec);
@@ -976,31 +1073,50 @@ export const FinanceModule: React.FC = () => {
                             </button>
                           )}
 
-                          {hasPermission('finance:discount') &&
-                            rec.total_paid_amount === 0 &&
-                            rec.status !== 'PAID' &&
-                            rec.status !== 'CANCELLED' && (
-                              <button
-                                onClick={() => handleOpenDiscount(rec)}
-                                title={rec.discounts && rec.discounts.length > 0 ? 'Sửa chiết khấu (chưa thu tiền)' : 'Áp dụng chiết khấu'}
-                                style={{
-                                  padding: '6px 10px',
-                                  backgroundColor: '#F3E8FF',
-                                  color: '#7C3AED',
-                                  border: '1px solid #D8B4FE',
-                                  borderRadius: '6px',
-                                  fontSize: '12px',
-                                  fontWeight: 600,
-                                  cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '4px',
-                                }}
-                              >
-                                <Percent size={13} />
-                                {rec.discounts && rec.discounts.length > 0 ? 'Sửa CK' : 'Chiết Khấu'}
-                              </button>
-                            )}
+                          {canDiscountReceivable(rec) ? (
+                            <button
+                              onClick={() => handleOpenDiscount(rec)}
+                              title={rec.discounts && rec.discounts.length > 0 ? 'Sửa chiết khấu (chưa thu tiền)' : 'Áp dụng chiết khấu'}
+                              style={{
+                                padding: '6px 10px',
+                                backgroundColor: '#F3E8FF',
+                                color: '#7C3AED',
+                                border: '1px solid #D8B4FE',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                              }}
+                            >
+                              <Percent size={13} />
+                              {rec.discounts && rec.discounts.length > 0 ? 'Sửa CK' : 'Chiết Khấu'}
+                            </button>
+                          ) : isDiscountLocked(rec) ? (
+                            <button
+                              disabled
+                              title="Khoản thu đã phát sinh thanh toán hoặc đã tất toán. Chiết khấu đã bị khóa theo quy tắc nghiệp vụ."
+                              style={{
+                                padding: '6px 10px',
+                                backgroundColor: '#F1F5F9',
+                                color: '#94A3B8',
+                                border: '1px solid #CBD5E1',
+                                borderRadius: '6px',
+                                fontSize: '12px',
+                                fontWeight: 500,
+                                cursor: 'not-allowed',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                opacity: 0.8,
+                              }}
+                            >
+                              <Lock size={12} />
+                              <span style={{ fontSize: '11px' }}>Khóa CK</span>
+                            </button>
+                          ) : null}
 
                           <button
                             onClick={() => {
@@ -1311,11 +1427,18 @@ export const FinanceModule: React.FC = () => {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
-                    Mã giao dịch / Mã tham chiếu
+                    {payMethod === 'CASH'
+                      ? 'Mã tham chiếu / Ghi chú thu tiền (Không bắt buộc với tiền mặt)'
+                      : 'Mã giao dịch / Mã tham chiếu ngân hàng * (Bắt buộc)'}
                   </label>
                   <input
                     type="text"
-                    placeholder="VD: FT2610041234, VCB-998877..."
+                    required={payMethod !== 'CASH'}
+                    placeholder={
+                      payMethod === 'CASH'
+                        ? 'Phiếu thu tiền mặt hoặc ghi chú (tùy chọn)'
+                        : 'VD: FT2610041234, VCB-998877, MB-12345...'
+                    }
                     value={payRef}
                     onChange={(e) => setPayRef(e.target.value)}
                     style={{
@@ -1327,6 +1450,11 @@ export const FinanceModule: React.FC = () => {
                       boxSizing: 'border-box',
                     }}
                   />
+                  {payMethod === 'CASH' && (
+                    <div style={{ fontSize: '11px', color: '#64748B', marginTop: '4px' }}>
+                      ℹ️ Khách thanh toán bằng tiền mặt tại quầy, không bắt buộc nhập mã tham chiếu giao dịch.
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end', marginTop: '12px' }}>
@@ -1457,11 +1585,12 @@ export const FinanceModule: React.FC = () => {
                 <input
                   type="number"
                   required
-                  min="0.1"
-                  max={discType === 'PERCENTAGE' ? 100 : activeReceivable.original_amount}
-                  step={discType === 'PERCENTAGE' ? '0.1' : '1000'}
+                  min={discType === 'PERCENTAGE' ? '0.01' : '1000'}
+                  max={discType === 'PERCENTAGE' ? 100 : Number(activeReceivable.original_amount)}
+                  step="any"
                   value={discValue}
                   onChange={(e) => setDiscValue(e.target.value)}
+                  placeholder={discType === 'PERCENTAGE' ? 'Ví dụ: 5 hoặc 10.5' : 'Ví dụ: 5000000'}
                   style={{
                     width: '100%',
                     padding: '9px 12px',
@@ -1471,7 +1600,83 @@ export const FinanceModule: React.FC = () => {
                     boxSizing: 'border-box',
                   }}
                 />
+
+                {/* Quick Presets */}
+                <div style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}>
+                  {discType === 'PERCENTAGE'
+                    ? [5, 10, 15, 20].map((pct) => (
+                        <button
+                          key={pct}
+                          type="button"
+                          onClick={() => setDiscValue(pct.toString())}
+                          style={{
+                            padding: '3px 8px',
+                            borderRadius: '4px',
+                            border: discValue === pct.toString() ? '1px solid #7C3AED' : '1px solid #E2E8F0',
+                            backgroundColor: discValue === pct.toString() ? '#F3E8FF' : '#F8FAFC',
+                            color: discValue === pct.toString() ? '#7C3AED' : '#475569',
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {pct}%
+                        </button>
+                      ))
+                    : [1000000, 2000000, 5000000, 10000000]
+                        .filter((amt) => amt <= Number(activeReceivable.original_amount))
+                        .map((amt) => (
+                          <button
+                            key={amt}
+                            type="button"
+                            onClick={() => setDiscValue(amt.toString())}
+                            style={{
+                              padding: '3px 8px',
+                              borderRadius: '4px',
+                              border: discValue === amt.toString() ? '1px solid #7C3AED' : '1px solid #E2E8F0',
+                              backgroundColor: discValue === amt.toString() ? '#F3E8FF' : '#F8FAFC',
+                              color: discValue === amt.toString() ? '#7C3AED' : '#475569',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {formatCurrency(amt)}
+                          </button>
+                        ))}
+                </div>
               </div>
+
+              {/* Dynamic Live Preview Card */}
+              {(() => {
+                const valNum = parseFloat(discValue) || 0
+                const orig = Number(activeReceivable.original_amount || 0)
+                const calc =
+                  discType === 'PERCENTAGE'
+                    ? Math.round(orig * (valNum / 100))
+                    : Math.min(valNum, orig)
+                const finalPayable = Math.max(0, orig - calc)
+                return (
+                  <div
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      backgroundColor: '#FAF5FF',
+                      border: '1px solid #E9D5FF',
+                      fontSize: '12px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', color: '#6B21A8' }}>
+                      <span>Số tiền được giảm trừ:</span>
+                      <span style={{ fontWeight: 700, fontSize: '13px' }}>- {formatCurrency(calc)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', color: '#4C1D95' }}>
+                      <span>Số tiền khách phải nộp sau giảm:</span>
+                      <span style={{ fontWeight: 700, fontSize: '14px', color: '#7C3AED' }}>{formatCurrency(finalPayable)}</span>
+                    </div>
+                  </div>
+                )
+              })()}
 
               <div>
                 <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
@@ -1551,7 +1756,7 @@ export const FinanceModule: React.FC = () => {
             style={{
               backgroundColor: '#FFFFFF',
               width: '580px',
-              maxWidth: '90vw',
+              maxWidth: '100vw',
               height: '100%',
               display: 'flex',
               flexDirection: 'column',
@@ -1606,6 +1811,53 @@ export const FinanceModule: React.FC = () => {
                     <span style={{ fontWeight: 700, color: '#10B981' }}>{formatCurrency(activeReceivable.total_paid_amount)}</span>
                   </div>
                 </div>
+
+                {/* Discount action or domain locked notice in Drawer */}
+                {canDiscountReceivable(activeReceivable) ? (
+                  <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px dashed #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                    <button
+                      onClick={() => handleOpenDiscount(activeReceivable)}
+                      style={{
+                        padding: '6px 12px',
+                        backgroundColor: '#F3E8FF',
+                        color: '#7C3AED',
+                        border: '1px solid #D8B4FE',
+                        borderRadius: '6px',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <Percent size={14} />
+                      <span>{activeReceivable.discounts.length > 0 ? 'Chỉnh Sửa Mức Chiết Khấu (Chưa Thu Tiền)' : 'Áp Dụng Chiết Khấu Cho Khoản Này'}</span>
+                    </button>
+                  </div>
+                ) : isDiscountLocked(activeReceivable) ? (
+                  <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px dashed #E2E8F0' }}>
+                    <div
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        backgroundColor: '#FFFBEB',
+                        border: '1px solid #FDE68A',
+                        color: '#92400E',
+                        fontSize: '12px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        width: '100%',
+                      }}
+                    >
+                      <Lock size={14} color="#D97706" />
+                      <span>
+                        Khoản thu đã phát sinh thanh toán (đã thu {formatCurrency(activeReceivable.total_paid_amount)}). Theo quy tắc nghiệp vụ, chiết khấu đã được chốt và khóa vĩnh viễn, không thể áp dụng hoặc chỉnh sửa.
+                      </span>
+                    </div>
+                  </div>
+                ) : null}
               </div>
 
               {/* Payments list */}

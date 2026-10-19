@@ -1,9 +1,23 @@
 import { apiFetch } from '../../services/apiClient'
 import React, { useState, useEffect } from 'react';
-import { ExternalLink, MapPin, Shield, RefreshCw, Link2, Trash2 } from 'lucide-react';
+import {
+  ExternalLink,
+  MapPin,
+  Shield,
+  RefreshCw,
+  Link2,
+  Trash2,
+  Clock,
+  Eye,
+  Lock,
+  X,
+  Layers,
+} from 'lucide-react';
 import { Pagination, usePagination } from '../common/Pagination';
 import { useNotificationModal } from '../../context/NotificationModalContext';
 import { DocumentAttachmentList } from '../documents/DocumentAttachmentList';
+import { MediaEvidenceGallery } from '../common/MediaEvidenceGallery';
+import type { PlotTimelineResponse } from '../../types/plots';
 import type {
   Customer,
   CustomerCreate,
@@ -82,6 +96,33 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
   const [memorialQuery, setMemorialQuery] = useState('');
   const [memorialResults, setMemorialResults] = useState<DeceasedPublicLookupResponse[]>([]);
   const [isMemorialLoading, setIsMemorialLoading] = useState(false);
+
+  // Public Memorial & Grave Activity Timeline Modal states
+  const [selectedPlotTimeline, setSelectedPlotTimeline] = useState<PlotTimelineResponse | null>(null);
+  const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
+  const [timelineLoading, setTimelineLoading] = useState(false);
+  const [timelineError, setTimelineError] = useState<string | null>(null);
+
+  const handleOpenPlotTimeline = async (plotIdentifier: string) => {
+    if (!plotIdentifier) return;
+    setTimelineLoading(true);
+    setTimelineError(null);
+    setIsTimelineModalOpen(true);
+    try {
+      const res = await apiFetch(`/api/v1/plots/public/${encodeURIComponent(plotIdentifier)}/timeline`);
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.detail || 'Không thể tải nhật ký hoạt động ô mộ');
+      }
+      const data: PlotTimelineResponse = await res.json();
+      setSelectedPlotTimeline(data);
+    } catch (err: unknown) {
+      setTimelineError(err instanceof Error ? err.message : 'Lỗi khi tải nhật ký hoạt động ô mộ');
+      setSelectedPlotTimeline(null);
+    } finally {
+      setTimelineLoading(false);
+    }
+  };
 
   // Relations states
   const [relationsList, setRelationsList] = useState<RelationDetail[]>([]);
@@ -2399,15 +2440,47 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                                 border: '1px solid #A7F3D0',
                               }}
                             >
-                              <ExternalLink size={13} />
-                              <span>Mở bản đồ Google Maps chỉ đường</span>
+                              <ExternalLink size={12} />
+                              <span>Mở Google Maps chỉ đường</span>
                             </a>
                           )}
                         </div>
                       ) : (
-                        <div style={{ fontSize: '13px', color: '#9CA3AF' }}>Chưa ghi nhận vị trí an táng thực địa</div>
+                        <div style={{ fontSize: '13px', color: '#6B7280', fontStyle: 'italic' }}>
+                          Chưa cập nhật lộ trình di chuyển chi tiết
+                        </div>
                       )}
                     </div>
+
+                    {item.plot_code && (
+                      <div style={{ marginTop: '14px', paddingTop: '10px', borderTop: '1px solid #E5E7EB', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                        <span style={{ fontSize: '12px', fontWeight: 600, color: '#374151' }}>
+                          Mã ô mộ: <strong style={{ color: 'var(--brand-primary)' }}>{item.plot_code}</strong>
+                          {item.slot_number && <span> (Huyệt {item.slot_number})</span>}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleOpenPlotTimeline(item.plot_code!)}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            border: 'none',
+                            backgroundColor: '#0284C7',
+                            color: '#FFFFFF',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            boxShadow: '0 2px 4px rgba(2, 132, 199, 0.2)',
+                          }}
+                        >
+                          <Eye size={13} />
+                          <span>Xem Nhật Ký Hoạt Động &amp; Ảnh Minh Chứng</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -2422,6 +2495,319 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                   startIndex={memStartIndex}
                   endIndex={memEndIndex}
                 />
+              </div>
+            </div>
+          )}
+
+          {/* ========================================================================= */}
+          {/* PUBLIC MEMORIAL & GRAVE ACTIVITY TIMELINE MODAL */}
+          {/* ========================================================================= */}
+          {isTimelineModalOpen && (
+            <div
+              className="responsive-modal-overlay"
+              style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(15, 23, 42, 0.7)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1200,
+                padding: '20px',
+              }}
+            >
+              <div
+                className="responsive-modal-card"
+                style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '14px',
+                  width: '100%',
+                  maxWidth: '860px',
+                  maxHeight: '92vh',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                  boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                }}
+              >
+                {/* Modal Header */}
+                <div
+                  style={{
+                    padding: '18px 24px',
+                    borderBottom: '1px solid #E2E8F0',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    background: 'linear-gradient(135deg, #1E3A8A 0%, #0F172A 100%)',
+                    color: '#FFFFFF',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ fontSize: '24px' }}>🪷</div>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700 }}>
+                        Hồ Sơ Mộ Phần &amp; Nhật Ký Hoạt Động Thực Địa
+                      </h3>
+                      <div style={{ fontSize: '12px', color: '#BFDBFE', marginTop: '2px' }}>
+                        {selectedPlotTimeline ? (
+                          <>Ô Mộ: <strong>{selectedPlotTimeline.plot_code}</strong> • Khu: {selectedPlotTimeline.zone_name} • Dãy: {selectedPlotTimeline.row_code}</>
+                        ) : 'Đang tải thông tin...'}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsTimelineModalOpen(false)}
+                    style={{ background: 'none', border: 'none', color: '#FFFFFF', cursor: 'pointer', padding: '4px' }}
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+
+                {/* Modal Body */}
+                <div style={{ padding: '20px 24px', overflowY: 'auto', flex: 1, backgroundColor: '#F8FAFC' }}>
+                  {timelineLoading ? (
+                    <div style={{ padding: '48px 0', textAlign: 'center', color: '#64748B' }}>
+                      <RefreshCw size={28} className="animate-spin" style={{ margin: '0 auto 10px', color: 'var(--brand-primary)' }} />
+                      <div style={{ fontSize: '13px' }}>Đang nạp dữ liệu hoạt động &amp; hình ảnh minh chứng...</div>
+                    </div>
+                  ) : timelineError ? (
+                    <div style={{ padding: '16px', borderRadius: '8px', backgroundColor: '#FEF2F2', border: '1px solid #FECACA', color: '#B91C1C', fontSize: '13px' }}>
+                      {timelineError}
+                    </div>
+                  ) : selectedPlotTimeline ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      {/* Plot Specs Card */}
+                      <div style={{ backgroundColor: '#FFFFFF', borderRadius: '10px', padding: '16px', border: '1px solid #E2E8F0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                          <div style={{ fontSize: '15px', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Layers size={16} color="var(--brand-primary)" />
+                            <span>Thông Số Kỹ Thuật Ô Mộ ({selectedPlotTimeline.plot_code})</span>
+                          </div>
+                          {selectedPlotTimeline.is_kim_tinh && (
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                padding: '3px 8px',
+                                borderRadius: '12px',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                backgroundColor: '#FEF2F2',
+                                color: '#991B1B',
+                                border: '1px solid #FECACA',
+                              }}
+                            >
+                              <Lock size={12} />
+                              Kim Tĩnh Bất Biến (Bảo Lưu Vĩnh Viễn)
+                            </span>
+                          )}
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px', fontSize: '12px', color: '#475569' }}>
+                          <div><strong>Khu vực:</strong> {selectedPlotTimeline.zone_name}</div>
+                          <div><strong>Dãy / Hàng:</strong> Dãy {selectedPlotTimeline.row_code}</div>
+                          <div><strong>Loại mộ:</strong> {selectedPlotTimeline.type_name}</div>
+                          <div><strong>Kích thước:</strong> {selectedPlotTimeline.dimensions || 'Tiêu chuẩn'}</div>
+                          <div><strong>Hướng phong thủy:</strong> {selectedPlotTimeline.orientation || 'Tự do'}</div>
+                        </div>
+
+                        {(selectedPlotTimeline.walking_directions || selectedPlotTimeline.navigation_guidance) && (
+                          <div style={{ marginTop: '12px', paddingTop: '10px', borderTop: '1px solid #F1F5F9', fontSize: '12px', color: '#1E293B', display: 'flex', alignItems: 'flex-start', gap: '6px' }}>
+                            <MapPin size={15} color="var(--brand-primary)" style={{ flexShrink: 0, marginTop: '2px' }} />
+                            <div>
+                              <strong>Chỉ dẫn lối đi thực địa:</strong> {selectedPlotTimeline.walking_directions || selectedPlotTimeline.navigation_guidance}
+                              {selectedPlotTimeline.maps_url && (
+                                <div style={{ marginTop: '6px' }}>
+                                  <a
+                                    href={selectedPlotTimeline.maps_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      fontSize: '11px',
+                                      fontWeight: 600,
+                                      color: '#0284C7',
+                                      textDecoration: 'none',
+                                    }}
+                                  >
+                                    <ExternalLink size={12} />
+                                    <span>Mở Google Maps chỉ đường</span>
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Deceased in Plot Card */}
+                      {selectedPlotTimeline.deceased_list && selectedPlotTimeline.deceased_list.length > 0 && (
+                        <div style={{ backgroundColor: '#FFFFFF', borderRadius: '10px', padding: '16px', border: '1px solid #E2E8F0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <span style={{ fontSize: '16px' }}>🕯️</span>
+                            <span>Người Quá Cố Đang An Nghỉ Tại Ô Mộ Này ({selectedPlotTimeline.deceased_list.length})</span>
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
+                            {selectedPlotTimeline.deceased_list.map((d) => (
+                              <div
+                                key={d.deceased_code}
+                                style={{
+                                  padding: '10px 14px',
+                                  borderRadius: '8px',
+                                  backgroundColor: '#F8FAFC',
+                                  border: '1px solid #E2E8F0',
+                                  fontSize: '12px',
+                                }}
+                              >
+                                <div style={{ fontWeight: 700, fontSize: '13px', color: '#1E293B' }}>{d.full_name}</div>
+                                <div style={{ color: '#64748B', marginTop: '2px' }}>
+                                  Mã: {d.deceased_code} {d.slot_number ? `• Huyệt số ${d.slot_number}` : ''}
+                                </div>
+                                <div style={{ color: '#475569', marginTop: '2px' }}>
+                                  Hưởng thọ: {d.year_of_birth || d.birth_year || '?'} – {d.date_of_death ? new Date(d.date_of_death).toLocaleDateString('vi-VN') : '—'}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Chronological Activity & Media Timeline */}
+                      {(() => {
+                        const timelineEvents = selectedPlotTimeline.events || selectedPlotTimeline.timeline || [];
+                        return (
+                          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '10px', padding: '16px', border: '1px solid #E2E8F0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
+                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <Clock size={16} color="var(--brand-primary)" />
+                              <span>Nhật Ký Thi Công, An Táng &amp; Chăm Sóc Định Kỳ (Kèm Ảnh Minh Chứng)</span>
+                            </div>
+
+                            {timelineEvents.length === 0 ? (
+                              <div style={{ padding: '24px', textAlign: 'center', color: '#94A3B8', fontSize: '13px', fontStyle: 'italic' }}>
+                                Chưa ghi nhận hoạt động hoặc hình ảnh thi công/chăm sóc nào trên ô mộ này.
+                              </div>
+                            ) : (
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative', paddingLeft: '8px' }}>
+                                {timelineEvents.map((ev, idx) => {
+                                  const isBurial = ev.event_type === 'BURIAL';
+                                  const isConst = ev.event_type === 'CONSTRUCTION';
+                                  const isCare = ev.event_type === 'CARE';
+
+                                  const badgeColor = isBurial
+                                    ? { bg: '#DCFCE7', text: '#166534', border: '#86EFAC', label: 'An Táng' }
+                                    : isConst
+                                    ? { bg: '#FEF3C7', text: '#92400E', border: '#FDE68A', label: 'Thi Công Xây Dựng' }
+                                    : isCare
+                                    ? { bg: '#E0F2FE', text: '#0369A1', border: '#BAE6FD', label: 'Chăm Sóc Định Kỳ' }
+                                    : { bg: '#F3E8FF', text: '#6B21A8', border: '#D8B4FE', label: 'Cải Táng' };
+
+                                  const titleText = ev.event_title || ev.title || 'Hoạt động ô mộ';
+                                  const executorText = ev.executor_name || ev.performed_by;
+                                  const mediaList = ev.media_evidences || ev.evidences || [];
+
+                                  return (
+                                    <div
+                                      key={idx}
+                                      style={{
+                                        border: '1px solid #E2E8F0',
+                                        borderRadius: '8px',
+                                        padding: '14px',
+                                        backgroundColor: '#FAFAFA',
+                                        boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                                      }}
+                                    >
+                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                          <span
+                                            style={{
+                                              padding: '2px 8px',
+                                              borderRadius: '10px',
+                                              fontSize: '11px',
+                                              fontWeight: 700,
+                                              backgroundColor: badgeColor.bg,
+                                              color: badgeColor.text,
+                                              border: `1px solid ${badgeColor.border}`,
+                                            }}
+                                          >
+                                            {badgeColor.label}
+                                          </span>
+                                          <span style={{ fontWeight: 700, fontSize: '13px', color: '#0F172A' }}>
+                                            {titleText}
+                                          </span>
+                                        </div>
+                                        <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 600 }}>
+                                          {ev.event_date ? new Date(ev.event_date).toLocaleDateString('vi-VN') : ''}
+                                        </span>
+                                      </div>
+
+                                      {ev.description && (
+                                        <div style={{ fontSize: '12px', color: '#334155', marginBottom: '8px', lineHeight: '1.5' }}>
+                                          {ev.description}
+                                        </div>
+                                      )}
+
+                                      {executorText && (
+                                        <div style={{ fontSize: '11px', color: '#64748B', marginBottom: '8px' }}>
+                                          Thực hiện / Phụ trách: <strong>{executorText}</strong>
+                                        </div>
+                                      )}
+
+                                      {/* Media Gallery directly below the task */}
+                                      {mediaList.length > 0 && (
+                                        <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #CBD5E1' }}>
+                                          <MediaEvidenceGallery
+                                            items={mediaList.map((m, mIdx) => ({
+                                              id: `${idx}-${mIdx}`,
+                                              file_id: m.file_id,
+                                              caption: m.caption,
+                                              uploaded_at: m.uploaded_at,
+                                              download_url: m.media_url || m.download_url,
+                                            }))}
+                                            title="Hình ảnh minh chứng thực địa"
+                                            maxFiles={10}
+                                            token={token}
+                                            compact
+                                          />
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  ) : null}
+                </div>
+
+                {/* Modal Footer */}
+                <div style={{ padding: '12px 24px', borderTop: '1px solid #E2E8F0', display: 'flex', justifyContent: 'flex-end', backgroundColor: '#FFFFFF' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsTimelineModalOpen(false)}
+                    style={{
+                      padding: '8px 18px',
+                      borderRadius: '6px',
+                      border: '1px solid #CBD5E1',
+                      backgroundColor: '#FFFFFF',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      color: '#334155',
+                    }}
+                  >
+                    Đóng
+                  </button>
+                </div>
               </div>
             </div>
           )}

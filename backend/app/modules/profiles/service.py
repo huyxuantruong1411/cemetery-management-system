@@ -702,6 +702,7 @@ class ProfileService:
                     hometown=p.hometown,
                     zone_name=zone_name,
                     row_code=row_code,
+                    plot_id=slot.plot.plot_id if slot and slot.plot else None,
                     plot_code=plot_code,
                     slot_number=slot_num,
                     is_kim_tinh=slot.plot.is_kim_tinh if slot and slot.plot else False,

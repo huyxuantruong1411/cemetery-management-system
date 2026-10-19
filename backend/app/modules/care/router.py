@@ -239,6 +239,26 @@ def add_evidence(
     )
 
 
+@router.delete(
+    "/schedules/{schedule_id}/evidence/{evidence_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Xóa ảnh minh chứng chăm sóc khi ca chưa đóng (G12)",
+)
+def delete_evidence(
+    schedule_id: int,
+    evidence_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("care", "write")),
+):
+    CareService.delete_media_evidence(
+        db=db,
+        schedule_id=schedule_id,
+        evidence_id=evidence_id,
+        user_id=current_user.user_id,
+    )
+    return None
+
+
 @router.post(
     "/schedules/{schedule_id}/close",
     response_model=CareScheduleDetail,

@@ -20,5 +20,5 @@ with engine.connect() as conn:
                 samples = conn.execute(text(f"SELECT TOP 3 [{c}] FROM [{t}] WHERE [{c}] LIKE '%[?]%' OR [{c}] LIKE '%Ð%' OR [{c}] LIKE '%Co B?n%'")).fetchall()
                 for s in samples:
                     print(f"   -> {s[0]}")
-        except Exception as e:
+        except Exception:
             pass

@@ -13,13 +13,17 @@ from app.modules.plots.models import (
     Zone,
 )
 from app.modules.plots.schemas import (
+    MediaItemBrief,
     PlotCreate,
+    PlotDeceasedBrief,
     PlotDetailResponse,
     PlotListResponse,
     PlotReservationResponse,
     PlotReserveRequest,
     PlotSlotResponse,
     PlotStatsResponse,
+    PlotTimelineEvent,
+    PlotTimelineResponse,
     PlotTypeCreate,
     PlotTypeResponse,
     PlotTypeUpdate,
@@ -377,6 +381,18 @@ class PlotService:
                 active_res = PlotReservationResponse.model_validate(res)
                 break
 
+        if not p.slots:
+            num_slots = p.plot_type.default_slots if p.plot_type and p.plot_type.default_slots else 1
+            for i in range(1, num_slots + 1):
+                slot = PlotSlot(
+                    plot_id=p.plot_id,
+                    slot_number=i,
+                    status="OCCUPIED" if p.status == "OCCUPIED" else "EMPTY",
+                )
+                db.add(slot)
+            db.commit()
+            db.refresh(p)
+
         slots_resp = [PlotSlotResponse.model_validate(s) for s in p.slots]
 
         return PlotDetailResponse(
@@ -441,7 +457,7 @@ class PlotService:
             orientation=data.orientation,
             notes=data.notes,
             status="EMPTY_UNSOLD",
-            is_kim_tinh=data.is_kim_tinh,
+            is_kim_tinh=False,
             is_locked=False,
             created_at=now,
             updated_at=now,
@@ -488,6 +504,11 @@ class PlotService:
                 )
 
         if data.is_kim_tinh is True and not plot.is_kim_tinh:
+            if plot.status in ("EMPTY_UNSOLD", "RESERVED"):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="QUY TẮC NGHIỆP VỤ: Ô đất trống chưa an táng không thể thiết lập cờ Kim Tĩnh. Kim Tĩnh chỉ được kích hoạt khi lập và xác nhận Phụ lục An táng!",
+                )
             plot.is_kim_tinh = True
 
         if data.latitude is not None:
@@ -701,4 +722,218 @@ class PlotService:
             under_exhumation=under_exhumation,
             kim_tinh_count=kim_tinh,
             locked_count=locked,
+        )
+
+    # =========================================================================
+    # 7. Public Plot Timeline & Memorial Activities (G19 / Memorial Portal)
+    # =========================================================================
+    @staticmethod
+    def get_plot_timeline(db: Session, plot_identifier: str) -> PlotTimelineResponse:
+        """
+        Tra cứu dòng thời gian hoạt động & minh chứng thực địa công khai của ô mộ.
+        Bao gồm: lễ an táng, các đợt thi công lăng mộ, lịch trình chăm sóc định kỳ kèm ảnh minh chứng.
+        """
+        query = db.query(Plot).options(
+            joinedload(Plot.row).joinedload(Row.zone),
+            joinedload(Plot.plot_type),
+            joinedload(Plot.slots),
+        )
+        if plot_identifier.isdigit():
+            plot = query.filter(Plot.plot_id == int(plot_identifier)).first()
+        else:
+            plot = query.filter(Plot.plot_code.ilike(plot_identifier.strip())).first()
+
+        if not plot:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Không tìm thấy ô mộ với mã hoặc ID '{plot_identifier}'.",
+            )
+
+        from app.modules.profiles.models import DeceasedProfile
+
+        dec_list: list[PlotDeceasedBrief] = []
+        dec_ids = [s.current_deceased_id for s in plot.slots if s.current_deceased_id]
+        if dec_ids:
+            profiles = db.query(DeceasedProfile).filter(DeceasedProfile.deceased_id.in_(dec_ids)).all()
+            for prof in profiles:
+                matching_slot = next((s for s in plot.slots if s.current_deceased_id == prof.deceased_id), None)
+                yob = prof.birth_year or (prof.date_of_birth.year if prof.date_of_birth else None)
+                dec_list.append(
+                    PlotDeceasedBrief(
+                        deceased_id=prof.deceased_id,
+                        deceased_code=prof.deceased_code,
+                        full_name=prof.full_name,
+                        birth_year=yob,
+                        year_of_birth=yob,
+                        date_of_death=prof.date_of_death,
+                        hometown=prof.hometown,
+                        slot_number=matching_slot.slot_number if matching_slot else None,
+                        is_kim_tinh=plot.is_kim_tinh,
+                    )
+                )
+
+        timeline: list[PlotTimelineEvent] = []
+
+        # 1. Burials from BurialHistory
+        from app.modules.plots.models import BurialHistory
+
+        burial_histories = db.query(BurialHistory).filter(BurialHistory.plot_id == plot.plot_id).all()
+        for bh in burial_histories:
+            dec = db.query(DeceasedProfile).filter(DeceasedProfile.deceased_id == bh.deceased_id).first()
+            dec_name = dec.full_name if dec else f"Mã #{bh.deceased_id}"
+            evs = []
+            if bh.proof_file_id:
+                evs.append(
+                    MediaItemBrief(
+                        evidence_id=bh.history_id,
+                        file_id=bh.proof_file_id,
+                        caption="Ảnh minh chứng an táng thực địa",
+                        uploaded_at=bh.created_at,
+                        download_url=f"/api/v1/documents/public/{bh.proof_file_id}",
+                        media_url=f"/api/v1/documents/public/{bh.proof_file_id}",
+                    )
+                )
+            bh_date = bh.action_date.date() if isinstance(bh.action_date, datetime) else bh.action_date
+            b_title = f"Lễ An Táng: {dec_name}" if bh.action_type == "BURIED" else f"Cải Táng: {dec_name}"
+            timeline.append(
+                PlotTimelineEvent(
+                    event_type="BURIAL" if bh.action_type == "BURIED" else "EXHUMATION",
+                    title=b_title,
+                    event_title=b_title,
+                    event_date=bh_date,
+                    status="COMPLETED",
+                    description=bh.notes or f"Đã hoàn thành nghi thức an táng thực địa tại slot #{bh.slot_id or 1}",
+                    slot_number=bh.slot_id,
+                    evidences=evs,
+                    media_evidences=evs,
+                    is_kim_tinh=plot.is_kim_tinh,
+                )
+            )
+
+        # 2. Construction Orders
+        from app.modules.construction.models import ConstructionOrder
+
+        c_orders = db.query(ConstructionOrder).filter(ConstructionOrder.plot_id == plot.plot_id).all()
+        for co in c_orders:
+            order_evs: list[MediaItemBrief] = []
+            for t in co.tasks:
+                for ev in t.evidences:
+                    uploader_name = ev.uploader.full_name if ev.uploader else None
+                    dl_url = f"/api/v1/documents/public/{ev.file_id}"
+                    order_evs.append(
+                        MediaItemBrief(
+                            evidence_id=ev.evidence_id,
+                            file_id=ev.file_id,
+                            caption=ev.caption or t.task_name,
+                            uploaded_at=ev.uploaded_at,
+                            file_name=ev.file_object.file_name if ev.file_object else None,
+                            download_url=dl_url,
+                            media_url=dl_url,
+                            uploader_name=uploader_name,
+                        )
+                    )
+
+            ev_date = co.actual_end_date or co.expected_end_date or co.created_at.date()
+            if isinstance(ev_date, datetime):
+                ev_date = ev_date.date()
+            c_title = "Thi Công & Xây Dựng Lăng Mộ"
+            c_supervisor = co.supervisor.full_name if co.supervisor else None
+            timeline.append(
+                PlotTimelineEvent(
+                    event_type="CONSTRUCTION",
+                    title=c_title,
+                    event_title=c_title,
+                    event_date=ev_date,
+                    status=co.status,
+                    description=co.notes or f"Tiến độ thi công đạt {co.overall_progress}% ({len(co.tasks)} hạng mục nghiệm thu)",
+                    performed_by=c_supervisor,
+                    executor_name=c_supervisor,
+                    evidences=order_evs,
+                    media_evidences=order_evs,
+                    is_kim_tinh=plot.is_kim_tinh,
+                )
+            )
+
+        # 3. Care Schedules
+        from app.modules.care.models import CareSchedule
+
+        care_schedules = db.query(CareSchedule).filter(CareSchedule.plot_id == plot.plot_id).all()
+        for cs in care_schedules:
+            care_evs: list[MediaItemBrief] = []
+            for ev in cs.media_evidences:
+                uploader_name = ev.uploaded_by.full_name if ev.uploaded_by else None
+                c_dl_url = f"/api/v1/documents/public/{ev.file_id}" if ev.file_id else (ev.media_url or "")
+                care_evs.append(
+                    MediaItemBrief(
+                        evidence_id=ev.evidence_id,
+                        file_id=ev.file_id or "media",
+                        caption=ev.caption or "Ảnh chăm sóc hiện trường",
+                        uploaded_at=ev.uploaded_at,
+                        download_url=c_dl_url,
+                        media_url=c_dl_url,
+                        uploader_name=uploader_name,
+                    )
+                )
+
+            pkg_name = cs.package.package_name if cs.package else "Định kỳ"
+            sc_date = cs.performed_date if cs.performed_date else cs.scheduled_date
+            if isinstance(sc_date, datetime):
+                sc_date = sc_date.date()
+
+            caretaker_name = cs.caretaker.full_name if cs.caretaker else None
+            completed_tasks = sum(1 for it in cs.checklist_items if it.is_completed)
+            total_tasks = len(cs.checklist_items)
+            desc = cs.notes or f"Gói: {pkg_name}. Hoàn tất {completed_tasks}/{total_tasks} đầu việc chăm sóc."
+            care_title = f"Chăm Sóc Định Kỳ ({pkg_name})"
+
+            timeline.append(
+                PlotTimelineEvent(
+                    event_type="CARE",
+                    title=care_title,
+                    event_title=care_title,
+                    event_date=sc_date,
+                    status=cs.status,
+                    description=desc,
+                    performed_by=caretaker_name,
+                    executor_name=caretaker_name,
+                    evidences=care_evs,
+                    media_evidences=care_evs,
+                    is_kim_tinh=plot.is_kim_tinh,
+                )
+            )
+
+        # Sort timeline by event_date descending
+        timeline.sort(key=lambda x: x.event_date, reverse=True)
+
+        zone_n = plot.row.zone.zone_name if plot.row and plot.row.zone else ""
+        row_c = plot.row.row_code if plot.row else ""
+        guidance = f"Khu {zone_n} - Dãy {row_c} - Lô {plot.plot_code}"
+
+        lat = float(plot.latitude) if plot.latitude is not None else None
+        lng = float(plot.longitude) if plot.longitude is not None else None
+        maps_url = f"https://www.google.com/maps/search/?api=1&query={lat},{lng}" if lat and lng else None
+
+        dims = None
+        if plot.plot_type and plot.plot_type.length and plot.plot_type.width:
+            dims = f"{plot.plot_type.length}m x {plot.plot_type.width}m"
+
+        return PlotTimelineResponse(
+            plot_id=plot.plot_id,
+            plot_code=plot.plot_code,
+            zone_name=zone_n,
+            row_code=row_c,
+            type_name=plot.plot_type.type_name if plot.plot_type else "",
+            status=plot.status,
+            is_kim_tinh=plot.is_kim_tinh,
+            is_locked=plot.is_locked,
+            orientation=plot.orientation,
+            dimensions=dims,
+            latitude=lat,
+            longitude=lng,
+            navigation_guidance=guidance,
+            walking_directions=guidance,
+            maps_url=maps_url,
+            deceased_list=dec_list,
+            timeline=timeline,
+            events=timeline,
         )

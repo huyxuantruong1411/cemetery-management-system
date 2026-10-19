@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from typing import List, Optional
 
@@ -210,3 +210,64 @@ class PlotStatsResponse(BaseModel):
 
 class PlotMessageResponse(BaseModel):
     message: str
+
+
+class MediaItemBrief(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    evidence_id: int
+    file_id: str
+    caption: Optional[str] = None
+    uploaded_at: datetime
+    file_name: Optional[str] = None
+    download_url: str
+    media_url: Optional[str] = None
+    uploader_name: Optional[str] = None
+
+
+class PlotTimelineEvent(BaseModel):
+    event_type: str  # BURIAL, CONSTRUCTION, CARE, EXHUMATION
+    title: str
+    event_title: Optional[str] = None
+    event_date: date
+    status: str
+    description: Optional[str] = None
+    slot_number: Optional[int] = None
+    performed_by: Optional[str] = None
+    executor_name: Optional[str] = None
+    evidences: List[MediaItemBrief] = []
+    media_evidences: List[MediaItemBrief] = []
+    is_kim_tinh: bool = False
+
+
+class PlotDeceasedBrief(BaseModel):
+    deceased_id: int
+    deceased_code: str
+    full_name: str
+    birth_year: Optional[int] = None
+    year_of_birth: Optional[int] = None
+    date_of_death: date
+    hometown: Optional[str] = None
+    slot_number: Optional[int] = None
+    is_kim_tinh: bool = False
+
+
+class PlotTimelineResponse(BaseModel):
+    plot_id: int
+    plot_code: str
+    zone_name: str
+    row_code: str
+    type_name: str
+    status: str
+    is_kim_tinh: bool
+    is_locked: bool
+    orientation: Optional[str] = None
+    dimensions: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    navigation_guidance: Optional[str] = None
+    walking_directions: Optional[str] = None
+    maps_url: Optional[str] = None
+    deceased_list: List[PlotDeceasedBrief] = []
+    timeline: List[PlotTimelineEvent] = []
+    events: List[PlotTimelineEvent] = []

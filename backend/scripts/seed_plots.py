@@ -42,11 +42,11 @@ def seed_plots():
                 "description": "Huyệt mộ đơn tiêu chuẩn kích thước 2.5m x 1.2m, thích hợp an táng một lần",
             },
             {
-                "type_name": "Mộ Đôi Kim Tĩnh",
+                "type_name": "Mộ Đôi Tiêu Chuẩn",
                 "default_slots": 2,
                 "length": Decimal("3.00"),
                 "width": Decimal("2.40"),
-                "description": "Huyệt mộ đôi kết cấu bê tông cốt thép Kim Tĩnh kiên cố vĩnh cửu",
+                "description": "Huyệt mộ đôi tiêu chuẩn kích thước 3.0m x 2.4m, quy cách 2 vị trí an táng",
             },
             {
                 "type_name": "Khuôn Viên Gia Tộc",
@@ -77,8 +77,8 @@ def seed_plots():
             },
             {
                 "zone_code": "KHU-B",
-                "zone_name": "Khu An Viên (Kim Tĩnh Cao Cấp)",
-                "description": "Khu vực đồi thoải nhìn ra hồ phong thủy, kết cấu nền móng Kim Tĩnh",
+                "zone_name": "Khu An Viên (Đồi Phong Thủy)",
+                "description": "Khu vực đồi thoải nhìn ra hồ phong thủy, cảnh quan tôn nghiêm",
                 "rows": ["HANG-01", "HANG-02"],
             },
             {
@@ -188,35 +188,35 @@ def seed_plots():
                 False,
                 "EMPTY_UNSOLD",
             ),
-            # Khu B - Hàng 1: Mộ đôi Kim Tĩnh
+            # Khu B - Hàng 1: Mộ đôi tiêu chuẩn
             (
                 "KHU-B_HANG-01",
                 "B-H01-01",
-                "Mộ Đôi Kim Tĩnh",
+                "Mộ Đôi Tiêu Chuẩn",
                 Decimal("0.000400"),
                 Decimal("0.000050"),
                 "NAM",
-                True,
+                False,
                 "EMPTY_UNSOLD",
             ),
             (
                 "KHU-B_HANG-01",
                 "B-H01-02",
-                "Mộ Đôi Kim Tĩnh",
+                "Mộ Đôi Tiêu Chuẩn",
                 Decimal("0.000400"),
                 Decimal("0.000120"),
                 "NAM",
-                True,
+                False,
                 "EMPTY_UNSOLD",
             ),
             (
                 "KHU-B_HANG-01",
                 "B-H01-03",
-                "Mộ Đôi Kim Tĩnh",
+                "Mộ Đôi Tiêu Chuẩn",
                 Decimal("0.000400"),
                 Decimal("0.000190"),
                 "NAM",
-                True,
+                False,
                 "EMPTY_UNSOLD",
             ),
             # Khu VIP - Hàng 1: Khuôn viên gia tộc
@@ -227,7 +227,7 @@ def seed_plots():
                 Decimal("0.000700"),
                 Decimal("0.000100"),
                 "ĐÔNG NAM",
-                True,
+                False,
                 "EMPTY_UNSOLD",
             ),
             (
@@ -237,7 +237,7 @@ def seed_plots():
                 Decimal("0.000700"),
                 Decimal("0.000300"),
                 "ĐÔNG NAM",
-                True,
+                False,
                 "EMPTY_UNSOLD",
             ),
         ]

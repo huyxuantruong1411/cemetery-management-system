@@ -94,3 +94,59 @@ export interface PlotStats {
   kim_tinh_count: number;
   locked_count: number;
 }
+
+export interface MediaItemBrief {
+  file_id: string;
+  caption?: string | null;
+  uploaded_at: string;
+  media_url?: string | null;
+  download_url?: string | null;
+  file_name?: string | null;
+  uploader_name?: string | null;
+}
+
+export interface PlotTimelineEvent {
+  event_type: 'BURIAL' | 'CONSTRUCTION' | 'CARE' | 'EXHUMATION' | string;
+  title?: string;
+  event_title?: string;
+  event_date: string;
+  description?: string | null;
+  status: string;
+  performed_by?: string | null;
+  executor_name?: string | null;
+  evidences?: MediaItemBrief[];
+  media_evidences?: MediaItemBrief[];
+}
+
+export interface PlotDeceasedBrief {
+  deceased_id: number;
+  deceased_code: string;
+  full_name: string;
+  slot_number?: number | null;
+  date_of_death: string;
+  year_of_birth?: number | null;
+  birth_year?: number | null;
+  is_kim_tinh: boolean;
+  tribute_notes?: string | null;
+}
+
+export interface PlotTimelineResponse {
+  plot_id: number;
+  plot_code: string;
+  zone_name: string;
+  row_code: string;
+  type_name: string;
+  orientation?: string | null;
+  dimensions?: string | null;
+  is_kim_tinh: boolean;
+  is_locked?: boolean;
+  status: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  maps_url?: string | null;
+  walking_directions?: string | null;
+  navigation_guidance?: string | null;
+  deceased_list: PlotDeceasedBrief[];
+  events?: PlotTimelineEvent[];
+  timeline?: PlotTimelineEvent[];
+}

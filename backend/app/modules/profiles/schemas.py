@@ -221,6 +221,7 @@ class DeceasedPublicLookupResponse(BaseModel):
     hometown: str | None = None
     zone_name: str | None = None
     row_code: str | None = None
+    plot_id: int | None = None
     plot_code: str | None = None
     slot_number: int | None = None
     is_kim_tinh: bool = False

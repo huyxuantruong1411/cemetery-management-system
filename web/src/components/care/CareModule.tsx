@@ -8,7 +8,6 @@ import {
   FileCheck2,
   RefreshCw,
   Search,
-  UploadCloud,
   User as UserIcon,
   MapPin,
   X,
@@ -19,6 +18,7 @@ import {
   ArrowUpDown,
 } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
+import { useNotificationModal } from '../../context/NotificationModalContext'
 import type {
   CareScheduleBrief,
   CareScheduleDetail,
@@ -26,9 +26,11 @@ import type {
 } from '../../types/care'
 import { Pagination, usePagination } from '../common/Pagination'
 import { WorkBasisView } from '../contracts/WorkBasisView'
+import { MediaEvidenceGallery } from '../common/MediaEvidenceGallery'
 
 export const CareModule: React.FC = () => {
   const { accessToken: token, user, hasPermission } = useAuth()
+  const { confirm } = useNotificationModal()
 
   // Tab state: Lịch Chăm Sóc vs Căn Cứ Nghiệp Vụ (EX-01)
   const [activeCareTab, setActiveCareTab] = useState<'schedules' | 'bases'>('schedules')
@@ -302,6 +304,14 @@ export const CareModule: React.FC = () => {
   const handleCloseShift = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!token || !selectedSchedule) return
+
+    const confirmed = await confirm({
+      title: 'Xác Nhận Đóng Ca Chăm Sóc Lần Cuối',
+      message: `Bạn có chắc chắn muốn xác nhận hoàn tất và đóng ca chăm sóc #${selectedSchedule.schedule_id}?\n\nLưu ý quan trọng: Sau khi xác nhận hoàn tất, toàn bộ ${selectedSchedule.media_evidences?.length || 0} ảnh minh chứng và kết quả đầu việc sẽ bị khóa vĩnh viễn mức hệ thống, không còn có thể chỉnh sửa, bổ sung hoặc xóa ảnh đã đính kèm nữa.`,
+      confirmText: 'Xác nhận hoàn tất & Khóa',
+      cancelText: 'Kiểm tra lại',
+    })
+    if (!confirmed) return
 
     try {
       setClosingShift(true)
@@ -1565,95 +1575,71 @@ export const CareModule: React.FC = () => {
                   </div>
 
                   {/* Photo Evidence Section */}
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                      <h3
-                        style={{
-                          fontSize: '14px',
-                          fontWeight: 700,
-                          color: '#1E293B',
-                          margin: 0,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
+                  <div style={{ marginTop: '20px' }}>
+                      <MediaEvidenceGallery
+                        items={selectedSchedule.media_evidences.map((ev) => ({
+                          id: ev.evidence_id,
+                          file_id: ev.file_id || 'media',
+                          caption: ev.caption,
+                          uploaded_at: ev.uploaded_at,
+                          download_url: ev.media_url,
+                        }))}
+                        title="Minh chứng hình ảnh hiện trường"
+                        maxFiles={5}
+                        token={token}
+                        canUpload={canExecuteCare && selectedSchedule.status !== 'CLOSED'}
+                        canDelete={canExecuteCare && selectedSchedule.status !== 'CLOSED'}
+                        onDelete={async (item) => {
+                          if (!token || !selectedSchedule) return;
+                          try {
+                            const delRes = await apiFetch(`/api/v1/care/schedules/${selectedSchedule.schedule_id}/evidence/${item.id}`, {
+                              method: 'DELETE',
+                              headers: { Authorization: `Bearer ${token}` },
+                            });
+                            if (!delRes.ok) {
+                              const errJson = await delRes.json().catch(() => ({}));
+                              throw new Error(errJson.detail || 'Không thể xóa ảnh minh chứng');
+                            }
+                            showNotification('Đã xóa ảnh minh chứng thành công.');
+                            await openScheduleDetail(selectedSchedule.schedule_id);
+                            await fetchSchedules();
+                          } catch (err: unknown) {
+                            showNotification(err instanceof Error ? err.message : 'Lỗi xóa ảnh', true);
+                          }
                         }}
-                      >
-                        <Camera size={16} color="var(--brand-primary, #24594D)" />
-                        <span>Minh chứng hình ảnh ({selectedSchedule.media_evidences.length})</span>
-                      </h3>
-                      {canExecuteCare && selectedSchedule.status !== 'CLOSED' && (
-                        <button
-                          onClick={() => setIsEvidenceModalOpen(true)}
-                          style={{
-                            padding: '6px 12px',
-                            fontSize: '12px',
-                            backgroundColor: '#FFFFFF',
-                            border: '1px solid #CBD5E1',
-                            borderRadius: '6px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            fontWeight: 600,
-                            color: '#334155',
-                          }}
-                        >
-                          <UploadCloud size={14} color="var(--brand-primary, #24594D)" />
-                          <span>Chụp / Tải ảnh</span>
-                        </button>
-                      )}
+                        onUpload={async (file, caption) => {
+                          const formData = new FormData();
+                          formData.append('file', file);
+                          const upRes = await apiFetch('/api/v1/documents/upload', {
+                            method: 'POST',
+                            headers: token ? { Authorization: `Bearer ${token}` } : {},
+                            body: formData,
+                          });
+                          if (!upRes.ok) {
+                            const errJson = await upRes.json().catch(() => ({}));
+                            throw new Error(errJson.detail || 'Không thể tải ảnh lên MinIO');
+                          }
+                          const upData = await upRes.json();
+                          const attachRes = await apiFetch(`/api/v1/care/schedules/${selectedSchedule.schedule_id}/evidence`, {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              ...(token ? { Authorization: `Bearer ${token}` } : {}),
+                            },
+                            body: JSON.stringify({
+                              file_id: upData.file_id,
+                              caption: caption || 'Ảnh chụp hiện trường chăm sóc',
+                            }),
+                          });
+                          if (!attachRes.ok) {
+                            const attErr = await attachRes.json().catch(() => ({}));
+                            throw new Error(attErr.detail || 'Không thể liên kết ảnh minh chứng');
+                          }
+                          await openScheduleDetail(selectedSchedule.schedule_id);
+                          await fetchSchedules();
+                        }}
+                      />
                     </div>
-
-                    {selectedSchedule.media_evidences.length === 0 ? (
-                      <div
-                        style={{
-                          padding: '18px',
-                          backgroundColor: '#F8FAFC',
-                          border: '1px dashed #CBD5E1',
-                          borderRadius: '8px',
-                          textAlign: 'center',
-                          fontSize: '12px',
-                          color: '#64748B',
-                        }}
-                      >
-                        Chưa có ảnh minh chứng hiện trường. Cần ít nhất 1 ảnh để đủ điều kiện đóng ca.
-                      </div>
-                    ) : (
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '10px' }}>
-                        {selectedSchedule.media_evidences.map((ev) => (
-                          <div
-                            key={ev.evidence_id}
-                            style={{
-                              backgroundColor: '#F8FAFC',
-                              border: '1px solid #E2E8F0',
-                              borderRadius: '8px',
-                              overflow: 'hidden',
-                            }}
-                          >
-                            <div
-                              style={{
-                                height: '110px',
-                                backgroundColor: '#E2E8F0',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              <Camera size={28} color="#94A3B8" />
-                            </div>
-                            <div style={{ padding: '8px 10px', fontSize: '12px' }}>
-                              <div style={{ fontWeight: 600, color: '#1E293B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {ev.caption || 'Ảnh hiện trường'}
-                              </div>
-                              <div style={{ fontSize: '10px', color: '#94A3B8', marginTop: '2px' }}>
-                                {new Date(ev.uploaded_at).toLocaleTimeString('vi-VN')}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 </>
               ) : null}
             </div>
@@ -2097,6 +2083,20 @@ export const CareModule: React.FC = () => {
                   <li>Toàn bộ hạng mục đánh dấu [Bắt buộc] phải được hoàn thành.</li>
                   <li>Phải có ít nhất 1 ảnh minh chứng trạng thái thực địa trên hệ thống.</li>
                 </ul>
+              </div>
+
+              <div
+                style={{
+                  padding: '12px 14px',
+                  backgroundColor: '#FFFBEB',
+                  border: '1px solid #FCD34D',
+                  borderRadius: '8px',
+                  color: '#92400E',
+                  fontSize: '12px',
+                  lineHeight: '1.5',
+                }}
+              >
+                <strong>⚠️ Cảnh báo khóa dữ liệu bất biến:</strong> Khi bạn xác nhận Đóng ca & Hoàn tất, toàn bộ ảnh minh chứng hiện trường sẽ được <strong>chốt khóa vĩnh viễn</strong>. Quản trang sẽ <strong>không thể</strong> chỉnh sửa, bổ sung hay xóa ảnh đã tải lên nữa.
               </div>
 
               <div>

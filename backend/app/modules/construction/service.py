@@ -328,10 +328,16 @@ class ConstructionService:
             if task.assignee_user_id is not None:
                 ConstructionService._field_staff(db, task.assignee_user_id)
 
-        # 4. Check supervisor conflict (G13)
+        # 4. Strict Deadline Invariant from Annex & Check supervisor conflict (G13)
         start_d = data.start_date or date.today()
+        strict_end_date = data.expected_end_date
+        if annex.construction and annex.construction.estimated_end_date:
+            strict_end_date = annex.construction.estimated_end_date
+        elif annex.valid_to:
+            strict_end_date = annex.valid_to
+
         conflict_res = ConstructionService.check_staff_conflict(
-            db, data.supervisor_id, start_d, data.expected_end_date
+            db, data.supervisor_id, start_d, strict_end_date
         )
         if conflict_res.has_conflict:
             raise HTTPException(
@@ -344,8 +350,8 @@ class ConstructionService:
             annex_id=data.annex_id,
             plot_id=data.plot_id,
             supervisor_id=data.supervisor_id,
-            start_date=data.start_date or date.today(),
-            expected_end_date=data.expected_end_date,
+            start_date=start_d,
+            expected_end_date=strict_end_date,
             overall_progress=Decimal("0.00"),
             status="PENDING",
             notes=data.notes,
@@ -374,15 +380,38 @@ class ConstructionService:
                 )
                 db.add(task)
         else:
-            # Default 5 standard construction tasks (G11)
-            standard_tasks = [
+            # Check if annex has checklist_specifications configured
+            parsed_tasks = []
+            if annex.construction and annex.construction.checklist_specifications:
+                spec_str = annex.construction.checklist_specifications.strip()
+                if spec_str:
+                    try:
+                        items = json.loads(spec_str)
+                        if isinstance(items, list):
+                            for idx, it in enumerate(items, 1):
+                                if isinstance(it, dict):
+                                    t_name = (it.get("task_name") or "").strip()
+                                    specs = (it.get("specs") or "").strip()
+                                    full_name = f"{t_name} ({specs})" if specs else t_name
+                                    is_req = it.get("is_required", True)
+                                else:
+                                    full_name = str(it).strip()
+                                    is_req = True
+                                if full_name:
+                                    parsed_tasks.append((full_name[:150], is_req, idx))
+                    except Exception:
+                        lines = [line_item.strip() for line_item in spec_str.replace(";", "\n").split("\n") if line_item.strip()]
+                        for idx, line in enumerate(lines, 1):
+                            parsed_tasks.append((line[:150], True, idx))
+
+            task_list = parsed_tasks if parsed_tasks else [
                 ("Khảo sát & định vị khuôn viên ô mộ", True, 1),
                 ("Đào móng & đổ bê tông lót nền", True, 2),
                 ("Xây tường gạch & hố kim tĩnh (nếu có)", True, 3),
                 ("Ốp đá hoa cương & lắp đặt bia mộ", True, 4),
                 ("Dọn dẹp vệ sinh & nghiệm thu bàn giao", True, 5),
             ]
-            for t_name, req, s_order in standard_tasks:
+            for t_name, req, s_order in task_list:
                 task = ConstructionTask(
                     order_id=order.order_id,
                     task_name=t_name,
@@ -391,7 +420,7 @@ class ConstructionService:
                     is_required=req,
                     sort_order=s_order,
                     start_date=start_d,
-                    due_date=data.expected_end_date,
+                    due_date=strict_end_date,
                     status="TODO",
                 )
                 db.add(task)
@@ -730,6 +759,43 @@ class ConstructionService:
         db.commit()
         db.refresh(evidence)
         return ConstructionService._to_evidence_brief(evidence)
+
+    @staticmethod
+    def delete_task_evidence(
+        db: Session,
+        task_id: int,
+        evidence_id: int,
+        user_id: int,
+    ) -> None:
+        task = db.query(ConstructionTask).filter(ConstructionTask.task_id == task_id).first()
+        if not task:
+            raise HTTPException(status_code=404, detail="Công việc thi công không tồn tại")
+
+        if task.status == "DONE":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Đầu việc thi công này đã được xác nhận hoàn tất. Toàn bộ ảnh minh chứng đã bị khóa vĩnh viễn, không thể chỉnh sửa hoặc xóa.",
+            )
+
+        if task.order and task.order.status in ("COMPLETED", "CANCELLED"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Lệnh thi công đã kết thúc ({task.order.status}), không thể xóa minh chứng.",
+            )
+
+        evidence = (
+            db.query(ConstructionTaskEvidence)
+            .filter(
+                ConstructionTaskEvidence.evidence_id == evidence_id,
+                ConstructionTaskEvidence.task_id == task_id,
+            )
+            .first()
+        )
+        if not evidence:
+            raise HTTPException(status_code=404, detail="Ảnh minh chứng không tồn tại")
+
+        db.delete(evidence)
+        db.commit()
 
     @staticmethod
     def reorder_tasks(

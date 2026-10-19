@@ -1,17 +1,48 @@
 # Nhật Ký Thực Thi Dự Án (Project Execution State)
 
 **Dự án:** Hệ thống Quản lý Nghĩa trang Tư nhân  
-**Ngày cập nhật:** 18/10/2026
+**Ngày cập nhật:** 20/10/2026
 **Kế hoạch thực thi:** [`docs/EXECUTION_PLAN.md`](../EXECUTION_PLAN.md)
 
 ---
 
 ## 1. Trạng thái tổng quan
 
-- **Cập nhật sửa lỗi web 18/10/2026:** Đã sửa lỗi chọn ô trên sơ đồ, tải căn cứ công việc/khoản thu và báo cáo kế toán; đồng bộ phân quyền UI/API của Marketing, Kế toán, Quản trang; thêm shortcut vị trí từ công việc và cấu hình hostname ngrok. Báo cáo, giới hạn và hướng dẫn kiểm tra tiếp: [FIXES-20261018.md](../actor-business-audit/FIXES-20261018.md).
-  - Đã bổ sung 12 nhân viên demo (8 quản trang), 384 ô và 18 hàng; DB chính có 1.411 ô, trong đó 1.286 ô có tọa độ. Backup trước apply trên ổ D, không thay đổi 146 ô khóa, không sửa schema hoặc quyền Admin. Marketing/Quản trang cần đăng nhập lại sau cập nhật quyền.
-  - Kiểm chứng hiện tại: **67 tests passed, 6 deselected**, loại 5 file tích hợp phụ thuộc MinIO khỏi lượt chạy; Ruff phạm vi sửa đạt; web build đạt, lint 0 lỗi/38 cảnh báo. Trình duyệt kiểm desktop/tablet/mobile, cả chạm GIS/SVG và làm mới phiên. Đây không phải gate toàn bộ hệ thống hay nghiệm thu 39 UC.
-  - MinIO chưa hoạt động trong lượt kiểm cuối; thao tác mở Docker Desktop bị xét duyệt tự động từ chối (`blocked by policy`). Upload, biên lai, export và lifecycle đầy đủ cần kiểm lại khi dịch vụ chạy. Nền OSM lỗi kết nối; Leaflet có nền lưới dự phòng vẫn dùng đúng lat/long.
+- **Cập nhật chuẩn hóa nghiệp vụ Kim Tĩnh, Chiết khấu & Responsive di động 20/10/2026:**
+  - **Quy tắc Kim Tĩnh Bất Biến & Chuẩn hóa Phân loại Mộ:**
+    * Làm rõ và chuẩn hóa nguyên tắc cốt lõi: Khi phân lô, bán đất ban đầu không tồn tại khái niệm "Mộ Kim Tĩnh". Kim Tĩnh là một kỹ thuật thi công / hình thức an táng chỉ được xác lập khi lập Phụ lục An táng và khách hàng lựa chọn hình thức này; sau khi an táng thành công ô mộ mới bị gán cờ `is_kim_tinh = 1` và khóa vĩnh viễn vòng đời.
+    * Tạo & áp dụng migration Alembic `0013_fix_kim_tinh_data` (`0013_fix_kim_tinh_plot_types_and_unoccupied_flags.py`): Đổi tên các loại mộ và khu vực nhầm lẫn (`Mộ Đơn Kim Tĩnh` -> `Mộ Đơn Tiêu Chuẩn`, `Khu An Viên (Kim Tĩnh Cao Cấp)` -> `Khu An Viên (Đồi Phong Thủy)`).
+    * Reset triệt để `is_kim_tinh = 0` và `is_locked = 0` cho toàn bộ các ô mộ chưa an táng (`status != 'OCCUPIED'`).
+    * Tinh chỉnh trigger SQL Server `trg_plots_enforce_kim_tinh_immutability` và unit tests `test_plots.py` để đảm bảo tính bất biến chỉ kích hoạt khi ô mộ thực tế đã an táng (`status == 'OCCUPIED'` VÀ `is_kim_tinh == 1`).
+  - **Phục hồi & Chuẩn hóa Nghiệp vụ Chiết khấu Kế toán (Finance Discount):**
+    * Ràng buộc nghiệp vụ: Chiết khấu chỉ áp dụng khi khoản thu chưa phát sinh thanh toán lần nào (`total_paid_amount == 0`). Sau khi đã phát sinh thanh toán lần đầu, chiết khấu bị khóa vĩnh viễn mức backend và hiển thị huy hiệu `[Đã khóa]` trên giao diện.
+    * Sửa lỗi so sánh Decimal/String: Khắc phục trường hợp backend trả về chuỗi `"0.00"` từ Pydantic Decimal khiến phép so sánh strict `=== 0` của TypeScript hiểu nhầm là đã phát sinh thanh toán. Bổ sung các hàm helper Decimal-safe (`isReceivableUnpaid`, `canDiscountReceivable`, `isDiscountLocked`).
+    * Sửa lỗi validation HTML5 step trên form nhập: Thêm `step="any"`, đặt `min="0.01"` cho chiết khấu % và `min="1000"` cho chiết khấu số tiền (VNĐ) để triệt tiêu lỗi trình duyệt chặn submit với thông báo *"Giá trị hợp lệ gần nhất là..."*.
+    * Bổ sung thanh công cụ phím tắt chiết khấu nhanh (5%, 10%, 15%, 20%) và thẻ Live Preview tính toán số tiền giảm trừ và số tiền thực thu sau chiết khấu trước khi lưu.
+  - **Quy tắc Mã Tham Chiếu Thanh Toán theo Hình Thức Giao Dịch:**
+    * Tiền mặt (`CASH`): Không bắt buộc nhập mã tham chiếu giao dịch (tùy chọn).
+    * Chuyển khoản / Quét mã VietQR (`BANK_TRANSFER`, `VIET_QR`): Bắt buộc nhập mã tham chiếu (Mã giao dịch ngân hàng / FT code) để phục vụ đối soát kế toán và phòng chống trùng lặp.
+  - **Tối ưu Giao diện Responsive trên Thiết Bị Di Động:**
+    * Sửa thanh công cụ lọc và sắp xếp trong Quản lý Tài chính: Dùng `flex-wrap` và `min-w-[140px]` để dropdown "Sắp xếp theo hạn nộp" không bao giờ bị cắt/khuyết chữ trên màn hình điện thoại hẹp (<400px).
+    * Bổ sung khối chi tiết tài chính (Giá niêm yết, Tiền chiết khấu `- X đ`, Thực nộp) trên thẻ khoản thu di động (`md:hidden`).
+  - **Kiểm chứng chất lượng:** **103/103 backend tests passed 100%** (bao gồm sửa race condition outbox trong `test_jobs.py`), Ruff check app & tests clean (0 errors), Web build đạt (`✓ built in 290ms`), linter đạt 0 errors.
+- **Cập nhật cải tiến toàn diện nghiệp vụ & trải nghiệm người dùng 19/10/2026:**
+  - **Sửa lỗi thiếu slot & Cơ chế Auto-Healing:** Phát hiện và sửa 45 ô mộ trong DB thiếu slot (như ô 60 `M07-A1-99`), sinh 89 slot còn thiếu qua `backend/scripts/fix_missing_slots.py`. Triển khai cơ chế auto-healing trong `PlotService` (`get_plot`, `create_plot`) đảm bảo số slot luôn khớp `plot_types.default_slots` trong ACID transaction.
+  - **Cải tiến Wizard Mua Đất:**
+    * Bước 1 (Khách hàng): Tích hợp Modal `+ Thêm Khách Hàng Nhanh` (Họ tên, CCCD, SĐT, Địa chỉ, Ngày sinh, Email) tạo và tự động chọn ngay mà không cần thoát wizard.
+    * Bước 2 (Chọn ô mộ): Nâng cấp thành Bộ Quản Lý & Lọc Ô Mộ Nghĩa Trang (Tìm mã ô, Lọc theo Khu vực, Hàng, Loại mộ, Hướng phong thủy) kèm 2 chế độ hiển thị: "Thẻ Chi Tiết" (kèm kích thước, số huyệt, huy hiệu hướng) và "Sơ Đồ Dãy Mộ" (ma trận ô mộ trực quan theo hàng).
+  - **Bổ sung Phụ lục Chăm Sóc & Phụ Lục Thi Công:**
+    * Backend: Hoàn thiện schemas, service và routers `POST /{contract_id}/annexes/care`, `POST /{contract_id}/annexes/construction`.
+    * Frontend: Tích hợp đầy đủ nút tạo và modal riêng biệt cho Phụ lục An táng, Phụ lục Chăm sóc (chọn gói từ danh mục dịch vụ), Phụ lục Thi công (lịch trình, checklist kỹ thuật, chi phí). Hiển thị các thẻ phụ lục phân loại rõ ràng trong chi tiết hợp đồng.
+  - **Phân định ranh giới trách nhiệm (Role Separation):** Loại bỏ nút "Xác Nhận An Táng Thực Địa" thủ công khỏi màn hình tiếp thị; chỉ Quản trang (Caretaker) thực địa mới có thẩm quyền xác nhận khi hoàn tất lệnh công việc tại hiện trường.
+  - **Thư viện ảnh minh chứng thực địa (Media Evidence Gallery) & Khắc phục lỗi 401:**
+    * Xây dựng route `/api/v1/documents/public/{file_id}` với cache headers và fallback token, cho phép thẻ `<img src>` tải ảnh mượt mà không bị chặn 401 Bearer header.
+    * Xây dựng `MediaEvidenceGallery.tsx` với lưới mini thumbnail, giới hạn tối đa 5 tệp, Lightbox toàn màn hình hỗ trợ Zoom In/Out, Pan rê ảnh, Touch Pinch, Vuốt chạm chuyển ảnh trên di động. Tích hợp trong cả Thi công và Chăm sóc.
+  - **Cổng Tưởng Niệm & Tra Cứu Nhật Ký Mộ Phần Công Khai:**
+    * Hỗ trợ tìm kiếm theo Họ tên người mất, Mã người mất, hoặc Mã ô mộ.
+    * Modal "Hồ Sơ Mộ Phần & Nhật Ký Hoạt Động Thực Địa" hiển thị thông số ô mộ, chỉ dẫn lối đi, danh sách người an nghỉ, và dòng thời gian hoạt động niên đại (Lễ an táng, Thi công, Chăm sóc định kỳ) kèm thư viện ảnh minh chứng thực địa tương tác.
+  - **Bộ dữ liệu thực địa đa dạng (Synthetic Rich Demo Dataset):**
+    * Chạy thành công `backend/scripts/seed_rich_demo_data.py`, khởi tạo 4 vòng đời thực tế: Mộ Đơn Kim Tĩnh (`M07-A1-99`), Mộ Đôi Gia Đình (`DEMO-B-H01-01`), Khuôn Viên Gia Tộc 6 Huyệt (`DEMO-VIP-H01-01`), Mộ Cải Táng / Hoàn Thổ (`DEMO-A-H01-08`) kèm tệp PDF chứng tử/hợp đồng trên MinIO và ảnh thực địa 800x600 sắc nét.
 - **Milestone hiện tại:** Đợt Cải Tiến Giao Diện Theo Actor (Kế hoạch `02_PLAN_ANTIGRAVITY_CAI_THIEN_GIAO_DIEN.md`).
   - **UI-M00 (Baseline & Traceability):** Cần đối chiếu lại mã UC và actor theo review 16/10/2026; giữ baseline cũ để truy vết.
   - **Làm sạch UI triển khai thực tế (Section 5.4):** ĐẠT (Done) -> Gỡ bỏ toàn bộ test UI, demo accounts/passwords trên web & mobile, loại bỏ dev health grid và RBAC permissions tag cloud, làm sạch worker triggers/demo PDF, chuyển đổi giao diện công khai P01 sang cổng thông tin tôn nghiêm.
@@ -21,7 +52,7 @@
   - CSDL chính: `QL_NghiaTrang`
   - CSDL kiểm thử: `QL_NghiaTrang_Test` (bảo vệ tuyệt đối CSDL chính)
   - Đã backup an toàn: `backend/runtime/backups/sql/QL_NghiaTrang_M02_baseline.bak`
-  - Alembic Head: `0012_g17_report_exports` (đã áp dụng trên cả DB chính và DB test).
+  - Alembic Head: `0013_fix_kim_tinh_data` (đã áp dụng trên cả DB chính và DB test).
   - 37 bảng nghiệp vụ + 12 bảng mở rộng: `auth_sessions` (G01), `file_objects` (G02), `document_versions` (G02), `background_jobs` (G17), `outbox_events` (G17), `contract_templates` (G03), `plot_reservations` (G04), `plot_ownerships` (G05), `construction_task_evidences` (G11), `staff_unavailability` (G13), `idempotency_requests` (G15), `report_exports` (G17) + Mở rộng G12 trên `care_schedules` + Mở rộng G14/G16 trên `receivables`, `discount_records`, `invoices` + Sequence `seq_contract_number` (G09) + Sequence `seq_annex_number` (G10/G18/G20) + Sequence `seq_payment_number` (G15) + Sequence `seq_report_export_number` (G17).
   - Kết nối native qua pyodbc và `ODBC Driver 18 for SQL Server` hoạt động 100%.
 - **Hạ tầng lưu trữ:**

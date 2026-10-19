@@ -56,6 +56,8 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
 
   // Filter states
   const [selectedZoneId, setSelectedZoneId] = useState<number | null>(null);
+  const [selectedFilterRowId, setSelectedFilterRowId] = useState<number | null>(null);
+  const [modalZoneId, setModalZoneId] = useState<number | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [kimTinhFilter, setKimTinhFilter] = useState<boolean | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -182,6 +184,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
   const getFilteredPlots = () => {
     return plots.filter((p) => {
       if (selectedZoneId !== null && p.zone_id !== selectedZoneId) return false;
+      if (selectedFilterRowId !== null && p.row_id !== selectedFilterRowId) return false;
       if (statusFilter && p.status !== statusFilter) return false;
       if (kimTinhFilter !== null && p.is_kim_tinh !== kimTinhFilter) return false;
       if (searchQuery.trim()) {
@@ -480,7 +483,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
             latitude,
             longitude,
             notes,
-            is_kim_tinh: isKimTinh,
+            is_kim_tinh: false,
           }),
         });
         if (!res.ok) {
@@ -918,7 +921,10 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
           {/* Zone filter */}
           <select
             value={selectedZoneId || ''}
-            onChange={(e) => setSelectedZoneId(e.target.value ? Number(e.target.value) : null)}
+            onChange={(e) => {
+              setSelectedZoneId(e.target.value ? Number(e.target.value) : null);
+              setSelectedFilterRowId(null);
+            }}
             style={{
               padding: '8px 12px',
               borderRadius: '6px',
@@ -935,6 +941,31 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
               </option>
             ))}
           </select>
+
+          {/* Row filter (Cascading) */}
+          {selectedZoneId && (
+            <select
+              value={selectedFilterRowId || ''}
+              onChange={(e) => setSelectedFilterRowId(e.target.value ? Number(e.target.value) : null)}
+              style={{
+                padding: '8px 12px',
+                borderRadius: '6px',
+                border: '1px solid #CBD5E1',
+                fontSize: '13px',
+                backgroundColor: '#FFFFFF',
+                color: '#334155',
+              }}
+            >
+              <option value="">-- Tất cả hàng trong khu --</option>
+              {rows
+                .filter((r) => r.zone_id === selectedZoneId)
+                .map((r) => (
+                  <option key={r.row_id} value={r.row_id}>
+                    Dãy {r.row_code}
+                  </option>
+                ))}
+            </select>
+          )}
 
           {/* Status filter */}
           <select
@@ -2274,43 +2305,68 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
             )}
 
             <form onSubmit={handleSavePlot} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {plotModal.mode === 'create' ? (
-                <>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                      Mã số ô mộ *
-                    </label>
-                    <input
-                      type="text"
-                      name="plot_code"
-                      required
-                      placeholder="Ví dụ: A-H01-P01"
-                      style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }}
-                    />
-                  </div>
+              {plotModal.mode === 'create' ? (() => {
+                const activeModalZoneId = modalZoneId ?? (selectedZoneId || zones[0]?.zone_id || null);
+                const modalRows = rows.filter((r) => r.zone_id === activeModalZoneId);
 
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                      Thuộc Hàng Mộ (Row) *
-                    </label>
-                    <select
-                      name="row_id"
-                      required
-                      defaultValue={rows[0]?.row_id}
-                      style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px', backgroundColor: '#FFFFFF' }}
-                    >
-                      {rows.map((r) => {
-                        const z = zones.find((zItem) => zItem.zone_id === r.zone_id);
-                        return (
-                          <option key={r.row_id} value={r.row_id}>
-                            {z?.zone_code || 'Khu'} · {r.row_code}
+                return (
+                  <>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                        Mã số ô mộ *
+                      </label>
+                      <input
+                        type="text"
+                        name="plot_code"
+                        required
+                        placeholder="Ví dụ: A-H01-P01"
+                        style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                        1. Chọn Khu Vực Mộ (Zone) *
+                      </label>
+                      <select
+                        value={activeModalZoneId || ''}
+                        onChange={(e) => setModalZoneId(Number(e.target.value))}
+                        style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px', backgroundColor: '#FFFFFF' }}
+                        required
+                      >
+                        {zones.map((z) => (
+                          <option key={z.zone_id} value={z.zone_id}>
+                            Khu {z.zone_code} - {z.zone_name}
                           </option>
-                        );
-                      })}
-                    </select>
-                  </div>
-                </>
-              ) : null}
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                        2. Chọn Hàng / Dãy Mộ Khả Dụng (Row) *
+                      </label>
+                      <select
+                        key={activeModalZoneId}
+                        name="row_id"
+                        required
+                        defaultValue={modalRows[0]?.row_id}
+                        style={{ width: '100%', padding: '8px 12px', fontSize: '13px', border: '1px solid #CBD5E1', borderRadius: '6px', backgroundColor: '#FFFFFF' }}
+                      >
+                        {modalRows.length === 0 ? (
+                          <option value="">-- Khu này chưa có hàng mộ --</option>
+                        ) : (
+                          modalRows.map((r) => (
+                            <option key={r.row_id} value={r.row_id}>
+                              Dãy {r.row_code}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
+                  </>
+                );
+              })() : null}
 
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
@@ -2377,21 +2433,24 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                 </div>
               </div>
 
-              {/* Kim Tĩnh Invariant Checkbox */}
-              <div style={{ padding: '10px 12px', backgroundColor: '#FEF3C7', borderRadius: '8px', border: '1px solid #FDE68A' }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: 600, color: '#92400E', cursor: 'pointer' }}>
-                  <input
-                    type="checkbox"
-                    name="is_kim_tinh"
-                    defaultChecked={Boolean(plotModal.data?.is_kim_tinh)}
-                    disabled={Boolean(plotModal.data?.is_kim_tinh)}
-                  />
-                  <span>Kết cấu Kim Tĩnh kiên cố (Bất biến)</span>
-                </label>
-                <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#B45309', lineHeight: '1.4' }}>
-                  Sau khi an táng, mộ Kim tĩnh không được cải táng hoặc thay đổi kết cấu.
-                </p>
-              </div>
+              {/* Kim Tĩnh Invariant Information */}
+              {plotModal.mode === 'edit' && Boolean(plotModal.data?.is_kim_tinh) ? (
+                <div style={{ padding: '10px 12px', backgroundColor: '#FEF3C7', borderRadius: '8px', border: '1px solid #FDE68A' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', fontWeight: 600, color: '#92400E' }}>
+                    <Shield size={16} />
+                    <span>Mộ đã an táng kết cấu Kim Tĩnh (Bất biến)</span>
+                  </div>
+                  <p style={{ margin: '4px 0 0', fontSize: '11px', color: '#B45309', lineHeight: '1.4' }}>
+                    Theo quy tắc bất biến, ô mộ Kim Tĩnh đã an táng không thể mở khóa, cải táng hoặc thay đổi kết cấu.
+                  </p>
+                </div>
+              ) : (
+                <div style={{ padding: '10px 12px', backgroundColor: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                  <p style={{ margin: 0, fontSize: '11px', color: '#64748B', lineHeight: '1.4' }}>
+                    💡 <strong>Lưu ý nghiệp vụ:</strong> Ô mộ mới tạo là đất trống chưa bán. Cờ Kim Tĩnh chỉ được gán và khóa vĩnh viễn khi khách hàng ký và hoàn tất Phụ lục An táng có thi công Kim Tĩnh.
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>

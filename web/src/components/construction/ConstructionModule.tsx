@@ -11,7 +11,6 @@ import {
   RefreshCw,
   Search,
   UploadCloud,
-  FileCheck,
   Calendar,
   User as UserIcon,
   MapPin,
@@ -19,8 +18,8 @@ import {
   ArrowDown,
   ArrowUpDown,
   X,
-  ExternalLink,
   Trash2,
+  Lock,
 } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
 import { useNotificationModal } from '../../context/NotificationModalContext'
@@ -30,10 +29,15 @@ import type {
   StaffUnavailabilityResponse,
 } from '../../types/construction'
 import { Pagination, usePagination } from '../common/Pagination'
+import { MediaEvidenceGallery } from '../common/MediaEvidenceGallery'
 
 export const ConstructionModule: React.FC = () => {
   const { accessToken: token, user, hasPermission } = useAuth()
   const { confirm } = useNotificationModal()
+
+  const isAdmin = user?.roles
+    ? user.roles.some((r) => (typeof r === 'string' ? r : r.role_name).toUpperCase() === 'ADMIN')
+    : false
 
   // Main state
   const [orders, setOrders] = useState<ConstructionOrderResponse[]>([])
@@ -59,6 +63,11 @@ export const ConstructionModule: React.FC = () => {
   const [isEvidenceModalOpen, setIsEvidenceModalOpen] = useState<boolean>(false)
   const [evidenceTaskId, setEvidenceTaskId] = useState<number | null>(null)
   const [isUnavailModalOpen, setIsUnavailModalOpen] = useState<boolean>(false)
+
+  // Filters for Create Order modal (work basis selector)
+  const [basisSearch, setBasisSearch] = useState<string>('')
+  const [basisZoneFilter, setBasisZoneFilter] = useState<string>('ALL')
+  const [basisSort, setBasisSort] = useState<'due_asc' | 'due_desc'>('due_asc')
 
   // Form states - Create Order
   const [createForm, setCreateForm] = useState({
@@ -197,7 +206,50 @@ export const ConstructionModule: React.FC = () => {
   const handleCreateOrder = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!token) return
+    if (!createForm.annex_id) {
+      showNotification('Vui lòng chọn phụ lục công việc được bàn giao', true)
+      return
+    }
+    if (!createForm.supervisor_id) {
+      showNotification('Vui lòng chọn giám sát viên chịu trách nhiệm', true)
+      return
+    }
     try {
+      const selectedBasis = workBases.find((item) => item.annex_id === Number(createForm.annex_id))
+      let customTasksPayload = undefined
+      if (selectedBasis?.checklist_specifications) {
+        try {
+          const raw = JSON.parse(selectedBasis.checklist_specifications)
+          if (Array.isArray(raw) && raw.length > 0) {
+            customTasksPayload = raw
+              .filter((it: any) => (typeof it === 'object' ? it.task_name?.trim() : String(it).trim()))
+              .map((it: any, idx: number) => {
+                const name = (typeof it === 'object' ? it.task_name || '' : String(it)).trim()
+                const specs = (typeof it === 'object' ? it.specs || '' : '').trim()
+                const fullName = specs ? `${name} (${specs})` : name
+                return {
+                  task_name: fullName.slice(0, 150),
+                  is_required: typeof it === 'object' ? it.is_required ?? true : true,
+                  sort_order: idx + 1,
+                  start_date: createForm.start_date,
+                  due_date: createForm.expected_end_date,
+                }
+              })
+          }
+        } catch {
+          const lines = selectedBasis.checklist_specifications.replace(/;/g, '\n').split('\n').filter(Boolean)
+          if (lines.length > 0) {
+            customTasksPayload = lines.map((line: string, idx: number) => ({
+              task_name: line.trim().slice(0, 150),
+              is_required: true,
+              sort_order: idx + 1,
+              start_date: createForm.start_date,
+              due_date: createForm.expected_end_date,
+            }))
+          }
+        }
+      }
+
       const res = await apiFetch('/api/v1/construction/orders', {
         method: 'POST',
         headers: {
@@ -211,6 +263,7 @@ export const ConstructionModule: React.FC = () => {
           start_date: createForm.start_date,
           expected_end_date: createForm.expected_end_date,
           notes: createForm.notes,
+          custom_tasks: customTasksPayload && customTasksPayload.length > 0 ? customTasksPayload : undefined,
         }),
       })
       if (!res.ok) {
@@ -227,6 +280,15 @@ export const ConstructionModule: React.FC = () => {
 
   const handleCompleteTask = async (task: ConstructionTaskBrief) => {
     if (!token || !selectedOrder) return
+    const isConfirmed = await confirm({
+      title: 'Xác Nhận Hoàn Tất Hạng Mục',
+      message: `Bạn có chắc chắn muốn xác nhận hoàn tất hạng mục "${task.task_name}" không?\n\nLƯU Ý QUAN TRỌNG: Sau khi xác nhận hoàn tất, toàn bộ kết quả nghiệm thu và ảnh minh chứng đính kèm sẽ được KHÓA BẤT BIẾN, không thể chỉnh sửa, xóa hoặc tải ảnh mới.`,
+      confirmText: 'Xác Nhận Hoàn Tất & Khóa',
+      cancelText: 'Kiểm Tra Lại',
+      isDestructive: false,
+    })
+    if (!isConfirmed) return
+
     try {
       const res = await apiFetch(`/api/v1/construction/tasks/${task.task_id}/complete`, {
         method: 'POST',
@@ -254,6 +316,41 @@ export const ConstructionModule: React.FC = () => {
       fetchOrders()
     } catch (err: unknown) {
       showNotification(err instanceof Error ? err.message : 'Có lỗi xảy ra', true)
+    }
+  }
+
+  const handleDeleteEvidence = async (taskId: number, evidenceId: number) => {
+    if (!token || !selectedOrder) return
+    const isConfirmed = await confirm({
+      title: 'Xóa Ảnh Minh Chứng',
+      message: 'Bạn có chắc chắn muốn xóa ảnh minh chứng này khỏi công việc không? Thao tác này không thể hoàn tác.',
+      confirmText: 'Xóa Ảnh',
+      cancelText: 'Giữ Lại',
+      isDestructive: true,
+    })
+    if (!isConfirmed) return
+
+    try {
+      const res = await apiFetch(`/api/v1/construction/tasks/${taskId}/evidences/${evidenceId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}))
+        throw new Error(errJson.detail || 'Không thể xóa ảnh minh chứng')
+      }
+      showNotification('Đã xóa ảnh minh chứng thành công!')
+      // Refresh order detail
+      const updatedOrderRes = await apiFetch(`/api/v1/construction/orders/${selectedOrder.order_id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (updatedOrderRes.ok) {
+        const updated = await updatedOrderRes.json()
+        setSelectedOrder(updated)
+      }
+      fetchOrders()
+    } catch (err: unknown) {
+      showNotification(err instanceof Error ? err.message : 'Có lỗi khi xóa ảnh', true)
     }
   }
 
@@ -580,6 +677,50 @@ export const ConstructionModule: React.FC = () => {
     }
   }
 
+  // Pending work bases for Create Order modal (excluding annexes already assigned an order)
+  const existingOrderAnnexIds = new Set(orders.map((o) => o.annex_id).filter(Boolean))
+  const pendingWorkBases = workBases.filter((b) => !existingOrderAnnexIds.has(b.annex_id))
+  const availableZones = Array.from(new Set(pendingWorkBases.map((b) => b.zone_code).filter(Boolean))) as string[]
+
+  const filteredPendingBases = pendingWorkBases
+    .filter((b) => {
+      if (basisZoneFilter !== 'ALL' && b.zone_code !== basisZoneFilter) return false
+      if (basisSearch.trim()) {
+        const q = basisSearch.toLowerCase()
+        const matchCode = (b.annex_code || '').toLowerCase().includes(q)
+        const matchContract = (b.contract_code || '').toLowerCase().includes(q)
+        const matchPlot = (b.plot_code || '').toLowerCase().includes(q)
+        const matchCustomer = (b.customer_name || '').toLowerCase().includes(q)
+        if (!matchCode && !matchContract && !matchPlot && !matchCustomer) return false
+      }
+      return true
+    })
+    .sort((a, b) => {
+      const da = a.due_date || a.target_date || ''
+      const db = b.due_date || b.target_date || ''
+      if (basisSort === 'due_asc') return da.localeCompare(db)
+      return db.localeCompare(da)
+    })
+
+  const selectedBasis = workBases.find((b) => b.annex_id === Number(createForm.annex_id))
+
+  let parsedChecklist: Array<{ task_name: string; specs: string; is_required: boolean }> = []
+  if (selectedBasis?.checklist_specifications) {
+    try {
+      const raw = JSON.parse(selectedBasis.checklist_specifications)
+      if (Array.isArray(raw)) {
+        parsedChecklist = raw.map((it: any) => ({
+          task_name: typeof it === 'object' ? it.task_name || '' : String(it),
+          specs: typeof it === 'object' ? it.specs || '' : '',
+          is_required: typeof it === 'object' ? it.is_required ?? true : true,
+        }))
+      }
+    } catch {
+      const lines = selectedBasis.checklist_specifications.replace(/;/g, '\n').split('\n').filter(Boolean)
+      parsedChecklist = lines.map((l: string) => ({ task_name: l.trim(), specs: '', is_required: true }))
+    }
+  }
+
   // ---------------------------------------------------------------------------
   // Render
   // ---------------------------------------------------------------------------
@@ -711,7 +852,7 @@ export const ConstructionModule: React.FC = () => {
               }}
             >
               <Plus size={16} />
-              <span>+ Lập Lệnh Thi Công</span>
+              <span>Lập Lệnh Thi Công</span>
             </button>
           )}
         </div>
@@ -1127,7 +1268,7 @@ export const ConstructionModule: React.FC = () => {
                     cursor: 'pointer',
                   }}
                 >
-                  + Lập Lệnh Thi Công Mới
+                  Lập Lệnh Thi Công Mới
                 </button>
               )}
             </div>
@@ -1400,7 +1541,7 @@ export const ConstructionModule: React.FC = () => {
                 }}
               >
                 <Plus size={15} />
-                <span>+ Đăng Ký Lịch Bận</span>
+                <span>Đăng Ký Lịch Bận</span>
               </button>
             )}
           </div>
@@ -1431,7 +1572,7 @@ export const ConstructionModule: React.FC = () => {
                     <td style={{ padding: '12px 14px', fontSize: '13px', color: '#475569' }}>{u.end_date}</td>
                     <td style={{ padding: '12px 14px', fontSize: '13px', color: '#64748B' }}>{u.reason || '—'}</td>
                     <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-                      {hasPermission('construction:write') && (
+                      {isAdmin && (
                         <button
                           onClick={() => handleDeleteUnavailability(u.unavailability_id)}
                           style={{
@@ -1706,7 +1847,7 @@ export const ConstructionModule: React.FC = () => {
                                   }}
                                 >
                                   <UploadCloud size={13} />
-                                  <span>+ Đính kèm ảnh</span>
+                                  <span>Đính kèm ảnh</span>
                                 </button>
                               )}
 
@@ -1738,43 +1879,23 @@ export const ConstructionModule: React.FC = () => {
 
                         {/* Evidences Attached to this Task */}
                         {task.evidences && task.evidences.length > 0 && (
-                          <div
-                            style={{
-                              marginTop: '10px',
-                              paddingTop: '8px',
-                              borderTop: '1px dashed #E2E8F0',
-                              display: 'flex',
-                              flexWrap: 'wrap',
-                              gap: '8px',
-                            }}
-                          >
-                            <span style={{ fontSize: '11px', fontWeight: 600, color: '#64748B', alignSelf: 'center' }}>
-                              Hình ảnh minh chứng ({task.evidences.length}):
-                            </span>
-                            {task.evidences.map((ev) => (
-                              <a
-                                key={ev.evidence_id}
-                                href={ev.download_url || '#'}
-                                target="_blank"
-                                rel="noreferrer"
-                                style={{
-                                  fontSize: '11px',
-                                  color: '#2563EB',
-                                  backgroundColor: '#EFF6FF',
-                                  padding: '3px 8px',
-                                  borderRadius: '4px',
-                                  border: '1px solid #BFDBFE',
-                                  textDecoration: 'none',
-                                  display: 'inline-flex',
-                                  alignItems: 'center',
-                                  gap: '4px',
-                                }}
-                              >
-                                <FileCheck size={12} />
-                                <span>{ev.caption || ev.file_name || `Ảnh #${ev.evidence_id}`}</span>
-                                <ExternalLink size={10} />
-                              </a>
-                            ))}
+                          <div style={{ marginTop: '10px', paddingTop: '8px', borderTop: '1px dashed #E2E8F0' }}>
+                            <MediaEvidenceGallery
+                              items={task.evidences.map((ev) => ({
+                                id: ev.evidence_id,
+                                file_id: ev.file_id,
+                                caption: ev.caption,
+                                file_name: ev.file_name,
+                                uploaded_at: ev.uploaded_at,
+                                uploader_name: ev.uploader_name,
+                                download_url: ev.download_url,
+                              }))}
+                              maxFiles={5}
+                              compact={true}
+                              title="Hình ảnh minh chứng thực địa"
+                              canDelete={task.status !== 'DONE' && selectedOrder.status !== 'COMPLETED' && selectedOrder.status !== 'CANCELLED' && hasPermission('construction:write')}
+                              onDelete={(item) => handleDeleteEvidence(task.task_id, Number(item.id))}
+                            />
                           </div>
                         )}
                       </div>
@@ -1873,8 +1994,11 @@ export const ConstructionModule: React.FC = () => {
             style={{
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',
-              maxWidth: '560px',
+              maxWidth: '840px',
               width: '100%',
+              maxHeight: '92vh',
+              display: 'flex',
+              flexDirection: 'column',
               overflow: 'hidden',
               boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
             }}
@@ -1889,9 +2013,12 @@ export const ConstructionModule: React.FC = () => {
                 backgroundColor: '#F8FAFC',
               }}
             >
-              <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: 'var(--brand-secondary)' }}>
-                Lập Lệnh Thi Công Mới
-              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Hammer size={18} color="var(--brand-primary)" />
+                <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: 'var(--brand-secondary)' }}>
+                  Lập Lệnh Thi Công Mới
+                </h3>
+              </div>
               <button
                 onClick={() => setIsCreateModalOpen(false)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}
@@ -1900,7 +2027,7 @@ export const ConstructionModule: React.FC = () => {
               </button>
             </div>
 
-            <form onSubmit={handleCreateOrder} style={{ padding: '20px' }}>
+            <form onSubmit={handleCreateOrder} style={{ padding: '20px', overflowY: 'auto', flex: 1 }}>
               {/* Conflict Warning Banner (G13) */}
               {conflictWarning && (
                 <div
@@ -1925,107 +2052,392 @@ export const ConstructionModule: React.FC = () => {
                 </div>
               )}
 
-              <div className="responsive-form-row">
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                    Công việc được bàn giao *
+              {/* 1. Handed-over Work Bases Selection Section */}
+              <div style={{ marginBottom: '18px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B' }}>
+                    1. Chọn Phụ Lục Hợp Đồng Được Bàn Giao (*)
                   </label>
-                  <select required disabled={basesLoading} value={createForm.annex_id} onChange={e => {
-                    const basis = workBases.find(item => item.annex_id === Number(e.target.value))
-                    setCreateForm({ ...createForm, annex_id: e.target.value, plot_id: basis?.plot_id?.toString() || '' })
-                  }} style={{ width: '100%', minHeight: '48px' }}>
-                    <option value="">{basesLoading ? 'Đang tải công việc…' : 'Chọn công việc đã bàn giao'}</option>
-                    {workBases.map(item => <option key={item.annex_id} value={item.annex_id}>{item.annex_code} · {item.plot_code}</option>)}
-                  </select>
-                  {basisError && <p role="alert">{basisError} <button type="button" onClick={() => setBasisReload(n => n + 1)}>Thử lại</button></p>}
-                  {!basesLoading && !basisError && !workBases.length && <p>Chưa có công việc được bàn giao. <button type="button" onClick={() => setBasisReload(n => n + 1)}>Tải lại</button></p>}
-
+                  <span style={{ fontSize: '11px', color: '#64748B' }}>
+                    {pendingWorkBases.length} phụ lục chờ lập lệnh thi công
+                  </span>
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                    Ô mộ
-                  </label>
-                  <input readOnly value={workBases.find(item => item.annex_id === Number(createForm.annex_id))?.plot_code || ''} placeholder="Chọn công việc để xem ô mộ" style={{ width: '100%', minHeight: '48px' }} />
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                  Giám Sát Viên Chịu Trách Nhiệm *
-                </label>
-                <select
-                  required
-                  value={createForm.supervisor_id}
-                  onChange={(e) => setCreateForm({ ...createForm, supervisor_id: e.target.value })}
-                  style={{ width: '100%', padding: '8px 10px', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#FFFFFF' }}
+                {/* Filter & Search Bar */}
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: '8px',
+                    marginBottom: '10px',
+                    flexWrap: 'wrap',
+                    backgroundColor: '#F8FAFC',
+                    padding: '8px',
+                    borderRadius: '6px',
+                    border: '1px solid #E2E8F0',
+                  }}
                 >
-                  <option value="">-- Chọn giám sát viên --</option>
-                  {staffList.map((s) => (
-                    <option key={s.user_id} value={s.user_id}>
-                      {s.full_name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                  <div style={{ flex: '1 1 200px', display: 'flex', alignItems: 'center', gap: '6px', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '5px', padding: '4px 8px' }}>
+                    <Search size={14} color="#94A3B8" />
+                    <input
+                      type="text"
+                      placeholder="Tìm mã phụ lục, hợp đồng, khách hàng, ô mộ..."
+                      value={basisSearch}
+                      onChange={(e) => setBasisSearch(e.target.value)}
+                      style={{ border: 'none', outline: 'none', width: '100%', fontSize: '12px' }}
+                    />
+                  </div>
 
-              <div className="responsive-form-row">
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                    Ngày Bắt Đầu Dự Kiến
-                  </label>
-                  <input
-                    type="date"
-                    value={createForm.start_date}
-                    onChange={(e) => setCreateForm({ ...createForm, start_date: e.target.value })}
-                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px' }}
-                  />
+                  <select
+                    value={basisZoneFilter}
+                    onChange={(e) => setBasisZoneFilter(e.target.value)}
+                    style={{ padding: '5px 8px', fontSize: '12px', border: '1px solid #CBD5E1', borderRadius: '5px', backgroundColor: '#FFFFFF' }}
+                  >
+                    <option value="ALL">Tất cả khu vực</option>
+                    {availableZones.map((z) => (
+                      <option key={z} value={z}>
+                        Khu {z}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={basisSort}
+                    onChange={(e) => setBasisSort(e.target.value as 'due_asc' | 'due_desc')}
+                    style={{ padding: '5px 8px', fontSize: '12px', border: '1px solid #CBD5E1', borderRadius: '5px', backgroundColor: '#FFFFFF' }}
+                  >
+                    <option value="due_asc">Hạn chót: Gần nhất trước</option>
+                    <option value="due_desc">Hạn chót: Xa nhất trước</option>
+                  </select>
                 </div>
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                    Hạn Chót Hoàn Thành *
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={createForm.expected_end_date}
-                    onChange={(e) => setCreateForm({ ...createForm, expected_end_date: e.target.value })}
-                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px' }}
-                  />
+                {/* Work Bases Table / List */}
+                <div
+                  style={{
+                    border: '1px solid #CBD5E1',
+                    borderRadius: '8px',
+                    maxHeight: '210px',
+                    overflowY: 'auto',
+                    backgroundColor: '#FFFFFF',
+                  }}
+                >
+                  {basesLoading ? (
+                    <div style={{ padding: '24px', textAlign: 'center', color: '#64748B', fontSize: '13px' }}>
+                      <RefreshCw size={18} className="animate-spin" style={{ margin: '0 auto 8px auto' }} />
+                      Đang tải danh sách phụ lục thi công được bàn giao...
+                    </div>
+                  ) : basisError ? (
+                    <div style={{ padding: '16px', textAlign: 'center', color: '#DC2626', fontSize: '13px' }}>
+                      {basisError}{' '}
+                      <button
+                        type="button"
+                        onClick={() => setBasisReload((n) => n + 1)}
+                        style={{ textDecoration: 'underline', color: '#2563EB', background: 'none', border: 'none', cursor: 'pointer' }}
+                      >
+                        Thử lại
+                      </button>
+                    </div>
+                  ) : filteredPendingBases.length === 0 ? (
+                    <div style={{ padding: '24px', textAlign: 'center', color: '#64748B', fontSize: '13px' }}>
+                      {pendingWorkBases.length === 0
+                        ? 'Tất cả công việc đã bàn giao đã được lập lệnh thi công.'
+                        : 'Không tìm thấy phụ lục nào khớp với bộ lọc tìm kiếm.'}
+                    </div>
+                  ) : (
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                      <thead>
+                        <tr style={{ backgroundColor: '#F1F5F9', borderBottom: '1px solid #CBD5E1', textAlign: 'left', position: 'sticky', top: 0, zIndex: 1 }}>
+                          <th style={{ padding: '8px 10px', width: '32px', textAlign: 'center' }}></th>
+                          <th style={{ padding: '8px 10px', fontWeight: 600, color: '#475569' }}>MÃ PHỤ LỤC / LOẠI</th>
+                          <th style={{ padding: '8px 10px', fontWeight: 600, color: '#475569' }}>HỢP ĐỒNG / KHÁCH HÀNG</th>
+                          <th style={{ padding: '8px 10px', fontWeight: 600, color: '#475569' }}>Ô MỘ &amp; KHU</th>
+                          <th style={{ padding: '8px 10px', fontWeight: 600, color: '#475569' }}>HẠN HOÀN THÀNH</th>
+                          <th style={{ padding: '8px 10px', fontWeight: 600, color: '#475569' }}>QUY CÁCH</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredPendingBases.map((b) => {
+                          const isSelected = createForm.annex_id === String(b.annex_id)
+                          return (
+                            <tr
+                              key={b.annex_id}
+                              onClick={() => {
+                                setCreateForm({
+                                  ...createForm,
+                                  annex_id: String(b.annex_id),
+                                  plot_id: b.plot_id?.toString() || '',
+                                  expected_end_date: b.due_date || b.target_date || createForm.expected_end_date,
+                                })
+                              }}
+                              style={{
+                                cursor: 'pointer',
+                                borderBottom: '1px solid #F1F5F9',
+                                backgroundColor: isSelected ? '#EFF6FF' : '#FFFFFF',
+                                transition: 'background-color 0.15s ease',
+                              }}
+                            >
+                              <td style={{ padding: '8px 10px', textAlign: 'center' }}>
+                                <input
+                                  type="radio"
+                                  name="selected_annex"
+                                  checked={isSelected}
+                                  onChange={() => {}}
+                                  style={{ cursor: 'pointer' }}
+                                />
+                              </td>
+                              <td style={{ padding: '8px 10px', fontWeight: 600, color: isSelected ? '#1D4ED8' : '#1E293B' }}>
+                                <div>{b.annex_code}</div>
+                                <span
+                                  style={{
+                                    fontSize: '10px',
+                                    fontWeight: 600,
+                                    padding: '1px 5px',
+                                    borderRadius: '4px',
+                                    backgroundColor: b.annex_type === 'CONSTRUCTION' ? '#FEF3C7' : '#F1F5F9',
+                                    color: b.annex_type === 'CONSTRUCTION' ? '#92400E' : '#475569',
+                                  }}
+                                >
+                                  {b.annex_type === 'CONSTRUCTION' ? 'XÂY DỰNG' : b.annex_type}
+                                </span>
+                              </td>
+                              <td style={{ padding: '8px 10px' }}>
+                                <div style={{ fontWeight: 600, color: '#334155' }}>{b.contract_code}</div>
+                                <div style={{ color: '#64748B', fontSize: '11px' }}>{b.customer_name || 'Khách hàng'}</div>
+                              </td>
+                              <td style={{ padding: '8px 10px' }}>
+                                <span style={{ fontWeight: 600, color: '#0F172A' }}>{b.plot_code || '—'}</span>
+                                {b.zone_code && (
+                                  <span style={{ marginLeft: '4px', color: '#64748B', fontSize: '11px' }}>
+                                    (Khu {b.zone_code})
+                                  </span>
+                                )}
+                              </td>
+                              <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>
+                                <span style={{ fontWeight: 600, color: '#DC2626' }}>{b.due_date || b.target_date || '—'}</span>
+                              </td>
+                              <td style={{ padding: '8px 10px', color: '#64748B', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {b.checklist_specifications ? 'Có checklist kỹ thuật' : b.service_summary || 'Theo quy chuẩn'}
+                              </td>
+                            </tr>
+                          )
+                        })}
+                      </tbody>
+                    </table>
+                  )}
                 </div>
               </div>
 
+              {/* 2. Details & Assignment Section */}
+              <div style={{ marginBottom: '18px', padding: '14px', backgroundColor: '#F8FAFC', borderRadius: '8px', border: '1px solid #E2E8F0' }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B', marginBottom: '12px' }}>
+                  2. Thông Tin Phân Công &amp; Thời Gian Thực Hiện
+                </div>
+
+                <div className="responsive-form-row" style={{ marginBottom: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                      Ô Mộ Chỉ Định
+                    </label>
+                    <input
+                      readOnly
+                      value={
+                        selectedBasis
+                          ? `${selectedBasis.plot_code || 'Chưa gắn ô mộ'} (Khu ${selectedBasis.zone_code || 'N/A'})`
+                          : 'Vui lòng chọn phụ lục ở trên'
+                      }
+                      style={{
+                        width: '100%',
+                        padding: '8px 10px',
+                        border: '1px solid #CBD5E1',
+                        borderRadius: '6px',
+                        fontSize: '13px',
+                        backgroundColor: '#F1F5F9',
+                        color: selectedBasis ? '#0F172A' : '#94A3B8',
+                        fontWeight: selectedBasis ? 600 : 400,
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                      Giám Sát Viên Chịu Trách Nhiệm *
+                    </label>
+                    <select
+                      required
+                      value={createForm.supervisor_id}
+                      onChange={(e) => setCreateForm({ ...createForm, supervisor_id: e.target.value })}
+                      style={{ width: '100%', padding: '8px 10px', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#FFFFFF' }}
+                    >
+                      <option value="">-- Chọn giám sát viên --</option>
+                      {staffList.map((s) => (
+                        <option key={s.user_id} value={s.user_id}>
+                          {s.full_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="responsive-form-row">
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                      Ngày Bắt Đầu Dự Kiến
+                    </label>
+                    <input
+                      type="date"
+                      value={createForm.start_date}
+                      onChange={(e) => setCreateForm({ ...createForm, start_date: e.target.value })}
+                      style={{ width: '100%', padding: '8px 10px', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#FFFFFF' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                      Hạn Chót Hoàn Thành (*)
+                    </label>
+                    <div style={{ position: 'relative' }}>
+                      <input
+                        type="date"
+                        required
+                        readOnly
+                        value={createForm.expected_end_date}
+                        style={{
+                          width: '100%',
+                          padding: '8px 10px 8px 32px',
+                          border: '1px solid #CBD5E1',
+                          borderRadius: '6px',
+                          fontSize: '13px',
+                          backgroundColor: '#F1F5F9',
+                          color: '#0F172A',
+                          fontWeight: 600,
+                          cursor: 'not-allowed',
+                        }}
+                      />
+                      <Lock size={14} color="#059669" style={{ position: 'absolute', left: '10px', top: '11px' }} />
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#059669', fontWeight: 500, marginTop: '4px' }}>
+                      🔒 Khóa chặt theo cam kết trong phụ lục hợp đồng ({createForm.expected_end_date})
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 3. Generated Tasks Preview */}
+              <div style={{ marginBottom: '18px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <label style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B' }}>
+                    3. Danh Sách Hạng Mục Nghiệm Thu (Khởi Tạo Tự Động)
+                  </label>
+                  {parsedChecklist.length > 0 ? (
+                    <span style={{ fontSize: '11px', fontWeight: 600, color: '#059669' }}>
+                      ✓ Kế thừa {parsedChecklist.length} hạng mục từ quy cách kỹ thuật phụ lục
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '11px', color: '#64748B' }}>
+                      Áp dụng 5 hạng mục tiêu chuẩn
+                    </span>
+                  )}
+                </div>
+
+                <div
+                  style={{
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '8px',
+                    backgroundColor: '#F8FAFC',
+                    padding: '10px 14px',
+                    maxHeight: '160px',
+                    overflowY: 'auto',
+                  }}
+                >
+                  {parsedChecklist.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      {parsedChecklist.map((task, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            padding: '6px 10px',
+                            backgroundColor: '#FFFFFF',
+                            borderRadius: '5px',
+                            border: '1px solid #E2E8F0',
+                            fontSize: '12px',
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontWeight: 700, color: '#64748B' }}>#{idx + 1}</span>
+                            <span style={{ fontWeight: 600, color: '#1E293B' }}>{task.task_name}</span>
+                            {task.specs && <span style={{ color: '#64748B', fontStyle: 'italic' }}>({task.specs})</span>}
+                          </div>
+                          <span
+                            style={{
+                              fontSize: '10px',
+                              fontWeight: 600,
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              backgroundColor: task.is_required ? '#FEF2F2' : '#F1F5F9',
+                              color: task.is_required ? '#DC2626' : '#64748B',
+                            }}
+                          >
+                            {task.is_required ? 'Bắt Buộc' : 'Tùy Chọn'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: '12px', color: '#64748B', lineHeight: '1.6' }}>
+                      <div>1. Khảo sát hiện trường &amp; định vị khuôn viên ô mộ (Bắt buộc)</div>
+                      <div>2. Đào móng &amp; đổ bê tông lót nền (Bắt buộc)</div>
+                      <div>3. Xây tường gạch &amp; hố kim tĩnh nếu có (Bắt buộc)</div>
+                      <div>4. Ốp đá hoa cương granite &amp; lắp đặt bia mộ (Bắt buộc)</div>
+                      <div>5. Dọn dẹp vệ sinh &amp; nghiệm thu bàn giao (Bắt buộc)</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 4. Notes */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                  Ghi Chú Yêu Cầu Thi Công
+                  4. Ghi Chú Yêu Cầu Thi Công (Nếu Có)
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="Yêu cầu riêng về vật liệu đá, phong thủy, hướng đặt..."
+                  placeholder="Yêu cầu riêng về vật liệu đá, phong thủy, hướng đặt, lưu ý đặc biệt..."
                   value={createForm.notes}
                   onChange={(e) => setCreateForm({ ...createForm, notes: e.target.value })}
                   style={{ width: '100%', padding: '8px 10px', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px', resize: 'none' }}
                 />
               </div>
 
-              <div style={{ backgroundColor: '#F8FAFC', padding: '10px 14px', borderRadius: '6px', border: '1px solid #E2E8F0', marginBottom: '16px', fontSize: '11px', color: '#64748B' }}>
-                ✓ Hệ thống sẽ tự động khởi tạo 5 công việc chuẩn (Khảo sát, Móng lót, Hố kim tĩnh, Ốp đá hoa cương, Nghiệm thu bàn giao).
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              {/* Modal Actions */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', paddingTop: '10px', borderTop: '1px solid #E2E8F0' }}>
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  style={{ padding: '8px 14px', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}
+                  style={{ padding: '8px 16px', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}
                 >
                   Hủy Bỏ
                 </button>
                 <button
                   type="submit"
-                  style={{ padding: '8px 18px', backgroundColor: 'var(--brand-primary)', border: 'none', borderRadius: '6px', color: '#FFFFFF', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
+                  disabled={!createForm.annex_id || !createForm.supervisor_id}
+                  style={{
+                    padding: '8px 20px',
+                    backgroundColor: !createForm.annex_id || !createForm.supervisor_id ? '#94A3B8' : 'var(--brand-primary)',
+                    border: 'none',
+                    borderRadius: '6px',
+                    color: '#FFFFFF',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: !createForm.annex_id || !createForm.supervisor_id ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
                 >
-                  Khởi Tạo Lệnh
+                  <Hammer size={15} />
+                  <span>Khởi Tạo Lệnh Thi Công</span>
                 </button>
               </div>
             </form>

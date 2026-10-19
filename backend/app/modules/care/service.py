@@ -305,6 +305,37 @@ class CareService:
         return evidence
 
     @staticmethod
+    def delete_media_evidence(
+        db: Session,
+        schedule_id: int,
+        evidence_id: int,
+        user_id: int,
+    ) -> None:
+        schedule = db.query(CareSchedule).filter(CareSchedule.schedule_id == schedule_id).first()
+        if not schedule:
+            raise HTTPException(status_code=404, detail="Không tìm thấy lịch chăm sóc")
+
+        if schedule.status == "CLOSED":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Ca chăm sóc này đã được xác nhận hoàn tất/đóng ca. Toàn bộ ảnh minh chứng đã bị khóa vĩnh viễn, không thể chỉnh sửa hoặc xóa.",
+            )
+
+        evidence = (
+            db.query(CareMediaEvidence)
+            .filter(
+                CareMediaEvidence.evidence_id == evidence_id,
+                CareMediaEvidence.schedule_id == schedule_id,
+            )
+            .first()
+        )
+        if not evidence:
+            raise HTTPException(status_code=404, detail="Ảnh minh chứng không tồn tại")
+
+        db.delete(evidence)
+        db.commit()
+
+    @staticmethod
     def close_schedule(
         db: Session,
         schedule_id: int,

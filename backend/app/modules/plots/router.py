@@ -14,6 +14,7 @@ from app.modules.plots.schemas import (
     PlotReservationResponse,
     PlotReserveRequest,
     PlotStatsResponse,
+    PlotTimelineResponse,
     PlotTypeCreate,
     PlotTypeResponse,
     PlotTypeUpdate,
@@ -225,7 +226,7 @@ def get_plots(
     is_kim_tinh: Optional[bool] = Query(None, description="Lọc mộ kết cấu Kim Tĩnh"),
     search: Optional[str] = Query(None, description="Tìm kiếm theo mã ô mộ"),
     skip: int = Query(0, ge=0),
-    limit: int = Query(200, ge=1, le=1000),
+    limit: int = Query(200, ge=1, le=5000),
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("plots", "read")),
 ):
@@ -332,3 +333,19 @@ def cancel_reservation(
 ):
     """Hủy lệnh giữ chỗ ô đất và trả ô về trạng thái EMPTY_UNSOLD."""
     return PlotService.cancel_reservation(db, plot_id, current_user.user_id)
+
+
+@router.get(
+    "/public/{plot_identifier}/timeline",
+    response_model=PlotTimelineResponse,
+    summary="Cổng tra cứu công khai: Dòng thời gian hoạt động & minh chứng thực địa ô mộ",
+)
+def get_public_plot_timeline(
+    plot_identifier: str,
+    db: Session = Depends(get_db),
+):
+    """
+    Tra cứu chi tiết ô mộ công khai không yêu cầu token:
+    Bao gồm thông số ô mộ, danh sách người quá cố, dòng thời gian an táng, thi công, chăm sóc kèm tệp ảnh minh chứng.
+    """
+    return PlotService.get_plot_timeline(db, plot_identifier)

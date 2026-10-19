@@ -110,7 +110,20 @@ class DocumentService:
                 detail="Tệp tài liệu không tồn tại hoặc đã bị xóa.",
             )
 
-        if user:
+        if not user:
+            from app.modules.finance.models import Invoice
+            from app.modules.reports.models import ReportExport
+
+            is_sensitive = (
+                db.query(Invoice).filter(Invoice.file_id == file_id).first() is not None
+                or db.query(ReportExport).filter(ReportExport.file_id == file_id).first() is not None
+            )
+            if is_sensitive:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Yêu cầu xác thực tài khoản để truy cập chứng từ tài chính hoặc báo cáo.",
+                )
+        else:
             is_admin = any(r.role_name.upper() == "ADMIN" for r in (user.roles or []))
             user_roles = [r.role_name.upper() for r in (user.roles or [])]
             if not is_admin:

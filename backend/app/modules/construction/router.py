@@ -1,7 +1,7 @@
 from datetime import date
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
@@ -63,13 +63,19 @@ def create_staff_unavailability(
 @router.delete(
     "/unavailability/{unavailability_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    summary="Xóa lịch bận/nghỉ phép của nhân viên (G13)",
+    summary="Xóa lịch bận/nghỉ phép của nhân viên (G13) - Chỉ Admin",
 )
 def delete_staff_unavailability(
     unavailability_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_permission("construction", "write")),
 ):
+    user_roles = [r.role_name.upper() for r in (current_user.roles or [])]
+    if "ADMIN" not in user_roles:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Chỉ có Quản trị viên (Admin) mới có quyền xóa lịch nghỉ của nhân viên.",
+        )
     ConstructionService.delete_unavailability(db=db, unavailability_id=unavailability_id)
     return None
 
@@ -271,3 +277,23 @@ def add_task_evidence(
         caption=data.caption,
         uploader_user_id=current_user.user_id,
     )
+
+
+@router.delete(
+    "/tasks/{task_id}/evidences/{evidence_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Xóa ảnh minh chứng đã tải lên khi đầu việc chưa hoàn tất (G11)",
+)
+def delete_task_evidence(
+    task_id: int,
+    evidence_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("construction", "write")),
+):
+    ConstructionService.delete_task_evidence(
+        db=db,
+        task_id=task_id,
+        evidence_id=evidence_id,
+        user_id=current_user.user_id,
+    )
+    return None

@@ -35,6 +35,8 @@ export interface WorkBasisItem {
   is_burial_confirmed: boolean
   service_summary: string
   notes: string | null
+  checklist_specifications?: string | null
+  customer_name?: string | null
 }
 
 export const WorkBasisView: React.FC = () => {

@@ -1,11 +1,24 @@
 from datetime import datetime, timezone
+from typing import Optional
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    Response,
+    Security,
+    UploadFile,
+    status,
+)
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
+from app.core.security import decode_access_token
 from app.db.session import get_db
-from app.modules.auth.dependencies import get_current_user
+from app.modules.auth.dependencies import get_current_user, security_bearer
 from app.modules.auth.models import User
 from app.modules.documents.schemas import (
     DocumentVersionResponse,
@@ -16,6 +29,27 @@ from app.modules.documents.service import DocumentService
 from app.services.pdf_service import PDFService
 
 router = APIRouter(prefix="/documents", tags=["Documents & Files"])
+
+
+def _resolve_user_optional(
+    credentials: Optional[HTTPAuthorizationCredentials] = Security(security_bearer),
+    token: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+) -> Optional[User]:
+    raw_token = (credentials.credentials if credentials else None) or token
+    if not raw_token:
+        return None
+    try:
+        payload = decode_access_token(raw_token)
+        user_id_str = payload.get("sub")
+        token_auth_version = payload.get("auth_version")
+        if user_id_str and token_auth_version is not None:
+            user = db.query(User).filter(User.user_id == int(user_id_str)).first()
+            if user and user.is_active and user.auth_version == token_auth_version:
+                return user
+    except Exception:
+        pass
+    return None
 
 
 @router.post(
@@ -55,7 +89,7 @@ def download_document(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Response:
-    """Tải xuống tệp chứng từ có xác thực người dùng."""
+    """Tải xuống tệp chứng từ (chỉ dành cho người dùng đã xác thực)."""
     file_obj, content = DocumentService.get_file(db, file_id, user=current_user)
     safe_ascii = file_obj.file_name.encode("ascii", "ignore").decode() or "document"
     encoded_name = quote(file_obj.file_name)
@@ -78,7 +112,7 @@ def preview_document(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ) -> Response:
-    """Xem trực tiếp tệp PDF hoặc hình ảnh trên trình duyệt."""
+    """Xem trực tiếp tệp PDF hoặc hình ảnh trên trình duyệt (chỉ dành cho người dùng đã xác thực)."""
     file_obj, content = DocumentService.get_file(db, file_id, user=current_user)
     safe_ascii = file_obj.file_name.encode("ascii", "ignore").decode() or "document"
     encoded_name = quote(file_obj.file_name)
@@ -88,6 +122,30 @@ def preview_document(
         headers={
             "Content-Disposition": f"inline; filename=\"{safe_ascii}\"; filename*=UTF-8''{encoded_name}",
             "X-SHA256": file_obj.sha256_hash,
+            "Cache-Control": "public, max-age=3600",
+        },
+    )
+
+
+@router.get(
+    "/public/{file_id}",
+    summary="Xem trực tiếp tệp media minh chứng công khai",
+)
+def get_public_media(
+    file_id: str,
+    db: Session = Depends(get_db),
+) -> Response:
+    """Cho phép tải hoặc xem trực tiếp các tệp ảnh minh chứng thi công/chăm sóc phục vụ cổng thông tin công khai."""
+    file_obj, content = DocumentService.get_file(db, file_id, user=None)
+    safe_ascii = file_obj.file_name.encode("ascii", "ignore").decode() or "media"
+    encoded_name = quote(file_obj.file_name)
+    return Response(
+        content=content,
+        media_type=file_obj.mime_type,
+        headers={
+            "Content-Disposition": f"inline; filename=\"{safe_ascii}\"; filename*=UTF-8''{encoded_name}",
+            "X-SHA256": file_obj.sha256_hash,
+            "Cache-Control": "public, max-age=86400",
         },
     )
 
