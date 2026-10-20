@@ -12,6 +12,12 @@ import {
   Lock,
   X,
   Layers,
+  Calendar,
+  ArrowUpDown,
+  Image as ImageIcon,
+  Grid,
+  List,
+  Search,
 } from 'lucide-react';
 import { Pagination, usePagination } from '../common/Pagination';
 import { useNotificationModal } from '../../context/NotificationModalContext';
@@ -102,11 +108,23 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
   const [isTimelineModalOpen, setIsTimelineModalOpen] = useState(false);
   const [timelineLoading, setTimelineLoading] = useState(false);
   const [timelineError, setTimelineError] = useState<string | null>(null);
+  const [timelineStageFilter, setTimelineStageFilter] = useState<'ALL' | 'BURIAL' | 'CONSTRUCTION' | 'CARE'>('ALL');
+  const [timelineYearFilter, setTimelineYearFilter] = useState<string>('ALL');
+  const [timelineSortOrder, setTimelineSortOrder] = useState<'DESC' | 'ASC'>('DESC');
+  const [timelineOnlyPhotos, setTimelineOnlyPhotos] = useState<boolean>(false);
+  const [timelineSearchKeyword, setTimelineSearchKeyword] = useState<string>('');
+  const [timelineViewMode, setTimelineViewMode] = useState<'TIMELINE' | 'ALBUM'>('TIMELINE');
 
   const handleOpenPlotTimeline = async (plotIdentifier: string) => {
     if (!plotIdentifier) return;
     setTimelineLoading(true);
     setTimelineError(null);
+    setTimelineStageFilter('ALL');
+    setTimelineYearFilter('ALL');
+    setTimelineSortOrder('DESC');
+    setTimelineOnlyPhotos(false);
+    setTimelineSearchKeyword('');
+    setTimelineViewMode('TIMELINE');
     setIsTimelineModalOpen(true);
     try {
       const res = await apiFetch(`/api/v1/plots/public/${encodeURIComponent(plotIdentifier)}/timeline`);
@@ -2681,21 +2699,595 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
 
                       {/* Chronological Activity & Media Timeline */}
                       {(() => {
-                        const timelineEvents = selectedPlotTimeline.events || selectedPlotTimeline.timeline || [];
+                        const allEvents = selectedPlotTimeline.events || selectedPlotTimeline.timeline || [];
+
+                        // 1. Compute stats across all events
+                        const availableYears = Array.from(
+                          new Set(
+                            allEvents
+                              .map(e => (e.event_date ? new Date(e.event_date).getFullYear().toString() : ''))
+                              .filter(Boolean)
+                          )
+                        ).sort((a, b) => Number(b) - Number(a));
+
+                        const totalEventsCount = allEvents.length;
+                        const burialCount = allEvents.filter(e => e.event_type === 'BURIAL').length;
+                        const constructionCount = allEvents.filter(e => e.event_type === 'CONSTRUCTION').length;
+                        const careCount = allEvents.filter(e => e.event_type === 'CARE').length;
+                        const totalPhotosCount = allEvents.reduce(
+                          (acc, e) => acc + (e.media_evidences || e.evidences || []).length,
+                          0
+                        );
+
+                        // Year span string
+                        let yearSpanText = '';
+                        if (availableYears.length > 1) {
+                          const minYear = availableYears[availableYears.length - 1];
+                          const maxYear = availableYears[0];
+                          const span = Number(maxYear) - Number(minYear) + 1;
+                          yearSpanText = `Từ ${minYear} đến ${maxYear} (${span} năm)`;
+                        } else if (availableYears.length === 1) {
+                          yearSpanText = `Năm ${availableYears[0]}`;
+                        }
+
+                        // 2. Filter events
+                        const filteredEvents = allEvents.filter(ev => {
+                          if (timelineStageFilter !== 'ALL' && ev.event_type !== timelineStageFilter) {
+                            return false;
+                          }
+                          if (timelineYearFilter !== 'ALL') {
+                            const y = ev.event_date ? new Date(ev.event_date).getFullYear().toString() : '';
+                            if (y !== timelineYearFilter) {
+                              return false;
+                            }
+                          }
+                          const mediaList = ev.media_evidences || ev.evidences || [];
+                          if (timelineOnlyPhotos && mediaList.length === 0) {
+                            return false;
+                          }
+                          if (timelineSearchKeyword.trim()) {
+                            const kw = timelineSearchKeyword.trim().toLowerCase();
+                            const titleMatch = (ev.event_title || ev.title || '').toLowerCase().includes(kw);
+                            const descMatch = (ev.description || '').toLowerCase().includes(kw);
+                            const execMatch = (ev.executor_name || ev.performed_by || '').toLowerCase().includes(kw);
+                            if (!titleMatch && !descMatch && !execMatch) {
+                              return false;
+                            }
+                          }
+                          return true;
+                        });
+
+                        // 3. Sort events
+                        filteredEvents.sort((a, b) => {
+                          const timeA = a.event_date ? new Date(a.event_date).getTime() : 0;
+                          const timeB = b.event_date ? new Date(b.event_date).getTime() : 0;
+                          return timelineSortOrder === 'DESC' ? timeB - timeA : timeA - timeB;
+                        });
+
+                        // 4. Flatten all media for Album Mode
+                        const allFilteredMedia: Array<{
+                          id: string;
+                          file_id: string;
+                          download_url?: string | null;
+                          caption?: string | null;
+                          uploaded_at?: string | null;
+                          file_name?: string | null;
+                          mime_type?: string | null;
+                          eventType: string;
+                          eventTitle: string;
+                          eventDate?: string | null;
+                        }> = [];
+
+                        filteredEvents.forEach((ev, evIdx) => {
+                          const mediaList = ev.media_evidences || ev.evidences || [];
+                          mediaList.forEach((m, mIdx) => {
+                            allFilteredMedia.push({
+                              id: `album-${evIdx}-${mIdx}-${m.file_id}`,
+                              file_id: m.file_id,
+                              download_url: m.media_url || m.download_url,
+                              caption: m.caption || ev.event_title || ev.title || 'Ảnh minh chứng thực địa',
+                              uploaded_at: m.uploaded_at || ev.event_date,
+                              file_name: m.file_name,
+                              mime_type: m.mime_type,
+                              eventType: ev.event_type,
+                              eventTitle: ev.event_title || ev.title || 'Hoạt động',
+                              eventDate: ev.event_date,
+                            });
+                          });
+                        });
+
+                        const hasActiveFilters =
+                          timelineStageFilter !== 'ALL' ||
+                          timelineYearFilter !== 'ALL' ||
+                          timelineOnlyPhotos ||
+                          timelineSearchKeyword.trim() !== '' ||
+                          timelineSortOrder !== 'DESC';
+
+                        const handleResetFilters = () => {
+                          setTimelineStageFilter('ALL');
+                          setTimelineYearFilter('ALL');
+                          setTimelineSortOrder('DESC');
+                          setTimelineOnlyPhotos(false);
+                          setTimelineSearchKeyword('');
+                        };
+
                         return (
-                          <div style={{ backgroundColor: '#FFFFFF', borderRadius: '10px', padding: '16px', border: '1px solid #E2E8F0', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}>
-                            <div style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A', marginBottom: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <Clock size={16} color="var(--brand-primary)" />
-                              <span>Nhật Ký Thi Công, An Táng &amp; Chăm Sóc Định Kỳ (Kèm Ảnh Minh Chứng)</span>
+                          <div
+                            style={{
+                              backgroundColor: '#FFFFFF',
+                              borderRadius: '12px',
+                              padding: '20px',
+                              border: '1px solid #E2E8F0',
+                              boxShadow: '0 2px 6px rgba(0,0,0,0.04)',
+                            }}
+                          >
+                            {/* Header & Overview Stats */}
+                            <div
+                              style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'flex-start',
+                                flexWrap: 'wrap',
+                                gap: '12px',
+                                marginBottom: '16px',
+                                borderBottom: '1px solid #F1F5F9',
+                                paddingBottom: '14px',
+                              }}
+                            >
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: '15px',
+                                    fontWeight: 700,
+                                    color: '#0F172A',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                  }}
+                                >
+                                  <Clock size={18} color="var(--brand-primary)" />
+                                  <span>Nhật Ký Thi Công, An Táng &amp; Chăm Sóc Ô Mộ</span>
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#64748B', marginTop: '3px' }}>
+                                  Lọc và tra cứu hồ sơ ảnh minh chứng thực địa theo từng giai đoạn và năm hoạt động.
+                                </div>
+                              </div>
+
+                              {/* Stats Badges */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                <div
+                                  style={{
+                                    backgroundColor: '#F8FAFC',
+                                    border: '1px solid #E2E8F0',
+                                    borderRadius: '6px',
+                                    padding: '4px 10px',
+                                    fontSize: '12px',
+                                    color: '#334155',
+                                  }}
+                                >
+                                  Đợt ghi nhận: <strong style={{ color: '#0F172A' }}>{totalEventsCount}</strong>
+                                </div>
+                                <div
+                                  style={{
+                                    backgroundColor: '#F0FDF4',
+                                    border: '1px solid #BBF7D0',
+                                    borderRadius: '6px',
+                                    padding: '4px 10px',
+                                    fontSize: '12px',
+                                    color: '#15803D',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                  }}
+                                >
+                                  <ImageIcon size={13} />
+                                  <span>Ảnh &amp; hồ sơ: <strong>{totalPhotosCount}</strong></span>
+                                </div>
+                                {yearSpanText && (
+                                  <div
+                                    style={{
+                                      backgroundColor: '#F8FAFC',
+                                      border: '1px solid #E2E8F0',
+                                      borderRadius: '6px',
+                                      padding: '4px 10px',
+                                      fontSize: '12px',
+                                      color: '#64748B',
+                                    }}
+                                  >
+                                    {yearSpanText}
+                                  </div>
+                                )}
+                              </div>
                             </div>
 
-                            {timelineEvents.length === 0 ? (
-                              <div style={{ padding: '24px', textAlign: 'center', color: '#94A3B8', fontSize: '13px', fontStyle: 'italic' }}>
+                            {/* Control Bar: Stage Tabs + View Mode */}
+                            <div
+                              style={{
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center',
+                                flexWrap: 'wrap',
+                                gap: '10px',
+                                marginBottom: '12px',
+                              }}
+                            >
+                              {/* Stage Filter Chips */}
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                                {[
+                                  { key: 'ALL', label: 'Tất cả', count: totalEventsCount },
+                                  { key: 'BURIAL', label: 'An Táng', count: burialCount, activeBg: '#DCFCE7', activeColor: '#166534', activeBorder: '#86EFAC' },
+                                  { key: 'CONSTRUCTION', label: 'Thi Công Xây Dựng', count: constructionCount, activeBg: '#FEF3C7', activeColor: '#92400E', activeBorder: '#FDE68A' },
+                                  { key: 'CARE', label: 'Chăm Sóc Định Kỳ', count: careCount, activeBg: '#E0F2FE', activeColor: '#0369A1', activeBorder: '#BAE6FD' },
+                                ].map(tab => {
+                                  const isActive = timelineStageFilter === tab.key;
+                                  return (
+                                    <button
+                                      key={tab.key}
+                                      type="button"
+                                      onClick={() => setTimelineStageFilter(tab.key as any)}
+                                      style={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '6px',
+                                        padding: '5px 12px',
+                                        borderRadius: '20px',
+                                        fontSize: '12px',
+                                        fontWeight: isActive ? 700 : 500,
+                                        border: isActive
+                                          ? `1px solid ${tab.activeBorder || '#24594D'}`
+                                          : '1px solid #E2E8F0',
+                                        backgroundColor: isActive
+                                          ? tab.activeBg || '#24594D'
+                                          : '#F8FAFC',
+                                        color: isActive
+                                          ? tab.activeColor || '#FFFFFF'
+                                          : '#475569',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.15s ease',
+                                      }}
+                                    >
+                                      <span>{tab.label}</span>
+                                      <span
+                                        style={{
+                                          padding: '1px 6px',
+                                          borderRadius: '10px',
+                                          fontSize: '11px',
+                                          fontWeight: 700,
+                                          backgroundColor: isActive ? 'rgba(0,0,0,0.08)' : '#E2E8F0',
+                                          color: isActive ? 'inherit' : '#64748B',
+                                        }}
+                                      >
+                                        {tab.count}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+
+                              {/* View Mode Switcher: Timeline vs Album */}
+                              <div
+                                style={{
+                                  display: 'inline-flex',
+                                  backgroundColor: '#F1F5F9',
+                                  borderRadius: '8px',
+                                  padding: '3px',
+                                  border: '1px solid #E2E8F0',
+                                }}
+                              >
+                                <button
+                                  type="button"
+                                  onClick={() => setTimelineViewMode('TIMELINE')}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '5px',
+                                    padding: '5px 11px',
+                                    borderRadius: '6px',
+                                    fontSize: '12px',
+                                    fontWeight: timelineViewMode === 'TIMELINE' ? 700 : 500,
+                                    backgroundColor: timelineViewMode === 'TIMELINE' ? '#FFFFFF' : 'transparent',
+                                    color: timelineViewMode === 'TIMELINE' ? '#0F172A' : '#64748B',
+                                    boxShadow: timelineViewMode === 'TIMELINE' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease',
+                                  }}
+                                  title="Xem nhật ký theo từng đợt công việc"
+                                >
+                                  <List size={14} />
+                                  <span>Dòng thời gian</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setTimelineViewMode('ALBUM')}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '5px',
+                                    padding: '5px 11px',
+                                    borderRadius: '6px',
+                                    fontSize: '12px',
+                                    fontWeight: timelineViewMode === 'ALBUM' ? 700 : 500,
+                                    backgroundColor: timelineViewMode === 'ALBUM' ? '#FFFFFF' : 'transparent',
+                                    color: timelineViewMode === 'ALBUM' ? '#0F172A' : '#64748B',
+                                    boxShadow: timelineViewMode === 'ALBUM' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                                    border: 'none',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.15s ease',
+                                  }}
+                                  title="Xem toàn bộ ảnh và minh chứng trong một album"
+                                >
+                                  <Grid size={14} />
+                                  <span>Bộ sưu tập ảnh ({allFilteredMedia.length})</span>
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Secondary Filter & Search Row */}
+                            <div
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                flexWrap: 'wrap',
+                                gap: '8px',
+                                marginBottom: '16px',
+                                padding: '10px 12px',
+                                backgroundColor: '#F8FAFC',
+                                borderRadius: '8px',
+                                border: '1px solid #E2E8F0',
+                              }}
+                            >
+                              {/* Year Filter Dropdown */}
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                                <Calendar size={14} color="#64748B" />
+                                <select
+                                  value={timelineYearFilter}
+                                  onChange={e => setTimelineYearFilter(e.target.value)}
+                                  style={{
+                                    padding: '5px 8px',
+                                    borderRadius: '6px',
+                                    border: '1px solid #CBD5E1',
+                                    fontSize: '12px',
+                                    backgroundColor: '#FFFFFF',
+                                    color: '#1E293B',
+                                    cursor: 'pointer',
+                                    outline: 'none',
+                                    fontWeight: timelineYearFilter !== 'ALL' ? 700 : 400,
+                                  }}
+                                  aria-label="Lọc theo năm hoạt động"
+                                >
+                                  <option value="ALL">Tất cả các năm ({availableYears.length} năm)</option>
+                                  {availableYears.map(yr => (
+                                    <option key={yr} value={yr}>
+                                      Năm {yr}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+
+                              {/* Sort Order Selector */}
+                              <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                                <ArrowUpDown size={14} color="#64748B" />
+                                <select
+                                  value={timelineSortOrder}
+                                  onChange={e => setTimelineSortOrder(e.target.value as 'DESC' | 'ASC')}
+                                  style={{
+                                    padding: '5px 8px',
+                                    borderRadius: '6px',
+                                    border: '1px solid #CBD5E1',
+                                    fontSize: '12px',
+                                    backgroundColor: '#FFFFFF',
+                                    color: '#1E293B',
+                                    cursor: 'pointer',
+                                    outline: 'none',
+                                  }}
+                                  aria-label="Sắp xếp thời gian"
+                                >
+                                  <option value="DESC">Mới nhất trước</option>
+                                  <option value="ASC">Cũ nhất trước</option>
+                                </select>
+                              </div>
+
+                              {/* Only with photos toggle */}
+                              <button
+                                type="button"
+                                onClick={() => setTimelineOnlyPhotos(!timelineOnlyPhotos)}
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '5px',
+                                  padding: '5px 10px',
+                                  borderRadius: '6px',
+                                  fontSize: '12px',
+                                  fontWeight: timelineOnlyPhotos ? 700 : 500,
+                                  border: timelineOnlyPhotos ? '1px solid #16A34A' : '1px solid #CBD5E1',
+                                  backgroundColor: timelineOnlyPhotos ? '#DCFCE7' : '#FFFFFF',
+                                  color: timelineOnlyPhotos ? '#166534' : '#475569',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s ease',
+                                }}
+                              >
+                                <ImageIcon size={13} color={timelineOnlyPhotos ? '#166534' : '#64748B'} />
+                                <span>Chỉ đợt có ảnh ({totalPhotosCount})</span>
+                              </button>
+
+                              {/* Search Keyword */}
+                              <div
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '6px',
+                                  position: 'relative',
+                                  flex: '1 1 180px',
+                                  minWidth: '160px',
+                                }}
+                              >
+                                <Search size={14} color="#94A3B8" style={{ position: 'absolute', left: '8px' }} />
+                                <input
+                                  type="text"
+                                  value={timelineSearchKeyword}
+                                  onChange={e => setTimelineSearchKeyword(e.target.value)}
+                                  placeholder="Tìm công việc, nội dung, thợ phụ trách..."
+                                  style={{
+                                    width: '100%',
+                                    padding: '5px 24px 5px 28px',
+                                    borderRadius: '6px',
+                                    border: '1px solid #CBD5E1',
+                                    fontSize: '12px',
+                                    backgroundColor: '#FFFFFF',
+                                    color: '#1E293B',
+                                    outline: 'none',
+                                  }}
+                                />
+                                {timelineSearchKeyword && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setTimelineSearchKeyword('')}
+                                    style={{
+                                      position: 'absolute',
+                                      right: '6px',
+                                      background: 'none',
+                                      border: 'none',
+                                      padding: '2px',
+                                      cursor: 'pointer',
+                                      color: '#94A3B8',
+                                    }}
+                                  >
+                                    <X size={12} />
+                                  </button>
+                                )}
+                              </div>
+
+                              {/* Reset Filters button if any active */}
+                              {hasActiveFilters && (
+                                <button
+                                  type="button"
+                                  onClick={handleResetFilters}
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '4px',
+                                    padding: '4px 8px',
+                                    borderRadius: '6px',
+                                    fontSize: '11px',
+                                    color: '#DC2626',
+                                    backgroundColor: '#FEE2E2',
+                                    border: '1px solid #FECACA',
+                                    cursor: 'pointer',
+                                    fontWeight: 600,
+                                  }}
+                                  title="Đặt lại tất cả các bộ lọc về mặc định"
+                                >
+                                  <RefreshCw size={11} />
+                                  <span>Xóa lọc</span>
+                                </button>
+                              )}
+                            </div>
+
+                            {/* Content based on filtered results */}
+                            {allEvents.length === 0 ? (
+                              <div style={{ padding: '32px 16px', textAlign: 'center', color: '#94A3B8', fontSize: '13px' }}>
                                 Chưa ghi nhận hoạt động hoặc hình ảnh thi công/chăm sóc nào trên ô mộ này.
                               </div>
+                            ) : filteredEvents.length === 0 ? (
+                              <div
+                                style={{
+                                  padding: '32px 16px',
+                                  textAlign: 'center',
+                                  backgroundColor: '#F8FAFC',
+                                  borderRadius: '8px',
+                                  border: '1px dashed #CBD5E1',
+                                }}
+                              >
+                                <div style={{ fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
+                                  Không tìm thấy đợt hoạt động hoặc hình ảnh nào khớp với bộ lọc
+                                </div>
+                                <div style={{ fontSize: '12px', color: '#64748B', marginBottom: '12px' }}>
+                                  Hãy thử thay đổi năm, giai đoạn hoặc xóa từ khóa tìm kiếm.
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={handleResetFilters}
+                                  style={{
+                                    padding: '6px 14px',
+                                    borderRadius: '6px',
+                                    backgroundColor: 'var(--brand-primary)',
+                                    color: '#FFFFFF',
+                                    border: 'none',
+                                    fontSize: '12px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  Xem tất cả {allEvents.length} đợt hoạt động
+                                </button>
+                              </div>
+                            ) : timelineViewMode === 'ALBUM' ? (
+                              /* ALBUM MODE: Unified Media Gallery for all filtered events */
+                              <div>
+                                {allFilteredMedia.length === 0 ? (
+                                  <div
+                                    style={{
+                                      padding: '32px 16px',
+                                      textAlign: 'center',
+                                      backgroundColor: '#F8FAFC',
+                                      borderRadius: '8px',
+                                      border: '1px dashed #CBD5E1',
+                                    }}
+                                  >
+                                    <ImageIcon size={28} color="#94A3B8" style={{ marginBottom: '8px' }} />
+                                    <div style={{ fontSize: '13px', fontWeight: 600, color: '#475569' }}>
+                                      Không có hình ảnh minh chứng trong các đợt đã lọc
+                                    </div>
+                                    <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>
+                                      Hãy bỏ chọn "Chỉ đợt có ảnh" hoặc chọn giai đoạn khác để xem chi tiết.
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div>
+                                    <div
+                                      style={{
+                                        fontSize: '12px',
+                                        color: '#64748B',
+                                        marginBottom: '10px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'space-between',
+                                      }}
+                                    >
+                                      <span>
+                                        Hiển thị <strong>{allFilteredMedia.length}</strong> hình ảnh &amp; tài liệu minh chứng (từ {filteredEvents.length} đợt hoạt động):
+                                      </span>
+                                      <span style={{ fontSize: '11px', color: '#94A3B8' }}>
+                                        Click vào bất kỳ ảnh nào để xem toàn màn hình và lật trang
+                                      </span>
+                                    </div>
+
+                                    <MediaEvidenceGallery
+                                      items={allFilteredMedia.map(m => ({
+                                        id: m.id,
+                                        file_id: m.file_id,
+                                        caption: `${m.caption} (${m.eventDate ? new Date(m.eventDate).toLocaleDateString('vi-VN') : ''})`,
+                                        uploaded_at: m.uploaded_at || m.eventDate || '',
+                                        download_url: m.download_url,
+                                        file_name: m.file_name,
+                                        mime_type: m.mime_type,
+                                      }))}
+                                      title=""
+                                      maxFiles={100}
+                                      token={token}
+                                      compact={false}
+                                    />
+                                  </div>
+                                )}
+                              </div>
                             ) : (
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative', paddingLeft: '8px' }}>
-                                {timelineEvents.map((ev, idx) => {
+                              /* TIMELINE MODE: Chronological Card List */
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', position: 'relative' }}>
+                                <div style={{ fontSize: '12px', color: '#64748B', marginBottom: '-4px' }}>
+                                  Đang hiển thị <strong>{filteredEvents.length}</strong> / {allEvents.length} đợt hoạt động:
+                                </div>
+                                {filteredEvents.map((ev, idx) => {
                                   const isBurial = ev.event_type === 'BURIAL';
                                   const isConst = ev.event_type === 'CONSTRUCTION';
                                   const isCare = ev.event_type === 'CARE';
@@ -2714,16 +3306,27 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
 
                                   return (
                                     <div
-                                      key={idx}
+                                      key={`${ev.event_type}-${idx}`}
                                       style={{
                                         border: '1px solid #E2E8F0',
-                                        borderRadius: '8px',
-                                        padding: '14px',
+                                        borderRadius: '10px',
+                                        padding: '14px 16px',
                                         backgroundColor: '#FAFAFA',
-                                        boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+                                        boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                                        transition: 'all 0.15s ease',
                                       }}
                                     >
-                                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                                      {/* Header row: Badge, Title, Date */}
+                                      <div
+                                        style={{
+                                          display: 'flex',
+                                          justifyContent: 'space-between',
+                                          alignItems: 'center',
+                                          marginBottom: '8px',
+                                          flexWrap: 'wrap',
+                                          gap: '6px',
+                                        }}
+                                      >
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                                           <span
                                             style={{
@@ -2742,17 +3345,22 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                                             {titleText}
                                           </span>
                                         </div>
-                                        <span style={{ fontSize: '11px', color: '#64748B', fontWeight: 600 }}>
-                                          {ev.event_date ? new Date(ev.event_date).toLocaleDateString('vi-VN') : ''}
-                                        </span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                          <Calendar size={12} color="#64748B" />
+                                          <span style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>
+                                            {ev.event_date ? new Date(ev.event_date).toLocaleDateString('vi-VN') : ''}
+                                          </span>
+                                        </div>
                                       </div>
 
+                                      {/* Event description */}
                                       {ev.description && (
                                         <div style={{ fontSize: '12px', color: '#334155', marginBottom: '8px', lineHeight: '1.5' }}>
                                           {ev.description}
                                         </div>
                                       )}
 
+                                      {/* Executor / Technician */}
                                       {executorText && (
                                         <div style={{ fontSize: '11px', color: '#64748B', marginBottom: '8px' }}>
                                           Thực hiện / Phụ trách: <strong>{executorText}</strong>
@@ -2764,16 +3372,18 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
                                         <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #CBD5E1' }}>
                                           <MediaEvidenceGallery
                                             items={mediaList.map((m, mIdx) => ({
-                                              id: `${idx}-${mIdx}`,
+                                              id: `${idx}-${mIdx}-${m.file_id}`,
                                               file_id: m.file_id,
-                                              caption: m.caption,
-                                              uploaded_at: m.uploaded_at,
+                                              caption: m.caption || titleText,
+                                              uploaded_at: m.uploaded_at || ev.event_date,
                                               download_url: m.media_url || m.download_url,
+                                              file_name: m.file_name,
+                                              mime_type: m.mime_type,
                                             }))}
-                                            title="Hình ảnh minh chứng thực địa"
-                                            maxFiles={10}
+                                            title={`Ảnh minh chứng đợt này (${mediaList.length})`}
+                                            maxFiles={12}
                                             token={token}
-                                            compact
+                                            compact={true}
                                           />
                                         </div>
                                       )}

@@ -775,6 +775,7 @@ class PlotService:
         timeline: list[PlotTimelineEvent] = []
 
         # 1. Burials from BurialHistory
+        from app.modules.documents.models import FileObject
         from app.modules.plots.models import BurialHistory
 
         burial_histories = db.query(BurialHistory).filter(BurialHistory.plot_id == plot.plot_id).all()
@@ -783,12 +784,15 @@ class PlotService:
             dec_name = dec.full_name if dec else f"Mã #{bh.deceased_id}"
             evs = []
             if bh.proof_file_id:
+                fo = db.get(FileObject, bh.proof_file_id)
                 evs.append(
                     MediaItemBrief(
                         evidence_id=bh.history_id,
                         file_id=bh.proof_file_id,
                         caption="Ảnh minh chứng an táng thực địa",
                         uploaded_at=bh.created_at,
+                        file_name=fo.file_name if fo else None,
+                        mime_type=fo.mime_type if fo else None,
                         download_url=f"/api/v1/documents/public/{bh.proof_file_id}",
                         media_url=f"/api/v1/documents/public/{bh.proof_file_id}",
                     )
@@ -820,13 +824,15 @@ class PlotService:
                 for ev in t.evidences:
                     uploader_name = ev.uploader.full_name if ev.uploader else None
                     dl_url = f"/api/v1/documents/public/{ev.file_id}"
+                    fo = ev.file_object
                     order_evs.append(
                         MediaItemBrief(
                             evidence_id=ev.evidence_id,
                             file_id=ev.file_id,
                             caption=ev.caption or t.task_name,
                             uploaded_at=ev.uploaded_at,
-                            file_name=ev.file_object.file_name if ev.file_object else None,
+                            file_name=fo.file_name if fo else None,
+                            mime_type=fo.mime_type if fo else None,
                             download_url=dl_url,
                             media_url=dl_url,
                             uploader_name=uploader_name,
@@ -863,12 +869,15 @@ class PlotService:
             for ev in cs.media_evidences:
                 uploader_name = ev.uploaded_by.full_name if ev.uploaded_by else None
                 c_dl_url = f"/api/v1/documents/public/{ev.file_id}" if ev.file_id else (ev.media_url or "")
+                fo = db.get(FileObject, ev.file_id) if ev.file_id else None
                 care_evs.append(
                     MediaItemBrief(
                         evidence_id=ev.evidence_id,
                         file_id=ev.file_id or "media",
                         caption=ev.caption or "Ảnh chăm sóc hiện trường",
                         uploaded_at=ev.uploaded_at,
+                        file_name=fo.file_name if fo else None,
+                        mime_type=fo.mime_type if fo else None,
                         download_url=c_dl_url,
                         media_url=c_dl_url,
                         uploader_name=uploader_name,

@@ -102,6 +102,7 @@ export interface MediaItemBrief {
   media_url?: string | null;
   download_url?: string | null;
   file_name?: string | null;
+  mime_type?: string | null;
   uploader_name?: string | null;
 }
 

@@ -223,6 +223,7 @@ class MediaItemBrief(BaseModel):
     download_url: str
     media_url: Optional[str] = None
     uploader_name: Optional[str] = None
+    mime_type: Optional[str] = None
 
 
 class PlotTimelineEvent(BaseModel):

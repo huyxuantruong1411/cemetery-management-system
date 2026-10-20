@@ -11,6 +11,10 @@ import {
   User,
   Calendar,
   Trash2,
+  FileText,
+  ExternalLink,
+  RefreshCw,
+  AlertCircle,
 } from 'lucide-react';
 
 export interface MediaEvidenceItem {
@@ -21,6 +25,7 @@ export interface MediaEvidenceItem {
   file_name?: string | null;
   uploaded_at?: string | null;
   uploader_name?: string | null;
+  mime_type?: string | null;
 }
 
 interface MediaEvidenceGalleryProps {
@@ -67,8 +72,19 @@ export const MediaEvidenceGallery: React.FC<MediaEvidenceGalleryProps> = ({
 
   const imageRef = useRef<HTMLImageElement>(null);
 
+  const [failedLightbox, setFailedLightbox] = useState<boolean>(false);
+  const [failedThumbnails, setFailedThumbnails] = useState<Record<string | number, boolean>>({});
+
+  const isPdfItem = (item?: MediaEvidenceItem | null): boolean => {
+    if (!item) return false;
+    if (item.mime_type?.toLowerCase() === 'application/pdf') return true;
+    if (item.file_name?.toLowerCase().endsWith('.pdf')) return true;
+    if (item.download_url?.toLowerCase().endsWith('.pdf')) return true;
+    return false;
+  };
+
   const getMediaUrl = (item: MediaEvidenceItem): string => {
-    if (!item.file_id) return item.download_url || '';
+    if (!item.file_id || item.file_id === 'media') return item.download_url || '';
     const base = `/api/v1/documents/public/${item.file_id}`;
     return token ? `${base}?token=${encodeURIComponent(token)}` : base;
   };
@@ -77,12 +93,14 @@ export const MediaEvidenceGallery: React.FC<MediaEvidenceGalleryProps> = ({
     setSelectedIndex(index);
     setZoomScale(1);
     setPanPosition({ x: 0, y: 0 });
+    setFailedLightbox(false);
   };
 
   const handleCloseLightbox = () => {
     setSelectedIndex(null);
     setZoomScale(1);
     setPanPosition({ x: 0, y: 0 });
+    setFailedLightbox(false);
   };
 
   const handlePrev = (e?: React.MouseEvent) => {
@@ -91,6 +109,7 @@ export const MediaEvidenceGallery: React.FC<MediaEvidenceGalleryProps> = ({
     setSelectedIndex((prev) => (prev! > 0 ? prev! - 1 : items.length - 1));
     setZoomScale(1);
     setPanPosition({ x: 0, y: 0 });
+    setFailedLightbox(false);
   };
 
   const handleNext = (e?: React.MouseEvent) => {
@@ -99,6 +118,7 @@ export const MediaEvidenceGallery: React.FC<MediaEvidenceGalleryProps> = ({
     setSelectedIndex((prev) => (prev! < items.length - 1 ? prev! + 1 : 0));
     setZoomScale(1);
     setPanPosition({ x: 0, y: 0 });
+    setFailedLightbox(false);
   };
 
   const handleZoomIn = (e?: React.MouseEvent) => {
@@ -330,23 +350,67 @@ export const MediaEvidenceGallery: React.FC<MediaEvidenceGalleryProps> = ({
                   e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
                 }}
               >
-                <img
-                  src={url}
-                  alt={item.caption || item.file_name || `Ảnh minh chứng ${idx + 1}`}
-                  loading="lazy"
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                  }}
-                  onError={(e) => {
-                    // Fallback placeholder icon
-                    e.currentTarget.style.display = 'none';
-                  }}
-                />
+                {isPdfItem(item) ? (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: '#FEF2F2',
+                      color: '#DC2626',
+                      padding: '6px',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <FileText size={24} color="#DC2626" />
+                    <span style={{ fontSize: '9px', fontWeight: 700, marginTop: '3px', color: '#991B1B' }}>
+                      Tài liệu PDF
+                    </span>
+                  </div>
+                ) : (
+                  <>
+                    <img
+                      src={url}
+                      alt={item.caption || item.file_name || `Ảnh minh chứng ${idx + 1}`}
+                      loading="lazy"
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        display: failedThumbnails[item.id] ? 'none' : 'block',
+                      }}
+                      onError={() => {
+                        setFailedThumbnails((prev) => ({ ...prev, [item.id]: true }));
+                      }}
+                    />
+                    {failedThumbnails[item.id] && (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          backgroundColor: '#F8FAFC',
+                          color: '#94A3B8',
+                          padding: '4px',
+                        }}
+                      >
+                        <ImageIcon size={20} color="#94A3B8" />
+                        <span style={{ fontSize: '9px', color: '#64748B', marginTop: '2px', textAlign: 'center' }}>
+                          Ảnh minh chứng
+                        </span>
+                      </div>
+                    )}
+                  </>
+                )}
                 {item.caption && (
                   <div
                     style={{
@@ -613,23 +677,141 @@ export const MediaEvidenceGallery: React.FC<MediaEvidenceGalleryProps> = ({
               </button>
             )}
 
-            {/* Displayed Image */}
-            <img
-              ref={imageRef}
-              src={getMediaUrl(activeItem)}
-              alt={activeItem.caption || activeItem.file_name || 'Minh chứng'}
-              draggable={false}
-              style={{
-                maxWidth: '90vw',
-                maxHeight: '75vh',
-                objectFit: 'contain',
-                borderRadius: '8px',
-                transform: `scale(${zoomScale}) translate(${panPosition.x / zoomScale}px, ${panPosition.y / zoomScale}px)`,
-                transition: isDragging ? 'none' : 'transform 0.15s ease-out',
-                boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
-              }}
-              onClick={(e) => e.stopPropagation()}
-            />
+            {/* Displayed Image or PDF Viewer */}
+            {isPdfItem(activeItem) ? (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '100%',
+                  maxWidth: '850px',
+                  height: '70vh',
+                  backgroundColor: '#1E293B',
+                  borderRadius: '12px',
+                  padding: '24px',
+                  color: '#FFFFFF',
+                  boxShadow: '0 20px 40px rgba(0,0,0,0.6)',
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <FileText size={64} color="#F87171" style={{ marginBottom: '16px' }} />
+                <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '6px', textAlign: 'center' }}>
+                  {activeItem.caption || activeItem.file_name || 'Tài Liệu Minh Chứng PDF'}
+                </div>
+                <div style={{ fontSize: '13px', color: '#94A3B8', marginBottom: '20px', textAlign: 'center' }}>
+                  Tệp đính kèm ở định dạng PDF. Nhấn vào nút bên dưới để mở toàn màn hình hoặc tải về.
+                </div>
+                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <a
+                    href={getMediaUrl(activeItem)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      padding: '10px 20px',
+                      backgroundColor: '#DC2626',
+                      color: '#FFFFFF',
+                      borderRadius: '8px',
+                      fontWeight: 600,
+                      fontSize: '14px',
+                      textDecoration: 'none',
+                      boxShadow: '0 4px 12px rgba(220, 38, 38, 0.4)',
+                    }}
+                  >
+                    <ExternalLink size={16} /> Mở Tệp PDF Trong Tab Mới
+                  </a>
+                </div>
+              </div>
+            ) : failedLightbox ? (
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '32px',
+                  backgroundColor: '#1E293B',
+                  borderRadius: '12px',
+                  maxWidth: '480px',
+                  textAlign: 'center',
+                  color: '#FFFFFF',
+                  boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <AlertCircle size={48} color="#F59E0B" style={{ marginBottom: '12px' }} />
+                <div style={{ fontSize: '16px', fontWeight: 700, marginBottom: '6px' }}>
+                  Không thể tải trước hình ảnh này
+                </div>
+                <div style={{ fontSize: '12px', color: '#94A3B8', marginBottom: '16px', lineHeight: '1.5' }}>
+                  {activeItem.caption || activeItem.file_name || 'Hình ảnh thực địa'}
+                  <br />
+                  Tệp có thể đang được tối ưu hóa hoặc kết nối mạng bị gián đoạn.
+                </div>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => setFailedLightbox(false)}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 16px',
+                      backgroundColor: '#3B82F6',
+                      color: '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <RefreshCw size={14} /> Thử tải lại
+                  </button>
+                  <a
+                    href={getMediaUrl(activeItem)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 16px',
+                      backgroundColor: 'rgba(255,255,255,0.1)',
+                      color: '#FFFFFF',
+                      borderRadius: '6px',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                    }}
+                  >
+                    <ExternalLink size={14} /> Mở trực tiếp
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <img
+                ref={imageRef}
+                src={getMediaUrl(activeItem)}
+                alt={activeItem.caption || activeItem.file_name || 'Minh chứng'}
+                draggable={false}
+                style={{
+                  maxWidth: '90vw',
+                  maxHeight: '75vh',
+                  objectFit: 'contain',
+                  borderRadius: '8px',
+                  transform: `scale(${zoomScale}) translate(${panPosition.x / zoomScale}px, ${panPosition.y / zoomScale}px)`,
+                  transition: isDragging ? 'none' : 'transform 0.15s ease-out',
+                  boxShadow: '0 8px 30px rgba(0,0,0,0.5)',
+                }}
+                onClick={(e) => e.stopPropagation()}
+                onError={() => setFailedLightbox(true)}
+              />
+            )}
 
             {/* Next Button */}
             {items.length > 1 && (
@@ -689,13 +871,33 @@ export const MediaEvidenceGallery: React.FC<MediaEvidenceGalleryProps> = ({
                   cursor: 'pointer',
                   flexShrink: 0,
                   transition: 'all 0.15s ease',
+                  position: 'relative',
                 }}
               >
-                <img
-                  src={getMediaUrl(it)}
-                  alt=""
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
+                {isPdfItem(it) ? (
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: '#7F1D1D',
+                      color: '#FECACA',
+                    }}
+                  >
+                    <FileText size={20} />
+                  </div>
+                ) : (
+                  <img
+                    src={getMediaUrl(it)}
+                    alt=""
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                )}
               </button>
             ))}
           </div>

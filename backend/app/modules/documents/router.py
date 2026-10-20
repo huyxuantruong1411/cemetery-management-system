@@ -127,8 +127,9 @@ def preview_document(
     )
 
 
-@router.get(
+@router.api_route(
     "/public/{file_id}",
+    methods=["GET", "HEAD"],
     summary="Xem trực tiếp tệp media minh chứng công khai",
 )
 def get_public_media(
