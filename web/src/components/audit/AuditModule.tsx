@@ -2,12 +2,16 @@ import { apiFetch } from '../../services/apiClient'
 import React, { useCallback, useEffect, useState } from 'react'
 import {
   AlertCircle,
+  ChevronDown,
+  ChevronRight,
   Eye,
+  FileText,
   Filter,
   RefreshCw,
   Search,
   Shield,
   ShieldAlert,
+  Sparkles,
   User,
   X,
 } from 'lucide-react'
@@ -34,6 +38,11 @@ export const AuditModule: React.FC = () => {
 
   // Detail Modal
   const [activeLog, setActiveLog] = useState<AuditLogResponse | null>(null)
+  const [showRawJson, setShowRawJson] = useState<boolean>(false)
+
+  useEffect(() => {
+    setShowRawJson(false)
+  }, [activeLog])
 
   // Pagination for logs
   const {
@@ -156,6 +165,202 @@ export const AuditModule: React.FC = () => {
       >
         {action}
       </span>
+    )
+  }
+
+  const FIELD_LABELS: Record<string, string> = {
+    contract_code: 'Mã hợp đồng',
+    annex_code: 'Mã phụ lục',
+    contract_type: 'Loại hợp đồng',
+    status: 'Trạng thái',
+    customer_id: 'Mã khách hàng',
+    deceased_id: 'Mã người mất',
+    plot_id: 'Mã ô mộ',
+    slot_id: 'Mã huyệt',
+    slot_status: 'Trạng thái huyệt',
+    total_amount: 'Tổng giá trị hợp đồng',
+    additional_amount: 'Giá trị phụ lục / Phí phát sinh',
+    service_fee: 'Phí dịch vụ',
+    exhumation_fee: 'Phí dịch vụ cải táng',
+    commission_fee: 'Phí hoa hồng chuyển nhượng',
+    seller_id: 'Mã bên chuyển nhượng',
+    buyer_id: 'Mã bên nhận chuyển nhượng',
+    signed_scan_file_id: 'Mã file scan hợp đồng',
+    signed_at: 'Thời điểm ký kết',
+    reason: 'Lý do thực hiện',
+    is_kim_tinh: 'Quy cách Kim Tĩnh (Bất biến)',
+    is_future_burial: 'An táng tương lai (Chưa hạ huyệt)',
+    package_id: 'Gói chăm sóc định kỳ',
+    cycle_months: 'Chu kỳ chăm sóc (tháng)',
+    recurring_price: 'Đơn giá định kỳ mỗi kỳ',
+    estimated_start_date: 'Ngày dự kiến khởi công',
+    estimated_end_date: 'Ngày dự kiến hoàn thành',
+    actual_start_date: 'Ngày khởi công thực tế',
+    actual_end_date: 'Ngày hoàn thành thực tế',
+    supervisor_id: 'Mã người giám sát',
+    caretaker_id: 'Mã nhân viên quản trang',
+    conflict_warning: 'Cảnh báo xung đột lịch',
+    has_conflict: 'Có trùng lịch / xung đột',
+    completed_by_id: 'Mã nhân sự nghiệm thu/đóng ca',
+    closed_at: 'Thời điểm đóng nghiệm thu',
+    receivable_id: 'Mã khoản phải thu',
+    original_amount: 'Số tiền gốc',
+    discount_type: 'Hình thức giảm giá/chiết khấu',
+    discount_value: 'Giá trị giảm giá/chiết khấu',
+    calculated_amount: 'Số tiền được giảm',
+    final_payable_amount: 'Số tiền phải nộp sau giảm',
+    paid_amount: 'Số tiền thanh toán',
+    payment_method: 'Phương thức thanh toán',
+    invoice_number: 'Mã phiếu thu / Hóa đơn',
+    new_receivable_status: 'Trạng thái công nợ mới',
+    full_name: 'Họ và tên',
+    phone_number: 'Số điện thoại liên hệ',
+    email: 'Địa chỉ Email',
+    address: 'Địa chỉ thường trú',
+    date_of_birth: 'Ngày sinh',
+    date_of_death: 'Ngày mất',
+    birth_year: 'Năm sinh',
+    birth_date_precision: 'Độ chính xác ngày sinh',
+    hometown: 'Quê quán',
+    religion: 'Tôn giáo',
+    citizen_id: 'Số CMND / CCCD',
+  }
+
+  const formatFieldValue = (key: string, value: any): string => {
+    if (value === null || value === undefined || value === '') return '—'
+    if (typeof value === 'boolean') {
+      return value ? 'Có (Đã áp dụng)' : 'Không'
+    }
+    const keyLower = key.toLowerCase()
+    if (
+      keyLower.includes('amount') ||
+      keyLower.includes('fee') ||
+      keyLower.includes('price') ||
+      keyLower.includes('payable') ||
+      (keyLower.includes('value') && keyLower.includes('discount'))
+    ) {
+      const num = Number(value)
+      if (!isNaN(num)) {
+        if (key === 'discount_value' && Number(value) <= 100 && !String(value).includes('000')) {
+          return `${value}%`
+        }
+        return `${num.toLocaleString('vi-VN')} đ`
+      }
+    }
+    if (key === 'payment_method') {
+      if (value === 'CASH') return 'Tiền mặt'
+      if (value === 'BANK_TRANSFER') return 'Chuyển khoản ngân hàng'
+      if (value === 'CREDIT_CARD') return 'Thẻ tín dụng'
+    }
+    if (key === 'discount_type') {
+      if (value === 'PERCENTAGE') return 'Chiết khấu phần trăm (%)'
+      if (value === 'FIXED_AMOUNT') return 'Giảm số tiền cố định'
+    }
+    if (key === 'contract_type') {
+      if (value === 'LAND_PURCHASE') return 'Mua đất sinh phần'
+      if (value === 'BURIAL') return 'An táng'
+      if (value === 'EXHUMATION') return 'Cải táng / Bốc mộ'
+      if (value === 'TRANSFER') return 'Chuyển nhượng quyền sử dụng'
+      if (value === 'CREMATION') return 'Dịch vụ hỏa táng'
+    }
+    if (key === 'status' || key === 'new_receivable_status' || key === 'slot_status') {
+      if (value === 'ACTIVE') return 'Đang hoạt động (ACTIVE)'
+      if (value === 'PENDING_SIGN') return 'Chờ ký duyệt (PENDING_SIGN)'
+      if (value === 'DRAFT') return 'Bản nháp (DRAFT)'
+      if (value === 'CANCELLED') return 'Đã hủy (CANCELLED)'
+      if (value === 'COMPLETED') return 'Đã hoàn tất (COMPLETED)'
+      if (value === 'CLOSED') return 'Đã đóng nghiệm thu (CLOSED)'
+      if (value === 'PAID') return 'Đã tất toán đủ (PAID)'
+      if (value === 'PARTIALLY_PAID') return 'Thanh toán một phần (PARTIALLY_PAID)'
+      if (value === 'UNPAID') return 'Chưa thanh toán (UNPAID)'
+      if (value === 'EMPTY') return 'Huyệt trống (EMPTY)'
+      if (value === 'OCCUPIED') return 'Đã an táng (OCCUPIED)'
+    }
+    if (typeof value === 'object') {
+      try {
+        return JSON.stringify(value)
+      } catch {
+        return String(value)
+      }
+    }
+    return String(value)
+  }
+
+  const renderStructuredDiff = (preJson: string | null, postJson: string | null) => {
+    let pre: Record<string, any> = {}
+    let post: Record<string, any> = {}
+    try {
+      if (preJson) pre = typeof preJson === 'string' ? JSON.parse(preJson) : preJson
+    } catch {}
+    try {
+      if (postJson) post = typeof postJson === 'string' ? JSON.parse(postJson) : postJson
+    } catch {}
+
+    const allKeys = Array.from(new Set([...Object.keys(pre), ...Object.keys(post)]))
+
+    if (allKeys.length === 0) {
+      return (
+        <div style={{ padding: '16px', textAlign: 'center', backgroundColor: '#F8FAFC', borderRadius: '8px', color: '#64748B', fontSize: '13px' }}>
+          Sự kiện này là hành động tác vụ hệ thống (không có trường dữ liệu payload chi tiết).
+        </div>
+      )
+    }
+
+    return (
+      <div style={{ overflowX: 'auto', border: '1px solid #E2E8F0', borderRadius: '8px' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
+          <thead>
+            <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569' }}>
+              <th style={{ padding: '10px 14px', textAlign: 'left', width: '35%' }}>Thông Tin / Thuộc Tính</th>
+              <th style={{ padding: '10px 14px', textAlign: 'left', width: '30%' }}>Trước Thay Đổi</th>
+              <th style={{ padding: '10px 14px', textAlign: 'left', width: '35%' }}>Sau Thay Đổi</th>
+            </tr>
+          </thead>
+          <tbody>
+            {allKeys.map((key) => {
+              const label = FIELD_LABELS[key] || key
+              const valPre = pre[key]
+              const valPost = post[key]
+              const hasPre = key in pre
+              const hasPost = key in post
+              const isDifferent = JSON.stringify(valPre) !== JSON.stringify(valPost)
+
+              return (
+                <tr
+                  key={key}
+                  style={{
+                    borderBottom: '1px solid #F1F5F9',
+                    backgroundColor: isDifferent ? (hasPre && hasPost ? '#FEFCE8' : '#F0FDF4') : 'transparent',
+                  }}
+                >
+                  <td style={{ padding: '10px 14px', fontWeight: 600, color: '#334155' }}>
+                    <div>{label}</div>
+                    {label !== key && (
+                      <span style={{ fontSize: '11px', color: '#94A3B8', fontFamily: 'monospace' }}>{key}</span>
+                    )}
+                  </td>
+                  <td style={{ padding: '10px 14px', color: hasPre ? (isDifferent ? '#94A3B8' : '#475569') : '#CBD5E1' }}>
+                    {hasPre ? (
+                      <span style={{ textDecoration: isDifferent && hasPost ? 'line-through' : 'none' }}>
+                        {formatFieldValue(key, valPre)}
+                      </span>
+                    ) : (
+                      <span style={{ color: '#CBD5E1', fontStyle: 'italic' }}>— (Chưa có)</span>
+                    )}
+                  </td>
+                  <td style={{ padding: '10px 14px', color: hasPost ? (isDifferent ? '#15803D' : '#334155') : '#94A3B8', fontWeight: isDifferent ? 600 : 400 }}>
+                    {hasPost ? (
+                      formatFieldValue(key, valPost)
+                    ) : (
+                      <span style={{ color: '#CBD5E1', fontStyle: 'italic' }}>— (Bị xóa)</span>
+                    )}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
     )
   }
 
@@ -563,18 +768,36 @@ export const AuditModule: React.FC = () => {
                   <span style={{ color: 'var(--brand-primary)', fontFamily: 'monospace' }}>#{log.target_id}</span>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#475569', marginBottom: '4px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#475569', marginBottom: '6px' }}>
                   <User size={13} color="#64748B" />
                   <span>{log.username || `User #${log.user_id || 'Sys'}`}</span>
                   <span style={{ color: '#94A3B8' }}>· {log.ip_address || 'Internal'}</span>
                 </div>
+
+                {/* Mobile Narrative Highlight */}
+                {log.narrative_summary && (
+                  <div
+                    style={{
+                      margin: '6px 0 10px 0',
+                      padding: '8px 10px',
+                      backgroundColor: '#F8FAFC',
+                      borderLeft: '3px solid var(--brand-primary)',
+                      borderRadius: '4px',
+                      fontSize: '12px',
+                      color: '#334155',
+                      lineHeight: '1.45',
+                    }}
+                  >
+                    {log.narrative_summary}
+                  </div>
+                )}
 
                 <button
                   onClick={() => setActiveLog(log)}
                   className="touch-target"
                   style={{
                     width: '100%',
-                    marginTop: '6px',
+                    marginTop: '4px',
                     padding: '8px 12px',
                     backgroundColor: '#F1F5F9',
                     color: 'var(--brand-primary)',
@@ -601,40 +824,59 @@ export const AuditModule: React.FC = () => {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
               <thead>
                 <tr style={{ backgroundColor: '#F8FAFC', borderBottom: '1px solid #E2E8F0', color: '#475569' }}>
-                  <th style={{ padding: '12px 16px', textAlign: 'left' }}>Thời Điểm</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left' }}>Tài Khoản</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left' }}>Hành Động</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left' }}>Thực Thể</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left' }}>Mã hồ sơ</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'left' }}>Địa Chỉ IP</th>
-                  <th style={{ padding: '12px 16px', textAlign: 'center' }}>Thao Tác</th>
+                  <th style={{ padding: '12px 14px', textAlign: 'left', whiteSpace: 'nowrap', width: '135px' }}>Thời Điểm</th>
+                  <th style={{ padding: '12px 14px', textAlign: 'left', whiteSpace: 'nowrap', width: '120px' }}>Tài Khoản</th>
+                  <th style={{ padding: '12px 14px', textAlign: 'left', whiteSpace: 'nowrap', width: '130px' }}>Hành Động</th>
+                  <th style={{ padding: '12px 14px', textAlign: 'left', whiteSpace: 'nowrap', width: '130px' }}>Đối Tượng</th>
+                  <th style={{ padding: '12px 14px', textAlign: 'left' }}>Diễn Giải Nghiệp Vụ (Executive Summary)</th>
+                  <th style={{ padding: '12px 14px', textAlign: 'left', whiteSpace: 'nowrap', width: '110px' }}>Địa Chỉ IP</th>
+                  <th style={{ padding: '12px 14px', textAlign: 'center', whiteSpace: 'nowrap', width: '80px' }}>Thao Tác</th>
                 </tr>
               </thead>
               <tbody>
                 {paginatedLogs.map((log) => (
                   <tr key={log.log_id} style={{ borderBottom: '1px solid #F1F5F9' }}>
-                    <td style={{ padding: '12px 16px', color: '#475569', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '12px 14px', color: '#475569', whiteSpace: 'nowrap' }}>
                       {formatTimestamp(log.timestamp)}
                     </td>
-                    <td style={{ padding: '12px 16px', fontWeight: 600, color: 'var(--text-main)' }}>
+                    <td style={{ padding: '12px 14px', fontWeight: 600, color: 'var(--text-main)', whiteSpace: 'nowrap' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <User size={14} color="#64748B" />
                         <span>{log.username || `User #${log.user_id || 'Sys'}`}</span>
                       </div>
                     </td>
-                    <td style={{ padding: '12px 16px' }}>{getActionBadge(log.action_type)}</td>
-                    <td style={{ padding: '12px 16px', color: '#334155', fontWeight: 500 }}>{log.target_entity}</td>
-                    <td style={{ padding: '12px 16px', color: 'var(--brand-primary)', fontWeight: 600 }}>
-                      {log.target_id}
+                    <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>{getActionBadge(log.action_type)}</td>
+                    <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                      <div style={{ color: '#334155', fontWeight: 600 }}>{log.target_entity}</div>
+                      <div style={{ color: 'var(--brand-primary)', fontSize: '11px', fontFamily: 'monospace' }}>#{log.target_id}</div>
                     </td>
-                    <td style={{ padding: '12px 16px', color: '#64748B', fontSize: '12px' }}>
+                    <td style={{ padding: '12px 14px', minWidth: '300px' }}>
+                      <div
+                        style={{
+                          fontSize: '12.5px',
+                          color: '#1E293B',
+                          lineHeight: '1.45',
+                          backgroundColor: '#F8FAFC',
+                          borderLeft: '3px solid var(--brand-primary)',
+                          padding: '6px 10px',
+                          borderRadius: '4px',
+                        }}
+                      >
+                        {log.narrative_summary || (
+                          <span style={{ color: '#94A3B8', fontStyle: 'italic' }}>
+                            Thực hiện {log.action_type} trên {log.target_entity} #{log.target_id}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td style={{ padding: '12px 14px', color: '#64748B', fontSize: '12px', whiteSpace: 'nowrap' }}>
                       {log.ip_address || 'Internal'}
                     </td>
-                    <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                    <td style={{ padding: '12px 14px', textAlign: 'center', whiteSpace: 'nowrap' }}>
                       <button
                         onClick={() => setActiveLog(log)}
                         style={{
-                          padding: '5px 10px',
+                          padding: '5px 12px',
                           borderRadius: '6px',
                           border: '1px solid #CBD5E1',
                           backgroundColor: '#FFFFFF',
@@ -675,7 +917,7 @@ export const AuditModule: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL: AUDIT LOG DETAIL & DIFF */}
+      {/* MODAL: AUDIT LOG DETAIL & EXECUTIVE NARRATIVE BRIEFING */}
       {/* ========================================================================= */}
       {activeLog && (
         <div
@@ -688,6 +930,7 @@ export const AuditModule: React.FC = () => {
             alignItems: 'center',
             justifyContent: 'center',
             zIndex: 1000,
+            padding: '16px',
           }}
         >
           <div
@@ -697,65 +940,74 @@ export const AuditModule: React.FC = () => {
               borderRadius: '12px',
               padding: '24px',
               width: '100%',
-              maxWidth: '680px',
+              maxWidth: '780px',
               maxHeight: '90vh',
               overflowY: 'auto',
               boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
             }}
           >
+            {/* Modal Header */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Shield size={20} color="var(--brand-primary)" />
-                <h3 style={{ margin: 0, fontSize: '18px', color: 'var(--text-main)', fontWeight: 600 }}>
-                  Chi Tiết Sự Kiện Kiểm Toán #{activeLog.log_id}
-                </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Shield size={22} color="var(--brand-primary)" />
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '18px', color: 'var(--text-main)', fontWeight: 600 }}>
+                    Chi Tiết Sự Kiện Kiểm Toán #{activeLog.log_id}
+                  </h3>
+                  <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
+                    Nhật ký giám sát bất biến & xác thực vết nghiệp vụ
+                  </div>
+                </div>
               </div>
               <button
                 onClick={() => setActiveLog(null)}
-                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748B' }}
+                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748B', padding: '4px' }}
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
-            {/* Security notice */}
+            {/* Executive Narrative Explanation Banner */}
             <div
               style={{
-                padding: '10px 14px',
-                borderRadius: '8px',
-                backgroundColor: '#EFF6FF',
-                border: '1px solid #BFDBFE',
-                color: '#1D4ED8',
-                fontSize: '12px',
-                marginBottom: '16px',
+                padding: '16px',
+                borderRadius: '10px',
+                backgroundColor: '#F0FDF4',
+                border: '1px solid #BBF7D0',
                 display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
+                gap: '12px',
+                alignItems: 'flex-start',
+                marginBottom: '16px',
               }}
             >
-              <ShieldAlert size={16} />
-              <span>
-                Mọi thông tin mật khẩu, token và khóa bảo mật được tự động khử trùng (REDACTED) trước khi xuất hiển thị.
-              </span>
+              <Sparkles size={20} color="#16A34A" style={{ flexShrink: 0, marginTop: '2px' }} />
+              <div>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '4px' }}>
+                  Diễn Giải Nghiệp Vụ Cho Quản Lý
+                </div>
+                <div style={{ fontSize: '14px', lineHeight: '1.6', color: '#14532D', fontWeight: 500 }}>
+                  {activeLog.narrative_summary || `Hệ thống ghi nhận thao tác ${activeLog.action_type} trên thực thể ${activeLog.target_entity} #${activeLog.target_id}.`}
+                </div>
+              </div>
             </div>
 
-            {/* Event Metadata */}
+            {/* Event Metadata Grid */}
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
                 gap: '12px',
                 padding: '14px',
                 backgroundColor: '#F8FAFC',
                 borderRadius: '8px',
                 border: '1px solid #E2E8F0',
                 fontSize: '13px',
-                marginBottom: '16px',
+                marginBottom: '18px',
               }}
             >
               <div>
                 <span style={{ color: '#64748B' }}>Người thực hiện: </span>
-                <strong>{activeLog.username || `User #${activeLog.user_id}`}</strong>
+                <strong style={{ color: '#0F172A' }}>{activeLog.username || `User #${activeLog.user_id || 'Sys'}`}</strong>
               </div>
               <div>
                 <span style={{ color: '#64748B' }}>Thời điểm: </span>
@@ -771,36 +1023,90 @@ export const AuditModule: React.FC = () => {
               </div>
               <div>
                 <span style={{ color: '#64748B' }}>Thực thể tác động: </span>
-                <strong>{activeLog.target_entity}</strong>
+                <strong style={{ color: '#334155' }}>{activeLog.target_entity}</strong>
               </div>
               <div>
-                <span style={{ color: '#64748B' }}>Mã hồ sơ: </span>
-                <strong style={{ color: 'var(--brand-primary)' }}>{activeLog.target_id}</strong>
+                <span style={{ color: '#64748B' }}>Mã đối tượng: </span>
+                <strong style={{ color: 'var(--brand-primary)', fontFamily: 'monospace' }}>#{activeLog.target_id}</strong>
               </div>
             </div>
 
-            {/* Changes: Before / After Diff */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
-                  Thông tin trước thay đổi
-                </div>
-                {renderJsonPretty(activeLog.pre_change_values)}
+            {/* Structured Field Changes & Comparison */}
+            <div style={{ marginBottom: '18px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                <FileText size={16} color="#475569" />
+                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 600, color: '#334155' }}>
+                  Chi Tiết Thông Tin Dữ Liệu Sự Kiện
+                </h4>
               </div>
-
-              <div>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
-                  Thông tin sau thay đổi
-                </div>
-                {renderJsonPretty(activeLog.post_change_values)}
-              </div>
+              {renderStructuredDiff(activeLog.pre_change_values, activeLog.post_change_values)}
             </div>
 
+            {/* Collapsible Raw JSON Section */}
+            <div style={{ marginTop: '16px', borderTop: '1px dashed #E2E8F0', paddingTop: '12px' }}>
+              <button
+                type="button"
+                onClick={() => setShowRawJson(!showRawJson)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '4px 0',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  fontSize: '12.5px',
+                  color: '#64748B',
+                  fontWeight: 500,
+                }}
+              >
+                {showRawJson ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                <span>Chi tiết kỹ thuật dành cho Kỹ thuật viên / IT (JSON thô)</span>
+              </button>
+
+              {showRawJson && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginTop: '10px' }}>
+                  {/* Security notice */}
+                  <div
+                    style={{
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      backgroundColor: '#EFF6FF',
+                      border: '1px solid #BFDBFE',
+                      color: '#1D4ED8',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <ShieldAlert size={14} />
+                    <span>Mọi mật khẩu, token và khóa bí mật đã được tự động khử trùng (REDACTED).</span>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
+                      Dữ liệu trước thay đổi (pre_change_values)
+                    </div>
+                    {renderJsonPretty(activeLog.pre_change_values)}
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '4px' }}>
+                      Dữ liệu sau thay đổi (post_change_values)
+                    </div>
+                    {renderJsonPretty(activeLog.post_change_values)}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '20px' }}>
               <button
                 onClick={() => setActiveLog(null)}
                 style={{
-                  padding: '8px 18px',
+                  padding: '8px 20px',
                   borderRadius: '6px',
                   border: '1px solid #CBD5E1',
                   backgroundColor: '#FFFFFF',
@@ -816,6 +1122,7 @@ export const AuditModule: React.FC = () => {
           </div>
         </div>
       )}
+
     </div>
   )
 }

@@ -247,6 +247,11 @@ def test_audit_logs_redaction_and_summary():
     assert resp_logs.status_code == 200, resp_logs.text
     logs = resp_logs.json()
     assert isinstance(logs, list)
+    if len(logs) > 0:
+        first_log = logs[0]
+        assert "narrative_summary" in first_log
+        assert first_log["narrative_summary"] is not None
+        assert len(first_log["narrative_summary"]) > 5
 
     # Query audit summary endpoint
     resp_sum = client.get("/api/v1/audit/summary", headers=headers)

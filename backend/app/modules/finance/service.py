@@ -34,14 +34,38 @@ from app.modules.jobs.service import OutboxService
 from app.modules.profiles.models import Customer
 from app.services.pdf_service import PDFService
 
+# =============================================================================
+# PHÂN HỆ QUẢN LÝ TÀI CHÍNH, CÔNG NỢ & THANH TOÁN (FINANCE SERVICE)
+# =============================================================================
+# Vai trò kiến trúc:
+# - Quản lý toàn bộ chu trình kế toán thu chi của hệ thống nghĩa trang:
+#   Khoản phải thu (Receivable) -> Chiết khấu (Discount) -> Thanh toán (Payment) -> Biên lai/Hóa đơn (Invoice).
+# - Các nguyên tắc bất biến sống còn (Core Domain Invariants):
+#   1. Ràng buộc nguồn gốc XOR (Exclusive OR): Khoản phải thu bắt buộc phải thuộc về đúng 1 nguồn:
+#      HOẶC Hợp đồng gốc (contract_id IS NOT NULL, annex_id IS NULL)
+#      HOẶC Phụ lục phát sinh (annex_id IS NOT NULL, contract_id IS NULL).
+#   2. Tính toán tiền tệ chuẩn xác: Sử dụng kiểu Python Decimal với phương thức làm tròn
+#      ROUND_HALF_UP (làm tròn 0.01). Nghiêm cấm dùng kiểu Float gây sai số tài chính.
+#   3. Cơ chế chống trùng lặp giao dịch (Idempotency Key): Sử dụng SHA-256 băm các tham số thanh toán
+#      và bảng 'IdempotencyRequest'. Nếu nhân viên click đúp hoặc rớt mạng gửi lại, hệ thống trả về
+#      kết quả lưu trong cache, ngăn chặn trừ tiền 2 lần.
+#   4. Chống thanh toán vượt dư nợ (Anti-Overpayment Guard): Khóa dòng 'with_for_update()' và kiểm tra:
+#      paid_amount <= remaining_balance. Tuyệt đối không cho phép thanh toán vượt quá số tiền nợ.
+#   5. Tự động sinh biên lai & dịch số tiền thành chữ tiếng Việt (number_to_vietnamese_words):
+#      Mỗi giao dịch thanh toán thành công tự động sinh hóa đơn PDF, lưu vào MinIO và chuyển số tiền
+#      thành văn bản tiếng Việt quy chuẩn kế toán (Ví dụ: "Một trăm hai mươi triệu đồng chẵn").
+# =============================================================================
+
 
 def _utc_now_naive() -> datetime:
+    """Trả về thời gian UTC dạng naive tương thích MSSQL."""
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class FinanceService:
     @classmethod
     def _to_receivable_response(cls, r: Receivable) -> ReceivableResponse:
+        """Chuyển đổi ORM Model Receivable sang DTO Response, tính toán dư nợ còn lại (remaining_balance)."""
         contract_code = r.contract.contract_code if r.contract else None
         annex_code = r.annex.annex_code if r.annex else None
         customer_name = r.customer.full_name if r.customer else None
@@ -195,7 +219,15 @@ class FinanceService:
         payload: ReceivableCreate,
         user_id: int,
     ) -> ReceivableResponse:
-        # 1. Validate XOR source (G14)
+        """
+        TẠO KHOẢN PHẢI THU (RECEIVABLE - QUY TẮC RÀNG BUỘC XOR):
+        - Quy tắc 1 [G14 - XOR Source]: Hoặc có contract_id, hoặc có annex_id. Không chấp nhận cả hai hoặc không có cái nào.
+        - Quy tắc 2: Kiểm tra sự tồn tại của khách hàng.
+        - Quy tắc 3 [Chống trùng lặp đợt thu]: Đảm bảo trong cùng 1 hợp đồng hoặc phụ lục không bị tạo trùng số đợt thanh toán (installment_no).
+        - Trạng thái ban đầu luôn là 'UNPAID', discount_amount = 0, final_payable_amount = original_amount.
+        - Ghi nhật ký AuditLog và phát sự kiện Outbox: RECEIVABLE_CREATED.
+        """
+        # 1. Ràng buộc nguồn gốc XOR (G14)
         if (payload.contract_id is not None and payload.annex_id is not None) or (
             payload.contract_id is None and payload.annex_id is None
         ):
@@ -204,7 +236,7 @@ class FinanceService:
                 detail="Khoản thu phải gắn với đúng một nguồn: hoặc hợp đồng chính, hoặc phụ lục.",
             )
 
-        # 2. Validate customer
+        # 2. Kiểm tra khách hàng
         cust = db.query(Customer).filter(Customer.customer_id == payload.customer_id).first()
         if not cust:
             raise HTTPException(
@@ -212,7 +244,7 @@ class FinanceService:
                 detail=f"Không tìm thấy khách hàng mã {payload.customer_id}",
             )
 
-        # 3. Check idempotency on (contract_id, installment_no) or (annex_id, installment_no)
+        # 3. Kiểm tra tính duy nhất của đợt thanh toán (contract_id, installment_no) hoặc (annex_id, installment_no)
         if payload.contract_id:
             contract = (
                 db.query(Contract).filter(Contract.contract_id == payload.contract_id).first()
@@ -320,8 +352,19 @@ class FinanceService:
         payload: DiscountApplyRequest,
         user_id: int,
     ) -> ReceivableResponse:
-        """Apply a single official discount to a receivable (G16). Ensures remaining debt is non-negative."""
-        # Row-level lock on receivable
+        """
+        ÁP DỤNG CHIẾT KHẤU CHÍNH THỨC (DISCOUNT POLICY - G16):
+        - Khóa dòng công nợ bằng '.with_for_update()' để đảm bảo tính toàn vẹn số liệu.
+        - Chốt chặn 1: Không được phép chiết khấu khoản thu đã hoàn tất (PAID) hoặc đã hủy (CANCELLED).
+        - Chốt chặn 2: Khoản thu đã phát sinh thanh toán (total_paid_amount > 0) thì khóa chiết khấu vĩnh viễn,
+          tránh việc gian lận sửa số tiền sau khi đã thu tiền của khách.
+        - Tính toán giá trị chiết khấu:
+          + Kiểu PERCENTAGE: (original_amount * discount_value / 100) làm tròn ROUND_HALF_UP 0.01.
+          + Kiểu DIRECT_AMOUNT: Min giữa discount_value và original_amount.
+        - Chốt chặn 3: Số tiền phải nộp sau chiết khấu (final_payable_amount) không được nhỏ hơn số tiền đã trả.
+        - Tự động đồng bộ lại trạng thái khoản thu (PAID, PARTIALLY_PAID, UNPAID).
+        """
+        # Khóa dòng khoản phải thu ở mức CSDL
         receivable = (
             db.query(Receivable)
             .filter(Receivable.receivable_id == receivable_id)
@@ -346,7 +389,7 @@ class FinanceService:
                 detail="Khoản thu đã phát sinh thanh toán (toàn bộ hoặc một phần). Chiết khấu đã bị khóa và không thể chỉnh sửa.",
             )
 
-        # Calculate discount amount
+        # Tính toán giá trị chiết khấu dựa trên loại hình (PERCENTAGE hoặc DIRECT_AMOUNT)
         if payload.discount_type == "PERCENTAGE":
             calc = (receivable.original_amount * payload.discount_value / Decimal("100")).quantize(
                 Decimal("0.01"), rounding=ROUND_HALF_UP
@@ -358,7 +401,7 @@ class FinanceService:
 
         new_final = receivable.original_amount - calc
 
-        # Invariant: Discount after partial payment must not make final payable amount less than total paid amount
+        # Chốt chặn an toàn: Chiết khấu không được phép làm tổng phải trả thấp hơn số tiền khách đã nộp
         if new_final < receivable.total_paid_amount:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -395,7 +438,7 @@ class FinanceService:
             )
             db.add(discount_record)
 
-        # Update receivable amounts and recompute status
+        # Cập nhật số tiền và đồng bộ lại trạng thái công nợ
         receivable.discount_amount = calc
         receivable.final_payable_amount = new_final
 
@@ -451,7 +494,24 @@ class FinanceService:
         user_id: int,
         idempotency_key: str | None = None,
     ) -> PaymentResponse:
-        """Record an append-only payment, trigger-synced receivable balance, and auto-generate invoice (G15)."""
+        """
+        GHI NHẬN THANH TOÁN & TỰ ĐỘNG SINH BIÊN LAI (PAYMENT TRANSACTION - USE CASE G15):
+        - 1. Chống trùng lặp giao dịch (Idempotency Key):
+          + Tạo mã băm SHA-256 từ tham số: receivable_id + paid_amount + payment_method + transaction_ref + key.
+          + Nếu khóa đã COMPLETED: Trả về kết quả từ bộ đệm (Response Cache).
+          + Nếu đang IN_PROGRESS: Trả lỗi 409 Conflict ngăn chặn giao dịch chạy song song.
+        - 2. Chốt chặn chống bội chi (Anti-Overpayment):
+          + Khóa dòng with_for_update() trên Receivable.
+          + Kiểm tra: payload.paid_amount <= remaining_debt (Dư nợ còn lại).
+        - 3. Ghi nhận giao dịch thanh toán dạng Append-only:
+          + Thêm mới bản ghi Payment.
+          + Trigger CSDL MSSQL 'trg_payments_sync_receivable_balance' tự động cập nhật
+            số tiền đã thanh toán (total_paid_amount) và đổi trạng thái (PARTIALLY_PAID / PAID).
+        - 4. Tự động sinh hóa đơn / biên lai điện tử (Fault-Isolated Invoice Generation):
+          + Tự sinh số phiếu thu theo quy tắc REC-YYYYMM-XXXX.
+          + Dịch số tiền sang chữ tiếng Việt qua hàm number_to_vietnamese_words().
+          + Tạo tệp PDF biên lai, tải lên kho lưu trữ MinIO và lưu bản ghi Invoice.
+        """
         idem_key = idempotency_key or payload.idempotency_key
         norm_amount = Decimal(str(payload.paid_amount)).quantize(Decimal("0.01"))
         norm_ref = (payload.transaction_reference or "").strip()

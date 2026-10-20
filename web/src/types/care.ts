@@ -6,7 +6,9 @@ export interface CareChecklistItemBrief {
   sort_order: number
   is_completed: boolean
   field_notes?: string | null
+  is_custom?: boolean
 }
+
 
 export interface CareChecklistItemUpdate {
   is_completed?: boolean

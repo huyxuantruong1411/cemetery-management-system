@@ -32,10 +32,31 @@ from app.modules.documents.models import FileObject
 from app.modules.jobs.service import OutboxService
 from app.modules.plots.models import Plot, PlotSlot, Row
 
+# =============================================================================
+# PHÂN HỆ QUẢN LÝ THI CÔNG & XÂY DỰNG LĂNG MỘ (CONSTRUCTION SERVICE)
+# =============================================================================
+# Vai trò kiến trúc:
+# - Quản lý việc lập lệnh thi công, phân công giám sát viên, theo dõi tiến độ hạng mục
+#   và tổ chức nghiệm thu thực địa dựa trên các phụ lục hợp đồng đã kích hoạt.
+# - Các nguyên tắc bất biến sống còn (Core Domain Invariants):
+#   1. Cổng kiểm soát căn cứ pháp lý: Lệnh thi công chỉ được tạo từ Phụ lục hợp đồng
+#      ở trạng thái 'ACTIVE' (loại CONSTRUCTION hoặc BURIAL).
+#   2. Kiểm tra xung đột lịch làm việc (Staff Conflict Check - G13): Tự động phát hiện
+#      nếu nhân viên giám sát hoặc thi công trùng lịch nghỉ phép (StaffUnavailability).
+#   3. Chốt chặn minh chứng nghiệm thu (Evidence Completion Gate - R06):
+#      Lệnh thi công TUYỆT ĐỐI KHÔNG THỂ NGHIỆM THU (COMPLETED) nếu:
+#      - Còn bất kỳ hạng mục bắt buộc (is_required=True) chưa chuyển sang 'DONE'.
+#      - Thiếu ảnh chụp hoặc biên bản nghiệm thu thực địa ở trạng thái 'READY' (MinIO).
+#   4. Bảo toàn trạng thái an táng ô mộ: Hoàn thành thi công lăng mộ KHÔNG ĐƯỢC TỰ ĐỘNG
+#      chuyển ô mộ sang 'OCCUPIED'. Ô chỉ chuyển về 'OWNED_EMPTY' (nếu chưa an táng)
+#      hoặc giữ 'OCCUPIED' (nếu đã có người mất trước đó).
+# =============================================================================
+
 
 class ConstructionService:
     @staticmethod
     def _field_staff(db: Session, user_id: int) -> User:
+        """Xác thực người dùng là nhân viên quản trang thực địa (CARETAKER) hoặc Quản trị viên (ADMIN) đang hoạt động."""
         user = db.query(User).filter(User.user_id == user_id, User.is_active == True).first()  # noqa: E712
         if not user:
             raise HTTPException(status_code=404, detail="Không tìm thấy nhân viên đang làm việc.")
@@ -202,7 +223,13 @@ class ConstructionService:
     def check_staff_conflict(
         db: Session, user_id: int, start_date: date, end_date: date
     ) -> StaffConflictCheckResponse:
-        """Checks if a staff member has overlapping unavailability."""
+        """
+        KIỂM TRA XUNG ĐỘT LỊCH LÀM VIỆC CỦA NHÂN VIÊN (STAFF CONFLICT CHECK - G13):
+        - Quét bảng 'StaffUnavailability' để tìm các khoảng thời gian nhân viên đăng ký nghỉ phép
+          hoặc bận công tác giao nhau với khoảng thời gian thi công dự kiến [start_date, end_date].
+        - Điều kiện giao nhau trong SQL: (unav.start_date <= end_date AND unav.end_date >= start_date).
+        - Nếu phát hiện trùng lặp, trả về has_conflict=True kèm cảnh báo chi tiết để điều phối viên đổi nhân sự.
+        """
         conflicts = (
             db.query(StaffUnavailability)
             .filter(
@@ -240,7 +267,7 @@ class ConstructionService:
         )
 
     # -----------------------------------------------------------------------
-    # Construction Order Management
+    # QUẢN LÝ LỆNH THI CÔNG (CONSTRUCTION ORDER MANAGEMENT)
     # -----------------------------------------------------------------------
 
     @staticmethod
@@ -250,6 +277,7 @@ class ConstructionService:
         plot_id: Optional[int] = None,
         supervisor_id: Optional[int] = None,
     ) -> List[ConstructionOrderResponse]:
+        """Truy vấn danh sách lệnh thi công với eager loading liên kết Plot, Row, Zone, Supervisor, Tasks, Evidences."""
         query = db.query(ConstructionOrder).options(
             joinedload(ConstructionOrder.plot).joinedload(Plot.row).joinedload(Row.zone),
             joinedload(ConstructionOrder.supervisor),
@@ -273,6 +301,7 @@ class ConstructionService:
 
     @staticmethod
     def get_order_by_id(db: Session, order_id: int) -> ConstructionOrderResponse:
+        """Lấy chi tiết lệnh thi công theo ID kèm toàn bộ danh sách hạng mục và ảnh minh chứng."""
         order = (
             db.query(ConstructionOrder)
             .options(
@@ -291,7 +320,18 @@ class ConstructionService:
     def create_order(
         db: Session, data: ConstructionOrderCreate, creator_user_id: int
     ) -> ConstructionOrderResponse:
-        # 1. Validate Annex is ACTIVE and of type CONSTRUCTION or BURIAL
+        """
+        TẠO MỚI LỆNH THI CÔNG XÂY DỰNG:
+        - Bước 1: Kiểm tra Phụ lục hợp đồng (ContractAnnex) tồn tại, thuộc loại hợp lệ (CONSTRUCTION/BURIAL)
+                  và bắt buộc ở trạng thái ACTIVE.
+        - Bước 2: Kiểm tra ô mộ hợp lệ và khớp với ô mộ được đăng ký trên phụ lục.
+        - Bước 3: Xác thực nhân sự giám sát (chỉ phân công cho CARETAKER hoặc ADMIN).
+        - Bước 4: Kiểm tra xung đột lịch làm việc của giám sát viên (G13).
+        - Bước 5: Chuyển trạng thái ô mộ từ 'OWNED_EMPTY' sang 'UNDER_CONSTRUCTION'.
+        - Bước 6: Tự động phân rã các hạng mục công việc (Tasks) từ cấu hình checklist_specifications
+                  hoặc 5 hạng mục quy chuẩn ngành nghĩa trang.
+        """
+        # 1. Kiểm tra tính hợp lệ và trạng thái ACTIVE của phụ lục
         annex = db.query(ContractAnnex).filter(ContractAnnex.annex_id == data.annex_id).first()
         if not annex:
             raise HTTPException(status_code=404, detail="Phụ lục hợp đồng không tồn tại")
@@ -306,7 +346,7 @@ class ConstructionService:
                 detail=f"Phụ lục hợp đồng loại '{annex.annex_type}' không phải phụ lục thi công/an táng hợp lệ.",
             )
 
-        # 2. Validate Plot and match with Annex plot
+        # 2. Kiểm tra ô mộ và khớp nối với phụ lục
         plot = db.query(Plot).filter(Plot.plot_id == data.plot_id).first()
         if not plot:
             raise HTTPException(status_code=404, detail="Ô mộ không tồn tại")
@@ -322,13 +362,13 @@ class ConstructionService:
                 detail=f"Ô mộ chỉ định ({data.plot_id}) không khớp với ô mộ của phụ lục thi công ({annex_plot_id}).",
             )
 
-        # 3. Validate Supervisor
+        # 3. Xác thực nhân sự quản trang được phân công
         ConstructionService._field_staff(db, data.supervisor_id)
         for task in data.custom_tasks or []:
             if task.assignee_user_id is not None:
                 ConstructionService._field_staff(db, task.assignee_user_id)
 
-        # 4. Strict Deadline Invariant from Annex & Check supervisor conflict (G13)
+        # 4. Kiểm tra xung đột lịch làm việc của giám sát viên (G13)
         start_d = data.start_date or date.today()
         strict_end_date = data.expected_end_date
         if annex.construction and annex.construction.estimated_end_date:
@@ -345,7 +385,7 @@ class ConstructionService:
                 detail=f"Xung đột lịch giám sát viên: {conflict_res.warning_message}",
             )
 
-        # 5. Create Order
+        # 5. Khởi tạo lệnh thi công (PENDING)
         order = ConstructionOrder(
             annex_id=data.annex_id,
             plot_id=data.plot_id,
@@ -359,7 +399,7 @@ class ConstructionService:
         db.add(order)
         db.flush()
 
-        # Update plot status to UNDER_CONSTRUCTION if plot is currently OWNED_EMPTY
+        # Cập nhật trạng thái ô mộ sang UNDER_CONSTRUCTION
         if plot.status == "OWNED_EMPTY":
             plot.status = "UNDER_CONSTRUCTION"
 
@@ -447,14 +487,27 @@ class ConstructionService:
         db.refresh(order)
         return ConstructionService._to_order_response(order)
 
+    # =======================================================================
+    # CẬP NHẬT & NGHIỆM THU HOÀN THÀNH LỆNH THI CÔNG
+    # =======================================================================
+
     @staticmethod
     def update_order(
         db: Session, order_id: int, data: ConstructionOrderUpdate, actor_user_id: int
     ) -> ConstructionOrderResponse:
+        """
+        Cập nhật thông tin lệnh thi công (tiến độ, thời gian, người giám sát, ghi chú).
+        
+        Quy tắc nghiệp vụ:
+        - Lệnh đã nghiệm thu COMPLETED bị đóng băng, không cho phép chỉnh sửa.
+        - Nếu status chuyển thành COMPLETED, tự động chuyển tiếp sang hàm complete_order()
+          để kích hoạt toàn bộ cổng kiểm tra chất lượng (Quality Gate) bắt buộc.
+        """
         order = db.query(ConstructionOrder).filter(ConstructionOrder.order_id == order_id).first()
         if not order:
             raise HTTPException(status_code=404, detail="Không tìm thấy lệnh thi công")
 
+        # Invariant: Không cho phép sửa đổi khi lệnh đã hoàn thành nghiệm thu
         if order.status == "COMPLETED":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -463,12 +516,14 @@ class ConstructionService:
 
         if data.status is not None:
             new_status = data.status.upper()
+            # Nếu người dùng muốn nghiệm thu hoàn tất -> chuyển quyền cho hàm complete_order xử lý Gate Check
             if new_status == "COMPLETED":
                 return ConstructionService.complete_order(
                     db, order_id, notes=data.notes, actor_user_id=actor_user_id
                 )
             order.status = new_status
 
+        # Kiểm tra và gán giám sát viên mới (phải là nhân viên hiện trường hợp lệ)
         if data.supervisor_id is not None:
             ConstructionService._field_staff(db, data.supervisor_id)
             order.supervisor_id = data.supervisor_id
@@ -488,10 +543,26 @@ class ConstructionService:
     def complete_order(
         db: Session, order_id: int, notes: Optional[str], actor_user_id: int
     ) -> ConstructionOrderResponse:
+        """
+        [CỔNG KIỂM SOÁT NGHIỆM THU - QUALITY GATE R06]
+        Nghiệm thu hoàn tất lệnh thi công và cập nhật lại trạng thái ô đất.
+        
+        Các Invariant kiểm tra bắt buộc (Chặn 100% nếu vi phạm):
+        1. Lệnh thi công đã CANCELLED thì cấm nghiệm thu.
+        2. Gate 1: Toàn bộ task có cờ bắt buộc (is_required=True) phải đạt trạng thái 'DONE'.
+        3. Gate 2: Bắt buộc phải có ít nhất 1 ảnh/biên bản hiện trường ở trạng thái 'READY' trên toàn lệnh.
+        4. Gate 3: Từng hạng mục bắt buộc phải có ít nhất 1 ảnh minh chứng 'READY'.
+        5. Quy tắc bảo toàn trạng thái ô đất:
+           - Khi kết thúc xây dựng, ô đất không bao giờ tự động chuyển thành 'OCCUPIED' nếu chưa an táng!
+           - Nếu có người đã an táng trong các slot -> chuyển thành 'OCCUPIED'.
+           - Nếu chưa có người an táng -> chuyển thành 'OWNED_EMPTY' (đã sở hữu nhưng chưa có thi hài).
+        6. Phát sự kiện Outbox Event 'CONSTRUCTION_COMPLETED' phục vụ kiến trúc Event-Driven.
+        """
         order = db.query(ConstructionOrder).filter(ConstructionOrder.order_id == order_id).first()
         if not order:
             raise HTTPException(status_code=404, detail="Không tìm thấy lệnh thi công")
 
+        # Idempotency: Nếu đã COMPLETED từ trước thì trả về kết quả hiện tại
         if order.status == "COMPLETED":
             return ConstructionService._to_order_response(order)
 
@@ -500,7 +571,7 @@ class ConstructionService:
                 status_code=400, detail="Lệnh thi công đã bị hủy, không thể nghiệm thu."
             )
 
-        # Gate Check: thiếu required task chặn 100%
+        # Gate Check 1: Thiếu required task chưa xong -> chặn 100%
         uncompleted_required = [t for t in order.tasks if t.is_required and t.status != "DONE"]
         if uncompleted_required:
             names = ", ".join(f"'{t.task_name}'" for t in uncompleted_required)
@@ -509,7 +580,7 @@ class ConstructionService:
                 detail=f"Không thể hoàn thành lệnh thi công: vẫn còn {len(uncompleted_required)} công việc bắt buộc chưa hoàn tất: {names}.",
             )
 
-        # Gate Check: order must have at least 1 valid READY evidence across all tasks (R06)
+        # Gate Check 2: Lệnh thi công phải có ít nhất 1 minh chứng READY trên toàn bộ các task (R06)
         all_evidences = [ev for t in order.tasks for ev in t.evidences]
         ready_evidences = [
             ev for ev in all_evidences if ev.file_object and ev.file_object.state == "READY"
@@ -520,7 +591,7 @@ class ConstructionService:
                 detail="Cần ít nhất một ảnh hoặc biên bản hiện trường trước khi nghiệm thu.",
             )
 
-        # Gate Check: every required task must have at least 1 READY evidence (R06)
+        # Gate Check 3: Từng hạng mục bắt buộc (is_required) phải có riêng ít nhất 1 minh chứng READY (R06)
         for t in order.tasks:
             if t.is_required:
                 task_ready_ev = [
@@ -532,15 +603,19 @@ class ConstructionService:
                         detail=f"Hạng mục bắt buộc '{t.task_name}' chưa có ảnh hoặc biên bản nghiệm thu.",
                     )
 
-        # Mark completed
+        # Thiết lập hoàn thành lệnh và cập nhật tiến độ đạt 100%
         order.status = "COMPLETED"
         order.actual_end_date = date.today()
         order.overall_progress = Decimal("100.00")
         if notes:
             order.notes = (order.notes or "") + f"\n[Nghiệm thu {date.today()}]: {notes}"
 
-        # CRITICAL DOMAIN INVARIANT: "order hoàn thành không tự đổi trạng thái an táng"
-        # If plot is UNDER_CONSTRUCTION, revert to OWNED_EMPTY if no deceased is buried, or OCCUPIED if there are already buried deceased.
+        # -------------------------------------------------------------------
+        # BẢO TOÀN TRẠNG THÁI Ô ĐẤT (CRITICAL DOMAIN INVARIANT)
+        # -------------------------------------------------------------------
+        # Khi xây dựng hoàn tất, ô đất không tự đổi thành OCCUPIED nếu chưa an táng người mất.
+        # Nếu đã có người an táng trước đó -> chuyển thành OCCUPIED.
+        # Nếu chưa có người an táng -> chuyển thành OWNED_EMPTY.
         plot = order.plot
         if plot and plot.status == "UNDER_CONSTRUCTION":
             occupied_slots = (
@@ -553,7 +628,7 @@ class ConstructionService:
             else:
                 plot.status = "OWNED_EMPTY"
 
-        # Emit Outbox Event (G17)
+        # Phát sinh sự kiện Outbox (G17) để thông báo cho các module khác xử lý bất đồng bộ
         OutboxService.publish_event(
             db=db,
             aggregate_type="CONSTRUCTION_ORDER",
@@ -568,7 +643,7 @@ class ConstructionService:
             },
         )
 
-        # Audit Log
+        # Ghi vết nhật ký hệ thống (Audit Log)
         audit = AuditLog(
             user_id=actor_user_id,
             action_type="COMPLETE",
@@ -581,25 +656,34 @@ class ConstructionService:
         db.refresh(order)
         return ConstructionService._to_order_response(order)
 
-    # -----------------------------------------------------------------------
-    # Construction Tasks Management (G11)
-    # -----------------------------------------------------------------------
+    # =======================================================================
+    # QUẢN LÝ CÔNG VIỆC THI CÔNG CHI TIẾT (TASKS MANAGEMENT - G11)
+    # =======================================================================
 
     @staticmethod
     def create_task(
         db: Session, order_id: int, data: ConstructionTaskCreate, actor_user_id: int
     ) -> ConstructionTaskBrief:
+        """
+        Thêm một hạng mục công việc vào lệnh thi công.
+        
+        Kiểm tra nghiệp vụ:
+        - Lệnh thi công đã nghiệm thu COMPLETED thì không được phép thêm công việc mới.
+        - Kiểm tra xung đột lịch công tác (Staff Conflict) nếu chỉ định nhân sự thực hiện.
+        - Tự động kích hoạt tính toán lại tiến độ tổng thể của lệnh thi công.
+        """
         order = db.query(ConstructionOrder).filter(ConstructionOrder.order_id == order_id).first()
         if not order:
             raise HTTPException(status_code=404, detail="Lệnh thi công không tồn tại")
 
+        # Invariant: Không thêm task vào lệnh đã hoàn tất nghiệm thu
         if order.status == "COMPLETED":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Lệnh thi công đã nghiệm thu hoàn thành, không được phép thêm công việc mới.",
             )
 
-        # G13 Conflict check if assignee provided
+        # Kiểm tra tính hợp lệ và xung đột lịch làm việc của nhân viên được phân công (G13)
         if data.assignee_user_id is not None:
             ConstructionService._field_staff(db, data.assignee_user_id)
         if data.assignee_user_id and data.start_date and data.due_date:
@@ -622,6 +706,7 @@ class ConstructionService:
         db.add(task)
         db.flush()
 
+        # Tự động tính toán lại tỷ lệ phần trăm tiến độ của lệnh thi công
         ConstructionService._recalculate_progress(db, order)
         db.commit()
         db.refresh(task)
@@ -631,10 +716,15 @@ class ConstructionService:
     def update_task(
         db: Session, task_id: int, data: ConstructionTaskUpdate, actor_user_id: int
     ) -> ConstructionTaskBrief:
+        """
+        Cập nhật thông tin công việc thi công (người làm, hạn chót, ghi chú).
+        Không cho phép chỉnh sửa nếu lệnh thi công cha đã COMPLETED hoặc CANCELLED.
+        """
         task = db.query(ConstructionTask).filter(ConstructionTask.task_id == task_id).first()
         if not task:
             raise HTTPException(status_code=404, detail="Công việc thi công không tồn tại")
 
+        # Invariant: Không sửa task của lệnh đã đóng
         if task.order and task.order.status in ("COMPLETED", "CANCELLED"):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -672,6 +762,15 @@ class ConstructionService:
         proof_media_url: Optional[str],
         completer_user_id: int,
     ) -> ConstructionTaskBrief:
+        """
+        Báo cáo hoàn tất một đầu việc thi công tại hiện trường.
+        
+        Quy tắc Gate:
+        - Nếu là hạng mục bắt buộc (is_required=True), bắt buộc phải có ít nhất một ảnh minh chứng READY.
+        - Đổi trạng thái task sang 'DONE' và ghi nhận thời gian hoàn thành.
+        - Nếu lệnh thi công đang ở trạng thái 'PENDING', tự động chuyển sang 'IN_PROGRESS'.
+        - Tự động tính toán lại tiến độ hoàn thành chung của toàn bộ lệnh thi công.
+        """
         task = db.query(ConstructionTask).filter(ConstructionTask.task_id == task_id).first()
         if not task:
             raise HTTPException(status_code=404, detail="Công việc thi công không tồn tại")
@@ -682,10 +781,11 @@ class ConstructionService:
                 detail=f"Lệnh thi công đã kết thúc ({task.order.status}), không thể hoàn thành công việc.",
             )
 
+        # Idempotency: Đã DONE thì trả về kết quả
         if task.status == "DONE":
             return ConstructionService._to_task_brief(task)
 
-        # Gate Check: required task must have ready evidence (R06: remove URL shortcut)
+        # Gate Check: Hạng mục bắt buộc phải có minh chứng hợp lệ ở trạng thái READY (R06: loại bỏ shortcut qua URL thuần)
         if task.is_required:
             valid_evidence = False
             for ev in task.evidences:
@@ -705,7 +805,7 @@ class ConstructionService:
         if field_notes:
             task.field_notes = field_notes
 
-        # Transition order to IN_PROGRESS if currently PENDING
+        # Tự động kích hoạt chuyển trạng thái lệnh thi công sang IN_PROGRESS nếu đang chờ (PENDING)
         if task.order.status == "PENDING":
             task.order.status = "IN_PROGRESS"
 
@@ -713,6 +813,10 @@ class ConstructionService:
         db.commit()
         db.refresh(task)
         return ConstructionService._to_task_brief(task)
+
+    # -----------------------------------------------------------------------
+    # QUẢN LÝ MINH CHỨNG VÀ BẢO TỒN DỮ LIỆU HIỆN TRƯỜNG
+    # -----------------------------------------------------------------------
 
     @staticmethod
     def add_task_evidence(
@@ -722,6 +826,13 @@ class ConstructionService:
         caption: Optional[str],
         uploader_user_id: int,
     ) -> ConstructionTaskEvidenceBrief:
+        """
+        Đính kèm ảnh minh chứng thực địa vào đầu việc thi công.
+        
+        Kiểm tra bảo mật và tính toàn vẹn:
+        - Tệp phải tồn tại và có trạng thái 'READY' (đã tải lên MinIO thành công).
+        - Định dạng file bắt buộc phải là hình ảnh (MIME bắt đầu bằng 'image/').
+        """
         task = db.query(ConstructionTask).filter(ConstructionTask.task_id == task_id).first()
         if not task:
             raise HTTPException(status_code=404, detail="Công việc thi công không tồn tại")
@@ -732,7 +843,7 @@ class ConstructionService:
                 detail=f"Lệnh thi công đã kết thúc ({task.order.status}), không thể thêm bằng chứng.",
             )
 
-        # Gate Check: file must exist and be READY (ảnh phải READY trước chốt)
+        # Gate Check: Tệp phải tồn tại và ở trạng thái READY trên MinIO (ảnh phải READY trước khi nghiệm thu)
         file_obj = db.query(FileObject).filter(FileObject.file_id == file_id).first()
         if not file_obj:
             raise HTTPException(
@@ -767,10 +878,18 @@ class ConstructionService:
         evidence_id: int,
         user_id: int,
     ) -> None:
+        """
+        Xóa minh chứng thi công (có cơ chế đóng băng chống gian lận).
+        
+        Bảo mật hiện trường:
+        - Khi đầu việc đã hoàn thành ('DONE'), toàn bộ ảnh minh chứng bị khóa vĩnh viễn,
+          ngăn chặn việc đánh tráo hoặc xóa bỏ hồ sơ nghiệm thu thực tế.
+        """
         task = db.query(ConstructionTask).filter(ConstructionTask.task_id == task_id).first()
         if not task:
             raise HTTPException(status_code=404, detail="Công việc thi công không tồn tại")
 
+        # Khóa minh chứng khi công việc đã được nghiệm thu hoàn tất
         if task.status == "DONE":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -801,6 +920,7 @@ class ConstructionService:
     def reorder_tasks(
         db: Session, order_id: int, orders: List[TaskOrderItem]
     ) -> List[ConstructionTaskBrief]:
+        """Sắp xếp lại thứ tự ưu tiên của các công việc thi công (sort_order)."""
         order = db.query(ConstructionOrder).filter(ConstructionOrder.order_id == order_id).first()
         if not order:
             raise HTTPException(status_code=404, detail="Lệnh thi công không tồn tại")
@@ -815,11 +935,20 @@ class ConstructionService:
         return [ConstructionService._to_task_brief(t) for t in order.tasks]
 
     # -----------------------------------------------------------------------
-    # Helper: Recalculate Progress (Gate: thiếu required task chặn 100%)
+    # TÍNH TOÁN TIẾN ĐỘ THI CÔNG & CHẶN NGƯỠNG 100%
     # -----------------------------------------------------------------------
 
     @staticmethod
     def _recalculate_progress(db: Session, order: ConstructionOrder) -> None:
+        """
+        Thuật toán tính toán tiến độ tổng thể của lệnh thi công.
+        
+        Quy tắc Gate nghiêm ngặt:
+        - raw_progress = (Số task DONE / Tổng số task) * 100%.
+        - Nếu vẫn còn bất kỳ hạng mục bắt buộc nào (is_required) chưa DONE,
+          dù tỷ lệ toán học có đạt 100%, hệ thống vẫn ép mức tối đa là 99.00%.
+          Chỉ khi vượt qua nghiệm thu chính thức ở complete_order() mới đạt 100.00%.
+        """
         tasks = order.tasks
         if not tasks:
             order.overall_progress = Decimal("0.00")
@@ -832,7 +961,7 @@ class ConstructionService:
         raw_progress = (Decimal(completed_cnt) / Decimal(total_cnt)) * Decimal("100.00")
         raw_progress = raw_progress.quantize(Decimal("0.01"))
 
-        # Gate Check: If any required task is not completed, progress cannot reach 100%
+        # Gate Check: Nếu còn hạng mục bắt buộc chưa xong -> chặn không cho chạm mốc 100%
         if uncompleted_required and raw_progress >= Decimal("100.00"):
             raw_progress = Decimal("99.00")
 

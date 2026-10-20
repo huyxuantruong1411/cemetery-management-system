@@ -82,8 +82,10 @@ class CareChecklistItem(Base):
     # G12 extensions
     is_required = Column(Boolean, nullable=False, default=True)
     sort_order = Column(Integer, nullable=False, default=0)
+    is_custom = Column(Boolean, nullable=False, default=False)
 
     schedule = relationship("CareSchedule", back_populates="checklist_items")
+
 
 
 class CareMediaEvidence(Base):

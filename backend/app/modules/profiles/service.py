@@ -42,13 +42,43 @@ def _strip_accents(text: str) -> str:
     return "".join(c for c in nfkd if not unicodedata.combining(c)).lower()
 
 
+# =============================================================================
+# MODULE QUẢN LÝ HỒ SƠ KHÁCH HÀNG & NGƯỜI MẤT (PROFILE SERVICE)
+# =============================================================================
+# Module này quản lý toàn bộ dữ liệu thực thể con người trong hệ thống nghĩa trang:
+# 1. Hồ sơ Khách hàng (Customer Profile):
+#    - Đại diện cho thân nhân, người ký hợp đồng mua đất, hợp đồng chăm sóc, dịch vụ.
+#    - Định danh duy nhất bằng Số CCCD (citizen_id) và Mã khách hàng (customer_code: KH-YYYY-XXXX).
+# 2. Hồ sơ Người mất (Deceased Profile):
+#    - Quản lý danh tính người quá cố, thông tin sinh mất (ngày sinh, ngày mất, quê quán, tôn giáo).
+#    - Invariants G07: Ngày sinh <= Ngày mất; Năm sinh <= Năm mất; độ chính xác ngày sinh (EXACT/YEAR_ONLY).
+# 3. Cổng Giấy báo tử (Death Certificate Gate - G08):
+#    - Ràng buộc pháp lý tối thượng: Không một ô mộ hoặc dịch vụ an táng/hỏa táng nào được kích hoạt
+#      nếu người mất chưa có Giấy báo tử được nhân viên xác minh hợp lệ (is_verified=True, file_id READY).
+# 4. Quan hệ Khách hàng - Người mất (CustomerDeceasedRelation):
+#    - Liên kết quan hệ gia đình (vợ/chồng, con, cháu, anh em), cờ người liên hệ chính (is_primary_contact).
+# 5. Tra cứu tưởng niệm công khai (Public Lookup - G19 & ADR-001):
+#    - Hỗ trợ thân nhân/khách viếng tra cứu vị trí mộ (Khu, Dãy, Lô, Slot) và link chỉ đường Google Maps.
+#    - Triệt tiêu hoàn toàn nguy cơ rò rỉ thông tin cá nhân (Zero PII Leakage): Không lộ CCCD, SĐT, ngày sinh cụ thể.
+# =============================================================================
+
+
 class ProfileService:
     # ==========================================================================
-    # Customer Methods
+    # QUẢN LÝ HỒ SƠ KHÁCH HÀNG (CUSTOMER PROFILE MANAGEMENT)
     # ==========================================================================
+
     @staticmethod
     def create_customer(db: Session, data: CustomerCreate) -> CustomerResponse:
-        # Check duplicate citizen_id (CCCD)
+        """
+        Tạo mới hồ sơ khách hàng (người mua đất, người thân ký hợp đồng).
+        
+        Kiểm tra nghiệp vụ:
+        - Kiểm tra trùng lặp Số CCCD (citizen_id): Mỗi công dân chỉ có một hồ sơ duy nhất trên hệ thống.
+        - Tự động sinh mã khách hàng chuẩn định dạng: KH-YYYY-XXXX (năm hiện tại kèm số thứ tự).
+        - Đảm bảo mã sinh ra không bị xung đột trùng lặp trong CSDL.
+        """
+        # Kiểm tra trùng lặp số CCCD
         existing_citizen = db.execute(
             select(Customer).where(Customer.citizen_id == data.citizen_id.strip())
         ).scalar_one_or_none()
@@ -58,14 +88,14 @@ class ProfileService:
                 detail=f"Số CCCD '{data.citizen_id}' đã tồn tại trong hệ thống (Khách hàng: {existing_citizen.full_name})",
             )
 
-        # Generate customer_code if not supplied: KH-YYYY-XXXX
+        # Tự động sinh mã khách hàng theo mẫu: KH-YYYY-XXXX
         code = data.customer_code
         if not code:
             year = datetime.now(timezone.utc).year
             count = db.execute(select(Customer)).scalars().all()
             code = f"KH-{year}-{len(count) + 1:04d}"
 
-        # Ensure code is unique
+        # Đảm bảo mã khách hàng không trùng lặp
         while db.execute(
             select(Customer).where(Customer.customer_code == code)
         ).scalar_one_or_none():
@@ -92,6 +122,13 @@ class ProfileService:
     def update_customer(
         db: Session, customer_id: int, data: CustomerUpdate, user_id: int | None = None
     ) -> CustomerResponse:
+        """
+        Cập nhật thông tin khách hàng kèm ghi vết nhật ký kiểm toán (Audit Log).
+        
+        Bảo mật & Kiểm toán:
+        - Lưu trữ toàn bộ giá trị trước sửa đổi (pre_change_values) và sau sửa đổi (post_change_values).
+        - Ghi vết người thực hiện (user_id) vào bảng AuditLog để đối soát khi có khiếu nại.
+        """
         customer = db.get(Customer, customer_id)
         if not customer:
             raise HTTPException(
@@ -127,6 +164,7 @@ class ProfileService:
             "date_of_birth": customer.date_of_birth.isoformat() if customer.date_of_birth else None,
         }
 
+        # Ghi vết kiểm toán lịch sử thay đổi thông tin khách hàng
         audit = AuditLog(
             user_id=user_id,
             action_type="UPDATE",
@@ -143,6 +181,10 @@ class ProfileService:
 
     @staticmethod
     def get_customer(db: Session, customer_id: int) -> CustomerResponse:
+        """
+        Lấy thông tin chi tiết khách hàng cùng toàn bộ thân nhân quá cố liên kết.
+        Sử dụng joinedload để tránh N+1 query.
+        """
         customer = (
             db.execute(
                 select(Customer)
@@ -164,6 +206,9 @@ class ProfileService:
     def list_customers(
         db: Session, search: str | None = None, limit: int = 100
     ) -> list[CustomerResponse]:
+        """
+        Tìm kiếm danh sách khách hàng theo tên, mã KH, số CCCD hoặc số điện thoại.
+        """
         query = (
             select(Customer)
             .options(joinedload(Customer.relations).joinedload(CustomerDeceasedRelation.deceased))
@@ -185,13 +230,26 @@ class ProfileService:
         return [ProfileService._to_customer_response(c) for c in customers]
 
     # ==========================================================================
-    # Deceased Profile Methods (G07 & G08)
+    # QUẢN LÝ HỒ SƠ NGƯỜI MẤT (DECEASED PROFILE - G07 & G08)
     # ==========================================================================
+
     @staticmethod
     def create_deceased_profile(
         db: Session, data: DeceasedProfileCreate, user_id: int | None = None
     ) -> DeceasedProfileResponse:
-        # G07 Invariants check
+        """
+        Khởi tạo hồ sơ người quá cố.
+        
+        Quy tắc nghiệp vụ & Bất biến miền (Domain Invariants - G07):
+        1. Tính logic thời gian: Ngày sinh không được sau ngày mất (date_of_birth <= date_of_death).
+        2. Năm sinh không được lớn hơn năm mất (birth_year <= date_of_death.year).
+        3. Tự động sinh mã người mất: NM-YYYY-XXXX (chống trùng lặp tuyệt đối).
+        4. Độ chính xác ngày sinh (birth_date_precision): Phục vụ lưu trữ chính xác thông tin lịch sử
+           (nhiều cụ già thời chiến tranh chỉ nhớ năm sinh, không rõ ngày tháng).
+        5. Liên kết thân nhân (CustomerDeceasedRelation): Tự động tạo quan hệ với khách hàng nếu cung cấp.
+        6. Giấy báo tử đính kèm (DeathCertificate): Nếu có gửi kèm file chứng từ, kiểm tra file phải READY.
+        """
+        # G07 Invariants check: Kiểm tra tính hợp lệ của ngày sinh và ngày mất
         if data.date_of_birth and data.date_of_death:
             if data.date_of_birth > data.date_of_death:
                 raise HTTPException(
@@ -205,7 +263,7 @@ class ProfileService:
                     detail="Năm sinh không thể lớn hơn năm mất",
                 )
 
-        # Generate deceased_code: NM-YYYY-XXXX
+        # Tự động sinh mã người mất chuẩn: NM-YYYY-XXXX
         code = data.deceased_code
         if not code:
             year = datetime.now(timezone.utc).year
@@ -220,7 +278,7 @@ class ProfileService:
 
             code = f"NM-{year}-{random.randint(1000, 9999)}"
 
-        # G07: Determine birth_year and precision
+        # G07: Xác định năm sinh và độ chính xác
         b_year = data.birth_year
         if not b_year and data.date_of_birth:
             b_year = data.date_of_birth.year
@@ -244,7 +302,7 @@ class ProfileService:
         db.add(profile)
         db.flush()
 
-        # Link to Customer if provided
+        # Tự động liên kết với khách hàng thân nhân đại diện nếu có truyền customer_id
         if data.customer_id:
             customer = db.get(Customer, data.customer_id)
             if not customer:
@@ -262,7 +320,7 @@ class ProfileService:
             )
             db.add(rel)
 
-        # Create death certificate record if provided
+        # Khởi tạo bản ghi giấy báo tử nếu có đính kèm chứng từ
         if data.death_certificate:
             has_valid_file = False
             if data.death_certificate.file_id:
@@ -296,6 +354,9 @@ class ProfileService:
     def update_deceased_profile(
         db: Session, deceased_id: int, data: DeceasedProfileUpdate, user_id: int | None = None
     ) -> DeceasedProfileResponse:
+        """
+        Cập nhật hồ sơ người mất kèm kiểm tra Invariant và ghi vết Audit Log.
+        """
         profile = db.get(DeceasedProfile, deceased_id)
         if not profile:
             raise HTTPException(
@@ -330,7 +391,7 @@ class ProfileService:
         if data.religion is not None:
             profile.religion = data.religion.strip() if data.religion else None
 
-        # Re-validate dates
+        # Tái thẩm định Invariants ngày sinh và ngày mất sau khi chỉnh sửa
         if (
             profile.date_of_birth
             and profile.date_of_death
@@ -359,6 +420,7 @@ class ProfileService:
             "religion": profile.religion,
         }
 
+        # Ghi vết kiểm toán lịch sử thay đổi thông tin người mất
         audit = AuditLog(
             user_id=user_id,
             action_type="UPDATE",
@@ -375,6 +437,12 @@ class ProfileService:
 
     @staticmethod
     def get_deceased_profile(db: Session, deceased_id: int) -> DeceasedProfileResponse:
+        """
+        Xem chi tiết hồ sơ người mất kèm:
+        - Giấy báo tử và thông tin nhân viên kiểm duyệt.
+        - Danh sách thân nhân liên kết.
+        - Vị trí huyệt mộ hiện đang an táng (nếu có).
+        """
         profile = (
             db.execute(
                 select(DeceasedProfile)
@@ -397,7 +465,7 @@ class ProfileService:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy hồ sơ người mất"
             )
 
-        # Query burial slot if any
+        # Truy vấn huyệt mộ đang an táng người mất này (nếu có)
         slot = (
             db.execute(
                 select(PlotSlot)
@@ -414,6 +482,11 @@ class ProfileService:
     def list_deceased_profiles(
         db: Session, search: str | None = None, limit: int = 100
     ) -> list[DeceasedProfileResponse]:
+        """
+        Danh sách hồ sơ người mất có tối ưu hóa truy vấn:
+        - Sử dụng eager loading cho giấy báo tử và thân nhân.
+        - Batch loading truy vấn vị trí mộ (PlotSlot) một lần qua toán tử IN để loại bỏ N+1 query.
+        """
         query = (
             select(DeceasedProfile)
             .options(
@@ -435,7 +508,7 @@ class ProfileService:
 
         profiles = db.execute(query.limit(limit)).unique().scalars().all()
 
-        # Batch query burial slots for these deceased
+        # Batch query nạp hàng loạt thông tin huyệt mộ an táng (chống N+1 query)
         dec_ids = [p.deceased_id for p in profiles]
         slots_map = {}
         if dec_ids:
@@ -457,12 +530,20 @@ class ProfileService:
         ]
 
     # ==========================================================================
-    # Death Certificate & Verification Workflow (G08)
+    # QUẢN LÝ & KIỂM DUYỆT GIẤY BÁO TỬ (DEATH CERTIFICATE - G08)
     # ==========================================================================
+
     @staticmethod
     def attach_or_update_certificate(
         db: Session, deceased_id: int, data: DeathCertificateCreate, user_id: int | None = None
     ) -> DeathCertificateResponse:
+        """
+        Đính kèm hoặc cập nhật Giấy báo tử cho hồ sơ người mất.
+        
+        Kiểm tra tính hợp lệ của tệp:
+        - Nếu có truyền file_id, bắt buộc file phải tồn tại trong FileObject và ở trạng thái 'READY' (đã upload xong lên MinIO).
+        - Trạng thái xác minh (is_verified) ban đầu phụ thuộc vào việc tệp đã sẵn sàng hay chưa.
+        """
         profile = db.get(DeceasedProfile, deceased_id)
         if not profile:
             raise HTTPException(
@@ -526,6 +607,20 @@ class ProfileService:
     def verify_certificate(
         db: Session, cert_id: int, data: DeathCertificateVerifyRequest, verifier_user_id: int
     ) -> DeathCertificateResponse:
+        """
+        [CỔNG KIỂM DUYỆT PHÁP LÝ GIẤY BÁO TỬ - G08 GATE]
+        Nhân viên có thẩm quyền kiểm tra tính pháp lý và phê duyệt hoặc từ chối giấy báo tử.
+        
+        Quy tắc Gate:
+        - Khi phê duyệt (is_verified=True):
+          + Bắt buộc phải có tệp scan chứng từ (file_id).
+          + Trạng thái file trên MinIO phải là 'READY'.
+          + Ghi nhận người phê duyệt (verifier_user_id) và thời điểm phê duyệt (verified_at).
+          + Đồng bộ cờ profile.has_death_certificate = True để mở khóa cho các luồng an táng/hỏa táng.
+        - Khi từ chối (is_verified=False):
+          + Bắt buộc lưu lý do từ chối (rejection_reason) để thông báo cho khách hàng bổ sung.
+          + Đóng cờ profile.has_death_certificate = False để chặn các giao dịch liên quan.
+        """
         cert = (
             db.execute(
                 select(DeathCertificate)
@@ -578,7 +673,16 @@ class ProfileService:
 
     @staticmethod
     def check_death_certificate_verified(db: Session, deceased_id: int) -> bool:
-        """Domain invariant helper: returns True iff a verified death certificate exists with valid file."""
+        """
+        [CHỐT CHẶN PHÁP LÝ TỐI THƯỢNG - DOMAIN INVARIANT HELPER]
+        Trả về True nếu và chỉ nếu:
+        1. Người mất có bản ghi Giấy báo tử (DeathCertificate) với cờ is_verified == True.
+        2. Bản ghi có đính kèm tệp chứng từ hợp lệ (file_id) ở trạng thái 'READY' trên MinIO.
+        
+        Hàm này được gọi từ:
+        - ContractService.create_burial_annex(): Chặn tạo phụ lục an táng nếu chưa có giấy báo tử.
+        - ContractService.create_cremation_contract(): Chặn tạo hợp đồng hỏa táng nếu chưa có giấy báo tử.
+        """
         cert = db.execute(
             select(DeathCertificate).where(
                 DeathCertificate.deceased_id == deceased_id,
@@ -593,18 +697,29 @@ class ProfileService:
         return True
 
     # ==========================================================================
-    # Public Lookup (Zero PII Leakage - G19 & ADR-001)
+    # TRA CỨU CÔNG KHAI & BẢO MẬT DỮ LIỆU CÁ NHÂN (ZERO PII - G19)
     # ==========================================================================
+
     @staticmethod
     def public_lookup_deceased(
         db: Session, query_str: str, limit: int = 20
     ) -> list[DeceasedPublicLookupResponse]:
+        """
+        Tra cứu thông tin người mất phục vụ khách viếng thăm (Cổng tra cứu công khai).
+        
+        Nguyên tắc bảo vệ dữ liệu cá nhân (Zero PII Leakage - G19 & ADR-001):
+        - Cho phép tìm kiếm theo: Tên người mất, Mã người mất, Mã ô mộ (plot_code), Mã dãy (row_code).
+        - Tuyệt đối KHÔNG trả về các thông tin nhạy cảm: Số CCCD, Số điện thoại, Địa chỉ nhà, ngày sinh chi tiết.
+        - Chỉ trả về: Năm sinh (year_of_birth), Ngày mất, Quê quán, Vị trí mộ (Khu/Dãy/Lô/Slot),
+          Tọa độ GPS (latitude, longitude), Chuỗi hướng dẫn đường đi (navigation_guidance) và
+          Link Google Maps trực tiếp giúp khách tìm đường tới mộ.
+        """
         if not query_str or len(query_str.strip()) < 2:
             return []
 
         search_term = f"%{query_str.strip()}%"
 
-        # Search by deceased name/code, or by plot code/row code
+        # Tìm kiếm theo tên/mã người mất, hoặc theo mã ô đất/mã dãy mộ
         matching_plot_dec_ids = (
             db.execute(
                 select(PlotSlot.current_deceased_id)
@@ -693,6 +808,7 @@ class ProfileService:
                 else None
             )
 
+            # Chuẩn hóa dữ liệu trả về theo schema bảo vệ PII (Zero PII Leakage)
             results.append(
                 DeceasedPublicLookupResponse(
                     deceased_code=p.deceased_code,
@@ -715,10 +831,16 @@ class ProfileService:
         return results
 
     # ==========================================================================
-    # Relations Management
+    # QUẢN LÝ QUAN HỆ KHÁCH HÀNG - NGƯỜI MẤT (RELATIONS MANAGEMENT)
     # ==========================================================================
+
     @staticmethod
     def link_relation(db: Session, data: RelationCreate) -> CustomerRelationBrief:
+        """
+        Thiết lập hoặc cập nhật quan hệ giữa khách hàng và người mất.
+        - Quản lý kiểu quan hệ (Vợ chồng, Con cái, Anh em ruột, v.v.).
+        - Gán cờ người liên hệ chính (is_primary_contact).
+        """
         customer = db.get(Customer, data.customer_id)
         if not customer:
             raise HTTPException(
@@ -730,7 +852,7 @@ class ProfileService:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy người mất"
             )
 
-        # Check existing link
+        # Kiểm tra xem quan hệ giữa 2 đối tượng này đã tồn tại chưa
         existing = db.execute(
             select(CustomerDeceasedRelation).where(
                 CustomerDeceasedRelation.customer_id == data.customer_id,
@@ -766,6 +888,7 @@ class ProfileService:
 
     @staticmethod
     def remove_relation(db: Session, relation_id: int) -> None:
+        """Xóa mối quan hệ giữa khách hàng và người mất."""
         rel = db.get(CustomerDeceasedRelation, relation_id)
         if not rel:
             raise HTTPException(
@@ -778,6 +901,10 @@ class ProfileService:
     def list_relations(
         db: Session, search: str | None = None, limit: int = 200
     ) -> list[RelationDetailResponse]:
+        """
+        Truy vấn danh sách mối quan hệ khách hàng - người mất với đầy đủ thông tin:
+        Họ tên khách hàng, SĐT, người mất, vị trí ô huyệt mộ đang an táng.
+        """
         query = (
             select(CustomerDeceasedRelation)
             .join(Customer, CustomerDeceasedRelation.customer_id == Customer.customer_id)

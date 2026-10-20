@@ -59,7 +59,30 @@ class PriceListBase(BaseModel):
 
 
 class PriceListCreate(PriceListBase):
-    pass
+    auto_close_previous: bool = Field(
+        False,
+        description="Tự động kết thúc bảng giá đang áp dụng trước đó vào ngày liền trước ngày bắt đầu bảng giá mới",
+    )
+
+
+class PriceListCloneRequest(BaseModel):
+    new_price_list_name: str = Field(..., max_length=100, description="Tên bảng giá mới sao chép")
+    effective_from_date: date = Field(..., description="Ngày bắt đầu hiệu lực")
+    effective_to_date: Optional[date] = Field(None, description="Ngày kết thúc hiệu lực")
+    is_active: bool = Field(True, description="Kích hoạt bảng giá mới")
+    auto_close_previous: bool = Field(
+        False,
+        description="Tự động kết thúc bảng giá đang áp dụng trước đó vào ngày liền trước ngày bắt đầu",
+    )
+
+
+class PriceListCloseRequest(BaseModel):
+    close_date: Optional[date] = Field(
+        None, description="Ngày kết thúc hiệu lực (Mặc định hôm nay nếu để trống)"
+    )
+    deactivate: bool = Field(
+        False, description="Ngừng kích hoạt bảng giá (is_active=False) sau khi đóng ngày"
+    )
 
 
 class PriceListUpdate(BaseModel):

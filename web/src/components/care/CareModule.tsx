@@ -16,6 +16,8 @@ import {
   ListTodo,
   Camera,
   ArrowUpDown,
+  Plus,
+  Trash2,
 } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
 import { useNotificationModal } from '../../context/NotificationModalContext'
@@ -76,7 +78,12 @@ export const CareModule: React.FC = () => {
   const [assignLoading, setAssignLoading] = useState<boolean>(false)
   const [staffList, setStaffList] = useState<Array<{ user_id: number; username: string; full_name: string; roles: string[] }>>([])
 
+  // Custom checklist items form
+  const [customTaskDesc, setCustomTaskDesc] = useState<string>('')
+  const [isAddingCustomTask, setIsAddingCustomTask] = useState<boolean>(false)
+
   // Notifications
+
   const [notification, setNotification] = useState<{ message: string; isError: boolean } | null>(null)
 
   const showNotification = (message: string, isError = false) => {
@@ -249,6 +256,89 @@ export const CareModule: React.FC = () => {
       showNotification(err instanceof Error ? err.message : 'Lỗi cập nhật checklist', true)
     }
   }
+
+  // Quản trang thêm đầu việc phát sinh ngoài thực địa
+  const handleCreateCustomTask = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!token || !selectedSchedule || !customTaskDesc.trim()) return
+    try {
+      setIsAddingCustomTask(true)
+      const res = await apiFetch(`/api/v1/care/schedules/${selectedSchedule.schedule_id}/checklist-items`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          task_description: customTaskDesc.trim(),
+          is_required: false,
+        }),
+      })
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}))
+        throw new Error(errJson.detail || 'Không thể thêm công việc phát sinh')
+      }
+      const newItem: CareChecklistItemBrief = await res.json()
+      setSelectedSchedule((prev) => {
+        if (!prev) return null
+        const nextItems = [...prev.checklist_items, newItem]
+        return {
+          ...prev,
+          checklist_items: nextItems,
+          tasks_count: nextItems.length,
+        }
+      })
+      setCustomTaskDesc('')
+      showNotification('Đã thêm việc phát sinh vào checklist thành công')
+      fetchSchedules()
+    } catch (err: unknown) {
+      showNotification(err instanceof Error ? err.message : 'Lỗi thêm việc phát sinh', true)
+    } finally {
+      setIsAddingCustomTask(false)
+    }
+  }
+
+  // Quản trang xóa đầu việc phát sinh (chặn xóa việc theo phụ lục)
+  const handleDeleteCustomTask = async (item: CareChecklistItemBrief) => {
+    if (!token || !selectedSchedule) return
+    if (!item.is_custom) {
+      showNotification('Không được phép xóa hạng mục công việc tiêu chuẩn thuộc phụ lục của khách hàng!', true)
+      return
+    }
+    const confirmed = await confirm({
+      title: 'Xác Nhận Xóa Công Việc Phát Sinh',
+      message: `Bạn có chắc chắn muốn xóa công việc phát sinh "${item.task_description}" khỏi ca chăm sóc này?`,
+      confirmText: 'Xác nhận xóa',
+      cancelText: 'Hủy',
+    })
+    if (!confirmed) return
+
+    try {
+      const res = await apiFetch(`/api/v1/care/schedules/${selectedSchedule.schedule_id}/checklist-items/${item.item_id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}))
+        throw new Error(errJson.detail || 'Không thể xóa công việc phát sinh')
+      }
+      setSelectedSchedule((prev) => {
+        if (!prev) return null
+        const nextItems = prev.checklist_items.filter((i) => i.item_id !== item.item_id)
+        return {
+          ...prev,
+          checklist_items: nextItems,
+          tasks_count: nextItems.length,
+          completed_tasks_count: nextItems.filter((i) => i.is_completed).length,
+        }
+      })
+      showNotification('Đã xóa công việc phát sinh khỏi ca')
+      fetchSchedules()
+    } catch (err: unknown) {
+      showNotification(err instanceof Error ? err.message : 'Lỗi xóa việc phát sinh', true)
+    }
+  }
+
 
   const handleUploadEvidence = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -1523,12 +1613,12 @@ export const CareModule: React.FC = () => {
                             border: task.is_completed ? '1px solid #A7F3D0' : '1px solid #E2E8F0',
                             backgroundColor: task.is_completed ? '#F0FDF4' : '#FFFFFF',
                             display: 'flex',
-                            alignItems: 'flex-start',
+                            alignItems: 'center',
                             justifyContent: 'space-between',
                             gap: '12px',
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flex: 1 }}>
                             <input
                               type="checkbox"
                               checked={task.is_completed}
@@ -1536,8 +1626,8 @@ export const CareModule: React.FC = () => {
                               disabled={!canExecuteCare || selectedSchedule.status === 'CLOSED'}
                               style={{ marginTop: '2px', cursor: 'pointer', width: '16px', height: '16px' }}
                             />
-                            <div>
-                              <div style={{ fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                                 <span
                                   style={{
                                     textDecoration: task.is_completed ? 'line-through' : 'none',
@@ -1561,6 +1651,37 @@ export const CareModule: React.FC = () => {
                                     Bắt buộc
                                   </span>
                                 )}
+                                {task.is_custom ? (
+                                  <span
+                                    style={{
+                                      padding: '2px 6px',
+                                      borderRadius: '4px',
+                                      fontSize: '10px',
+                                      fontWeight: 600,
+                                      backgroundColor: '#FEF3C7',
+                                      color: '#B45309',
+                                      border: '1px solid #FCD34D',
+                                    }}
+                                    title="Đầu việc do quản trang bổ sung ngoài thực địa"
+                                  >
+                                    Quản trang thêm
+                                  </span>
+                                ) : (
+                                  <span
+                                    style={{
+                                      padding: '2px 6px',
+                                      borderRadius: '4px',
+                                      fontSize: '10px',
+                                      fontWeight: 600,
+                                      backgroundColor: '#EFF6FF',
+                                      color: '#1D4ED8',
+                                      border: '1px solid #BFDBFE',
+                                    }}
+                                    title="Đầu việc tiêu chuẩn từ Phụ lục Hợp đồng của khách hàng - Được hệ thống bảo vệ nghiêm ngặt"
+                                  >
+                                    Phụ lục HĐ
+                                  </span>
+                                )}
                               </div>
                               {task.field_notes && (
                                 <div style={{ fontSize: '11px', color: '#64748B', marginTop: '4px', fontStyle: 'italic' }}>
@@ -1569,9 +1690,109 @@ export const CareModule: React.FC = () => {
                               )}
                             </div>
                           </div>
+
+                          {/* Action Button: Quản trang chỉ được xóa các việc do mình tạo (is_custom = true) */}
+                          <div>
+                            {task.is_custom ? (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteCustomTask(task)}
+                                disabled={!canExecuteCare || selectedSchedule.status === 'CLOSED'}
+                                title="Xóa đầu việc phát sinh này"
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: '#EF4444',
+                                  cursor: canExecuteCare && selectedSchedule.status !== 'CLOSED' ? 'pointer' : 'not-allowed',
+                                  padding: '4px',
+                                  borderRadius: '4px',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  opacity: canExecuteCare && selectedSchedule.status !== 'CLOSED' ? 1 : 0.4,
+                                }}
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            ) : (
+                              <span
+                                title="Hạng mục phụ lục khách hàng - Được bảo toàn bất biến, không thể xóa"
+                                style={{
+                                  fontSize: '11px',
+                                  color: '#94A3B8',
+                                  padding: '2px 6px',
+                                  cursor: 'help',
+                                }}
+                              >
+                                🔒
+                              </span>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
+
+                    {/* Form thêm việc phát sinh cho Quản trang */}
+                    {canExecuteCare && selectedSchedule.status !== 'CLOSED' && (
+                      <form
+                        onSubmit={handleCreateCustomTask}
+                        style={{
+                          marginTop: '12px',
+                          padding: '10px 12px',
+                          backgroundColor: '#F8FAFC',
+                          borderRadius: '8px',
+                          border: '1px dashed #CBD5E1',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '8px',
+                        }}
+                      >
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: '#334155', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <Plus size={14} color="#059669" />
+                          <span>Thêm việc phát sinh ngoài thực địa (Dành cho Quản trang)</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px' }}>
+                          <input
+                            type="text"
+                            placeholder="Nhập mô tả việc phát sinh (VD: Cắt tỉa nhánh cây sà vào mộ, quét rêu chân bia...)"
+                            value={customTaskDesc}
+                            onChange={(e) => setCustomTaskDesc(e.target.value)}
+                            disabled={isAddingCustomTask}
+                            style={{
+                              flex: 1,
+                              padding: '7px 10px',
+                              fontSize: '12px',
+                              borderRadius: '6px',
+                              border: '1px solid #CBD5E1',
+                              outline: 'none',
+                            }}
+                          />
+                          <button
+                            type="submit"
+                            disabled={isAddingCustomTask || !customTaskDesc.trim()}
+                            style={{
+                              padding: '7px 14px',
+                              backgroundColor: customTaskDesc.trim() ? '#059669' : '#94A3B8',
+                              color: '#FFFFFF',
+                              borderRadius: '6px',
+                              border: 'none',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              cursor: customTaskDesc.trim() && !isAddingCustomTask ? 'pointer' : 'not-allowed',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {isAddingCustomTask ? <RefreshCw size={12} className="animate-spin" /> : <Plus size={12} />}
+                            Thêm việc
+                          </button>
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#64748B' }}>
+                          ℹ️ Ghi chú: Việc do quản trang tự thêm có thể xóa khi cần; các hạng mục phụ lục khách hàng đã cam kết được bảo vệ và không được xóa.
+                        </div>
+                      </form>
+                    )}
                   </div>
 
                   {/* Photo Evidence Section */}

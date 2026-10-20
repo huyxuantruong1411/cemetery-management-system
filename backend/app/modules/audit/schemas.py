@@ -17,6 +17,7 @@ class AuditLogResponse(BaseModel):
     post_change_values: Optional[str] = None
     ip_address: Optional[str] = None
     timestamp: datetime
+    narrative_summary: Optional[str] = None
 
 
 class AuditSummaryResponse(BaseModel):

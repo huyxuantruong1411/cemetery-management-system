@@ -11,6 +11,7 @@ from app.modules.care.schemas import (
     CareAnnexRegisterRequest,
     CareAnnexResponse,
     CareChecklistItemBrief,
+    CareChecklistItemCreate,
     CareChecklistItemUpdate,
     CareMediaEvidenceBrief,
     CareMediaEvidenceCreate,
@@ -204,6 +205,50 @@ def update_checklist_item(
         user_id=current_user.user_id,
     )
     return CareChecklistItemBrief.model_validate(item)
+
+
+@router.post(
+    "/schedules/{schedule_id}/checklist-items",
+    response_model=CareChecklistItemBrief,
+    status_code=status.HTTP_201_CREATED,
+    summary="Quản trang thêm đầu việc phát sinh vào checklist (G12)",
+    dependencies=[Depends(require_permission("care", "execute"))],
+)
+def add_checklist_item(
+    schedule_id: int,
+    req: CareChecklistItemCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    item = CareService.add_checklist_item(
+        db=db,
+        schedule_id=schedule_id,
+        data=req,
+        user_id=current_user.user_id,
+    )
+    return CareChecklistItemBrief.model_validate(item)
+
+
+@router.delete(
+    "/schedules/{schedule_id}/checklist-items/{item_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Xóa đầu việc phát sinh do quản trang tạo (Chặn xóa việc phụ lục khách hàng)",
+    dependencies=[Depends(require_permission("care", "execute"))],
+)
+def delete_checklist_item(
+    schedule_id: int,
+    item_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    CareService.delete_checklist_item(
+        db=db,
+        schedule_id=schedule_id,
+        item_id=item_id,
+        user_id=current_user.user_id,
+    )
+    return None
+
 
 
 @router.post(

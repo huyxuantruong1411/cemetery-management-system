@@ -14,6 +14,13 @@ class CareChecklistItemBase(BaseModel):
     sort_order: int = 0
     is_completed: bool = False
     field_notes: Optional[str] = None
+    is_custom: bool = False
+
+
+class CareChecklistItemCreate(BaseModel):
+    task_description: str = Field(..., max_length=255, description="Tên công việc phát sinh")
+    is_required: bool = Field(False, description="Đánh dấu bắt buộc hoàn thành")
+    field_notes: Optional[str] = Field(None, description="Ghi chú thêm")
 
 
 class CareChecklistItemBrief(CareChecklistItemBase):
@@ -26,6 +33,7 @@ class CareChecklistItemBrief(CareChecklistItemBase):
 class CareChecklistItemUpdate(BaseModel):
     is_completed: Optional[bool] = None
     field_notes: Optional[str] = None
+
 
 
 # ---------------------------------------------------------------------------

@@ -1,3 +1,27 @@
+/**
+ * =================================================================================================
+ * NÚT DẪN ĐƯỜNG VỊ TRÍ Ô MỘ & BẢN ĐỒ TỌA ĐỘ GPS (PlotDirectionsButton.tsx)
+ * =================================================================================================
+ * 
+ * [MỤC ĐÍCH NGHIỆP VỤ & KIẾN TRÚC]:
+ * 1. Khắc Phục Khó Khăn Tìm Mộ Ngoài Thực Địa (Field Navigation Problem):
+ *    - Khuôn viên nghĩa trang tư nhân thường có diện tích hàng chục héc-ta với hàng nghìn ô mộ.
+ *    - Thân nhân hoặc đội quản trang rất khó xác định chính xác vị trí huyệt mộ nếu chỉ dựa vào số hiệu.
+ *    - Component này cung cấp giải pháp 3 lớp:
+ *      + Lớp 1: Tọa độ vệ tinh GPS chính xác (Vĩ độ / Kinh độ WGS-84).
+ *      + Lớp 2: Liên kết trực tiếp Google Maps chế độ đi bộ (`travelmode=walking`) dẫn đường từ vị trí người dùng.
+ *      + Lớp 3: Hướng dẫn lộ trình nội bộ 3 bước (Cổng chính -> Phân khu -> Hàng mộ -> Mã ô mộ).
+ * 
+ * 2. Tích Hợp Bản Đồ Phân Khu (Geographic Zone Map):
+ *    - Tải thông tin ô mộ hiện tại (`/api/v1/plots/{plotId}`) và toàn bộ các ô mộ lân cận trong cùng phân khu.
+ *    - Hiển thị trực quan qua component `<GeographicPlotMap />` giúp người dùng định vị trực giác.
+ * 
+ * 3. Chuẩn Trợ Năng WCAG & Focus Trapping (Accessibility):
+ *    - Khóa cuộn trang nền (`document.body.style.overflow = 'hidden'`).
+ *    - Bẫy tiêu điểm phím Tab (Focus trap) trong modal, phím Esc để đóng nhanh.
+ * =================================================================================================
+ */
+
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { MapPin, X, Navigation, Compass, Map as MapIcon, CornerDownRight } from 'lucide-react'
@@ -17,13 +41,20 @@ export function PlotDirectionsButton({ plotId, plotCode }: { plotId?: number | n
   const trigger = useRef<HTMLButtonElement>(null), closeButton = useRef<HTMLButtonElement>(null)
   const dialog = useRef<HTMLElement>(null)
   const close = () => { setOpen(false); trigger.current?.focus() }
+
+  /**
+   * Tải thông tin chi tiết ô mộ và nạp toàn bộ các ô mộ cùng phân khu để vẽ bản đồ
+   */
   const load = async () => {
     setLoading(true); setError(''); setPlot(null); setNearby([])
     try {
+      // 1. Tải chi tiết ô mộ (tọa độ, loại mộ, trạng thái, phân khu)
       const res = await apiFetch(`/api/v1/plots/${plotId}`, { headers: { Authorization: `Bearer ${accessToken}` } })
       if (!res.ok) throw new Error(await responseError(res, 'Chưa tải được vị trí ô mộ.'))
       const detail: PlotDetail = await res.json()
       setPlot(detail)
+      
+      // 2. Tải toàn bộ danh sách các ô mộ lân cận trong cùng phân khu (phân trang 500 ô/lần)
       const zonePlots: Plot[] = []
       for (let skip = 0; ; skip += 500) {
         const response = await apiFetch(`/api/v1/plots?zone_id=${detail.zone_id}&limit=500&skip=${skip}`, { headers: { Authorization: `Bearer ${accessToken}` } })
@@ -36,6 +67,10 @@ export function PlotDirectionsButton({ plotId, plotCode }: { plotId?: number | n
     } catch (e) { setError(e instanceof Error ? e.message : 'Chưa tải được vị trí ô mộ.') }
     finally { setLoading(false) }
   }
+
+  /**
+   * Quản lý sự kiện bàn phím & Focus Trap theo chuẩn WCAG khi mở Modal
+   */
   useEffect(() => {
     if (!open) return
     closeButton.current?.focus()
@@ -53,9 +88,15 @@ export function PlotDirectionsButton({ plotId, plotCode }: { plotId?: number | n
     window.addEventListener('keydown', onKey, true)
     return () => { window.removeEventListener('keydown', onKey, true); document.body.style.overflow = oldOverflow }
   }, [open])
+
+  // Nếu không có plotId hoặc người dùng không có quyền xem ô mộ thì không hiển thị nút
   if (!plotId || !hasPermission('plots:read')) return null
+  
+  // Trích xuất tọa độ địa lý [vĩ độ, kinh độ]
   const point = plot && coordinates(plot)
+  // Nhận diện dữ liệu tọa độ giả lập kiểm thử (Synthetic GIS data)
   const isSynthetic = plot?.is_synthetic || plot?.notes?.includes('[SYNTHETIC_GIS')
+
 
   return (
     <>
@@ -139,7 +180,7 @@ export function PlotDirectionsButton({ plotId, plotCode }: { plotId?: number | n
                 </div>
               ) : plot && point ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  {/* Action Banner for Directions */}
+                  {/* TẦNG 1 & 2: THÔNG BÁO TỌA ĐỘ VỆ TINH & NÚT MỞ GOOGLE MAPS DẪN ĐƯỜNG ĐI BỘ */}
                   <div
                     style={{
                       display: 'flex',
@@ -159,6 +200,7 @@ export function PlotDirectionsButton({ plotId, plotCode }: { plotId?: number | n
                         <span style={{ fontSize: '14px', fontWeight: 700, color: '#166534' }}>
                           Dẫn đường trực tiếp tới ô mộ
                         </span>
+                        {/* Dán nhãn dữ liệu tọa độ mô phỏng kiểm thử */}
                         {isSynthetic && (
                           <span style={{ fontSize: '11px', backgroundColor: '#DCFCE7', color: '#166534', padding: '2px 6px', borderRadius: '4px' }}>
                             Mô phỏng GIS
@@ -170,6 +212,7 @@ export function PlotDirectionsButton({ plotId, plotCode }: { plotId?: number | n
                       </div>
                     </div>
 
+                    {/* Mở Google Maps chỉ đường đi bộ tới chính xác tọa độ GPS của ô mộ */}
                     <a
                       className="plot-nav-primary-btn"
                       target="_blank"
@@ -196,7 +239,7 @@ export function PlotDirectionsButton({ plotId, plotCode }: { plotId?: number | n
                     </a>
                   </div>
 
-                  {/* Internal Walking Route Guidance */}
+                  {/* TẦNG 3: HƯỚNG DẪN LỘ TRÌNH ĐI BỘ NỘI KHU HOA VIÊN (Từ cổng chính -> Khu -> Hàng -> Mộ) */}
                   <div
                     style={{
                       padding: '12px 16px',
@@ -218,7 +261,7 @@ export function PlotDirectionsButton({ plotId, plotCode }: { plotId?: number | n
                     </ol>
                   </div>
 
-                  {/* Interactive Map */}
+                  {/* BẢN ĐỒ PHÂN KHU TƯƠNG TÁC (Geographic Plot Map) */}
                   <div>
                     <div style={{ fontSize: '13px', fontWeight: 600, color: '#475569', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <MapIcon size={15} /> Sơ đồ vị trí trên bản đồ phân khu:
@@ -227,6 +270,7 @@ export function PlotDirectionsButton({ plotId, plotCode }: { plotId?: number | n
                       <GeographicPlotMap plots={nearby.length ? nearby : [plot]} focusId={plot.plot_id} />
                     </div>
                   </div>
+
                 </div>
               ) : (
                 <div style={{ padding: '30px 20px', textAlign: 'center', color: '#64748B' }}>

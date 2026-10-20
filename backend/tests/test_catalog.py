@@ -201,3 +201,130 @@ def test_invalid_contract_type_rejected():
         },
     )
     assert resp.status_code == 422  # Pydantic validation error
+
+
+def test_auto_close_previous_price_list_and_crud():
+    """Verify auto_close_previous caps the open-ended previous price list and allows smooth transition."""
+    token = get_admin_token()
+
+    # Find the currently active price list
+    active_lists = client.get(
+        "/api/v1/catalog/price-lists?active_only=true",
+        headers={"Authorization": f"Bearer {token}"},
+    ).json()
+    assert len(active_lists) > 0
+    prev_pl_id = active_lists[0]["price_list_id"]
+
+    # Create new active price list starting 2027-01-01 with auto_close_previous=True
+    create_resp = client.post(
+        "/api/v1/catalog/price-lists",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "price_list_name": "Bảng Giá Niêm Yết Mới 2027",
+            "effective_from_date": "2027-01-01",
+            "effective_to_date": None,
+            "is_active": True,
+            "auto_close_previous": True,
+        },
+    )
+    assert create_resp.status_code == 201, create_resp.text
+    new_pl_id = create_resp.json()["price_list_id"]
+
+    try:
+        # Check that previous open-ended list was capped to 2026-12-31
+        prev_resp = client.get(
+            f"/api/v1/catalog/price-lists/{prev_pl_id}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert prev_resp.status_code == 200
+        prev_data = prev_resp.json()
+        assert prev_data["effective_to_date"] == "2026-12-31"
+
+        # Clone the new price list
+        clone_resp = client.post(
+            f"/api/v1/catalog/price-lists/{new_pl_id}/clone",
+            headers={"Authorization": f"Bearer {token}"},
+            json={
+                "new_price_list_name": "Bản Sao Bảng Giá 2027 (Dự Thảo 2028)",
+                "effective_from_date": "2028-01-01",
+                "effective_to_date": "2028-12-31",
+                "is_active": False,
+                "auto_close_previous": False,
+            },
+        )
+        assert clone_resp.status_code == 201, clone_resp.text
+        cloned_id = clone_resp.json()["price_list_id"]
+
+        # Delete cloned list
+        del_clone_resp = client.delete(
+            f"/api/v1/catalog/price-lists/{cloned_id}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert del_clone_resp.status_code == 204
+
+        # Close the new price list explicitly
+        close_resp = client.post(
+            f"/api/v1/catalog/price-lists/{new_pl_id}/close",
+            headers={"Authorization": f"Bearer {token}"},
+            json={
+                "close_date": "2027-06-30",
+                "deactivate": False,
+            },
+        )
+        assert close_resp.status_code == 200, close_resp.text
+        assert close_resp.json()["effective_to_date"] == "2027-06-30"
+
+    finally:
+        # Restore previous list to indefinite and cleanup test list
+        client.delete(
+            f"/api/v1/catalog/price-lists/{new_pl_id}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        client.put(
+            f"/api/v1/catalog/price-lists/{prev_pl_id}",
+            headers={"Authorization": f"Bearer {token}"},
+            json={"effective_to_date": None, "is_active": True},
+        )
+
+
+def test_delete_care_package_with_integrity_protection():
+    """Verify care package deletion rules: free package can be deleted, referenced package is protected."""
+    token = get_admin_token()
+
+    # 1. Create a standalone care package
+    create_resp = client.post(
+        "/api/v1/catalog/care-packages",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "package_code": "PKG-TEMP-TEST",
+            "package_name": "Gói Chăm Sóc Thử Nghiệm",
+            "cycle_type": "MONTHLY",
+            "default_tasks_json": json.dumps(["Lau bia", "Quét lá"]),
+            "unit_price": 500000,
+            "is_active": True,
+        },
+    )
+    assert create_resp.status_code == 201, create_resp.text
+    pkg_id = create_resp.json()["package_id"]
+
+    # 2. Deleting this unreferenced package succeeds
+    del_resp = client.delete(
+        f"/api/v1/catalog/care-packages/{pkg_id}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert del_resp.status_code == 204
+
+    # 3. Trying to delete a referenced package in DB must be rejected
+    db = SessionLocal()
+    try:
+        from app.modules.care.models import CareAnnex
+        first_annex = db.query(CareAnnex).first()
+        if first_annex and first_annex.package_id:
+            del_ref_resp = client.delete(
+                f"/api/v1/catalog/care-packages/{first_annex.package_id}",
+                headers={"Authorization": f"Bearer {token}"},
+            )
+            assert del_ref_resp.status_code == 400
+            assert "phụ lục chăm sóc" in del_ref_resp.json()["detail"]
+    finally:
+        db.close()

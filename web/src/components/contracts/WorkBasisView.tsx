@@ -1,3 +1,32 @@
+/**
+ * =================================================================================================
+ * GIAO DIỆN CĂN CỨ CÔNG VIỆC HIỆN TRƯỜNG & XÁC NHẬN AN TÁNG (WorkBasisView.tsx)
+ * =================================================================================================
+ * 
+ * [MỤC ĐÍCH NGHIỆP VỤ & KIẾN TRÚC]:
+ * 1. Cầu Nối Giữa Nghiệp Vụ Hợp Đồng & Vận Hành Thực Địa (Field Operations Bridge):
+ *    - Hợp đồng và phụ lục dịch vụ (An táng, Chăm sóc, Thi công mộ) sau khi ký kết và thanh toán
+ *      sẽ tự động phát sinh các hạng mục công việc giao cho Đội Quản Trang / Đội Thi Công ngoài nghĩa trang.
+ *    - API `/api/v1/contracts/work-bases` tổng hợp toàn bộ các phụ lục có phát sinh việc thực địa,
+ *      bao gồm: Vị trí ô mộ, mã huyệt, thông tin người quá cố, hạn chót và trạng thái hiện trường.
+ * 
+ * 2. Xác Nhận Hạ Huyệt Thực Địa (Burial Confirmation Gate):
+ *    - Khi xe tang và gia quyến đến hoa viên tiến hành lễ an táng, Quản trang tại hiện trường
+ *      thao tác "Xác Nhận Hạ Huyệt" kèm:
+ *      + Ảnh bằng chứng hiện trường (Upload qua `/api/v1/documents/upload` lên MinIO).
+ *      + Ghi chú hiện trường (Đại diện gia đình, giờ hạ huyệt).
+ *    - Gọi API `/api/v1/contracts/annexes/{annex_id}/confirm-burial`.
+ *    - Tác động Backend:
+ *      + Chuyển trạng thái ô mộ sang `OCCUPIED`.
+ *      + Kích hoạt quy tắc "Kim Tĩnh Bất Biến" (Khóa vĩnh viễn ô mộ nếu là mộ xây kiên cố Kim tĩnh).
+ *      + Cập nhật `is_burial_confirmed = true`.
+ * 
+ * 3. Tích Hợp Dẫn Đường GPS (Field Navigation):
+ *    - Nút `<PlotDirectionsButton />` cung cấp tọa độ thực địa và mở chỉ đường đi bộ Google Maps
+ *      giúp nhân viên hoa viên hoặc thân nhân tìm chính xác vị trí huyệt mộ trong khuôn viên rộng lớn.
+ * =================================================================================================
+ */
+
 import { apiFetch, responseError } from '../../services/apiClient'
 import { PlotDirectionsButton } from '../plots/PlotDirectionsButton'
 import React, { useCallback, useEffect, useState } from 'react'
@@ -16,38 +45,47 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
 
+/**
+ * Kiểu dữ liệu một hạng mục công việc bàn giao ra hiện trường
+ */
 export interface WorkBasisItem {
-  annex_id: number
-  annex_code: string
-  contract_id: number
-  contract_code: string
-  annex_type: 'BURIAL' | 'CARE' | 'CONSTRUCTION'
-  status: string
-  target_date: string
-  due_date: string | null
-  plot_id: number | null
-  plot_code: string | null
-  zone_code: string | null
-  slot_number: number | null
-  deceased_id: number | null
-  deceased_name: string | null
-  burial_date: string | null
-  is_burial_confirmed: boolean
-  service_summary: string
-  notes: string | null
-  checklist_specifications?: string | null
-  customer_name?: string | null
+  annex_id: number                    // ID phụ lục dịch vụ
+  annex_code: string                  // Mã phụ lục (PL-AT-..., PL-CS-..., PL-XD-...)
+  contract_id: number                 // ID hợp đồng mẹ
+  contract_code: string               // Mã hợp đồng mẹ
+  annex_type: 'BURIAL' | 'CARE' | 'CONSTRUCTION' // Phân loại công việc
+  status: string                      // Trạng thái (ACTIVE, COMPLETED, CANCELLED...)
+  target_date: string                 // Ngày hẹn thực hiện
+  due_date: string | null             // Hạn chót
+  plot_id: number | null              // ID ô mộ thực địa
+  plot_code: string | null            // Mã ô mộ (VD: A-01-05)
+  zone_code: string | null            // Mã phân khu (VD: A, B, VIP)
+  slot_number: number | null          // Vị trí huyệt số mấy trong ô mộ
+  deceased_id: number | null          // ID hồ sơ người quá cố
+  deceased_name: string | null        // Tên người quá cố
+  burial_date: string | null          // Ngày an táng thực tế (nếu đã an táng)
+  is_burial_confirmed: boolean        // Cờ xác nhận hạ huyệt thành công
+  service_summary: string             // Tóm tắt nội dung gói dịch vụ
+  notes: string | null                // Ghi chú hợp đồng
+  checklist_specifications?: string | null // Yêu cầu kỹ thuật thi công / chăm sóc
+  customer_name?: string | null       // Tên khách hàng ký kết
 }
 
 export const WorkBasisView: React.FC = () => {
+  // Lấy access token và hàm kiểm tra phân quyền RBAC
   const { accessToken, hasPermission } = useAuth()
+  
+  // Danh sách công việc tải từ máy chủ
   const [items, setItems] = useState<WorkBasisItem[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
+  
+  // Bộ lọc theo loại hình công việc (Tất cả / An táng / Chăm sóc / Thi công)
   const [filterType, setFilterType] = useState<string>('ALL')
+  // Chuỗi tìm kiếm theo mã hoặc tên
   const [searchQuery, setSearchQuery] = useState<string>('')
 
-  // Confirm Burial Modal state
+  // Trạng thái của Modal "Xác Nhận Hạ Huyệt Hiện Trường"
   const [confirmModalItem, setConfirmModalItem] = useState<WorkBasisItem | null>(null)
   const [confirmNotes, setConfirmNotes] = useState<string>('')
   const [confirmProofFileId, setConfirmProofFileId] = useState<string>('')
@@ -56,6 +94,10 @@ export const WorkBasisView: React.FC = () => {
   const [confirmSuccessMsg, setConfirmSuccessMsg] = useState<string | null>(null)
   const [confirmErrorMsg, setConfirmErrorMsg] = useState<string | null>(null)
 
+
+  /**
+   * Tải danh sách công việc thực địa từ API
+   */
   const fetchWorkBases = useCallback(async () => {
     if (!accessToken) return
     setLoading(true)
@@ -80,6 +122,12 @@ export const WorkBasisView: React.FC = () => {
     fetchWorkBases()
   }, [fetchWorkBases])
 
+  /**
+   * Xử lý xác nhận hạ huyệt thực địa:
+   * - Gửi POST tới `/api/v1/contracts/annexes/{annex_id}/confirm-burial`
+   * - Gửi kèm `proof_file_id` (ID file ảnh đã upload lên MinIO) và ghi chú hiện trường
+   * - Backend sẽ chuyển trạng thái ô mộ sang OCCUPIED, khóa Kim Tĩnh và cập nhật slot
+   */
   const handleConfirmBurial = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!confirmModalItem || !accessToken) return
@@ -119,6 +167,9 @@ export const WorkBasisView: React.FC = () => {
     }
   }
 
+  /**
+   * Lọc công việc theo loại (BURIAL, CARE, CONSTRUCTION) và tìm kiếm chuỗi ký tự
+   */
   const filteredItems = items.filter((item) => {
     if (filterType !== 'ALL' && item.annex_type !== filterType) return false
     if (searchQuery.trim()) {
@@ -131,6 +182,9 @@ export const WorkBasisView: React.FC = () => {
     return true
   })
 
+  /**
+   * Hiển thị Huy hiệu phân loại công việc với màu sắc và biểu tượng nhận diện trực quan
+   */
   const getWorkTypeBadge = (type: string) => {
     switch (type) {
       case 'BURIAL':
@@ -194,6 +248,7 @@ export const WorkBasisView: React.FC = () => {
         return <span>{type}</span>
     }
   }
+
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -422,7 +477,17 @@ export const WorkBasisView: React.FC = () => {
                     )}
                   </td>
                   <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                    {/* Nút xem vị trí và dẫn đường GPS nội khu / Google Maps */}
                     <PlotDirectionsButton plotId={item.plot_id} plotCode={item.plot_code} />
+                    
+                    {/*
+                      CỔNG PHÂN QUYỀN VÀ TRẠNG THÁI (RBAC & State Gate):
+                      - Chỉ hiển thị nút 'Xác Nhận Hạ Huyệt' khi:
+                        1. Người dùng có quyền 'plots:confirm_burial' (Quản trang / Admin)
+                        2. Hạng mục công việc là 'BURIAL' (An táng)
+                        3. Phụ lục đang ở trạng thái 'ACTIVE' (Hợp đồng đã có hiệu lực & thanh toán)
+                        4. Ô mộ chưa từng được xác nhận an táng trước đó (!is_burial_confirmed)
+                    */}
                     {hasPermission('plots:confirm_burial') && item.annex_type === 'BURIAL' && item.status === 'ACTIVE' && !item.is_burial_confirmed ? (
                       <button
                         onClick={() => {
@@ -454,6 +519,7 @@ export const WorkBasisView: React.FC = () => {
                       <span style={{ fontSize: '12px', color: '#94A3B8' }}>-</span>
                     )}
                   </td>
+
                 </tr>
               ))}
             </tbody>
@@ -516,6 +582,7 @@ export const WorkBasisView: React.FC = () => {
                 <div><strong>Người quá cố:</strong> {confirmModalItem.deceased_name || 'N/A'}</div>
               </div>
 
+              {/* Cảnh báo pháp lý & phong tục: Quy tắc Kim Tĩnh Bất Biến */}
               <div style={{ fontSize: '13px', color: '#475569', lineHeight: 1.5 }}>
                 Chỉ xác nhận sau khi đã an táng. Mộ Kim tĩnh sau an táng không được cải táng hoặc thay đổi kết cấu.
               </div>
@@ -542,6 +609,7 @@ export const WorkBasisView: React.FC = () => {
               </div>
 
               <div>
+                {/* Tải lên ảnh bằng chứng hạ huyệt thực địa lên MinIO S3 */}
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#475569', marginBottom: '6px' }}>
                   Ảnh hoặc biên bản xác nhận:
                 </label>
@@ -553,9 +621,11 @@ export const WorkBasisView: React.FC = () => {
                     const file = e.target.files?.[0]; if (!file) return
                     setProofUploading(true); setConfirmErrorMsg(null); setConfirmProofFileId('')
                     try {
+                      // Gửi tệp đa phương tiện lên endpoint upload tài liệu chung
                       const body = new FormData(); body.append('file', file)
                       const res = await apiFetch('/api/v1/documents/upload', { method: 'POST', headers: { Authorization: `Bearer ${accessToken}` }, body })
                       if (!res.ok) throw new Error('Chưa tải được ảnh xác nhận. Vui lòng thử lại.')
+                      // Nhận file_id lưu trong CSDL metadata để đính kèm vào payload xác nhận hạ huyệt
                       setConfirmProofFileId((await res.json()).file_id)
                     } catch (err) { setConfirmErrorMsg(err instanceof Error ? err.message : 'Chưa tải được ảnh.') }
                     finally { setProofUploading(false) }
@@ -570,6 +640,7 @@ export const WorkBasisView: React.FC = () => {
                   }}
                 />
               </div>
+
 
               {confirmErrorMsg && (
                 <div style={{ padding: '10px 14px', backgroundColor: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: '6px', fontSize: '12px', color: '#B91C1C' }}>

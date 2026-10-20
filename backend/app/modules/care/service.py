@@ -19,6 +19,7 @@ from app.modules.care.models import (
 from app.modules.care.schemas import (
     CareAnnexRegisterRequest,
     CareChecklistItemBrief,
+    CareChecklistItemCreate,
     CareMediaEvidenceBrief,
     CareScheduleDetail,
 )
@@ -28,15 +29,35 @@ from app.modules.documents.models import FileObject
 from app.modules.jobs.service import OutboxService
 from app.modules.plots.models import Plot, Row
 
+# =============================================================================
+# MODULE QUẢN LÝ DỊCH VỤ CHĂM SÓC MỘ PHẦN ĐỊNH KỲ (CARE SERVICE)
+# =============================================================================
+# Module này quản lý toàn diện quy trình cung cấp dịch vụ chăm sóc mộ định kỳ:
+# 1. Hợp đồng & Phụ lục chăm sóc (Care Annex): Gắn với hợp đồng mua đất hoặc chuyển nhượng.
+# 2. Sinh lịch định kỳ tự động (Batch Schedule Generation - G12):
+#    - Tự động sinh lịch chăm sóc hàng tháng cho các phụ lục đang ACTIVE.
+#    - Đảm bảo tính Idempotent: Chạy nhiều lần trong cùng 1 kỳ không sinh trùng lặp.
+#    - Quy tắc neo ngày cuối tháng (End-of-Month Anchor): Xử lý chuẩn xác các tháng có 28, 29, 30, 31 ngày.
+# 3. Phân công nhân sự & Kiểm tra xung đột (Staff Allocation & Conflict Prevention - G13):
+#    - Ngăn chặn phân công nhân viên quản trang khi có lịch nghỉ/bận (StaffUnavailability).
+# 4. Cổng nghiệm thu đóng ca nghiêm ngặt (Quality Gate G12 - R06):
+#    - Bắt buộc hoàn tất 100% các hạng mục checklist bắt buộc (is_required=True).
+#    - Bắt buộc có ít nhất 1 ảnh minh chứng hiện trường ở trạng thái 'READY' trên MinIO.
+#    - Đóng băng vĩnh viễn dữ liệu sau khi đóng ca để bảo toàn tính toàn vẹn pháp lý.
+# =============================================================================
+
 
 class CareService:
     @staticmethod
     def calculate_anchored_date(year: int, month: int, anchor_day: int) -> date:
         """
-        G12 End-of-month anchor rule:
-        If anchor_day exceeds the days in target month (e.g. 31st in Feb),
-        fall back to last day of that month (28 or 29), but preserve original
-        anchor_day for subsequent months (e.g. March still gets 31st).
+        [QUY TẮC NEO NGÀY CUỐI THÁNG - END-OF-MONTH ANCHOR RULE (G12)]
+        
+        Nghiệp vụ:
+        - Khách hàng ký phụ lục chăm sóc ngày 31/01.
+        - Vào tháng 2 (chỉ có 28 hoặc 29 ngày), hệ thống tự động lùi về ngày cuối tháng (28 hoặc 29).
+        - Tuy nhiên, sang tháng 3 (có 31 ngày), hệ thống vẫn giữ nguyên ngày neo gốc là 31,
+          chứ không bị trôi vĩnh viễn về ngày 28.
         """
         max_day = calendar.monthrange(year, month)[1]
         target_day = min(anchor_day, max_day)
@@ -51,14 +72,23 @@ class CareService:
         care_annex_id: Optional[int] = None,
     ) -> Tuple[str, int, int, List[CareSchedule]]:
         """
-        Generates recurring care schedules for a given month and year.
-        Idempotent: running 3 times for the same month produces the same schedules.
+        [SINH LỊCH CHĂM SÓC ĐỊNH KỲ TỰ ĐỘNG - G12]
+        
+        Quy trình xử lý:
+        1. Xác định kỳ chăm sóc dạng chuỗi (period_key = 'YYYY-Mmm', ví dụ: '2026-M03').
+        2. Quét toàn bộ Phụ lục Chăm sóc (CareAnnex) có phụ lục cha đang ở trạng thái 'ACTIVE'
+           và khoảng thời gian hiệu lực bao trùm tháng cần sinh lịch.
+        3. Kiểm tra tính Idempotent: Nếu lịch của phụ lục trong kỳ này đã được sinh trước đó,
+           bỏ qua không tạo lại (chạy lại 10 lần cũng ra cùng 1 kết quả).
+        4. Tính ngày chăm sóc dự kiến theo thuật toán neo ngày cuối tháng (calculate_anchored_date).
+        5. Sao chép danh sách công việc tiêu chuẩn từ Gói chăm sóc (CarePackage) sang
+           các hạng mục checklist chi tiết của ca làm việc (CareChecklistItem).
         """
         period_key = f"{year:04d}-M{month:02d}"
         first_day_of_month = date(year, month, 1)
         last_day_of_month = date(year, month, calendar.monthrange(year, month)[1])
 
-        # Query active care annexes overlapping with target month
+        # 1. Truy vấn các phụ lục chăm sóc ACTIVE có thời hạn bao trùm tháng này
         query = (
             db.query(CareAnnex)
             .join(ContractAnnex, CareAnnex.annex_id == ContractAnnex.annex_id)
@@ -86,11 +116,12 @@ class CareService:
             elif contract.transfer:
                 plot_id = contract.transfer.plot_id
 
+            # Nếu không tìm thấy ô đất liên kết với hợp đồng -> bỏ qua
             if not plot_id:
                 skipped_count += 1
                 continue
 
-            # Idempotency check: schedule for this period already exists
+            # 2. Kiểm tra Idempotency: Không sinh trùng lặp lịch trong cùng một kỳ chăm sóc
             existing = (
                 db.query(CareSchedule)
                 .filter(
@@ -103,16 +134,16 @@ class CareService:
                 skipped_count += 1
                 continue
 
-            # Calculate scheduled date with End-of-month rule
+            # 3. Tính ngày chăm sóc định kỳ theo quy tắc neo ngày cuối tháng
             anchor_day = annex.valid_from.day
             scheduled_date = cls.calculate_anchored_date(year, month, anchor_day)
 
-            # Ensure date is strictly within annex validity window
+            # Ràng buộc: Ngày chăm sóc phải nằm nghiêm ngặt trong khoảng hiệu lực của phụ lục
             if scheduled_date < annex.valid_from or scheduled_date > annex.valid_to:
                 skipped_count += 1
                 continue
 
-            # Fetch package default tasks
+            # 4. Lấy danh sách đầu việc mặc định từ gói dịch vụ (hoặc dùng template chuẩn nếu thiếu)
             pkg = db.query(CarePackage).filter(CarePackage.package_id == ca.package_id).first()
             tasks_list = []
             if pkg and pkg.default_tasks_json:
@@ -129,7 +160,7 @@ class CareService:
                     "Kiểm tra hiện trạng đá ốp và vết nứt kết cấu",
                 ]
 
-            # Create schedule
+            # 5. Khởi tạo bản ghi ca chăm sóc ở trạng thái SCHEDULED (chờ phân công/thực hiện)
             schedule = CareSchedule(
                 care_annex_id=ca.annex_id,
                 plot_id=plot_id,
@@ -143,12 +174,12 @@ class CareService:
             db.add(schedule)
             db.flush()
 
-            # Create checklist items
+            # 6. Khởi tạo danh sách các hạng mục kiểm tra chi tiết (Checklist Items)
             for idx, task_name in enumerate(tasks_list):
                 item = CareChecklistItem(
                     schedule_id=schedule.schedule_id,
                     task_description=task_name,
-                    is_required=True,  # Default tasks are mandatory for completion
+                    is_required=True,  # Mặc định các công việc trong gói là bắt buộc
                     sort_order=idx + 1,
                     is_completed=False,
                 )
@@ -159,6 +190,10 @@ class CareService:
         db.commit()
         return period_key, len(generated_schedules), skipped_count, generated_schedules
 
+    # =======================================================================
+    # PHÂN CÔNG QUẢN TRANG & CHỐNG TRÙNG LỊCH (G13)
+    # =======================================================================
+
     @staticmethod
     def assign_caretaker(
         db: Session,
@@ -166,12 +201,26 @@ class CareService:
         caretaker_id: int,
         current_user_id: int,
     ) -> Tuple[CareSchedule, bool, Optional[str]]:
+        """
+        Phân công nhân viên quản trang thực hiện ca chăm sóc mộ.
+        
+        Kiểm tra nghiệp vụ nghiêm ngặt:
+        1. Ca chăm sóc đã đóng (CLOSED) thì bị đóng băng, cấm đổi nhân sự.
+        2. Khóa dòng User trên SQL Server: Sử dụng WITH (UPDLOCK, HOLDLOCK) để tránh tranh chấp dữ liệu.
+        3. Phân quyền (RBAC): Chỉ nhân sự có vai trò CARETAKER hoặc ADMIN mới được phân công.
+        4. Kiểm tra xung đột lịch công tác (G13 Conflict Check):
+           Tra cứu bảng StaffUnavailability xem nhân viên có đăng ký nghỉ phép hoặc bận công tác
+           trùng vào ngày chăm sóc (scheduled_date) hay không. Nếu trùng -> Ném HTTP 409 Conflict.
+        5. Ghi Audit Log hành động phân công.
+        """
         schedule = db.query(CareSchedule).filter(CareSchedule.schedule_id == schedule_id).first()
         if not schedule:
             raise HTTPException(status_code=404, detail="Không tìm thấy lịch chăm sóc")
 
         if schedule.status == "CLOSED":
             raise HTTPException(status_code=400, detail="Ca đã đóng, không thể đổi người phụ trách.")
+
+        # Khóa dòng chống xung đột đồng thời khi cập nhật trạng thái nhân viên
         user = (
             db.query(User)
             .with_hint(User, "WITH (UPDLOCK, HOLDLOCK)", dialect_name="mssql")
@@ -183,7 +232,7 @@ class CareService:
         if not any(r.role_name in ("CARETAKER", "ADMIN") for r in user.roles):
             raise HTTPException(status_code=400, detail="Hãy chọn nhân viên quản trang để phân công.")
 
-        # G13 Conflict Warning Check
+        # G13 Conflict Warning Check: Ngăn chặn phân công người đang nghỉ phép/bận
         conflict = (
             db.query(StaffUnavailability)
             .filter(
@@ -204,7 +253,7 @@ class CareService:
         db.commit()
         db.refresh(schedule)
 
-        # Audit
+        # Ghi vết kiểm toán (Audit Log)
         audit = AuditLog(
             user_id=current_user_id,
             action_type="ASSIGN_CARETAKER",
@@ -217,6 +266,10 @@ class CareService:
 
         return schedule, False, None
 
+    # =======================================================================
+    # CHECKLIST CÔNG VIỆC HIỆN TRƯỜNG & MINH CHỨNG HÌNH ẢNH
+    # =======================================================================
+
     @staticmethod
     def update_checklist_item(
         db: Session,
@@ -225,6 +278,13 @@ class CareService:
         field_notes: Optional[str],
         user_id: int,
     ) -> CareChecklistItem:
+        """
+        Cập nhật trạng thái một đầu việc trong danh sách kiểm tra (Checklist).
+        
+        Quy tắc:
+        - Ca đã đóng (CLOSED) thì cấm sửa đổi checklist.
+        - Khi nhân viên bắt đầu tick công việc, nếu ca đang SCHEDULED -> tự động đổi sang IN_PROGRESS.
+        """
         item = db.query(CareChecklistItem).filter(CareChecklistItem.item_id == item_id).first()
         if not item:
             raise HTTPException(status_code=404, detail="Không tìm thấy hạng mục công việc")
@@ -241,12 +301,109 @@ class CareService:
         if field_notes is not None:
             item.field_notes = field_notes
 
+        # Tự động chuyển ca sang IN_PROGRESS khi có tương tác đầu tiên
         if schedule and schedule.status == "SCHEDULED":
             schedule.status = "IN_PROGRESS"
 
         db.commit()
         db.refresh(item)
         return item
+
+    @staticmethod
+    def add_checklist_item(
+        db: Session,
+        schedule_id: int,
+        data: CareChecklistItemCreate,
+        user_id: int,
+    ) -> CareChecklistItem:
+        """
+        Quản trang tạo thêm đầu việc phát sinh vào danh sách kiểm tra (Checklist) của ca chăm sóc.
+        - Đánh dấu is_custom = True để phân biệt với các đầu việc tiêu chuẩn theo phụ lục khách hàng.
+        - Ca đã đóng (CLOSED, COMPLETED) hoặc đã hủy (CANCELLED) thì không thể thêm mới.
+        """
+        schedule = db.query(CareSchedule).filter(CareSchedule.schedule_id == schedule_id).first()
+        if not schedule:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy ca chăm sóc")
+
+        if schedule.status in ("CLOSED", "COMPLETED", "CANCELLED"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Ca chăm sóc đang ở trạng thái {schedule.status}, không thể thêm công việc mới.",
+            )
+
+        max_order = (
+            db.query(func.coalesce(func.max(CareChecklistItem.sort_order), 0))
+            .filter(CareChecklistItem.schedule_id == schedule_id)
+            .scalar()
+            or 0
+        )
+
+        item = CareChecklistItem(
+            schedule_id=schedule_id,
+            task_description=data.task_description.strip(),
+            is_completed=False,
+            field_notes=data.field_notes,
+            is_required=data.is_required,
+            sort_order=max_order + 1,
+            is_custom=True,
+        )
+        db.add(item)
+        if schedule.status == "SCHEDULED":
+            schedule.status = "IN_PROGRESS"
+
+        db.commit()
+        db.refresh(item)
+        return item
+
+    @staticmethod
+    def delete_checklist_item(
+        db: Session,
+        schedule_id: int,
+        item_id: int,
+        user_id: int,
+    ) -> None:
+        """
+        Xóa một đầu việc trong danh sách kiểm tra (Checklist).
+
+        RÀNG BUỘC NGHIỆP VỤ BẮT BUỘC:
+        - Quản trang chỉ được phép xóa các đầu việc do quản trang tự tạo thêm (is_custom = True).
+        - TUYỆT ĐỐI KHÔNG ĐƯỢC XÓA các đầu việc tiêu chuẩn được đổ từ phụ lục hợp đồng của khách hàng (is_custom = False).
+        - Ca đã đóng (CLOSED) không được phép xóa công việc.
+        """
+        schedule = db.query(CareSchedule).filter(CareSchedule.schedule_id == schedule_id).first()
+        if not schedule:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy ca chăm sóc")
+
+        if schedule.status in ("CLOSED", "COMPLETED", "CANCELLED"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Ca chăm sóc đang ở trạng thái {schedule.status}, không thể xóa công việc.",
+            )
+
+        item = (
+            db.query(CareChecklistItem)
+            .filter(
+                CareChecklistItem.item_id == item_id,
+                CareChecklistItem.schedule_id == schedule_id,
+            )
+            .first()
+        )
+        if not item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Không tìm thấy hạng mục công việc trong ca chăm sóc này",
+            )
+
+        # Chốt chặn nghiệp vụ bất biến: Không xóa công việc theo phụ lục khách hàng
+        if not item.is_custom:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Không được phép xóa hạng mục công việc tiêu chuẩn thuộc phụ lục của khách hàng. Quản trang chỉ có thể xóa các hạng mục do quản trang tự tạo thêm.",
+            )
+
+        db.delete(item)
+        db.commit()
+
 
     @staticmethod
     def add_media_evidence(
@@ -257,6 +414,14 @@ class CareService:
         caption: Optional[str],
         user_id: int,
     ) -> CareMediaEvidence:
+        """
+        Tải lên và đính kèm ảnh minh chứng hiện trường ca chăm sóc mộ.
+        
+        Kiểm tra tính toàn vẹn và bảo mật:
+        - Ca chăm sóc đã CLOSED thì không cho phép bổ sung ảnh mới.
+        - Tệp phải tồn tại trong bảng FileObject và đã ở trạng thái 'READY' (đã upload xong lên MinIO).
+        - MIME type bắt buộc phải là hình ảnh (JPEG, PNG, WEBP).
+        """
         schedule = db.query(CareSchedule).filter(CareSchedule.schedule_id == schedule_id).first()
         if not schedule:
             raise HTTPException(status_code=404, detail="Không tìm thấy lịch chăm sóc")
@@ -273,6 +438,7 @@ class CareService:
                 detail="Vui lòng tải lên ảnh minh chứng.",
             )
 
+        # Gate Check: Kiểm tra tệp lưu trữ trên MinIO
         file_obj = db.query(FileObject).filter(FileObject.file_id == file_id).first()
         if not file_obj:
             raise HTTPException(status_code=404, detail="Không tìm thấy tệp lưu trữ")
@@ -311,10 +477,18 @@ class CareService:
         evidence_id: int,
         user_id: int,
     ) -> None:
+        """
+        Xóa ảnh minh chứng hiện trường (có cơ chế đóng băng chống gian lận).
+        
+        Quy tắc bất biến:
+        - Một khi ca chăm sóc đã đóng ('CLOSED'), toàn bộ hình ảnh minh chứng bị khóa vĩnh viễn,
+          ngăn ngừa tuyệt đối việc thay thế hoặc tiêu hủy hồ sơ bàn giao với gia đình.
+        """
         schedule = db.query(CareSchedule).filter(CareSchedule.schedule_id == schedule_id).first()
         if not schedule:
             raise HTTPException(status_code=404, detail="Không tìm thấy lịch chăm sóc")
 
+        # Đóng băng minh chứng khi ca chăm sóc đã hoàn tất
         if schedule.status == "CLOSED":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -335,6 +509,10 @@ class CareService:
         db.delete(evidence)
         db.commit()
 
+    # =======================================================================
+    # CỔNG NGHIỆM THU ĐÓNG CA CHĂM SÓC (QUALITY GATE G12)
+    # =======================================================================
+
     @staticmethod
     def close_schedule(
         db: Session,
@@ -342,14 +520,27 @@ class CareService:
         field_notes: Optional[str],
         current_user_id: int,
     ) -> CareSchedule:
+        """
+        [CỔNG KIỂM SOÁT ĐÓNG CA CHĂM SÓC - QUALITY GATE G12]
+        
+        Điều kiện tiên quyết bắt buộc để đóng ca (Chặn 100% nếu thiếu):
+        1. Invariant 1 (Checklist Gate): Tất cả hạng mục bắt buộc (is_required=True)
+           phải được đánh dấu hoàn tất (is_completed=True).
+        2. Invariant 2 (Media Evidence Gate): Bắt buộc phải có ít nhất 1 ảnh minh chứng
+           ở trạng thái 'READY' với MIME type bắt đầu bằng 'image/'.
+        3. Cập nhật trạng thái ca sang 'CLOSED', ghi nhận ngày thực hiện và người đóng ca.
+        4. Phát sự kiện Outbox Event 'CARE_SCHEDULE_CLOSED' phục vụ hệ thống báo cáo và thông báo.
+        5. Ghi vết Audit Log.
+        """
         schedule = db.query(CareSchedule).filter(CareSchedule.schedule_id == schedule_id).first()
         if not schedule:
             raise HTTPException(status_code=404, detail="Không tìm thấy lịch chăm sóc")
 
+        # Idempotency: Ca đã đóng thì trả về luôn
         if schedule.status == "CLOSED":
             return schedule
 
-        # G12 Gate Invariant 1: Check required checklist items
+        # G12 Gate Invariant 1: Kiểm tra các hạng mục bắt buộc chưa hoàn tất
         incomplete_required = [
             it.task_description
             for it in schedule.checklist_items
@@ -361,7 +552,7 @@ class CareService:
                 detail=f"Không thể đóng ca: Còn {len(incomplete_required)} hạng mục bắt buộc chưa hoàn tất ({', '.join(incomplete_required)})",
             )
 
-        # G12 Gate Invariant 2: Check photo evidence (must be READY image)
+        # G12 Gate Invariant 2: Kiểm tra ảnh minh chứng hợp lệ (phải READY và là ảnh)
         valid_evidence_count = 0
         for ev in schedule.media_evidences:
             if ev.file_id:
@@ -391,7 +582,7 @@ class CareService:
         db.commit()
         db.refresh(schedule)
 
-        # Publish Outbox event
+        # Phát sự kiện Outbox (G17)
         OutboxService.publish_event(
             db=db,
             aggregate_type="CARE_SCHEDULE",
@@ -407,7 +598,7 @@ class CareService:
             },
         )
 
-        # Audit
+        # Ghi vết kiểm toán (Audit Log)
         audit = AuditLog(
             user_id=current_user_id,
             action_type="CLOSE_CARE_SCHEDULE",
@@ -426,6 +617,10 @@ class CareService:
 
         return schedule
 
+    # =======================================================================
+    # TRUY VẤN DANH SÁCH & CHI TIẾT CA CHĂM SÓC
+    # =======================================================================
+
     @staticmethod
     def list_schedules(
         db: Session,
@@ -438,6 +633,14 @@ class CareService:
         skip: int = 0,
         limit: int = 100,
     ) -> List[CareSchedule]:
+        """
+        Truy vấn danh sách lịch chăm sóc mộ theo bộ lọc đa tiêu chí.
+        
+        Kỹ thuật tối ưu hóa CSDL (Performance Optimization):
+        - Sử dụng joinedload để nạp sớm dữ liệu phân cấp: Plot -> Row -> Zone, CarePackage, Caretaker.
+        - Sử dụng selectinload để nạp trước tập danh sách con: checklist_items, media_evidences.
+        - Triệt tiêu hoàn toàn vấn đề N+1 query thường gặp trong SQLAlchemy ORM.
+        """
         query = db.query(CareSchedule).options(
             joinedload(CareSchedule.plot).joinedload(Plot.row).joinedload(Row.zone),
             joinedload(CareSchedule.package),
@@ -467,10 +670,20 @@ class CareService:
 
     @staticmethod
     def get_schedule_detail(db: Session, schedule_id: int) -> CareScheduleDetail:
+        """
+        Xem chi tiết toàn diện một ca chăm sóc mộ.
+        
+        Tính năng nghiệp vụ:
+        - Tổng hợp số lượng công việc (tasks_count), số việc đã hoàn thành (completed_tasks_count).
+        - Kiểm tra xung đột lịch thời gian thực (Real-time Conflict Checking) với StaffUnavailability.
+          Nếu nhân viên có lịch nghỉ trùng ca, trả về cờ has_conflict=True kèm lý do để hiển thị cảnh báo đỏ trên UI.
+        - Trả về danh sách checklist và media minh chứng đầy đủ URL và người upload.
+        """
         schedule = db.query(CareSchedule).filter(CareSchedule.schedule_id == schedule_id).first()
         if not schedule:
             raise HTTPException(status_code=404, detail="Không tìm thấy lịch chăm sóc")
 
+        # Kiểm tra xung đột lịch làm việc theo thời gian thực
         has_conflict = False
         conflict_reason = None
         if schedule.caretaker_id and schedule.scheduled_date:
@@ -533,12 +746,27 @@ class CareService:
             conflict_reason=conflict_reason,
         )
 
+    # =======================================================================
+    # ĐĂNG KÝ PHỤ LỤC CHĂM SÓC MỘ PHẦN (CARE ANNEX REGISTRATION)
+    # =======================================================================
+
     @staticmethod
     def register_care_annex(
         db: Session,
         data: CareAnnexRegisterRequest,
         current_user_id: int,
     ) -> CareAnnex:
+        """
+        Đăng ký Phụ lục Hợp đồng Dịch vụ Chăm sóc Mộ phần (Care Annex).
+        
+        Quy tắc nghiệp vụ:
+        - Hợp đồng gốc bắt buộc phải ở trạng thái 'ACTIVE'.
+        - Hợp đồng gốc bắt buộc phải thuộc loại 'LAND_PURCHASE' (mua đất) hoặc 'TRANSFER' (chuyển nhượng).
+        - Gói dịch vụ chăm sóc (CarePackage) phải tồn tại trong danh mục hệ thống.
+        - Đánh số phụ lục tự động: {contract_code}-CS{count + 1:02d}.
+        - Khởi tạo đồng thời bản ghi cha ContractAnnex (chứa ngày hiệu lực, giá định kỳ)
+          và bản ghi con CareAnnex (chứa chu kỳ chăm sóc, mã gói dịch vụ).
+        """
         contract = db.query(Contract).filter(Contract.contract_id == data.contract_id).first()
         if not contract:
             raise HTTPException(status_code=404, detail="Không tìm thấy hợp đồng gốc")
@@ -557,7 +785,7 @@ class CareService:
         if not pkg:
             raise HTTPException(status_code=404, detail="Không tìm thấy gói chăm sóc")
 
-        # Sequence or count for annex number
+        # Đếm số lượng phụ lục hiện có của hợp đồng để sinh số thứ tự phụ lục mới
         count = (
             db.query(func.count(ContractAnnex.annex_id))
             .filter(ContractAnnex.contract_id == data.contract_id)
@@ -566,7 +794,7 @@ class CareService:
         )
         annex_number = f"{contract.contract_code}-CS{count + 1:02d}"
 
-        # Create contract annex
+        # 1. Khởi tạo bản ghi phụ lục hợp đồng chung (ContractAnnex)
         base_annex = ContractAnnex(
             contract_id=data.contract_id,
             annex_code=annex_number,
@@ -580,6 +808,7 @@ class CareService:
         db.add(base_annex)
         db.flush()
 
+        # 2. Khởi tạo bản ghi chi tiết phụ lục chăm sóc (CareAnnex) liên kết 1-1
         care_annex = CareAnnex(
             annex_id=base_annex.annex_id,
             package_id=data.package_id,

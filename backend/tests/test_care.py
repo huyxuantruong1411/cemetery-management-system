@@ -427,3 +427,57 @@ def test_close_schedule_success_with_ready_evidence():
         assert "Hoàn thành kiểm tra" in data["notes"]
     finally:
         db.close()
+
+
+def test_caretaker_custom_checklist_item_invariants():
+    """Verify caretaker can create custom checklist items, delete them, but CANNOT delete annex items."""
+    db = SessionLocal()
+    try:
+        fixture = create_care_test_fixture(db, anchor_day=18)
+        annex_id = fixture["care_annex"].annex_id
+
+        CareService.generate_schedules_for_period(db=db, year=2026, month=9, care_annex_id=annex_id)
+        sched = (
+            db.query(CareSchedule)
+            .filter(CareSchedule.care_annex_id == annex_id, CareSchedule.period_key == "2026-M09")
+            .first()
+        )
+        assert sched is not None
+        assert len(sched.checklist_items) > 0
+        standard_item = sched.checklist_items[0]
+        assert standard_item.is_custom is False
+
+        caretaker_token = get_caretaker_token()
+
+        # 1. Quản trang thêm đầu việc phát sinh thực địa
+        add_resp = client.post(
+            f"/api/v1/care/schedules/{sched.schedule_id}/checklist-items",
+            headers={"Authorization": f"Bearer {caretaker_token}"},
+            json={
+                "task_description": "Cắt tỉa cành cây che khuất bia mộ",
+                "is_required": False,
+            },
+        )
+        assert add_resp.status_code == 201, add_resp.text
+        custom_item = add_resp.json()
+        assert custom_item["is_custom"] is True
+        assert custom_item["task_description"] == "Cắt tỉa cành cây che khuất bia mộ"
+        custom_item_id = custom_item["item_id"]
+
+        # 2. Quản trang cố gắng xóa đầu việc tiêu chuẩn của phụ lục -> BẮT BUỘC BỊ CHẶN (HTTP 400)
+        del_std_resp = client.delete(
+            f"/api/v1/care/schedules/{sched.schedule_id}/checklist-items/{standard_item.item_id}",
+            headers={"Authorization": f"Bearer {caretaker_token}"},
+        )
+        assert del_std_resp.status_code == 400
+        assert "phụ lục" in del_std_resp.json()["detail"].lower()
+
+        # 3. Quản trang xóa đầu việc do mình tự tạo -> THÀNH CÔNG (HTTP 204)
+        del_custom_resp = client.delete(
+            f"/api/v1/care/schedules/{sched.schedule_id}/checklist-items/{custom_item_id}",
+            headers={"Authorization": f"Bearer {caretaker_token}"},
+        )
+        assert del_custom_resp.status_code == 204
+
+    finally:
+        db.close()

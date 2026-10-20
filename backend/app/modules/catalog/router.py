@@ -16,6 +16,8 @@ from app.modules.catalog.schemas import (
     PriceItemCreate,
     PriceItemResponse,
     PriceItemUpdate,
+    PriceListCloneRequest,
+    PriceListCloseRequest,
     PriceListCreate,
     PriceListResponse,
     PriceListUpdate,
@@ -86,6 +88,51 @@ def update_price_list(
 ):
     """Cập nhật thông tin bảng giá / kích hoạt hoặc ngừng kích hoạt."""
     return CatalogService.update_price_list(db, price_list_id, data)
+
+
+@router.post(
+    "/price-lists/{price_list_id}/close",
+    response_model=PriceListResponse,
+    dependencies=[Depends(require_permission("catalog", "manage"))],
+)
+def close_price_list(
+    price_list_id: int,
+    data: PriceListCloseRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Đóng thời gian hiệu lực cho bảng giá vô thời hạn hoặc thiết lập ngày kết thúc hiệu lực."""
+    return CatalogService.close_price_list(db, price_list_id, data)
+
+
+@router.post(
+    "/price-lists/{price_list_id}/clone",
+    response_model=PriceListResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_permission("catalog", "manage"))],
+)
+def clone_price_list(
+    price_list_id: int,
+    data: PriceListCloneRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Sao chép toàn bộ bảng giá và các khoản mục sang bảng giá mới."""
+    return CatalogService.clone_price_list(db, price_list_id, data)
+
+
+@router.delete(
+    "/price-lists/{price_list_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_permission("catalog", "manage"))],
+)
+def delete_price_list(
+    price_list_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Xóa bảng giá và toàn bộ khoản mục giá thuộc bảng giá."""
+    CatalogService.delete_price_list(db, price_list_id)
 
 
 # =============================================================================
@@ -211,6 +258,20 @@ def update_care_package(
 ):
     """Cập nhật gói dịch vụ chăm sóc."""
     return CatalogService.update_care_package(db, package_id, data)
+
+
+@router.delete(
+    "/care-packages/{package_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(require_permission("catalog", "manage"))],
+)
+def delete_care_package(
+    package_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Xóa gói dịch vụ chăm sóc (Chặn xóa nếu đã liên kết trong phụ lục hợp đồng)."""
+    CatalogService.delete_care_package(db, package_id)
 
 
 # =============================================================================

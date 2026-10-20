@@ -1,3 +1,25 @@
+/**
+ * =================================================================================================
+ * GIAO DIỆN CĂN CỨ TÀI CHÍNH & CÔNG NỢ HỢP ĐỒNG / PHỤ LỤC (FinanceBasisView.tsx)
+ * =================================================================================================
+ * 
+ * [MỤC ĐÍCH NGHIỆP VỤ & KIẾN TRÚC]:
+ * 1. Tổng Hợp Công Nợ Tập Trung (Centralized Receivables View):
+ *    - Toàn bộ các nghĩa vụ tài chính phát sinh từ Hợp đồng quyền sử dụng đất nghĩa trang
+ *      và Phụ lục dịch vụ (An táng, Chăm sóc, Thi công) được ánh xạ thành các khoản thu (Receivables).
+ *    - API `/api/v1/finance/bases` trả về danh sách các căn cứ thu với đầy đủ:
+ *      + `total_amount`: Tổng giá trị hợp đồng / phụ lục (đã trừ chiết khấu nếu có).
+ *      + `paid_amount`: Tổng số tiền khách hàng đã thanh toán thực tế (tích lũy qua các phiếu thu).
+ *      + `balance`: Số tiền còn nợ (`total_amount - paid_amount`).
+ *      + `source_type`: Phân loại khoản thu phát sinh từ 'CONTRACT' hay 'ANNEX'.
+ * 
+ * 2. Hỗ Trợ Thu Tiền Theo Kỳ & Thu Một Lần (Installment & Lump-sum Support):
+ *    - Giao diện cho phép kế toán viên tra cứu nhanh theo tên người nộp, số điện thoại, mã ô mộ hoặc mã HĐ.
+ *    - Khi nhấn "Xem khoản thu" (`onSelectPayment`), modal lập phiếu thu mở ra, cho phép nộp một phần
+ *      hoặc nộp đủ số tiền nợ còn lại với cơ chế chống nộp thừa (anti-overpayment).
+ * =================================================================================================
+ */
+
 import { apiFetch, responseError } from '../../services/apiClient'
 import React, { useCallback, useEffect, useState } from 'react'
 import {
@@ -13,27 +35,30 @@ import {
 } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
 
+/**
+ * Cấu trúc dữ liệu một căn cứ công nợ tài chính
+ */
 export interface FinanceBasisItem {
-  contract_id: number
-  contract_code: string
-  contract_type: string
-  annex_id: number | null
-  annex_code: string | null
-  source_type: 'CONTRACT' | 'ANNEX'
-  status: string
-  signed_at: string | null
-  payer_name: string | null
-  payer_phone: string | null
-  plot_code: string | null
-  total_amount: number | string
-  paid_amount: number | string
-  balance: number | string
-  due_date: string | null
-  service_description: string
+  contract_id: number                 // ID hợp đồng mẹ
+  contract_code: string               // Mã hợp đồng
+  contract_type: string               // Loại hợp đồng (BURIAL_PLOT_LEASE, SERVICE...)
+  annex_id: number | null             // ID phụ lục (nếu khoản thu thuộc về phụ lục dịch vụ)
+  annex_code: string | null           // Mã phụ lục
+  source_type: 'CONTRACT' | 'ANNEX'   // Nguồn gốc khoản thu (Hợp đồng chính hay Phụ lục)
+  status: string                      // Trạng thái hợp đồng/phụ lục
+  signed_at: string | null            // Ngày ký kết
+  payer_name: string | null           // Tên người thanh toán / khách hàng
+  payer_phone: string | null          // Số điện thoại liên hệ
+  plot_code: string | null            // Mã ô mộ liên quan
+  total_amount: number | string       // Tổng số tiền phải thu
+  paid_amount: number | string        // Số tiền đã thu
+  balance: number | string            // Số tiền còn lại phải thu
+  due_date: string | null             // Hạn nộp tiền
+  service_description: string         // Diễn giải dịch vụ
 }
 
 interface FinanceBasisViewProps {
-  onSelectPayment?: (basis: FinanceBasisItem) => void
+  onSelectPayment?: (basis: FinanceBasisItem) => void // Callback mở form lập phiếu thu tiền
 }
 
 export const FinanceBasisView: React.FC<FinanceBasisViewProps> = ({ onSelectPayment }) => {
@@ -42,8 +67,13 @@ export const FinanceBasisView: React.FC<FinanceBasisViewProps> = ({ onSelectPaym
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState<string>('')
+  // Bộ lọc công nợ: ALL (Tất cả), UNPAID (Còn nợ), PAID (Đã hoàn tất)
   const [statusFilter, setStatusFilter] = useState<string>('ALL')
 
+
+  /**
+   * Gọi API tải danh sách toàn bộ các khoản phải thu theo Hợp đồng và Phụ lục
+   */
   const fetchFinanceBases = useCallback(async () => {
     if (!accessToken) return
     setLoading(true)
@@ -68,11 +98,18 @@ export const FinanceBasisView: React.FC<FinanceBasisViewProps> = ({ onSelectPaym
     fetchFinanceBases()
   }, [fetchFinanceBases])
 
+  /**
+   * Định dạng tiền tệ VND chuẩn mực theo chuẩn bản địa hóa (vi-VN):
+   * Ví dụ: 50000000 -> 50.000.000 ₫
+   */
   const formatVND = (amount: number | string | null | undefined): string => {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(num || 0)
   }
 
+  /**
+   * Lọc khoản thu theo trạng thái nợ (UNPAID / PAID) và từ khóa tìm kiếm (mã HĐ, tên, sđt, mã ô mộ)
+   */
   const filteredItems = items.filter((item) => {
     if (statusFilter === 'UNPAID') {
       const bal = typeof item.balance === 'string' ? parseFloat(item.balance) : item.balance
@@ -92,6 +129,7 @@ export const FinanceBasisView: React.FC<FinanceBasisViewProps> = ({ onSelectPaym
     }
     return true
   })
+
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>

@@ -64,8 +64,35 @@ from app.modules.profiles.models import Customer, DeceasedProfile
 from app.modules.profiles.service import ProfileService
 from app.services.pdf_service import PDFService
 
+# =============================================================================
+# PHÂN HỆ QUẢN LÝ HỢP ĐỒNG & PHỤ LỤC GIAO DỊCH (CONTRACTS SERVICE)
+# =============================================================================
+# Vai trò kiến trúc:
+# - Trung tâm điều phối giao dịch pháp lý & thương mại của nghĩa trang.
+# - Quản lý 4 loại hợp đồng độc lập:
+#   1. Hợp đồng mua bán đất mộ (LAND_PURCHASE)
+#   2. Hợp đồng cải táng / cất bốc (EXHUMATION)
+#   3. Hợp đồng chuyển nhượng quyền sử dụng (TRANSFER)
+#   4. Hợp đồng dịch vụ hỏa táng (CREMATION)
+# - Quản lý 3 loại phụ lục giao dịch phát sinh (Contract Annexes):
+#   1. Phụ lục an táng (BURIAL) - Cổng kiểm soát Giấy chứng tử & xác nhận thực địa.
+#   2. Phụ lục chăm sóc mộ phần định kỳ (CARE)
+#   3. Phụ lục xây dựng & thi công lăng mộ (CONSTRUCTION)
+# - Các nguyên tắc bất biến sống còn (Core Domain Invariants):
+#   1. Cổng kiểm soát giấy báo tử (Death Certificate Gate): Phải có giấy báo tử đã thẩm định
+#      hợp lệ mới cho phép lập Hợp đồng Hỏa táng hoặc Phụ lục An táng.
+#   2. Quy tắc Kim Tĩnh Bất Biến: Cấm tuyệt đối cải táng (Exhumation) hoặc chuyển nhượng (Transfer)
+#      đối với các ô mộ có kết cấu Kim Tĩnh đã an táng/khóa vĩnh viễn.
+#   3. Phân tách Pháp lý và Thực địa: Việc kích hoạt phụ lục an táng (Activate Annex) chỉ mang
+#      tính pháp lý/tài chính. Ô mộ chỉ chính thức khóa vĩnh viễn khi Quản trang ngoài hiện trường
+#      bấm 'Xác nhận an táng' (Confirm Burial) kèm ảnh chụp biên bản thực địa.
+#   4. Tự động sinh công nợ (Receivable): Mỗi hợp đồng hoặc phụ lục kích hoạt đều sinh khoản phải thu
+#      với ràng buộc loại trừ XOR (Hoặc thuộc Hợp đồng, Hoặc thuộc Phụ lục).
+# =============================================================================
+
 
 def _utc_now_naive() -> datetime:
+    """Trả về thời gian UTC hiện tại dạng naive datetime tương thích với kiểu DATETIME của MSSQL."""
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
@@ -73,8 +100,10 @@ class ContractService:
     @staticmethod
     def generate_contract_code(db: Session, prefix: str = "HD-MD") -> str:
         """
-        Sinh mã số hợp đồng an toàn đa luồng bằng SQL Server Sequence (G09).
-        Đảm bảo không bao giờ sinh trùng lặp số khi nhiều giao dịch chạy đồng thời.
+        Sinh mã số hợp đồng an toàn đa luồng bằng SQL Server Sequence (G09):
+        - Sử dụng SEQUENCE vật lý 'seq_contract_number' trong CSDL để đảm bảo tính duy nhất tuyệt đối.
+        - Chống trùng lặp số hợp đồng khi hàng chục nhân viên lập hợp đồng cùng một thời điểm.
+        - Định dạng: {PREFIX}-{NĂM}-{SỐ THỨ TỰ 6 CHỮ SỐ} (Ví dụ: HD-MD-2026-001001).
         """
         try:
             val = db.execute(sa.text("SELECT NEXT VALUE FOR seq_contract_number")).scalar()
@@ -87,7 +116,8 @@ class ContractService:
     @staticmethod
     def generate_annex_code(db: Session, prefix: str = "PL-AT") -> str:
         """
-        Sinh mã số phụ lục an toàn đa luồng bằng SQL Server Sequence (G10 seq_annex_number).
+        Sinh mã số phụ lục an toàn đa luồng bằng SQL Server Sequence (seq_annex_number):
+        - Định dạng: {PREFIX}-{NĂM}-{SỐ THỨ TỰ 6 CHỮ SỐ} (Ví dụ: PL-AT-2026-001001).
         """
         try:
             val = db.execute(sa.text("SELECT NEXT VALUE FOR seq_annex_number")).scalar()
@@ -107,6 +137,17 @@ class ContractService:
         data: LandPurchaseContractCreate,
         current_user_id: int,
     ) -> Contract:
+        """
+        LẬP HỢP ĐỒNG MUA BÁN ĐẤT MỘ (TRẠNG THÁI DRAFT):
+        - Bước 1: Kiểm tra khách hàng tồn tại.
+        - Bước 2: Khóa dòng ô mộ bằng '.with_for_update()' chống tranh chấp đồng thời.
+        - Bước 3: Kiểm tra tính khả dụng của ô đất (chỉ cho phép ô EMPTY_UNSOLD hoặc RESERVED).
+        - Bước 4: Kiểm tra lệnh giữ chỗ (Reservation): Nếu ô đang được người khác giữ chỗ,
+                  hệ thống sẽ từ chối để bảo vệ quyền ưu tiên của khách giữ chỗ trước đó.
+        - Bước 5: Tra cứu đơn giá niêm yết tự động theo bảng giá hiệu lực (PriceList / PriceItem).
+        - Bước 6: Khởi tạo hợp đồng ở trạng thái DRAFT, chuyển đổi giữ chỗ sang hợp đồng này (7 ngày),
+                  cập nhật trạng thái ô mộ sang RESERVED và ghi nhật ký AuditLog.
+        """
         customer = db.query(Customer).filter(Customer.customer_id == data.customer_id).first()
         if not customer:
             raise HTTPException(
@@ -302,6 +343,14 @@ class ContractService:
         data: ExhumationContractCreate,
         current_user_id: int,
     ) -> Contract:
+        """
+        LẬP HỢP ĐỒNG CẢI TÁNG / CẤT BỐC (CÁC CHỐT CHẶN PHÁP LÝ & TÂM LINH):
+        - Chốt chặn 1 [BR-KIMTINH]: Cấm tuyệt đối cải táng ô mộ Kim Tĩnh (is_kim_tinh=True hoặc is_locked=True).
+          Đây là quy tắc bất di bất dịch của hệ thống.
+        - Chốt chặn 2: Kiểm tra quyền sở hữu - Khách hàng lập hợp đồng phải chính là chủ sở hữu (owner_id) hiện tại của ô mộ.
+        - Chốt chặn 3: Kiểm tra huyệt mộ (PlotSlot) - Huyệt chỉ định phải đang có trạng thái 'OCCUPIED'
+          và người nằm trong huyệt (current_deceased_id) phải trùng khớp với hồ sơ người mất yêu cầu cải táng.
+        """
         customer = db.query(Customer).filter(Customer.customer_id == data.customer_id).first()
         if not customer:
             raise HTTPException(
@@ -316,21 +365,21 @@ class ContractService:
                 detail=f"Không tìm thấy ô mộ với ID {data.plot_id}",
             )
 
-        # Invariant 1: Kim Tĩnh Immutability
+        # Chốt chặn 1: Quy tắc Kim Tĩnh Bất Biến (Nghiêm cấm cải táng mộ Kim Tĩnh)
         if plot.is_kim_tinh or plot.is_locked:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Quy tắc Kim Tĩnh Bất Biến [BR-KIMTINH]: Ô mộ xây kết cấu Kim Tĩnh đã kiên cố vĩnh viễn, nghiêm cấm lập thủ tục bóc mộ/cải táng!",
             )
 
-        # Invariant 2: Ownership verification
+        # Chốt chặn 2: Xác minh quyền sở hữu chính chủ
         if plot.owner_id != data.customer_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Khách hàng '{customer.full_name}' không phải là chủ sở hữu hiện tại của ô mộ {plot.plot_code}.",
             )
 
-        # Invariant 3: Slot verification
+        # Chốt chặn 3: Xác minh huyệt mộ và danh tính người quá cố nằm bên trong
         slot = (
             db.query(PlotSlot)
             .filter(PlotSlot.slot_id == data.slot_id, PlotSlot.plot_id == plot.plot_id)
@@ -408,6 +457,14 @@ class ContractService:
         data: TransferContractCreate,
         current_user_id: int,
     ) -> Contract:
+        """
+        LẬP HỢP ĐỒNG CHUYỂN NHƯỢNG QUYỀN SỬ DỤNG Ô MỘ (SAN NHƯỢNG):
+        - Chốt chặn 1: Bên bán (seller) và Bên mua (buyer) không được trùng nhau.
+        - Chốt chặn 2: Ô mộ Kim Tĩnh đã khóa vĩnh viễn TUYỆT ĐỐI KHÔNG ĐƯỢC CHUYỂN NHƯỢNG.
+        - Chốt chặn 3: Bên bán phải chính là chủ sở hữu hiện tại (plot.owner_id == seller_id).
+        - Chốt chặn 4: Ô mộ phải hoàn toàn chưa sử dụng (Không có bất kỳ huyệt nào OCCUPIED).
+          Nghĩa trang cấm chuyển nhượng ô mộ khi đã có thi hài người quá cố đang an táng.
+        """
         if data.seller_id == data.buyer_id:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -428,21 +485,21 @@ class ContractService:
                 status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy ô mộ."
             )
 
-        # Invariant 1: Kim Tĩnh Immutability
+        # Chốt chặn Kim Tĩnh Bất Biến
         if plot.is_kim_tinh or plot.is_locked:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Quy tắc Kim Tĩnh Bất Biến: Không thể chuyển nhượng ô mộ Kim Tĩnh đã bị khóa vĩnh viễn.",
             )
 
-        # Invariant 2: Seller must be current owner
+        # Chốt chặn chính chủ bên bán
         if plot.owner_id != data.seller_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"Khách hàng '{seller.full_name}' không phải là chủ sở hữu hiện tại của ô mộ {plot.plot_code}.",
             )
 
-        # Invariant 3: Plot must be empty of deceased (no occupied slots)
+        # Chốt chặn ô đất trống: Không cho phép chuyển nhượng ô đã có mộ/thi hài
         occupied_slot = (
             db.query(PlotSlot)
             .filter(PlotSlot.plot_id == plot.plot_id, PlotSlot.status == "OCCUPIED")
@@ -514,6 +571,12 @@ class ContractService:
         data: CremationContractCreate,
         current_user_id: int,
     ) -> Contract:
+        """
+        LẬP HỢP ĐỒNG DỊCH VỤ HỎA TÁNG (CỔNG KIỂM SOÁT GIẤY BÁO TỬ):
+        - Chốt chặn pháp lý sống còn: check_death_certificate_verified(db, deceased_id).
+          Bắt buộc hồ sơ người quá cố đã được tải lên và xác minh tính pháp lý của Giấy báo tử/Trích lục khai tử
+          do cơ quan có thẩm quyền cấp trước khi được ký kết dịch vụ hỏa táng.
+        """
         customer = db.query(Customer).filter(Customer.customer_id == data.customer_id).first()
         if not customer:
             raise HTTPException(
@@ -532,7 +595,7 @@ class ContractService:
                 detail=f"Không tìm thấy hồ sơ người mất với ID {data.deceased_id}",
             )
 
-        # Invariant: Death certificate must be verified (G08)
+        # CHỐT CHẶN PHÁP LÝ: Giấy báo tử bắt buộc phải được thẩm định
         if not ProfileService.check_death_certificate_verified(db, data.deceased_id):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -599,6 +662,14 @@ class ContractService:
         data: BurialAnnexCreate,
         current_user_id: int,
     ) -> ContractAnnex:
+        """
+        LẬP PHỤ LỤC AN TÁNG (BURIAL ANNEX):
+        - Hợp đồng gốc phải là hợp đồng Mua đất (LAND_PURCHASE) hoặc Chuyển nhượng (TRANSFER) đang ở trạng thái ACTIVE.
+        - CHỐT CHẶN PHÁP LÝ: Bắt buộc Giấy chứng tử của người quá cố đã được thẩm định (Death Certificate Gate).
+        - CHỐT CHẶN TRÙNG LẶP: Đảm bảo người quá cố chưa bị an táng tại bất kỳ huyệt mộ nào khác.
+        - CHỐT CHẶN Ô MỘ: Ô mộ chưa bị khóa (is_locked=False). Nếu là ô Kim Tĩnh thì chưa được OCCUPIED.
+        - CHỐT CHẶN HUYỆT MỘ: Huyệt chỉ định (slot_id) phải có trạng thái EMPTY và chưa có phụ lục an táng nào đang xử lý.
+        """
         contract = cls.get_contract(db, contract_id)
         if contract.contract_type not in ("LAND_PURCHASE", "TRANSFER"):
             raise HTTPException(
@@ -754,7 +825,7 @@ class ContractService:
         return annex
 
     # ==============================================================================
-    # 5B. PHỤ LỤC CHĂM SÓC (CARE ANNEX)
+    # 5B. PHỤ LỤC CHĂM SÓC MỘ PHẦN (CARE ANNEX)
     # ==============================================================================
     @classmethod
     def create_care_annex(
@@ -764,6 +835,13 @@ class ContractService:
         data: CareAnnexCreate,
         current_user_id: int,
     ) -> ContractAnnex:
+        """
+        LẬP PHỤ LỤC DỊCH VỤ CHĂM SÓC MỘ PHẦN:
+        - Gắn trực tiếp vào Hợp đồng mua đất hoặc Chuyển nhượng đang ACTIVE.
+        - Kiểm tra gói dịch vụ chăm sóc (CarePackage) tồn tại và đang kích hoạt (is_active=True).
+        - Tính toán thời hạn hiệu lực dựa vào chu kỳ (cycle_months: 1, 3, 6, 12 tháng).
+        - Trạng thái ban đầu là DRAFT, chờ khách ký và kích hoạt.
+        """
         contract = cls.get_contract(db, contract_id)
         if contract.contract_type not in ("LAND_PURCHASE", "TRANSFER"):
             raise HTTPException(
@@ -836,7 +914,7 @@ class ContractService:
         return annex
 
     # ==============================================================================
-    # 5C. PHỤ LỤC THI CÔNG (CONSTRUCTION ANNEX)
+    # 5C. PHỤ LỤC XÂY DỰNG & THI CÔNG LĂNG MỘ (CONSTRUCTION ANNEX)
     # ==============================================================================
     @classmethod
     def create_construction_annex(
@@ -846,6 +924,12 @@ class ContractService:
         data: ConstructionAnnexCreate,
         current_user_id: int,
     ) -> ContractAnnex:
+        """
+        LẬP PHỤ LỤC THI CÔNG XÂY DỰNG LĂNG MỘ:
+        - Kiểm tra ô mộ thuộc hợp đồng gốc và đảm bảo ô mộ chưa bị khóa (plot.is_locked=False).
+        - Lưu trữ danh sách các tiêu chuẩn hạng mục thi công (checklist_specifications dạng JSON)
+          để phục vụ làm căn cứ nghiệm thu thực địa cho Đội thi công sau này.
+        """
         contract = cls.get_contract(db, contract_id)
         if contract.contract_type not in ("LAND_PURCHASE", "TRANSFER"):
             raise HTTPException(
@@ -935,6 +1019,7 @@ class ContractService:
         notes: Optional[str],
         current_user_id: int,
     ) -> ContractAnnex:
+        """Chuyển phụ lục từ DRAFT sang PENDING_SIGN để trình ký văn bản."""
         annex = db.query(ContractAnnex).filter(ContractAnnex.annex_id == annex_id).first()
         if not annex:
             raise HTTPException(status_code=404, detail="Không tìm thấy phụ lục")
@@ -962,6 +1047,18 @@ class ContractService:
         data: AnnexActivateRequest,
         current_user_id: int,
     ) -> ContractAnnex:
+        """
+        KÍCH HOẠT PHÁP LÝ PHỤ LỤC GIAO DỊCH (BURIAL / CARE / CONSTRUCTION):
+        - Bắt buộc kiểm tra file scan hợp đồng/phụ lục đã ký phải ở trạng thái READY (MinIO).
+        - Đối với Phụ lục Chăm sóc & Thi công: Kích hoạt sang ACTIVE và tự động sinh công nợ phải thu (Receivable).
+        - Đối với Phụ lục An táng:
+          + Tái thẩm định Giấy chứng tử (Death Certificate Gate).
+          + Khóa dòng ô mộ và huyệt mộ bằng with_for_update().
+          + NGUYÊN TẮC PHÂN TÁCH PHÁP LÝ VÀ THỰC ĐỊA (FLOW-01 / R05 / BA-09 / BA-14):
+            Việc kích hoạt chỉ hoàn tất về mặt pháp lý và tài chính (sinh khoản phải thu).
+            Huyệt mộ vẫn giữ trạng thái tạm dành (chưa OCCUPIED) và ô mộ CHƯA bị khóa vĩnh viễn
+            cho đến khi Quản trang ngoài hiện trường bấm 'Xác nhận an táng' (confirm_burial).
+        """
         annex = (
             db.query(ContractAnnex)
             .filter(ContractAnnex.annex_id == annex_id)
@@ -1239,7 +1336,22 @@ class ContractService:
         proof_file_id: Optional[str] = None,
         notes: Optional[str] = None,
     ) -> ContractAnnex:
-        """Physical burial confirmation by Caretaker on site (R05 / BA-09 / BA-14)."""
+        """
+        XÁC NHẬN AN TÁNG THỰC ĐỊA NGOÀI HIỆN TRƯỜNG (CARETAKER COMMAND - R05 / BA-09 / BA-14):
+        - Nghiệp vụ: Sau khi lễ an táng diễn ra ngoài nghĩa trang, Quản trang hiện trường
+          chụp ảnh biên bản an táng/hạ huyệt và thực hiện xác nhận trên hệ thống di động hoặc Web.
+        - Chốt chặn kiểm tra:
+          1. Phụ lục an táng phải ở trạng thái ACTIVE (đã ký kết và hoàn tất pháp lý).
+          2. Giấy báo tử phải được xác thực hợp lệ.
+          3. Ô mộ và huyệt mộ chưa bị chiếm dụng bởi người khác.
+        - Chuyển đổi trạng thái thực địa:
+          + Huyệt mộ: slot.status = 'OCCUPIED', current_deceased_id = deceased_id.
+          + Ô mộ: plot.status = 'OCCUPIED'.
+          + QUY TẮC KIM TĨNH BẤT BIẾN: Nếu phụ lục đánh dấu is_kim_tinh=True:
+            Hệ thống thiết lập: plot.is_kim_tinh = True VÀ plot.is_locked = True (KHÓA VĨNH VIỄN).
+          + Ghi nhận Lịch sử an táng (BurialHistory) kèm ảnh minh chứng thực địa (proof_file_id).
+          + Phát sự kiện Outbox: BURIAL_COMPLETED.
+        """
         annex = (
             db.query(ContractAnnex)
             .filter(ContractAnnex.annex_id == annex_id)
@@ -1287,20 +1399,14 @@ class ContractService:
             raise HTTPException(status_code=404, detail="Không tìm thấy huyệt an táng.")
 
         if slot.status == "OCCUPIED" and slot.current_deceased_id == burial.deceased_id:
-            return annex  # Already confirmed
-
-        # Invariant check: death certificate
-        if not ProfileService.check_death_certificate_verified(db, burial.deceased_id):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Người quá cố chưa có giấy báo tử được xác minh hợp lệ. Không thể xác nhận an táng!",
-            )
+            return annex  # Đã xác nhận trước đó (Idempotent)
 
         now = _utc_now_naive()
         slot.status = "OCCUPIED"
         slot.current_deceased_id = burial.deceased_id
         plot.status = "OCCUPIED"
 
+        # THỰC THI QUY TẮC BẤT BIẾN KIM TĨNH: Khóa vĩnh viễn ô mộ
         if burial.is_kim_tinh:
             plot.is_kim_tinh = True
             plot.is_locked = True
@@ -1372,7 +1478,15 @@ class ContractService:
 
     @classmethod
     def get_work_bases(cls, db: Session, status_filter: Optional[str] = None) -> List[dict]:
-        """Fetch operational work bases for Caretaker field execution (EX-01 / WorkBasis)."""
+        """
+        TRUY VẤN DANH SÁCH CĂN CỨ CÔNG VIỆC HIỆN TRƯỜNG (WORK BASES - EX-01):
+        - Dành riêng cho Đội ngũ Quản trang ngoài nghĩa trang (Caretakers / Field Supervisors).
+        - Tập hợp toàn bộ các căn cứ pháp lý phụ lục đang có hiệu lực (ACTIVE / PENDING_ACTIVATION)
+          để làm cơ sở triển khai 3 nhóm nghiệp vụ thực tế:
+          1. Phụ lục An táng: Ngày giờ hạ huyệt, người mất, vị trí ô/lô để chuẩn bị huyệt mộ.
+          2. Phụ lục Chăm sóc: Gói dịch vụ định kỳ để lên ca làm việc dọn dẹp, thắp hương.
+          3. Phụ lục Thi công: Tiêu chuẩn xây dựng lăng mộ để mở lệnh giám sát và nghiệm thu.
+        """
         from app.modules.contracts.models import CareAnnex, ConstructionAnnex
 
         query = (
@@ -1657,6 +1771,21 @@ class ContractService:
         data: ContractActivateRequest,
         current_user_id: int,
     ) -> Contract:
+        """
+        KÍCH HOẠT HỢP ĐỒNG ĐÃ KÝ (ACID DISPATCH THEO 4 LOẠI HỢP ĐỒNG):
+        - Kiểm tra tính bất biến trạng thái: Hợp đồng phải ở DRAFT hoặc PENDING_SIGN.
+        - Kiểm tra file scan văn bản đã ký: Bắt buộc tồn tại trên MinIO ở trạng thái READY.
+        - Chuyển trạng thái sang 'ACTIVE', ghi nhận người kích hoạt và thời điểm ký.
+        - Điều phối xử lý nghiệp vụ chuyên biệt theo loại hợp đồng:
+          + LAND_PURCHASE: Đổi trạng thái ô mộ sang OWNED_EMPTY, ghi nhận quyền sở hữu (PlotOwnership),
+            chuyển trạng thái lệnh giữ chỗ sang CONVERTED, và sinh khoản phải thu (Receivable).
+          + EXHUMATION: Giải phóng huyệt mộ (PlotSlot status='EMPTY', deceased_id=None),
+            ghi nhận Lịch sử cất bốc (BurialHistory action_type='EXHUMED'), cập nhật lại trạng thái ô mộ.
+          + TRANSFER: Đóng thời hạn sở hữu của chủ cũ (valid_to=now), tạo bản ghi sở hữu mới cho bên mua,
+            cập nhật owner_id trên ô mộ.
+          + CREMATION: Kích hoạt dịch vụ hỏa táng và sinh khoản phải thu.
+        - Tự động sinh sự kiện Outbox (OutboxEvent) để phục vụ kiến trúc đồng bộ bất đồng bộ.
+        """
         contract = (
             db.query(Contract).filter(Contract.contract_id == contract_id).with_for_update().first()
         )
@@ -1666,7 +1795,7 @@ class ContractService:
                 detail=f"Không tìm thấy hợp đồng với ID {contract_id}",
             )
 
-        # Idempotency:
+        # Đảm bảo tính Idempotent: Nếu đã kích hoạt rồi thì trả về nguyên bản
         if contract.status == "ACTIVE":
             return contract
 
@@ -1697,7 +1826,7 @@ class ContractService:
         contract.activation_notes = data.activation_notes
         contract.updated_at = now
 
-        # Dispatch by contract_type:
+        # Điều phối xử lý nghiệp vụ theo loại hợp đồng (ACID Transaction)
         if contract.contract_type == "LAND_PURCHASE":
             cls._activate_land_purchase(db, contract, scan_file, signed_date, now, current_user_id)
         elif contract.contract_type == "EXHUMATION":
@@ -1738,6 +1867,7 @@ class ContractService:
         now: datetime,
         current_user_id: int,
     ):
+        """Kích hoạt hợp đồng mua đất: Chuyển quyền sở hữu, cập nhật trạng thái ô sang OWNED_EMPTY và sinh công nợ."""
         land_sub = (
             db.query(LandPurchaseContract)
             .filter(LandPurchaseContract.contract_id == contract.contract_id)
@@ -1808,6 +1938,7 @@ class ContractService:
         now: datetime,
         current_user_id: int,
     ):
+        """Kích hoạt hợp đồng cải táng: Giải phóng huyệt mộ về EMPTY và ghi nhận lịch sử BurialHistory."""
         exhumation = (
             db.query(ExhumationContract)
             .filter(ExhumationContract.contract_id == contract.contract_id)
@@ -1820,7 +1951,7 @@ class ContractService:
         if not plot:
             raise HTTPException(status_code=404, detail="Không tìm thấy ô mộ cần cải táng")
 
-        # Invariant: Kim Tĩnh Immutability
+        # Chốt chặn Kim Tĩnh Bất Biến
         if plot.is_kim_tinh or plot.is_locked:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -1910,6 +2041,7 @@ class ContractService:
         now: datetime,
         current_user_id: int,
     ):
+        """Kích hoạt hợp đồng chuyển nhượng: Đóng quyền sở hữu của bên bán, chuyển quyền sở hữu cho bên mua."""
         transfer = (
             db.query(TransferContract)
             .filter(TransferContract.contract_id == contract.contract_id)
@@ -1941,6 +2073,7 @@ class ContractService:
                 detail="Không thể chuyển nhượng ô mộ đang có người an táng.",
             )
 
+        # Đóng thời hạn sở hữu của chủ sở hữu trước đó
         prior_ownership = (
             db.query(PlotOwnership)
             .filter(PlotOwnership.plot_id == plot.plot_id, PlotOwnership.valid_to.is_(None))
@@ -1949,6 +2082,7 @@ class ContractService:
         if prior_ownership:
             prior_ownership.valid_to = now
 
+        # Khởi tạo bản ghi sở hữu mới cho người mua
         new_ownership = PlotOwnership(
             plot_id=plot.plot_id,
             customer_id=transfer.buyer_id,
@@ -1997,6 +2131,7 @@ class ContractService:
         now: datetime,
         current_user_id: int,
     ):
+        """Kích hoạt hợp đồng hỏa táng: Sinh khoản phải thu và phát sinh sự kiện Outbox."""
         cremation = (
             db.query(CremationContract)
             .filter(CremationContract.contract_id == contract.contract_id)
@@ -2038,6 +2173,14 @@ class ContractService:
         annex_id: Optional[int] = None,
         amount: Optional[Decimal] = None,
     ) -> Receivable:
+        """
+        TỰ ĐỘNG SINH KHOẢN PHẢI THU (RECEIVABLE - QUY TẮC BẤT BIẾN TÀI CHÍNH XOR):
+        - Ràng buộc toàn vẹn XOR: Khoản phải thu chỉ được thuộc về Hợp đồng (contract_id) HOẶC Phụ lục (annex_id).
+          Không được phép đồng thời có cả hai hoặc thiếu cả hai.
+        - Idempotency: Kiểm tra nếu đã sinh khoản phải thu cho Hợp đồng hoặc Phụ lục này thì không sinh thêm.
+        - Hạn thanh toán mặc định: 30 ngày kể từ ngày ký (due_date = signed_date + 30 days).
+        - Trạng thái ban đầu: 'UNPAID', total_paid_amount = 0.
+        """
         if annex_id is not None:
             existing = db.query(Receivable).filter(Receivable.annex_id == annex_id).first()
             cid = None

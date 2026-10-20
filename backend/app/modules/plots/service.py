@@ -37,10 +37,32 @@ from app.modules.plots.schemas import (
 )
 from app.modules.profiles.models import Customer
 
+# =============================================================================
+# PHÂN HỆ QUẢN LÝ Ô MỘ & QUY HOẠCH KHÔNG GIAN (PLOTS SERVICE)
+# =============================================================================
+# Vai trò kiến trúc:
+# - Chịu trách nhiệm toàn bộ logic nghiệp vụ về quy hoạch không gian 3 cấp:
+#   Khu Vực (Zone) -> Hàng Mộ (Row) -> Ô Mộ (Plot) -> Huyệt Mộ (PlotSlot).
+# - Thực thi các quy tắc bất biến sống còn (Core Domain Invariants):
+#   1. Quy tắc Kim Tĩnh Bất Biến: Ô mộ Kim Tĩnh đã an táng sẽ bị khóa vĩnh viễn (is_locked=True),
+#      chống mọi hành vi sửa kết cấu, hạ cờ, cải táng hoặc xóa ô.
+#   2. Chống tranh chấp giữ chỗ (Anti-Double Booking): Sử dụng row lock 'with_for_update()'
+#      đảm bảo không thể có 2 nhân viên giữ chỗ cùng 1 ô cùng một thời điểm.
+#   3. Phân quyền hiển thị dữ liệu theo Actor: Che giấu thông tin cá nhân (PII) chủ mộ
+#      đối với các vai trò không thuộc diện quản lý (như Quản trang ngoài hiện trường).
+# =============================================================================
+
 
 class PlotService:
     @staticmethod
     def visible_to_actor(plot: PlotListResponse, roles: list[str]) -> PlotListResponse:
+        """
+        NGHIỆP VỤ BẢO VỆ DỮ LIỆU RIÊNG TƯ (PII Protection):
+        - Chỉ có vai trò Quản trị viên (ADMIN) hoặc Nhân viên kinh doanh (MARKETING)
+          mới được phép xem thông tin chủ sở hữu (owner_id, owner_name) và thông tin giữ chỗ.
+        - Các vai trò khác (như CARETAKER - Quản trang hiện trường) khi xem danh sách ô
+          sẽ bị ẩn các trường nhạy cảm này (gán None) để đảm bảo tuân thủ an toàn dữ liệu.
+        """
         if not {"ADMIN", "MARKETING"}.intersection(roles):
             plot.owner_id = None
             plot.owner_name = None
@@ -48,15 +70,21 @@ class PlotService:
         return plot
 
     # =========================================================================
-    # 1. Zone Management
+    # 1. QUẢN LÝ PHÂN KHU (ZONE MANAGEMENT - CẤP 1)
     # =========================================================================
     @staticmethod
     def list_zones(db: Session) -> List[ZoneResponse]:
+        """Lấy toàn bộ danh sách phân khu trong nghĩa trang, sắp xếp theo mã khu (A, B, C...)."""
         zones = db.query(Zone).order_by(Zone.zone_code).all()
         return [ZoneResponse.model_validate(z) for z in zones]
 
     @staticmethod
     def create_zone(db: Session, data: ZoneCreate) -> ZoneResponse:
+        """
+        Tạo mới một phân khu:
+        - Kiểm tra tính duy nhất của mã khu vực (zone_code).
+        - Chuẩn hóa mã khu thành chữ in hoa (uppercase).
+        """
         existing = db.query(Zone).filter(Zone.zone_code == data.zone_code.strip()).first()
         if existing:
             raise HTTPException(
@@ -76,6 +104,11 @@ class PlotService:
 
     @staticmethod
     def update_zone(db: Session, zone_id: int, data: ZoneUpdate) -> ZoneResponse:
+        """
+        Cập nhật thông tin phân khu:
+        - Kiểm tra sự tồn tại của phân khu theo ID.
+        - Cho phép sửa đổi tên hiển thị, tổng số hàng dự kiến và mô tả.
+        """
         zone = db.query(Zone).filter(Zone.zone_id == zone_id).first()
         if not zone:
             raise HTTPException(
@@ -94,6 +127,11 @@ class PlotService:
 
     @staticmethod
     def delete_zone(db: Session, zone_id: int) -> dict:
+        """
+        Xóa phân khu (Ràng buộc toàn vẹn khóa ngoại):
+        - Quy tắc nghiệp vụ: Không thể xóa phân khu nếu bên trong vẫn còn Hàng mộ (Row).
+        - Ngăn chặn việc xóa mồ côi (orphaned rows) vi phạm cấu trúc cây quy hoạch.
+        """
         zone = db.query(Zone).filter(Zone.zone_id == zone_id).first()
         if not zone:
             raise HTTPException(
@@ -111,10 +149,15 @@ class PlotService:
         return {"message": f"Đã xóa khu vực '{zone.zone_code}' thành công."}
 
     # =========================================================================
-    # 2. Row Management
+    # 2. QUẢN LÝ HÀNG MỘ (ROW MANAGEMENT - CẤP 2)
     # =========================================================================
     @staticmethod
     def list_rows(db: Session, zone_id: Optional[int] = None) -> List[RowResponse]:
+        """
+        Lấy danh sách các hàng mộ:
+        - Hỗ trợ lọc theo khu vực (zone_id).
+        - Sắp xếp theo mã hàng (A1, A2, B1...) để hiển thị tuần tự trên sơ đồ.
+        """
         query = db.query(Row)
         if zone_id is not None:
             query = query.filter(Row.zone_id == zone_id)
@@ -123,6 +166,11 @@ class PlotService:
 
     @staticmethod
     def create_row(db: Session, data: RowCreate) -> RowResponse:
+        """
+        Tạo mới một hàng mộ trực thuộc một khu:
+        - Đảm bảo mã hàng không trùng lặp trong cùng một khu vực (zone_id + row_code).
+        - Tự động cập nhật tổng số hàng (total_rows) của khu vực cha.
+        """
         zone = db.query(Zone).filter(Zone.zone_id == data.zone_id).first()
         if not zone:
             raise HTTPException(
@@ -145,7 +193,7 @@ class PlotService:
             total_plots=data.total_plots,
         )
         db.add(row)
-        # Update zone total_rows count
+        # Tự động đồng bộ số lượng hàng thuộc khu vực
         zone.total_rows = db.query(Row).filter(Row.zone_id == zone.zone_id).count() + 1
         db.commit()
         db.refresh(row)
@@ -153,6 +201,7 @@ class PlotService:
 
     @staticmethod
     def update_row(db: Session, row_id: int, data: RowUpdate) -> RowResponse:
+        """Cập nhật thông tin hàng mộ (mã hàng chuẩn hóa viết hoa, tổng số ô dự kiến)."""
         row = db.query(Row).filter(Row.row_id == row_id).first()
         if not row:
             raise HTTPException(
@@ -169,6 +218,11 @@ class PlotService:
 
     @staticmethod
     def delete_row(db: Session, row_id: int) -> dict:
+        """
+        Xóa hàng mộ (Ràng buộc toàn vẹn dữ liệu):
+        - Chặn xóa nếu trong hàng vẫn còn Ô Mộ (Plot).
+        - Khi xóa thành công, tự động giảm đếm total_rows của khu vực cha.
+        """
         row = db.query(Row).filter(Row.row_id == row_id).first()
         if not row:
             raise HTTPException(
@@ -189,15 +243,21 @@ class PlotService:
         return {"message": f"Đã xóa hàng '{row.row_code}' thành công."}
 
     # =========================================================================
-    # 3. Plot Type Management
+    # 3. QUẢN LÝ LOẠI MỘ & KÍCH THƯỚC QUY CHUẨN (PLOT TYPE MANAGEMENT)
     # =========================================================================
     @staticmethod
     def list_plot_types(db: Session) -> List[PlotTypeResponse]:
+        """Lấy danh mục các loại mộ quy chuẩn (Mộ đơn, Mộ đôi, Mộ gia tộc...)."""
         types = db.query(PlotType).order_by(PlotType.type_name).all()
         return [PlotTypeResponse.model_validate(t) for t in types]
 
     @staticmethod
     def create_plot_type(db: Session, data: PlotTypeCreate) -> PlotTypeResponse:
+        """
+        Tạo mới định nghĩa loại mộ:
+        - default_slots: Số huyệt mặc định (Ví dụ: mộ đơn = 1, mộ đôi = 2, gia tộc >= 4).
+        - length, width: Kích thước hình học (mét) phục vụ vẽ sơ đồ và tính đơn giá.
+        """
         existing = db.query(PlotType).filter(PlotType.type_name == data.type_name.strip()).first()
         if existing:
             raise HTTPException(
@@ -218,6 +278,7 @@ class PlotService:
 
     @staticmethod
     def update_plot_type(db: Session, type_id: int, data: PlotTypeUpdate) -> PlotTypeResponse:
+        """Cập nhật thông số kích thước và số huyệt mặc định của loại mộ."""
         pt = db.query(PlotType).filter(PlotType.type_id == type_id).first()
         if not pt:
             raise HTTPException(
@@ -240,6 +301,10 @@ class PlotService:
 
     @staticmethod
     def delete_plot_type(db: Session, type_id: int) -> dict:
+        """
+        Xóa loại mộ:
+        - Chặn xóa nếu đang có bất kỳ ô mộ nào trong nghĩa trang áp dụng loại mộ này.
+        """
         pt = db.query(PlotType).filter(PlotType.type_id == type_id).first()
         if not pt:
             raise HTTPException(
@@ -257,7 +322,7 @@ class PlotService:
         return {"message": f"Đã xóa loại mộ '{pt.type_name}' thành công."}
 
     # =========================================================================
-    # 4. Plot & Slot Lifecycle Management
+    # 4. QUẢN LÝ VÒNG ĐỜI Ô MỘ & HUYỆT MỘ (PLOT & SLOT LIFECYCLE)
     # =========================================================================
     @staticmethod
     def list_plots(
@@ -271,6 +336,14 @@ class PlotService:
         skip: int = 0,
         limit: int = 200,
     ) -> List[PlotListResponse]:
+        """
+        Truy vấn danh sách ô mộ kèm tối ưu hóa hiệu năng:
+        - Tối ưu truy vấn N+1: Sử dụng joinedload cho Row, Zone, PlotType, PlotReservation.
+        - Batch Loading chủ sở hữu: Lấy tập hợp customer_id của tất cả các ô trong 1 truy vấn duy nhất.
+        - Hỗ trợ đa tiêu chí lọc: Theo Khu, Hàng, Loại mộ, Trạng thái (Trống/Giữ chỗ/Đã bán/Đã an táng),
+          cờ Kim Tĩnh, và tìm kiếm chuỗi ký tự theo mã ô (plot_code).
+        - Gắn cờ 'is_synthetic': Phát hiện các ô mộ dữ liệu mẫu/synthetic test qua tag ghi chú.
+        """
         query = (
             db.query(Plot)
             .join(Row, Plot.row_id == Row.row_id)
@@ -283,6 +356,7 @@ class PlotService:
             )
         )
 
+        # Áp dụng các điều kiện lọc linh hoạt
         if zone_id is not None:
             query = query.filter(Zone.zone_id == zone_id)
         if row_id is not None:
@@ -304,7 +378,8 @@ class PlotService:
             .all()
         )
 
-        # Batch load owners to eliminate N+1 query
+        # KỸ THUẬT BATCH LOADING TRÁNH N+1 QUERY:
+        # Gom tất cả owner_id không rỗng lại và truy vấn 1 lần duy nhất từ bảng Customer.
         owner_ids = {p.owner_id for p in plots if p.owner_id}
         owner_map = {}
         if owner_ids:
@@ -315,7 +390,7 @@ class PlotService:
         for p in plots:
             owner_name = owner_map.get(p.owner_id) if p.owner_id else None
 
-            # Find active reservation if any
+            # Tìm lệnh giữ chỗ đang có hiệu lực (state == 'ACTIVE') nếu có
             active_res = None
             for res in p.reservations:
                 if res.state == "ACTIVE":
@@ -352,6 +427,12 @@ class PlotService:
 
     @staticmethod
     def get_plot(db: Session, plot_id: int) -> PlotDetailResponse:
+        """
+        Lấy chi tiết một ô mộ (bao gồm toàn bộ các huyệt mộ - PlotSlot):
+        - Tự động sinh slots lười (Lazy Slot Generation): Nếu ô mộ cũ trong CSDL chưa có slots,
+          hệ thống tự động khởi tạo số lượng slots tương ứng với default_slots của PlotType,
+          đảm bảo dữ liệu luôn đầy đủ khi hiển thị chi tiết và an táng.
+        """
         p = (
             db.query(Plot)
             .options(
@@ -381,6 +462,7 @@ class PlotService:
                 active_res = PlotReservationResponse.model_validate(res)
                 break
 
+        # CƠ CHẾ TỰ BÙ ĐẮP DỮ LIỆU HUYỆT (LAZY SLOT AUTO-GENERATION)
         if not p.slots:
             num_slots = p.plot_type.default_slots if p.plot_type and p.plot_type.default_slots else 1
             for i in range(1, num_slots + 1):
@@ -426,7 +508,14 @@ class PlotService:
 
     @staticmethod
     def create_plot(db: Session, data: PlotCreate) -> PlotDetailResponse:
-        """Tạo mới ô mộ và tự động sinh slots theo cấu hình loại mộ (ACID transaction)."""
+        """
+        TẠO MỚI Ô MỘ (ACID Transaction):
+        - Kiểm tra tính tồn tại của hàng mộ (Row) và loại mộ (PlotType).
+        - Đảm bảo mã ô mộ (plot_code) là duy nhất trên toàn hệ thống.
+        - Tự động sinh đồng thời các huyệt mộ (PlotSlot từ 1 đến default_slots) trong cùng 1 transaction.
+        - Trạng thái ban đầu luôn là EMPTY_UNSOLD, cờ is_kim_tinh=False, is_locked=False.
+        - Tự động cập nhật tổng số ô mộ của hàng tương ứng.
+        """
         row = db.query(Row).filter(Row.row_id == data.row_id).first()
         if not row:
             raise HTTPException(
@@ -465,7 +554,7 @@ class PlotService:
         db.add(plot)
         db.flush()  # populate plot_id without committing
 
-        # Automatically generate slots 1..default_slots in the same transaction
+        # Tự động khởi tạo số lượng huyệt mộ tương ứng với loại mộ trong cùng giao dịch
         for slot_num in range(1, pt.default_slots + 1):
             slot = PlotSlot(
                 plot_id=plot.plot_id,
@@ -475,14 +564,22 @@ class PlotService:
             )
             db.add(slot)
 
-        # Update row total_plots count
-        row.total_plots = db.query(Plot).filter(Plot.row_id == row.row_id).count() + 1
+        # Cập nhật tổng số ô trong hàng
+        row.total_plots = db.query(Plot).filter(Row.row_id == row.row_id).count() + 1
 
         db.commit()
         return PlotService.get_plot(db, plot.plot_id)
 
     @staticmethod
     def update_plot(db: Session, plot_id: int, data: PlotUpdate) -> PlotDetailResponse:
+        """
+        CẬP NHẬT THÔNG TIN Ô MỘ VÀ BẢO VỆ TÍNH BẤT BIẾN KIM TĨNH:
+        - THỰC THI NGUYÊN TẮC CỐT LÕI (CORE INVARIANT):
+          1. Không cho phép gỡ cờ Kim Tĩnh (is_kim_tinh từ True -> False).
+          2. Nếu ô đã khóa (is_locked=True), cấm mọi hành vi chỉnh sửa tọa độ, hướng, ghi chú.
+          3. Không cho phép gán cờ Kim Tĩnh thủ công khi ô còn đang ở trạng thái Trống/Giữ chỗ.
+             Kim Tĩnh chỉ được kích hoạt hợp lệ qua quy trình lập Phụ lục An táng có Giấy chứng tử.
+        """
         plot = db.query(Plot).filter(Plot.plot_id == plot_id).first()
         if not plot:
             raise HTTPException(
@@ -490,7 +587,7 @@ class PlotService:
                 detail=f"Không tìm thấy ô mộ với ID {plot_id}.",
             )
 
-        # Domain Invariant: Kim Tĩnh Immutability Guard
+        # RÀNG BUỘC KIM TĨNH BẤT BIẾN
         if plot.is_kim_tinh:
             if data.is_kim_tinh is False:
                 raise HTTPException(
@@ -526,13 +623,22 @@ class PlotService:
 
     @staticmethod
     def delete_plot(db: Session, plot_id: int) -> dict:
+        """
+        XÓA Ô MỘ AN TOÀN (CÁC CHỐT CHẶN NGHIỆP VỤ TOÀN VẸN):
+        1. Chốt chặn Kim Tĩnh: Ô có kết cấu Kim Tĩnh hoặc đã khóa vĩnh viễn TUYỆT ĐỐI KHÔNG ĐƯỢC XÓA.
+        2. Chốt chặn trạng thái: Chỉ ô Chưa bán (EMPTY_UNSOLD) mới có thể xóa.
+        3. Chốt chặn giữ chỗ: Ô đang có lệnh giữ chỗ ACTIVE không được xóa.
+        4. Chốt chặn giao dịch: Ô đã từng phát sinh bất kỳ Hợp đồng hoặc Phụ lục nào không được xóa
+           để bảo tồn lịch sử kế toán và pháp lý.
+        5. Khi thỏa mãn toàn bộ chốt chặn: Xóa sạch các PlotSlot con và giảm total_plots của Row.
+        """
         plot = db.query(Plot).filter(Plot.plot_id == plot_id).first()
         if not plot:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Không tìm thấy ô mộ với ID {plot_id}.",
             )
-        # Kim Tĩnh Immutability: Once Kim Tinh, permanent
+        # Chốt chặn Kim Tĩnh Bất Biến
         if plot.is_kim_tinh or plot.is_locked:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -544,7 +650,7 @@ class PlotService:
                 detail=f"Chỉ có thể xóa ô mộ ở trạng thái Chưa bán (EMPTY_UNSOLD). Trạng thái hiện tại: {plot.status}.",
             )
 
-        # Active reservations check
+        # Chốt chặn kiểm tra lệnh giữ chỗ đang hoạt động
         active_res = (
             db.query(PlotReservation)
             .filter(PlotReservation.plot_id == plot_id, PlotReservation.state == "ACTIVE")
@@ -556,7 +662,7 @@ class PlotService:
                 detail="Ô mộ đang có lệnh giữ chỗ hiệu lực, không thể xóa.",
             )
 
-        # Contracts & Annexes check
+        # Chốt chặn kiểm tra lịch sử Hợp đồng & Phụ lục liên quan
         from app.modules.contracts.models import (
             BurialAnnex,
             ConstructionAnnex,
@@ -580,7 +686,7 @@ class PlotService:
                 detail=f"Ô mộ đã gắn với {contract_count} hợp đồng và {annex_count} phụ lục giao dịch, không thể xóa.",
             )
 
-        # Delete associated slots
+        # Xóa các huyệt mộ con trước khi xóa ô mộ
         db.query(PlotSlot).filter(PlotSlot.plot_id == plot_id).delete(synchronize_session=False)
 
         row = db.query(Row).filter(Row.row_id == plot.row_id).first()
@@ -591,7 +697,7 @@ class PlotService:
         return {"message": f"Đã xóa ô mộ '{plot.plot_code}' thành công."}
 
     # =========================================================================
-    # 5. Anti-Double Booking Reservation (G04)
+    # 5. GIỮ CHỖ ĐỘC QUYỀN CHỐNG TRANH CHẤP (ANTI-DOUBLE BOOKING - USE CASE G04)
     # =========================================================================
     @staticmethod
     def reserve_plot(
@@ -600,8 +706,17 @@ class PlotService:
         user_id: int,
         req: PlotReserveRequest,
     ) -> PlotReservationResponse:
-        """Giữ chỗ ô đất độc quyền chống tranh chấp (Anti-Double Booking Concurrency)."""
-        # Concurrency Lock: Lock the plot row for update
+        """
+        GIỮ CHỖ Ô ĐẤT ĐỘC QUYỀN (ANTI-DOUBLE BOOKING CONCURRENCY):
+        - Sử dụng Row Lock CSDL: '.with_for_update()' để khóa dòng Plot và PlotReservation.
+          Nếu 2 nhân viên cùng bấm giữ chỗ 1 ô cùng 1 giây, giao dịch thứ hai phải chờ
+          hoặc bị từ chối, giải quyết triệt để bài toán tranh chấp tài nguyên (Race Condition).
+        - Tự động kiểm tra thời hạn (TTL): Nếu lệnh giữ chỗ cũ đã quá hạn (expires_at < now),
+          hệ thống tự động chuyển state='EXPIRED' (Lazy Eviction).
+        - Nếu vẫn còn người giữ chỗ hợp lệ: Ném lỗi HTTP 409 Conflict.
+        - Cập nhật trạng thái ô mộ sang 'RESERVED' và lưu thời hạn giữ chỗ (duration_hours).
+        """
+        # Concurrency Lock: Khóa dòng ô mộ ở mức CSDL chống tranh chấp đồng thời
         plot = db.query(Plot).filter(Plot.plot_id == plot_id).with_for_update().first()
         if not plot:
             raise HTTPException(
@@ -611,7 +726,7 @@ class PlotService:
 
         now = datetime.now(timezone.utc)
 
-        # 1. Check existing active reservation and expire if time passed
+        # 1. Kiểm tra lệnh giữ chỗ đang có và tự động hết hạn nếu quá thời gian
         active_res = (
             db.query(PlotReservation)
             .filter(PlotReservation.plot_id == plot_id, PlotReservation.state == "ACTIVE")
@@ -623,17 +738,17 @@ class PlotService:
             if expires_at_cmp.tzinfo is None:
                 expires_at_cmp = expires_at_cmp.replace(tzinfo=timezone.utc)
             if expires_at_cmp < now:
-                # Expired automatically
+                # Quá hạn -> Tự động đánh dấu hết hạn (Lazy Eviction)
                 active_res.state = "EXPIRED"
                 db.flush()
             else:
-                # Still active -> Conflict!
+                # Vẫn còn hiệu lực -> Tranh chấp tài nguyên, trả mã lỗi 409 Conflict!
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail=f"Ô mộ {plot.plot_code} đang có người giữ chỗ (hết hạn lúc {active_res.expires_at.strftime('%Y-%m-%d %H:%M')}). Vui lòng chọn ô khác!",
                 )
 
-        # 2. Check plot status
+        # 2. Kiểm tra trạng thái hiện tại của ô mộ
         if plot.status == "RESERVED":
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -645,7 +760,7 @@ class PlotService:
                 detail=f"Ô mộ {plot.plot_code} đã có chủ sở hữu hoặc đang sử dụng (trạng thái: {plot.status}), không thể giữ chỗ.",
             )
 
-        # 3. Create active reservation
+        # 3. Tạo bản ghi giữ chỗ mới với thời hạn (duration_hours)
         expires_at = now + timedelta(hours=req.duration_hours)
         reservation = PlotReservation(
             plot_id=plot.plot_id,
@@ -659,7 +774,7 @@ class PlotService:
         )
         db.add(reservation)
 
-        # 4. Update plot status
+        # 4. Chuyển trạng thái ô mộ sang RESERVED
         plot.status = "RESERVED"
         plot.updated_at = now
 
@@ -669,7 +784,12 @@ class PlotService:
 
     @staticmethod
     def cancel_reservation(db: Session, plot_id: int, user_id: int) -> dict:
-        """Hủy giữ chỗ ô đất và trả lại trạng thái EMPTY_UNSOLD."""
+        """
+        HỦY LỆNH GIỮ CHỖ VÀ GIẢI PHÓNG Ô MỘ:
+        - Khóa dòng ô mộ with_for_update().
+        - Đổi trạng thái reservation thành 'CANCELLED'.
+        - Trả trạng thái ô mộ về 'EMPTY_UNSOLD' để các khách hàng khác có thể tiếp cận.
+        """
         plot = db.query(Plot).filter(Plot.plot_id == plot_id).with_for_update().first()
         if not plot:
             raise HTTPException(
@@ -698,10 +818,21 @@ class PlotService:
         }
 
     # =========================================================================
-    # 6. Statistics
+    # 6. THỐNG KÊ QUY HOẠCH & TRẠNG THÁI Ô MỘ (STATISTICS)
     # =========================================================================
     @staticmethod
     def get_stats(db: Session) -> PlotStatsResponse:
+        """
+        Thống kê tổng hợp số liệu quy hoạch nghĩa trang phục vụ Dashboard:
+        - Tổng số ô mộ, phân loại theo trạng thái kinh doanh và vận hành:
+          + Chưa bán (EMPTY_UNSOLD)
+          + Tạm giữ chỗ (RESERVED)
+          + Đã bán chưa sử dụng (OWNED_EMPTY)
+          + Đang xây dựng lăng mộ (UNDER_CONSTRUCTION)
+          + Đã an táng (OCCUPIED)
+          + Đang thực hiện cải táng (UNDER_EXHUMATION)
+        - Số lượng ô mộ kết cấu Kim Tĩnh (is_kim_tinh=True) và số ô đã khóa vĩnh viễn (is_locked=True).
+        """
         total = db.query(Plot).count()
         empty_unsold = db.query(Plot).filter(Plot.status == "EMPTY_UNSOLD").count()
         reserved = db.query(Plot).filter(Plot.status == "RESERVED").count()
@@ -725,13 +856,20 @@ class PlotService:
         )
 
     # =========================================================================
-    # 7. Public Plot Timeline & Memorial Activities (G19 / Memorial Portal)
+    # 7. DÒNG THỜI GIAN HOẠT ĐỘNG VÀ MINH CHỨNG CÔNG KHAI (MEMORIAL PORTAL - G19)
     # =========================================================================
     @staticmethod
     def get_plot_timeline(db: Session, plot_identifier: str) -> PlotTimelineResponse:
         """
-        Tra cứu dòng thời gian hoạt động & minh chứng thực địa công khai của ô mộ.
-        Bao gồm: lễ an táng, các đợt thi công lăng mộ, lịch trình chăm sóc định kỳ kèm ảnh minh chứng.
+        NGHIỆP VỤ HỢP NHẤT DÒNG THỜI GIAN ĐA PHÂN HỆ (CROSS-DOMAIN MEMORIAL TIMELINE):
+        - Cho phép thân nhân hoặc khách viếng thăm tra cứu lịch sử và minh chứng thực địa của ô mộ
+          thông qua ID hoặc mã ô mộ (plot_code) mà không yêu cầu đăng nhập.
+        - Tự động tập hợp dữ liệu từ 3 nguồn phân hệ khác nhau:
+          1. Lịch sử An Táng / Cải Táng (BurialHistory): Kèm ảnh biên bản an táng thực địa.
+          2. Lệnh Thi Công & Xây Dựng (ConstructionOrder): Kèm các hạng mục và ảnh nghiệm thu.
+          3. Lịch Trình Chăm Sóc Định Kỳ (CareSchedule): Kèm checklist công việc và ảnh hiện trường.
+        - Sắp xếp toàn bộ sự kiện theo thứ tự thời gian giảm dần (mới nhất lên đầu).
+        - Trả về tọa độ GPS và đường dẫn Google Maps hỗ trợ dẫn đường trực tiếp ngoài thực địa.
         """
         query = db.query(Plot).options(
             joinedload(Plot.row).joinedload(Row.zone),

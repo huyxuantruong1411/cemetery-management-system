@@ -13,16 +13,30 @@ from app.modules.auth.service import AuthService
 security_bearer = HTTPBearer(auto_error=False)
 
 
+# =============================================================================
+# DEPENDENCY XÁC THỰC DANH TÍNH TỪ JWT BEARER (G01)
+# =============================================================================
+
 def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Security(security_bearer),
     db: Session = Depends(get_db),
 ) -> User:
-    """Extract and validate the current authenticated user from Bearer JWT.
-
-    Enforces:
-    - Token validity and expiration
-    - User active status
-    - G01: Immediate revocation via matching auth_version
+    """
+    [DEPENDENCY KIỂM TRA & XÁC THỰC DANH TÍNH NGƯỜI DÙNG - JWT BEARER]
+    
+    Quy trình kiểm tra an ninh đa tầng:
+    1. Kiểm tra header Authorization: Bắt buộc phải có định dạng 'Bearer <token>'.
+    2. Giải mã và thẩm định chữ ký số JWT (decode_access_token):
+       - Bắt ExpiredSignatureError nếu token đã hết hạn 30 phút.
+       - Bắt InvalidTokenError nếu token bị giả mạo hoặc chữ ký không khớp secret key.
+    3. Trích xuất claims: sub (mã user_id) và auth_version.
+    4. Kiểm tra tài khoản trong CSDL: Phải tồn tại và đang hoạt động (is_active == True).
+    5. CƠ CHẾ THU HỒI TOKEN TỨC THÌ (G01 - IMMEDIATE REVOCATION GATE):
+       So sánh auth_version trong payload JWT với auth_version thực tế trong CSDL của User:
+       - Nếu khớp: Token hợp lệ, cấp quyền xử lý request.
+       - Nếu không khớp (token_auth_version != user.auth_version): Token này thuộc về thế hệ cũ
+         (đã bị thu hồi do đổi mật khẩu, đổi vai trò, hoặc đăng xuất từ xa).
+         -> Lập tức ném HTTP 401 Unauthorized, triệt tiêu hoàn toàn rủi ro lộ token!
     """
     if not credentials or not credentials.credentials:
         raise HTTPException(
@@ -80,7 +94,7 @@ def get_current_user(
             detail="Tài khoản đã bị vô hiệu hóa",
         )
 
-    # G01: Immediate revocation check
+    # G01: Immediate revocation check - So sánh phiên bản xác thực chống token cũ
     if token_auth_version != user.auth_version:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -91,15 +105,28 @@ def get_current_user(
     return user
 
 
-def require_permission(resource: str, action: str) -> Callable[[User], User]:
-    """Dependency factory checking if the authenticated user has {resource}:{action} permission.
+# =============================================================================
+# DEPENDENCY PHÂN QUYỀN RBAC CHI TIẾT THEO HÀNH ĐỘNG
+# =============================================================================
 
-    The 'ADMIN' role automatically bypasses all permission checks.
+def require_permission(resource: str, action: str) -> Callable[[User], User]:
+    """
+    [DEPENDENCY FACTORY KIỂM SOÁT QUYỀN HẠN CHI TIẾT - RESOURCE:ACTION]
+    
+    Nguyên lý phân quyền:
+    - Định danh quyền dưới dạng chuỗi chuẩn: '{resource}:{action}'
+      (Ví dụ: 'plots:reserve', 'contracts:approve', 'finance:pay', 'care:close').
+    - Đặc quyền Quản trị tối cao (ADMIN Bypass):
+      Nếu người dùng sở hữu vai trò 'ADMIN', tự động được phép truy cập mọi tài nguyên.
+    - Đối với các vai trò khác (STAFF, CARETAKER, ACCOUNTANT...):
+      Tổng hợp toàn bộ tập quyền của người dùng (user_perms).
+      Nếu quyền hạn yêu cầu không nằm trong tập quyền -> Ném HTTP 403 Forbidden.
     """
     permission_code = f"{resource}:{action}"
 
     def _permission_checker(current_user: User = Depends(get_current_user)) -> User:
         user_roles = [r.role_name for r in current_user.roles]
+        # Quản trị viên tối cao tự động bỏ qua mọi kiểm tra quyền chi tiết
         if "ADMIN" in user_roles:
             return current_user
 
@@ -115,8 +142,12 @@ def require_permission(resource: str, action: str) -> Callable[[User], User]:
 
 
 def require_role(*role_names: str) -> Callable[[User], User]:
-    """Dependency factory checking if user has at least one of the specified roles."""
-
+    """
+    [DEPENDENCY FACTORY KIỂM TRA VAI TRÒ NGƯỜI DÙNG - ROLE-BASED ACCESS CONTROL]
+    
+    Kiểm tra người dùng có nắm giữ ít nhất một trong các vai trò được chỉ định hay không.
+    Vai trò 'ADMIN' luôn có quyền truy cập mặc định.
+    """
     def _role_checker(current_user: User = Depends(get_current_user)) -> User:
         user_roles = [r.role_name for r in current_user.roles]
         if "ADMIN" in user_roles:

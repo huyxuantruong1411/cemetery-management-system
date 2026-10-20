@@ -9,6 +9,7 @@ export interface AuditLogResponse {
   post_change_values: string | null
   ip_address: string | null
   timestamp: string
+  narrative_summary?: string | null
 }
 
 export interface AuditSummaryResponse {
