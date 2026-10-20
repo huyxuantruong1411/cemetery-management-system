@@ -1931,7 +1931,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                     }}
                   >
                     <Plus size={14} />
-                    <span>+ Khu Vực</span>
+                    <span>Khu Vực</span>
                   </button>
                   <button
                     onClick={() => {
@@ -1953,7 +1953,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                     }}
                   >
                     <Plus size={14} />
-                    <span>+ Hàng Mộ</span>
+                    <span>Hàng Mộ</span>
                   </button>
                   <button
                     onClick={() => {
@@ -1975,7 +1975,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                     }}
                   >
                     <Plus size={14} />
-                    <span>+ Loại Mộ</span>
+                    <span>Loại Mộ</span>
                   </button>
                 </div>
               )}
@@ -2375,7 +2375,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                               }}
                             >
                               <Plus size={12} />
-                              <span>+ Hàng</span>
+                              <span>Hàng</span>
                             </button>
                             <button
                               onClick={() => setBatchRowModal({ isOpen: true, defaultZoneId: z.zone_id })}
@@ -2496,7 +2496,7 @@ export const PlotMapModule: React.FC<PlotMapModuleProps> = ({
                           <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {zoneRows.length === 0 ? (
                               <div style={{ padding: '12px', fontSize: '12px', color: '#94A3B8', textAlign: 'center' }}>
-                                Khu này chưa có dãy hàng nào. Bấm <strong>+ Hàng</strong> hoặc <strong>⚡ Sinh hàng</strong> để tạo.
+                                Khu này chưa có dãy hàng nào. Bấm <strong>Hàng</strong> hoặc <strong>⚡ Sinh hàng</strong> để tạo.
                               </div>
                             ) : (
                               zoneRows.map((r) => {
