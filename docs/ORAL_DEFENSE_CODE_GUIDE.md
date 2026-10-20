@@ -1,16 +1,16 @@
-# Cẩm nang cấu trúc mã nguồn và ôn vấn đáp
+# Cẩm nang đọc code Backend và Web để ôn vấn đáp
 
 **Dự án:** Hệ thống Quản lý Nghĩa trang Tư nhân  
 **Ngày khảo sát:** 20/10/2026  
-**Phạm vi:** Source hiện có trong `backend`, `web`, `mobile`, migrations, scripts, tests, tài liệu và cấu hình của repo. Không tính thư viện cài đặt, file build, cache hoặc dữ liệu runtime.
+**Phạm vi:** Phân tích code của API backend và web React/TypeScript, cùng migration, scripts, tests, cấu hình và tài liệu giúp lần luồng. **Không phân tích Flutter/mobile** theo yêu cầu. Không tính thư viện cài đặt, file build, cache hoặc dữ liệu runtime.
 
 Tài liệu này ưu tiên code hiện tại trong repo. Tên file và nội dung trong `README`, ADR, kế hoạch, prototype có thể nói về kiến trúc mục tiêu; khi khác source đang chạy, phần **“Đối chiếu thiết kế với hiện trạng”** ở cuối ghi rõ để tránh nhầm trong vấn đáp.
 
-Lượt kiểm kê source/config chính ghi nhận: `backend/app` 57 file, `backend/alembic/versions` 13 migration, `backend/scripts` 14 file, `backend/tests` 19 file, `web/src` 46 file, `mobile/lib` 50 file. Các ảnh bằng chứng, file Word/SQL đầu vào, lockfiles và tài nguyên Android cũng đã được phân loại bên dưới.
+Lượt kiểm kê source/config chính ghi nhận: `backend/app` 57 file, `backend/alembic/versions` 13 migration, `backend/scripts` 14 file, `backend/tests` 19 file và `web/src` 46 file. Các ảnh bằng chứng, file Word/SQL đầu vào và lockfiles được xem như tài liệu/cấu hình, không phải code runtime.
 
 ## 1. Cách giới thiệu hệ thống trong 1 phút
 
-Đây là monorepo gồm ba ứng dụng: API FastAPI, web React/TypeScript và app Android Flutter. API chia theo phân hệ nghiệp vụ; các router nhận HTTP và kiểm quyền, Pydantic schema định hình dữ liệu, service thực hiện quy tắc nghiệp vụ và truy vấn SQLAlchemy models. SQL Server lưu trạng thái giao dịch, MinIO lưu nội dung file. Web và mobile gọi chung API; quyền và điều kiện chuyển trạng thái phải được kiểm tra ở server. Các luồng tiêu biểu là tạo hợp đồng giữ ô, xác minh giấy báo tử rồi xác nhận an táng tại hiện trường, phân công/đóng việc và ghi nhận thanh toán.
+Đây là monorepo; trong phạm vi phân tích này có hai phần runtime: API FastAPI và web React/TypeScript. API chia theo phân hệ nghiệp vụ; router nhận HTTP và gắn dependency kiểm quyền, Pydantic schema định hình dữ liệu, service chứa quy tắc nghiệp vụ và truy vấn SQLAlchemy models. SQL Server lưu trạng thái giao dịch, MinIO lưu nội dung file. Web gọi API chung; quyền và điều kiện chuyển trạng thái phải được kiểm tra tại server. Các luồng tiêu biểu là tạo hợp đồng giữ ô, xác minh giấy báo tử rồi xác nhận an táng tại hiện trường, phân công/đóng việc và ghi nhận thanh toán.
 
 ## 2. Sơ đồ kiến trúc thực tế
 
@@ -18,7 +18,6 @@ Lượt kiểm kê source/config chính ghi nhận: `backend/app` 57 file, `back
 flowchart LR
     subgraph Clients[Ứng dụng người dùng]
         WEB[Web React 19 / TypeScript<br/>web/src]
-        MOB[Android Flutter / Dart<br/>mobile/lib]
     end
 
     subgraph API[FastAPI modular monolith<br/>backend/app]
@@ -34,7 +33,6 @@ flowchart LR
     S3[(MinIO<br/>file objects, PDFs, evidence)]
 
     WEB -->|HTTP JSON + Bearer| MAIN
-    MOB -->|HTTP JSON + Bearer| MAIN
     MAIN --> ROUTER
     ROUTER --> AUTH
     AUTH --> DB
@@ -51,7 +49,7 @@ Luồng xử lý một lệnh:
 ```mermaid
 sequenceDiagram
     actor N as Nhân viên
-    participant UI as Web / Flutter
+    participant UI as Web React
     participant R as FastAPI router
     participant A as Auth dependency
     participant S as Service
@@ -95,7 +93,6 @@ sequenceDiagram
 QL-NghiaTrang/
 ├── backend/       API Python, ORM, migrations, scripts và test
 ├── web/           Web nội bộ + cổng công khai React/TypeScript
-├── mobile/        Ứng dụng Android Flutter
 ├── docs/          Kế hoạch, chính sách, kiểm chứng và hướng dẫn
 ├── reference/     Đặc tả nghiệp vụ, Lab, prototype và kế hoạch đầu vào
 ├── scripts/       Lệnh hỗ trợ phát triển / kiểm tra toàn repo
@@ -289,66 +286,7 @@ Phần dưới giải thích file source/config quan trọng. Với các module 
 
 Các file cấu hình web: `web/package.json` khai báo script và dependencies; `web/pnpm-lock.yaml` khóa phiên bản; `web/index.html` host React root; `web/vite.config.ts` dev server/proxy/allowed host; `web/tsconfig.json`, `web/tsconfig.app.json`, `web/tsconfig.node.json` thiết lập TypeScript; `web/public/favicon.svg`, `web/public/icons.svg` icon tĩnh. `web/README.md` có hướng dẫn chạy web.
 
-### 4.5 Mobile Flutter — điểm vào, state, DTO và màn hình
-
-| Nhóm / file | Giải thích |
-|---|---|
-| `mobile/lib/main.dart` | Tạo `ProviderScope`, `MaterialApp`, theme, dashboard và export các thành phần chính cho test/consumer. |
-| `mobile/lib/core/config.dart` | Đọc `API_BASE_URL` cấu hình build/run. |
-| `mobile/lib/core/theme.dart` | Theme Material dùng chung. |
-| `mobile/lib/core/widgets/custom_filter_chip.dart` | Chip lọc tái sử dụng. |
-| `mobile/lib/core/widgets/detail_row.dart` | Dòng nhãn/giá trị chi tiết. |
-| `mobile/lib/core/widgets/kpi_card.dart` | Thẻ số liệu. |
-| `mobile/lib/core/widgets/unauthenticated_card.dart` | Trạng thái cần đăng nhập/chưa xác thực. |
-| `mobile/lib/providers/api_provider.dart` | Cung cấp Dio có base URL và timeout. |
-| `mobile/lib/providers/auth_provider.dart` | Riverpod `AuthNotifier`: đăng nhập, nạp `/auth/me`, giữ session state và logout. |
-| `mobile/lib/providers/system_provider.dart` | State/dữ liệu tổng quan hệ thống. |
-| `mobile/lib/providers/catalog_provider.dart` | Nạp danh mục/gói/bảng giá. |
-| `mobile/lib/providers/plots_provider.dart` | Nạp sơ đồ/ô và thao tác liên quan. |
-| `mobile/lib/providers/profiles_provider.dart` | Gọi hồ sơ khách hàng/người mất. |
-| `mobile/lib/providers/contracts_provider.dart` | Gọi danh sách/chi tiết hợp đồng. |
-| `mobile/lib/providers/construction_provider.dart` | Gọi lệnh thi công và cập nhật công việc. |
-| `mobile/lib/providers/care_provider.dart` | Gọi lịch và checklist chăm sóc. |
-| `mobile/lib/providers/finance_provider.dart` | Gọi công nợ/thu tiền theo màn hình mobile. |
-| `mobile/lib/models/auth_model.dart` | DTO user, role và auth state. |
-| `mobile/lib/models/system_model.dart` | DTO thống kê/tổng quan. |
-| `mobile/lib/models/catalog_model.dart` | DTO danh mục. |
-| `mobile/lib/models/plot_model.dart` | DTO khu/hàng/ô/huyệt. |
-| `mobile/lib/models/profile_model.dart` | DTO khách/người mất. |
-| `mobile/lib/models/contract_model.dart` | DTO hợp đồng. |
-| `mobile/lib/models/construction_model.dart` | DTO công việc thi công. |
-| `mobile/lib/models/care_model.dart` | DTO lịch/chăm sóc. |
-| `mobile/lib/models/finance_model.dart` | DTO công nợ và khoản thu. |
-| `mobile/lib/screens/dashboard_screen.dart` | Điều hướng chính, trạng thái đăng nhập và các tab. |
-| `mobile/lib/screens/dialogs/login_dialog.dart` | UI đăng nhập. |
-| `mobile/lib/screens/home/home_tab.dart` | Trang tổng quan. |
-| `mobile/lib/screens/catalog/catalog_tab.dart` | Tab danh mục. |
-| `mobile/lib/screens/catalog/price_lists_view.dart` | Danh sách bảng giá. |
-| `mobile/lib/screens/catalog/care_packages_view.dart` | Danh sách gói chăm sóc. |
-| `mobile/lib/screens/plots/plots_tab.dart` | Danh sách/sơ đồ ô mộ trên app. |
-| `mobile/lib/screens/plots/plot_detail_sheet.dart` | Chi tiết một ô mộ dạng bottom sheet. |
-| `mobile/lib/screens/profiles/profiles_tab.dart` | Tab hồ sơ. |
-| `mobile/lib/screens/profiles/customers_view.dart` | UI khách hàng/thân nhân. |
-| `mobile/lib/screens/profiles/deceased_profiles_view.dart` | UI người mất. |
-| `mobile/lib/screens/profiles/public_memorial_view.dart` | Tra cứu tưởng niệm công khai. |
-| `mobile/lib/screens/contracts/contracts_tab.dart` | Danh sách hợp đồng. |
-| `mobile/lib/screens/contracts/contract_card.dart` | Thẻ hợp đồng. |
-| `mobile/lib/screens/contracts/contract_detail_sheet.dart` | Chi tiết hợp đồng dạng sheet. |
-| `mobile/lib/screens/construction/construction_tab.dart` | Tab lệnh thi công. |
-| `mobile/lib/screens/construction/construction_order_card.dart` | Thẻ lệnh thi công. |
-| `mobile/lib/screens/construction/construction_detail_sheet.dart` | Chi tiết lệnh/task. |
-| `mobile/lib/screens/care/care_tab.dart` | Tab lịch chăm sóc. |
-| `mobile/lib/screens/care/care_schedule_card.dart` | Thẻ ca chăm sóc. |
-| `mobile/lib/screens/care/care_schedule_sheet.dart` | Chi tiết ca và checklist thao tác. |
-| `mobile/lib/screens/finance/finance_tab.dart` | Tab công nợ. |
-| `mobile/lib/screens/finance/receivable_card.dart` | Thẻ khoản phải thu. |
-| `mobile/lib/screens/finance/receivable_detail_sheet.dart` | Chi tiết khoản thu. |
-
-Cấu hình Flutter: `mobile/pubspec.yaml` khai báo Flutter, Dio, Riverpod, go_router và lint; `mobile/pubspec.lock` khóa gói; `mobile/analysis_options.yaml` bật lint; `mobile/test/widget_test.dart` là widget test. `mobile/README.md` hướng dẫn app. Android native nằm trong `mobile/android`: Gradle project/build, manifest debug/main/profile, `MainActivity.kt`, launcher icons và splash/theme resources.
-
-Các file Android cụ thể: `mobile/android/settings.gradle.kts` chọn module/plugin; `mobile/android/build.gradle.kts` cấu hình build cấp project; `mobile/android/gradle.properties` tham số Gradle; `mobile/android/gradle/wrapper/gradle-wrapper.properties` phiên bản Gradle wrapper; `mobile/android/app/build.gradle.kts` cấu hình app/signing/build; `mobile/android/app/src/main/kotlin/com/cemetery/qlnghiatrang/mobile/MainActivity.kt` entry point Android; `mobile/android/app/src/{main,debug,profile}/AndroidManifest.xml` metadata/quyền theo build mode; `mobile/android/app/src/main/res/drawable*/launch_background.xml` splash; `mobile/android/app/src/main/res/values*/styles.xml` style hệ thống; `mobile/android/app/src/main/res/mipmap-*/ic_launcher.png` icon theo mật độ màn hình.
-
-### 4.6 Tài liệu và tài nguyên thiết kế trong repo
+### 4.5 Tài liệu và tài nguyên thiết kế trong repo
 
 | Đường dẫn | Nội dung để dùng khi ôn vấn đáp |
 |---|---|
@@ -366,9 +304,9 @@ Các file Android cụ thể: `mobile/android/settings.gradle.kts` chọn module
 | `docs/execution/evidence/` | Ảnh và kết quả JSON các lượt kiểm trình duyệt/số liệu. |
 | `docs/source/` và `reference/` | Lab1–Lab4, SQL và tài liệu nghiệp vụ đầu vào. Đặc tả `.md` trong `reference/` giúp hiểu yêu cầu; `lab4-sql.sql` là DDL lịch sử nguy hiểm, không chạy. |
 | `reference/*prototype*.html`, `reference/Giao_dien_*.html` | Prototype/mockup giao diện, không phải code đang render. |
-| `scripts/dev.ps1` | Hướng dẫn khởi động MinIO, backend, web, mobile. |
+| `scripts/dev.ps1` | Hướng dẫn khởi động các dịch vụ phát triển liên quan. |
 | `scripts/doctor.ps1` | Chẩn đoán công cụ, DB, MinIO và đề xuất quality gate. |
-| `scripts/quality-gate.ps1` | Ghép Ruff/Pytest, lint/build web, analyze/test Flutter. Chạy chỉ khi chủ động muốn thực hiện đủ kiểm tra môi trường. |
+| `scripts/quality-gate.ps1` | Ghép các lệnh kiểm tra backend và web cùng các thành phần khác trong repo; chỉ dùng khi chủ động muốn chạy quality gate. |
 | `.agents/rules/project.md`, `.agents/skills/*/SKILL.md` | Quy tắc/skill phục vụ coding agent, không nằm trong runtime ứng dụng. |
 
 Tệp nguồn/đầu vào trong `reference/` được chia như sau: `DAC_TA_NGHIEP_VU_HE_THONG_QUAN_LY_NGHIA_TRANG.md` là đặc tả nghiệp vụ hệ thống; `lab1.docx` bài toán/actor; `Lab2-TruongXuanHuy-2324802010044.docx` use case và quy tắc chi tiết; `Lab3-TruongXuanHuy-2324802010044.docx` sơ đồ tuần tự/lớp; `lab4-TruongXuanHuy-2324802010044.docx` ERD/từ điển dữ liệu; `lab4-sql.sql` DDL SQL Server; `02_PLAN_ANTIGRAVITY_CAI_THIEN_GIAO_DIEN.md`, `EXECUTION_PLAN_QL_NGHIA_TRANG_ANTIGRAVITY.md` và `REMEDIATION_PLAN_CEMETERY_MANAGEMENT_SYSTEM.md` là kế hoạch thực thi; `plan01.docx` là bản kế hoạch Word; `cemetery_ui_prototype.html`, `Giao_dien_Quan_ly_Nghia_trang.html`, `Giao_dien_Quan_ly_Nghia_trang (1).html` là prototype giao diện. Bản Lab được sao lưu trong `docs/source/`; xem `docs/source-inventory.md` khi cần biết độ ưu tiên và hash của nguồn.
@@ -393,6 +331,31 @@ Ví dụ đăng nhập qua `POST /api/v1/auth/login`:
 | Verify JWT/password | `backend/app/core/security.py:17`, `:49` | Hash mật khẩu tách khỏi HTTP layer; token ký bằng secret. |
 | User và permission check | `backend/app/modules/auth/dependencies.py:16`, `:94` | Mọi module dùng chung dependency, không tự đọc header rải rác. |
 | Session client | `web/src/context/AuthContext.tsx`, `web/src/services/apiClient.ts` | UI giữ trạng thái đăng nhập và tự khôi phục access token khi 401. |
+
+Đoạn cốt lõi ở `backend/app/modules/auth/dependencies.py:16-36,69-89`:
+
+```python
+user = db.get(User, user_id)
+if not user:
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Người dùng không tồn tại",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+if not user.is_active:
+    raise HTTPException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        detail="Tài khoản đã bị vô hiệu hóa",
+    )
+if token_auth_version != user.auth_version:
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Token đã bị thu hồi do đổi quyền, đổi mật khẩu hoặc đăng xuất.",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+```
+
+Điểm đáng giải thích: JWT được giải mã và kiểm hạn/chữ ký trước; sau đó API đọc lại tài khoản hiện tại từ DB, nên tài khoản bị vô hiệu hóa hoặc token mang `auth_version` cũ sẽ bị chặn. Bản code thực có thông báo lỗi riêng cho từng trường hợp; đoạn trên đã rút gọn để tập trung vào luồng.
 
 **Câu trả lời ngắn:** “Frontend có thể ẩn menu theo permission để actor không thấy chức năng không liên quan, nhưng server vẫn kiểm JWT và permission trong từng API. Vì vậy gọi API trực tiếp không vượt qua được RBAC.”
 
@@ -429,9 +392,81 @@ sequenceDiagram
 - Tạo `Contract` trạng thái `DRAFT`, `LandPurchaseContract`, và reservation 7 ngày; đổi plot sang `RESERVED`; ghi audit rồi commit.
 - `db.flush()` ở giữa để lấy `contract_id` trước khi tạo bản ghi phụ thuộc; `db.commit()` chốt thay đổi.
 
+Ví dụ phần đồng bộ/khóa ô và chọn giá trong `backend/app/modules/contracts/service.py:117-127,164-212`:
+
+```python
+plot = db.query(Plot).filter(Plot.plot_id == data.plot_id).with_for_update().first()
+if plot.status not in ("EMPTY_UNSOLD", "RESERVED"):
+    raise HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
+        detail=f"Ô mộ {plot.plot_code} hiện ở trạng thái '{plot.status}', không khả dụng để mở bán.",
+    )
+
+unit_price = data.land_unit_price
+if unit_price is None or unit_price <= 0:
+    today = date.today()
+    # 1. Look up specific plot_type_id or LAND_{type_id}
+    active_price_item = (
+        db.query(PriceItem)
+        .join(PriceList, PriceList.price_list_id == PriceItem.price_list_id)
+        .filter(
+            PriceList.is_active == True,  # noqa: E712
+            PriceList.effective_from_date <= today,
+            or_(PriceList.effective_to_date.is_(None), PriceList.effective_to_date >= today),
+            or_(
+                PriceItem.plot_type_id == plot.type_id,
+                PriceItem.item_code == f"LAND_{plot.type_id}",
+            ),
+        )
+        .first()
+    )
+    # Nếu chưa có giá riêng, code tiếp tục tra mã chuẩn theo số huyệt.
+    if not active_price_item:
+        ...
+    if not active_price_item:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Chưa có đơn giá niêm yết hiệu lực cho loại đất mộ '{plot.type_id}'. Vui lòng liên hệ ban quản trị để cấu hình bảng giá.",
+        )
+    unit_price = active_price_item.unit_price
+```
+
+`with_for_update()` yêu cầu DB khóa bản ghi ô trong thao tác tạo hợp đồng để giảm nguy cơ hai nhân viên cùng chốt một ô. Cơ chế khóa và semantics cụ thể phụ thuộc dialect/isolation SQL Server được cấu hình. Phần giá thể hiện snapshot: hợp đồng lưu giá đã chọn ở thời điểm lập; code hiện vẫn chấp nhận giá dương gửi từ request, đây là điểm cần nói đúng thay vì khẳng định luôn tra bảng giá.
+
 **Kích hoạt pháp lý khác với thao tác hiện trường.** `activate_burial_annex()` ở `contracts/service.py:958` kiểm điều kiện pháp lý và file scan, ghi trạng thái phụ lục/thu phải thu. Code có comment nói việc đổi slot/plot sang `OCCUPIED` và khóa Kim Tĩnh phải đợi command hiện trường. Quản trang gọi `confirm_burial()` ở `:1234`: kiểm annex ACTIVE, giấy báo tử VERIFIED, plot chưa khóa, slot thuộc plot; sau đó cập nhật slot/plot, thêm `BurialHistory`, `OutboxEvent`, `AuditLog`, rồi commit. Khi hình thức là Kim Tĩnh, set `is_kim_tinh=True` và `is_locked=True`.
 
+Đoạn chuyển trạng thái ở `backend/app/modules/contracts/service.py:1299-1307`:
+
+```python
+slot.status = "OCCUPIED"
+slot.current_deceased_id = burial.deceased_id
+plot.status = "OCCUPIED"
+if burial.is_kim_tinh:
+    plot.is_kim_tinh = True
+    plot.is_locked = True
+```
+
+Ba dòng đầu ghi nhận vị trí huyệt và người đã an táng. Hai cờ cuối đánh dấu loại kết cấu và khóa ô sau an táng Kim Tĩnh. Đây là một command hiện trường riêng; không đồng nhất với bước ký/kích hoạt giấy tờ.
+
 **Vì sao cần nhiều lớp bảo vệ Kim Tĩnh?** `plots/service.py::update_plot` từ chối gỡ cờ/chỉnh sửa khi locked; hợp đồng chặn cải táng/chuyển nhượng; ORM tắt `implicit_returning` ở bảng có trigger; SQL Server trigger là lớp cuối ngăn request/script ngoài service sửa trái luật. Bất biến nghiệp vụ không nên chỉ nằm ở nút frontend.
+
+`backend/app/modules/plots/service.py:493-524` minh họa lớp service:
+
+```python
+if plot.is_kim_tinh:
+    if data.is_kim_tinh is False:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="QUY TẮC BẤT BIẾN KIM TĨNH: Ô mộ đã thiết lập kết cấu Kim Tĩnh, nghiêm cấm gỡ bỏ cờ Kim Tĩnh!",
+        )
+    if plot.is_locked:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="QUY TẮC BẤT BIẾN KIM TĨNH: Ô mộ Kim Tĩnh đã an táng và khóa vĩnh viễn, nghiêm cấm chỉnh sửa thông số!",
+        )
+```
+
+Sau guard, service chỉ cập nhật các trường được phép và commit. Mô hình `Plot` tắt `implicit_returning` (`plots/models.py:56-62`) để tương thích trigger SQL Server; migration/trigger và service cùng bảo vệ invariant ở các tầng khác nhau.
 
 ### 5.3 Kế toán ghi nhận khoản thanh toán
 
@@ -458,10 +493,18 @@ receivable = (
 )
 remaining_debt = receivable.final_payable_amount - receivable.total_paid_amount
 if payload.paid_amount > remaining_debt:
-    raise HTTPException(status_code=400, detail="Số tiền vượt dư nợ")
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail=(
+            f"Số tiền thanh toán ({payload.paid_amount:,.0f} đ) vượt quá "
+            f"dư nợ hiện tại ({remaining_debt:,.0f} đ)."
+        ),
+    )
 ```
 
 Đây là phần rút gọn từ `backend/app/modules/finance/service.py:456-496`; kiểm tra khóa trùng tiếp theo nằm ở `:498-537`.
+
+Request vào service đã qua Pydantic `PaymentRecordRequest` (`finance/schemas.py:52-61`): tiền là `Decimal`, lớn hơn 0, phương thức thanh toán thuộc danh sách cố định và khóa chống trùng có giới hạn độ dài. ORM lưu các số tiền bằng `Numeric(15,2)` (`finance/models.py:19-35,65-82`); kiểu số này tránh sai số nhị phân của `float`.
 
 ### 5.4 Phân công thi công và nghiệm thu
 
@@ -471,6 +514,8 @@ if payload.paid_amount > remaining_debt:
 - `complete_task()` kiểm evidence READY trước khi chốt task. `complete_order()` (`:488`) kiểm task bắt buộc DONE và evidence READY; nếu thiếu thì không nghiệm thu.
 - Khi hoàn thành, plot chỉ đổi từ `UNDER_CONSTRUCTION` về `OWNED_EMPTY` nếu chưa có slot occupied, hoặc `OCCUPIED` nếu đã có người an táng. Hoàn tất xây dựng không tự tạo sự kiện an táng.
 
+Gate nghiệm thu ở `backend/app/modules/construction/service.py:503-533` kiểm hai mức: không còn task bắt buộc chưa `DONE`, và mỗi task bắt buộc có ít nhất một tệp `READY`. Ngoài ra order phải có ít nhất một evidence sẵn sàng ở cấp toàn lệnh. Những kiểm tra này nằm trong service nên API không thể bị vượt qua chỉ bằng cách bỏ validation ở web.
+
 ### 5.5 Chăm sóc định kỳ và đóng ca
 
 - `CareService.calculate_anchored_date()`/`generate_schedules_for_period()` tính ca theo chu kỳ gói và giữ neo ngày cuối tháng; khóa unique/idempotency tránh sinh trùng cùng kỳ.
@@ -478,13 +523,155 @@ if payload.paid_amount > remaining_debt:
 - `close_schedule()` (`care/service.py:339`) không cho đóng nếu còn checklist bắt buộc chưa xong hoặc không có ít nhất một file `READY` có MIME ảnh.
 - Khi đạt gate, set `CLOSED`, thời gian/người hoàn thành, commit. Sau đó code phát outbox và audit. Lưu ý đọc thứ tự commit thực tế khi giải thích: ở flow này các bước event/audit được gọi sau commit trạng thái.
 
+Đoạn kiểm checklist ở `backend/app/modules/care/service.py:352-380`:
+
+```python
+incomplete_required = [
+    item.task_description for item in schedule.checklist_items
+    if item.is_required and not item.is_completed
+]
+if incomplete_required:
+    raise HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail=f"Không thể đóng ca: Còn {len(incomplete_required)} hạng mục bắt buộc chưa hoàn tất ({', '.join(incomplete_required)})",
+    )
+```
+
+Sau đó service duyệt evidence, nạp metadata `FileObject` và chỉ đếm tệp có trạng thái `READY` cùng MIME bắt đầu bằng `image/`. Vì thế checklist xong nhưng không có ảnh hiện trường vẫn chưa thể đóng ca.
+
 ### 5.6 Upload file và kiểm quyền
 
 `DocumentService.upload_file()` (`documents/service.py:52`) kiểm giới hạn dung lượng, nhận diện MIME từ nội dung/đuôi file, SHA-256, tạo key không trùng, upload object vào MinIO và tạo `FileObject` trạng thái `READY` trong SQL Server. File database lưu metadata; binary lưu object storage.
 
+Trình tự hiện thực ở `backend/app/modules/documents/service.py:60-99`:
+
+```python
+mime_type = cls.detect_mime_type(content, file_name)
+sha256 = hashlib.sha256(content).hexdigest()
+object_key = f"documents/{now.year}/{now.month:02d}/{file_id}_{clean_name}"
+upload_meta = storage_adapter.put_object(
+    object_key=object_key,
+    data=content,
+    content_type=mime_type,
+)
+...
+db.add(file_obj)
+db.commit()
+db.refresh(file_obj)
+```
+
+Đây là hai hệ lưu trữ riêng: MinIO nhận nội dung trước, SQL Server lưu metadata sau. Nếu SQL commit lỗi sau khi upload thành công có thể còn object chưa được DB tham chiếu; source không tạo transaction phân tán để tự rollback MinIO.
+
 Khi download, service kiểm tra file còn tồn tại và liên kết của nó. Biên lai/export nhạy cảm yêu cầu actor có quyền tương ứng. Cổng công khai dùng endpoint/DTO riêng; không nên lấy file private rồi chỉ ẩn link ở client.
 
-## 6. Bảng tra cứu nhanh 8 phân hệ backend
+## 6. Đọc frontend web từ điểm vào đến từng phân hệ
+
+Frontend hiện là React 19 + TypeScript + Vite. `web/src/main.tsx` chỉ mount root trong `StrictMode`; `App.tsx` tạo app shell, context và điều hướng; từng module JSX quản lý state/form và gọi API trực tiếp bằng `apiFetch`. Không có lớp API/repository riêng cho từng domain. DTO TypeScript được định nghĩa thủ công trong `web/src/types/*`, vì vậy khi backend schema đổi, frontend type và cách đọc JSON cần được cập nhật đồng bộ.
+
+```mermaid
+flowchart LR
+    M[main.tsx<br/>React StrictMode] --> A[App.tsx<br/>providers, shell, menu, module mount]
+    A --> C[AuthContext<br/>user, token, permission]
+    A --> U[Module component<br/>local state + event handlers]
+    U -->|apiFetch| H[apiClient.ts<br/>Authorization + refresh/retry]
+    H --> R[FastAPI router]
+    U --> T[types/*.ts<br/>DTO phía TypeScript]
+    A --> CSS[index.css<br/>global/responsive style]
+```
+
+### 6.1 Điểm vào và app shell
+
+`web/src/main.tsx:6-10` gọi `createRoot(...).render(<StrictMode><App /></StrictMode>)`. StrictMode hỗ trợ React phát hiện một số side effect không an toàn trong lúc phát triển; nó không phải router hay state manager.
+
+`web/src/App.tsx:1074-1082` bọc `MainApp` theo thứ tự `ErrorBoundary → AuthProvider → NotificationModalProvider`. `ErrorBoundary` bắt lỗi render/lifecycle để trang không trắng hoàn toàn; lỗi HTTP trong `fetch` vẫn phải được component xử lý riêng bằng trạng thái loading/error.
+
+`MainApp` giữ `activeTab`, modal đăng nhập và trạng thái mobile drawer tại `App.tsx:108-112`. CSS responsive nằm chủ yếu ở `web/src/index.css`: breakpoint 480/640/768/1024px; sidebar desktop đổi thành drawer/backdrop dưới 1024px (`:138-210`), còn các grid/form/map có quy tắc riêng. `web/src/App.css` không được import trong entry hiện tại. Layout/tab chuyển bằng state chứ không dùng URL router nên tab chưa được deep-link/bookmark độc lập.
+
+### 6.2 Đăng nhập, quyền hiển thị và mount module
+
+`web/src/context/AuthContext.tsx:24-39` gửi login, lưu access/refresh token, rồi gọi `/auth/me` để nhận user/roles/permissions. Khi mở trang, `:41-80` thử refresh token đã lưu để khôi phục session. `hasPermission()` tại `:82-86` cho ADMIN bypass ở giao diện; các actor khác phải có code quyền đúng trong mảng `user.permissions`.
+
+Menu và module được bảo vệ riêng tại `App.tsx:340-490,1020-1063`: menu chỉ hiện khi có permission, còn phần render module kiểm tra lại trước khi mount. Đây là kiểm soát trải nghiệm ở client; quyền thật vẫn phải được kiểm tra tại router backend. Một module có thể được nhìn thấy vì quyền đọc trong khi một số nút ghi bị ẩn theo quyền ghi (ví dụ finance), nhưng nếu component không kiểm tra permission chi tiết thì API sẽ trả 403.
+
+### 6.3 API client và refresh session
+
+Đoạn thực tế ở `web/src/services/apiClient.ts:35-53`:
+
+```typescript
+const generation = sessionGeneration
+const headers = new Headers(init?.headers)
+const authenticated = headers.has('Authorization')
+const current = localStorage.getItem('access_token')
+if (authenticated && current) headers.set('Authorization', `Bearer ${current}`)
+const response = await fetch(input, { ...init, headers })
+if (response.status !== 401 || !authenticated || generation !== sessionGeneration) return response
+const latest = localStorage.getItem('access_token')
+const token = latest && latest !== current ? latest : await refreshSession()
+if (generation !== sessionGeneration) return response
+headers.set('Authorization', `Bearer ${token}`)
+return await fetch(input, { ...init, headers })
+```
+
+`apiFetch()` chỉ refresh khi request có Authorization và server trả 401. `refreshSession()` dùng một Promise chung (`:16-33`), nên nhiều request cùng lúc không xoay refresh token đồng thời. Mỗi request được retry tối đa một lần; 403 không refresh vì đó là trường hợp thiếu quyền, không phải token hết hạn. `sessionGeneration` ngăn response thuộc tài khoản cũ ghi đè session sau khi logout hoặc đăng nhập tài khoản khác. Hàm `responseError()` chuyển 401/403 thành thông báo tiếng Việt, các component vẫn tự quyết định cách hiển thị lỗi.
+
+### 6.4 Bản đồ component web và API
+
+| Component / file | Vai trò trên giao diện | API hoặc phần backend liên quan |
+|---|---|---|
+| `components/auth/LoginModal.tsx` | Form đăng nhập; gọi auth context. | `auth/router.py` login/refresh/logout. |
+| `components/admin/UserManagementModule.tsx` | Danh sách tài khoản/vai trò, tạo/sửa/khóa/reset. | `/auth/users`, `/auth/roles`; `auth` router/service. |
+| `components/audit/AuditModule.tsx` | Bộ lọc nhật ký, entities/actions và bản ghi. | `/audit/summary`, `/audit/entities`, `/audit/actions`, `/audit/logs`; `audit` module. |
+| `components/catalog/CatalogModule.tsx` | Bảng giá, mặt hàng, gói chăm sóc, mẫu hợp đồng và tra giá. | `/catalog/*`; `catalog` module. |
+| `components/plots/PlotMapModule.tsx` | Nạp dữ liệu, lọc, xem GIS/ma trận, xem chi tiết, giữ chỗ và quản trị quy hoạch. | `/plots`, `/plots/zones`, `/plots/rows`, `/plots/types`, reserve; `plots` module. |
+| `components/plots/GeographicPlotMap.tsx` | Leaflet vẽ các điểm/ô theo lat-long và cho chọn marker. | Nhận `Plot[]` đã tải từ `PlotMapModule`; không gọi API riêng. |
+| `components/plots/SimulatedPlotMap.tsx` | Sơ đồ ma trận SVG để nhìn bố cục hàng/ô; pan/zoom/select bằng pointer events. | Dữ liệu mô phỏng phía web; khác với layer GIS địa lý. |
+| `components/plots/PlotDirectionsButton.tsx` | Shortcut từ bản ghi công việc đến vị trí ô trên tab sơ đồ. | `/plots/{id}` và trang danh sách ô theo khu. |
+| `components/profiles/ProfileModule.tsx` | Tab khách hàng, người mất, quan hệ, giấy báo tử và cổng tưởng niệm. | `/profiles/customers`, `/profiles/deceased`, `/profiles/relations`, upload documents. |
+| `components/contracts/ContractModule.tsx` | Danh sách/wizard hợp đồng; tạo loại hợp đồng, phụ lục, ký/kích hoạt/PDF. | `/contracts/*`, `/plots`, `/profiles`, `/catalog`, `/documents`. |
+| `components/contracts/WorkBasisView.tsx` | Danh sách căn cứ bàn giao và xác nhận an táng ở hiện trường. | `/contracts/work-bases`, `/contracts/annexes/{id}/confirm-burial`. |
+| `components/construction/ConstructionModule.tsx` | Tạo lệnh, kiểm xung đột nhân sự, checklist, ảnh và nghiệm thu. | `/construction/*`, `/contracts/work-bases`, `/auth/staff`, `/documents`. |
+| `components/care/CareModule.tsx` | Sinh kỳ, phân công, cập nhật checklist, đính ảnh, đóng ca. | `/care/*`, `/auth/staff`, `/documents`. |
+| `components/finance/FinanceModule.tsx` | Summary/sổ khoản phải thu, nhận thanh toán, chiết khấu, tải/tạo lại biên lai. | `/finance/*`; `finance` module. |
+| `components/finance/FinanceBasisView.tsx` | Căn cứ tài chính, chọn khoản làm việc với sổ công nợ. | `/finance/bases`; `finance` module. |
+| `components/reports/ReportsModule.tsx` | Chọn loại báo cáo, lọc kỳ và xuất/tải file. | `/reports/*`; quyền `reports:read` hoặc `reports:revenue`. |
+| `components/documents/DocumentManager.tsx` | Quản lý file, xem trước, tải, gắn phiên bản. | `/documents/upload`, `versions`, `preview`, `download`. |
+| `components/documents/DocumentAttachmentList.tsx` | Attachment gắn trong một hồ sơ/hợp đồng. | Cùng API documents, nhận khóa liên kết từ component cha. |
+| `components/common/MediaEvidenceGallery.tsx` | Gallery ảnh/PDF, lightbox, zoom, thao tác cảm ứng và upload tùy props. | Được construction/care/profile dùng lại; component cha truyền `canUpload/canDelete`. |
+| `components/common/Pagination.tsx` | Hook trạng thái phân trang và component nút trang. | Không gọi API; module cha quyết định nạp trang. |
+| `components/common/ErrorBoundary.tsx` | Fallback khi cây React phát sinh lỗi render. | Không thay thế xử lý HTTP/error trong module. |
+
+Các file `web/src/types/*.ts` là hợp đồng dữ liệu phía TypeScript: `auth` (User/Role/token), `plots` (khu/hàng/ô/slot/tọa độ), `profiles` (khách/người mất/giấy), `contracts` (hợp đồng/phụ lục/WorkBasis), `care` và `construction` (lịch/ca/task/evidence), `finance` (receivable/payment/invoice), `catalog`, `documents`, `reports`, `audit`. Đây là các interface compile-time; chúng không tự validate JSON lúc chạy như Pydantic phía server.
+
+### 6.5 Lần một số tương tác quan trọng từ UI xuống API
+
+**Sơ đồ ô mộ.** `PlotMapModule.tsx:150-195` nạp danh sách theo lô 500 bản ghi (tăng `skip` đến hết), đồng thời gọi zones/rows/types/stats; chọn ô gọi `/plots/{id}` ở `:199-212`. Thao tác giữ chỗ và cập nhật quy hoạch nằm ở các handler `:239-299`, `:442-616`, tạo hàng/ô theo lô ở `:680-756`. Component hiển thị `GeographicPlotMap` với DTO đã lọc; helper `plotCoordinates.ts:3-6` loại null/toạ độ sai miền trước khi Leaflet dùng.
+
+`GeographicPlotMap.tsx:21-26,38-47,58-90` tạo nền Leaflet/OSM, theo dõi kích thước container, nhóm các plot trùng tọa độ, đổi marker thành footprint rectangle ở zoom lớn, mở popup chọn từng ô bị chồng tọa độ và fit map theo dữ liệu. Nền đường phố là tile bên ngoài; mã/trạng thái/vị trí các plot là dữ liệu API. `SimulatedPlotMap` là SVG độc lập để trình bày bố cục nội khu, không phải nguồn tọa độ GIS. Đây là điểm dễ bị hỏi khi hai màn hình cùng được gọi là “bản đồ”.
+
+**Hồ sơ và tài liệu.** `ProfileModule.tsx:180-240` nạp khách hàng/người mất/quan hệ theo tab và filter; handler tạo hồ sơ gọi API profiles (`:353-436`). Đính giấy báo tử thực hiện theo hai bước: upload binary qua documents, sau đó gắn `file_id` vào hồ sơ chứng nhận (`:438-486`). Vì upload và attach là hai HTTP request, nếu request thứ hai hỏng thì file có thể đã ở kho nhưng chưa liên kết với hồ sơ.
+
+**Hợp đồng.** `ContractModule.tsx:363-495` nạp list/lookup và tạo draft hợp đồng mua đất; các handler tiếp theo làm submit signing, tải PDF, activate, tạo phụ lục chăm sóc/thi công/an táng, cải táng/chuyển nhượng/hỏa táng. Với ký/kích hoạt, UI upload file trước rồi mới gọi endpoint đổi trạng thái (`:570-613`, `:967-1016`). `WorkBasisView.tsx:64-100` là luồng riêng dành cho danh sách căn cứ và command xác nhận an táng, không phải nút “activate” hợp đồng.
+
+**Thi công và chăm sóc.** `ConstructionModule.tsx:198-278` lấy căn cứ đang active, kiểm conflict nhân sự rồi tạo lệnh; hoàn tất task/order qua các handler `:281-318`, `:452-482`. Upload ảnh cũng tách thành upload rồi attach vào task (`:357-410`). `CareModule.tsx:90-140` nạp ca và nhân sự; `:153-220` sinh kỳ/phân công; `:253-326` đính ảnh và đóng ca. Component hiển thị action theo permission chi tiết ở một số điểm; server vẫn kiểm lại các command.
+
+**Thu tiền.** `FinanceModule.tsx:150-207` kiểm số tiền/loại giao dịch ở UX, tạo payload có `idempotency_key`, gọi `/finance/receivables/{id}/payments`, rồi tải lại dữ liệu. Validation phía web giúp người dùng phát hiện lỗi nhanh; service là nơi khóa khoản phải thu và chốt số dư thực.
+
+### 6.6 Phân quyền giao diện: điều nên phân biệt khi trình bày
+
+Phân quyền hiện có ba vị trí: (1) `App.tsx` ẩn/hiện menu và ngăn mount module; (2) component kiểm tra permission/role để ẩn nút ghi cụ thể; (3) router backend là chốt quyền bắt buộc. Nếu chỉ thấy menu ẩn thì chưa đủ chứng minh API an toàn; nếu nút hiện nhưng backend trả 403 thì server vẫn chặn được nhưng UX chưa hoàn thiện.
+
+Quét source hiện tại thấy hai chỗ lệch cụ thể cần biết:
+
+| Vị trí | Bằng chứng source | Tác động |
+|---|---|---|
+| Nhật ký audit | `App.tsx:482,1062` chỉ hiện và mount `AuditModule` khi có `users:read`; trong khi `backend/app/modules/audit/router.py:29,55,66,77` yêu cầu `audit:read`. | Người có `audit:read` riêng có thể không thấy menu; người chỉ có `users:read` thấy menu nhưng API audit có thể trả 403. Đây là lệch code UI/backend, không phải ý nghĩa của hai quyền tương đương. |
+| Hồ sơ khách/người mất | `App.tsx:1024-1029` chỉ kiểm `customers:read`; `ProfileModule.tsx:43` nhận role vào `_currentUserRoles` nhưng không dùng permission, trong khi form tạo khách/người mất hiển thị trong module (`:1018-1032,3466,3625`). API tạo/sửa yêu cầu `customers:write` hoặc `deceased:write` (`profiles/router.py:51-55,96-102,135-140`). | Actor chỉ đọc có thể vào màn hình và thấy form ghi; nếu gửi sẽ bị backend từ chối. Backend vẫn bảo vệ dữ liệu, nhưng UI chưa phản ánh đúng quyền thao tác. |
+| Hợp đồng | `ContractModule.tsx:341` tính `canManage` từ role `ADMIN`/`MARKETING`; App chỉ cần `contracts:read` để mount (`App.tsx:1031`), API mỗi thao tác lại có permission cụ thể. | UI dựa vào role name cho một số action thay vì permission chính xác; cần đối chiếu từng endpoint khi diễn giải thao tác. |
+| Quản trị tài khoản | `App.tsx:1054` mount `UserManagementModule` theo `users:read`; component có form tạo/sửa/khóa/reset (`UserManagementModule.tsx:128,177,210,250`), còn các route ghi yêu cầu `users:write` (`auth/router.py:187,214`). | Nếu có role chỉ đọc user, component chưa có kiểm tra `users:write` riêng cho các nút ghi; API vẫn chặn nhưng UI có thể mời bấm thao tác không được phép. |
+
+Ngoài ra `web/vite.config.ts` hiện đặt `server.allowedHosts: true` và proxy `/api` sang `127.0.0.1:8000`. Vì vậy source hiện đã cho phép hostname ngrok ở **development Vite server**; đây không phải cấu hình host của FastAPI và không nên nhầm với whitelist production.
+
+## 7. Bảng tra cứu nhanh 8 phân hệ backend
 
 | Module | Nghiệp vụ chính | Entity/khái niệm nên nhắc | Điểm bảo vệ |
 |---|---|---|---|
@@ -499,16 +686,16 @@ Khi download, service kiểm tra file còn tồn tại và liên kết của nó
 
 `documents`, `reports`, `audit`, `jobs` là các phân hệ nền liên kết nhiều domain: lưu tệp; đọc/xuất tổng hợp; truy vết; xử lý job/event.
 
-## 7. Những khác biệt giữa mô tả thiết kế và source cần trả lời trung thực
+## 8. Những khác biệt giữa mô tả thiết kế và source cần trả lời trung thực
 
 | Mô tả thường gặp | Hiện trạng thấy trong repo | Cách trả lời an toàn |
 |---|---|---|
 | Có đủ `router → service → repository` | Các module hiện query ORM trực tiếp trong `service.py`; chưa có lớp `repository.py`. | “Phân tầng router/service/model có, repository chưa được tách; đây là điểm có thể refactor nếu cần test/query reuse tốt hơn.” |
 | Web dùng Tailwind, shadcn, React Query, React Hook Form/Zod | `web/package.json` hiện khai báo React, Vite, TypeScript, Leaflet, Lucide và lint/type tooling; không thấy các thư viện kể trên. UI hiện dùng component/CSS trong source. | Nêu công nghệ có trong package hiện tại; không đọc danh sách trong ADR như dependency đã cài. |
-| Mobile có offline queue/đồng bộ offline | Source mobile dùng Dio và Riverpod; không thấy package persistent queue/database trong `pubspec.yaml`, cũng không thấy implementation offline queue trong `mobile/lib`. | “Đây là mục tiêu/ghi chú thiết kế; source app hiện tại chủ yếu gọi API online, offline queue chưa thấy triển khai.” |
+
 | Mọi thay đổi nghiệp vụ và outbox luôn một transaction | Tùy service: một số code tạo outbox trước commit, nhưng care/payment có các bước commit riêng rồi mới publish event/audit. MinIO cũng nằm ngoài SQL transaction. | Nêu thứ tự cụ thể ở luồng đang nói; không khẳng định tất cả đều atomic. |
 | `0001_baseline` tạo 37 bảng | File migration baseline chỉ `pass`; comment nói DB đã tồn tại. | Đây là stamp/baseline phản ánh schema hiện hữu; các thay đổi sau đi qua migration tăng dần. |
-| README là bằng chứng triển khai hoàn chỉnh | README/ADR mô tả mục tiêu và tổng quan; chi tiết phải xác nhận trong `app`, `web/src`, `mobile/lib`, migration và tests. | Phân biệt “thiết kế nói” và “source hiện làm”. |
+| README là bằng chứng triển khai hoàn chỉnh | README/ADR mô tả mục tiêu và tổng quan; chi tiết phải xác nhận trong `backend/app`, `web/src`, migration và tests. | Phân biệt “thiết kế nói” và “source hiện làm”. |
 
 Các quy tắc an toàn khi trình bày:
 
@@ -518,7 +705,7 @@ Các quy tắc an toàn khi trình bày:
 - Không nói chạy bootstrap DB; `docs/source/lab4-sql.sql` chứa thao tác phá hủy DB. Dùng Alembic migration tăng dần.
 - Nếu hỏi test, dẫn `backend/tests/conftest.py`: test buộc vào `QL_NghiaTrang_Test` và kiểm database vật lý trước khi chạy.
 
-## 8. Câu hỏi vấn đáp có thể gặp
+## 9. Câu hỏi vấn đáp có thể gặp
 
 **Vì sao có cả access token lẫn refresh token?** Access token ngắn hạn dùng cho API; refresh token sống lâu hơn để đổi cặp token. Server lưu hash của refresh token, xoay token khi refresh và có thể thu hồi session.
 
@@ -536,13 +723,13 @@ Các quy tắc an toàn khi trình bày:
 
 **Phân biệt sơ đồ SVG và bản đồ GIS?** SVG là ma trận minh họa hàng/cột, phù hợp xem bố cục nội khu. Leaflet dùng lat/long để đặt marker/rectangle địa lý; nền OSM chỉ là tile hiển thị, còn trạng thái/mã ô đến từ API.
 
-## 9. Cách mở code và lần tiếp khi ôn
+## 10. Cách mở code và lần tiếp khi ôn
 
 1. Bắt đầu ở `backend/app/main.py`, lần từ `include_router` tới route cụ thể.
 2. Đọc `router.py` để thấy HTTP contract và permission dependency.
 3. Mở schema để hiểu dữ liệu vào/ra; sau đó mở service để đọc các nhánh lỗi, truy vấn, trạng thái và commit.
 4. Mở `models.py` để nối field/relationship với bảng; nếu có invariant DB thì tra migration/schema baseline/trigger mapping.
-5. Tìm client tương ứng trong `web/src/components` hoặc `mobile/lib/screens`, rồi provider/service để thấy request đi lên API.
+5. Tìm client tương ứng trong `web/src/components`, lần từ event handler qua `apiFetch` để thấy request đi lên API.
 6. Đọc test phân hệ tương ứng để xem tình huống hợp lệ, bị từ chối và trạng thái lỗi mong đợi.
 
 Các con số file được khảo sát theo source hiện có, không bao gồm dependencies/build/runtime. Test/lint/build không được chạy thêm trong lượt lập cẩm nang này; khi cần nghiệm thu kỹ thuật, chạy quality gate theo đúng hướng dẫn và đảm bảo DB test/MinIO đã sẵn sàng.
