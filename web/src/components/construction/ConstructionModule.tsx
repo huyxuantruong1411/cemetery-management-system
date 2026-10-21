@@ -357,6 +357,13 @@ export const ConstructionModule: React.FC = () => {
   const handleUploadEvidence = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!token || !evidenceTaskId || !evidenceFile) return
+
+    const currentTask = selectedOrder?.tasks?.find((t) => t.task_id === evidenceTaskId)
+    if ((currentTask?.evidences?.length || 0) >= 5) {
+      showNotification('Hạng mục này đã đạt giới hạn tối đa 5/5 ảnh minh chứng thực địa. Vui lòng xóa bớt ảnh cũ nếu muốn tải ảnh mới.', true)
+      return
+    }
+
     try {
       setEvidenceUploadLoading(true)
       // Step 1: Upload file to MinIO
@@ -1825,31 +1832,41 @@ export const ConstructionModule: React.FC = () => {
                           {/* Task Action Buttons */}
                           {task.status !== 'DONE' && (hasPermission('construction:write') || hasPermission('construction:execute')) && (
                             <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end', paddingTop: '6px', borderTop: '1px dashed #E2E8F0' }}>
-                              {hasPermission('construction:write') && (
-                                <button
-                                  onClick={() => {
-                                    setEvidenceTaskId(task.task_id)
-                                    setIsEvidenceModalOpen(true)
-                                  }}
-                                  style={{
-                                    padding: '6px 12px',
-                                    backgroundColor: '#EFF6FF',
-                                    border: '1px solid #BFDBFE',
-                                    borderRadius: '6px',
-                                    color: '#2563EB',
-                                    fontSize: '12px',
-                                    fontWeight: 600,
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '4px',
-                                    whiteSpace: 'nowrap',
-                                  }}
-                                >
-                                  <UploadCloud size={13} />
-                                  <span>Đính kèm ảnh</span>
-                                </button>
-                              )}
+                              {hasPermission('construction:write') && (() => {
+                                const evCount = task.evidences?.length || 0
+                                const isFull = evCount >= 5
+                                return (
+                                  <button
+                                    onClick={() => {
+                                      if (isFull) {
+                                        showNotification(`Hạng mục này đã có ${evCount}/5 ảnh minh chứng (đạt hoặc vượt hạn mức tối đa). Vui lòng xóa bớt ảnh cũ nếu muốn thay ảnh mới.`, true)
+                                        return
+                                      }
+                                      setEvidenceTaskId(task.task_id)
+                                      setIsEvidenceModalOpen(true)
+                                    }}
+                                    style={{
+                                      padding: '6px 12px',
+                                      backgroundColor: isFull ? '#F8FAFC' : '#EFF6FF',
+                                      border: isFull ? '1px solid #CBD5E1' : '1px solid #BFDBFE',
+                                      borderRadius: '6px',
+                                      color: isFull ? '#64748B' : '#2563EB',
+                                      fontSize: '12px',
+                                      fontWeight: 600,
+                                      cursor: isFull ? 'not-allowed' : 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      whiteSpace: 'nowrap',
+                                      opacity: isFull ? 0.75 : 1,
+                                    }}
+                                    title={isFull ? 'Đã đạt hạn mức tối đa 5 ảnh' : 'Đính kèm ảnh minh chứng'}
+                                  >
+                                    <UploadCloud size={13} />
+                                    <span>{isFull ? `Đã đủ ảnh (${evCount}/5)` : 'Đính kèm ảnh'}</span>
+                                  </button>
+                                )
+                              })()}
 
                               {hasPermission('construction:execute') && (
                                 <button
@@ -2495,6 +2512,35 @@ export const ConstructionModule: React.FC = () => {
             </div>
 
             <form onSubmit={handleUploadEvidence} style={{ padding: '20px' }}>
+              {(() => {
+                const currentTask = selectedOrder?.tasks?.find((t) => t.task_id === evidenceTaskId)
+                const currentCount = currentTask?.evidences?.length || 0
+                if (currentCount >= 5) {
+                  return (
+                    <div
+                      style={{
+                        padding: '10px 14px',
+                        backgroundColor: '#FEF2F2',
+                        border: '1px solid #FECACA',
+                        borderRadius: '6px',
+                        color: '#B91C1C',
+                        fontSize: '12px',
+                        marginBottom: '14px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                      }}
+                    >
+                      <AlertCircle size={16} />
+                      <span>
+                        <strong>Hạn mức đạt tối đa:</strong> Hạng mục này hiện đã có <strong>{currentCount}/5 ảnh</strong> minh chứng thực địa. Hệ thống nghiêm cấm tải vượt quá 5 ảnh. Vui lòng đóng cửa sổ này và xóa bớt ảnh cũ nếu muốn thay thế ảnh khác.
+                      </span>
+                    </div>
+                  )
+                }
+                return null
+              })()}
+
               <div style={{ marginBottom: '14px' }}>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
                   Chọn Tệp Ảnh Thực Địa (.jpg, .jpeg, .png) *
@@ -2503,6 +2549,10 @@ export const ConstructionModule: React.FC = () => {
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
                   required
+                  disabled={(() => {
+                    const currentTask = selectedOrder?.tasks?.find((t) => t.task_id === evidenceTaskId)
+                    return (currentTask?.evidences?.length || 0) >= 5
+                  })()}
                   onChange={(e) => setEvidenceFile(e.target.files?.[0] || null)}
                   style={{ width: '100%', fontSize: '13px' }}
                 />
@@ -2515,6 +2565,10 @@ export const ConstructionModule: React.FC = () => {
                 <input
                   type="text"
                   required
+                  disabled={(() => {
+                    const currentTask = selectedOrder?.tasks?.find((t) => t.task_id === evidenceTaskId)
+                    return (currentTask?.evidences?.length || 0) >= 5
+                  })()}
                   placeholder="VD: Ảnh đổ bê tông móng kim tĩnh ngày 15/10"
                   value={evidenceCaption}
                   onChange={(e) => setEvidenceCaption(e.target.value)}
@@ -2532,15 +2586,25 @@ export const ConstructionModule: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={evidenceUploadLoading}
+                  disabled={evidenceUploadLoading || (() => {
+                    const currentTask = selectedOrder?.tasks?.find((t) => t.task_id === evidenceTaskId)
+                    return (currentTask?.evidences?.length || 0) >= 5
+                  })()}
                   style={{
                     padding: '8px 18px',
-                    backgroundColor: 'var(--brand-primary)',
+                    backgroundColor: (() => {
+                      const currentTask = selectedOrder?.tasks?.find((t) => t.task_id === evidenceTaskId)
+                      return (currentTask?.evidences?.length || 0) >= 5 ? '#94A3B8' : 'var(--brand-primary)'
+                    })(),
                     border: 'none',
                     borderRadius: '6px',
                     color: '#FFFFFF',
                     fontSize: '13px',
                     fontWeight: 600,
+                    cursor: (() => {
+                      const currentTask = selectedOrder?.tasks?.find((t) => t.task_id === evidenceTaskId)
+                      return (currentTask?.evidences?.length || 0) >= 5 ? 'not-allowed' : 'pointer'
+                    })(),
                     cursor: evidenceUploadLoading ? 'not-allowed' : 'pointer',
                     display: 'flex',
                     alignItems: 'center',

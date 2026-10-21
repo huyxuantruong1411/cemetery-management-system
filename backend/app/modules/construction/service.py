@@ -843,6 +843,16 @@ class ConstructionService:
                 detail=f"Lệnh thi công đã kết thúc ({task.order.status}), không thể thêm bằng chứng.",
             )
 
+        # Gate Check: Hạn mức tối đa 5 ảnh minh chứng cho 1 công việc thi công
+        existing_count = db.query(ConstructionTaskEvidence).filter(
+            ConstructionTaskEvidence.task_id == task_id
+        ).count()
+        if existing_count >= 5:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Mỗi công đoạn thi công chỉ được đính kèm tối đa 5 ảnh minh chứng thực địa. Vui lòng xóa bớt ảnh cũ nếu muốn thay thế ảnh khác.",
+            )
+
         # Gate Check: Tệp phải tồn tại và ở trạng thái READY trên MinIO (ảnh phải READY trước khi nghiệm thu)
         file_obj = db.query(FileObject).filter(FileObject.file_id == file_id).first()
         if not file_obj:

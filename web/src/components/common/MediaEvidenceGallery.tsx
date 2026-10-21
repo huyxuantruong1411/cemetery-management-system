@@ -258,16 +258,35 @@ export const MediaEvidenceGallery: React.FC<MediaEvidenceGalleryProps> = ({
             <span
               style={{
                 fontSize: '11px',
-                padding: '1px 6px',
+                padding: '2px 8px',
                 borderRadius: '10px',
-                backgroundColor: items.length >= maxFiles ? '#FEF2F2' : '#F1F5F9',
-                color: items.length >= maxFiles ? '#DC2626' : '#475569',
-                border: '1px solid #E2E8F0',
+                backgroundColor: items.length > maxFiles ? '#FEF2F2' : items.length === maxFiles ? '#FFFBEB' : '#F1F5F9',
+                color: items.length > maxFiles ? '#DC2626' : items.length === maxFiles ? '#B45309' : '#475569',
+                border: items.length > maxFiles ? '1px solid #FECACA' : items.length === maxFiles ? '1px solid #FDE68A' : '1px solid #E2E8F0',
                 fontWeight: 700,
               }}
             >
               {items.length}/{maxFiles} ảnh
             </span>
+            {items.length > maxFiles && (
+              <span
+                style={{
+                  fontSize: '11px',
+                  padding: '2px 8px',
+                  borderRadius: '4px',
+                  backgroundColor: '#FEF2F2',
+                  color: '#DC2626',
+                  border: '1px solid #FECACA',
+                  fontWeight: 600,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                }}
+              >
+                <AlertCircle size={13} />
+                <span>CẢNH BÁO: Vượt quá giới hạn tối đa ({maxFiles} ảnh). Vui lòng xóa bớt ảnh thừa!</span>
+              </span>
+            )}
           </div>
 
           {canUpload && items.length < maxFiles && (
