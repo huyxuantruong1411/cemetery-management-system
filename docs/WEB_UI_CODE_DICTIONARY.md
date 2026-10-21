@@ -220,12 +220,28 @@ App
 
 **File/hàm:** [ContractModule.tsx#L460](../web/src/components/contracts/ContractModule.tsx#L460), [ContractModule.tsx#L473](../web/src/components/contracts/ContractModule.tsx#L473), [ContractModule.tsx#L495](../web/src/components/contracts/ContractModule.tsx#L495), [ContractModule.tsx#L2022](../web/src/components/contracts/ContractModule.tsx#L2022), [contracts/router.py#L39](../backend/app/modules/contracts/router.py#L39) → [contracts/service.py#L134](../backend/app/modules/contracts/service.py#L134) `create_land_purchase_contract`.
 
-### UI-05.3 — “+ Cải Táng”, “+ Chuyển Nhượng”, “+ Hỏa Táng”
+### UI-05.3 — “+ Cải Táng”, “+ Chuyển Nhượng”, “+ Hỏa Táng” → 3 Bộ Wizard 4 Bước Chuyên Nghiệp
 
-**Luồng code:** mỗi nút mở form riêng vì dữ liệu và điều kiện đầu vào khác nhau. Cải táng tìm người mất/ô đã an táng; chuyển nhượng chọn bên nhận và ô chuyển quyền; hỏa táng chọn người mất và gói/dịch vụ. Submit gọi endpoint transaction type tương ứng, router kiểm permission, service kiểm trạng thái ô/hợp đồng/slot/quan hệ và tạo subtype hợp đồng. Đây không phải ba nút đổi trạng thái trực tiếp; command nghiệp vụ tạo hồ sơ có căn cứ.
+**Từ khóa:** Lập Hợp Đồng Cải Táng; Quy Trình Lập Hợp Đồng Chuyển Nhượng Quyền Sử Dụng Đất; Quy Trình Lập Hợp Đồng Dịch Vụ Hỏa Táng Trọn Gói; Wizard 4 bước; Stepper progress; Kim Tĩnh Bất Biến; Đất trống chính chủ; Gói hỏa táng.
 
-**Tên form/chuỗi tìm:** Hồ Sơ Cải Táng; Hợp Đồng Chuyển Nhượng Quyền Sử Dụng; Hợp Đồng Hỏa Táng Trọn Gói; Chọn ô mộ đã an táng; Chọn ô mộ để chuyển nhượng; Tạo Dự Thảo.  
-**File:** [ContractModule.tsx#L1018](../web/src/components/contracts/ContractModule.tsx#L1018), [ContractModule.tsx#L1124](../web/src/components/contracts/ContractModule.tsx#L1124), [ContractModule.tsx#L1212](../web/src/components/contracts/ContractModule.tsx#L1212), [contracts/router.py#L61](../backend/app/modules/contracts/router.py#L61), [contracts/router.py#L84](../backend/app/modules/contracts/router.py#L84), [contracts/router.py#L107](../backend/app/modules/contracts/router.py#L107).
+**Luồng code:** Cả ba nút đã được nâng cấp toàn diện từ các hộp thoại đơn giản thành 3 bộ Wizard 4 bước chuyên nghiệp, tương đồng với Wizard Mua Đất:
+1. **Wizard Cải Táng (`EXHUMATION`):**
+   - *Bước 1:* Thân nhân đại diện ký hợp đồng (tìm kiếm + `+ Thêm Khách Hàng Nhanh`).
+   - *Bước 2:* Chọn ô mộ đã an táng. **Quy tắc Kim Tĩnh Bất Biến:** Các ô Kim Tĩnh (`is_kim_tinh = true`) được kiểm tra tự động, hiển thị viền đỏ và badge cảnh báo `🔒 KIM TĨNH BẤT BIẾN - CẤM CẢI TÁNG`, vô hiệu hóa lựa chọn.
+   - *Bước 3:* Phương án xử lý tro cốt (Hỏa táng tại đài hỏa táng nghĩa trang / Gia đình mang đi / Chuyển nghĩa trang khác) và phương tiện vận chuyển.
+   - *Bước 4:* Kiểm tra 4 thẻ tóm tắt và xác nhận tạo dự thảo hợp đồng cải táng (`POST /contracts/exhumation`).
+2. **Wizard Chuyển Nhượng (`TRANSFER`):**
+   - *Bước 1:* Bên chuyển nhượng Bên A (Chủ sở hữu hiện tại) kèm `+ Thêm Khách Hàng Nhanh`.
+   - *Bước 2:* Trình quản lý danh sách ô mộ chính chủ của Bên A. Lọc chọn các ô đạt chuẩn đất trống chưa an táng (hiển thị chế độ Danh thiếp hoặc Sơ đồ lưới). Các ô đã an táng và ô Kim Tĩnh bị khóa cứng, cấm chuyển nhượng.
+   - *Bước 3:* Bên nhận chuyển nhượng Bên B (Chủ sở hữu mới) kèm `+ Thêm Khách Hàng Nhanh` (ràng buộc Bên B khác Bên A), biểu phí hoa hồng hành chính và giá thỏa thuận giữa 2 bên.
+   - *Bước 4:* Kiểm tra 4 thẻ tóm tắt và xác nhận tạo dự thảo hợp đồng chuyển nhượng (`POST /contracts/transfer`).
+3. **Wizard Hỏa Táng (`CREMATION`):**
+   - *Bước 1:* Khách hàng đại diện đăng ký (Bên A) kèm `+ Thêm Khách Hàng Nhanh`.
+   - *Bước 2:* Hồ sơ người quá cố & Thẩm tra Giấy Báo Tử theo Nghị định 23/2016/NĐ-CP (hiển thị badge xanh `✓ ĐÃ XÁC MINH GIẤY BÁO TỬ` hoặc cảnh báo vàng cần bổ sung) kèm `+ Thêm Hồ Sơ Người Quá Cố Nhanh`.
+   - *Bước 3:* Chọn 1 trong 3 gói dịch vụ hỏa táng trọn gói (Tiêu chuẩn 8.5M, VIP Nghi lễ 15M, Cao cấp trọn gói 25M); thiết lập ngày và khung giờ thiêu dự kiến; tùy chọn nơi lưu giữ tro cốt (Tháp cốt Địa Tạng, Bảo tháp Phước Duyên, Gia đình mang về...).
+   - *Bước 4:* Kiểm tra 4 thẻ tóm tắt và xác nhận tạo dự thảo hợp đồng hỏa táng (`POST /contracts/cremation`).
+
+**File/hàm:** [ContractModule.tsx#L5176-L5980](../web/src/components/contracts/ContractModule.tsx#L5176-L5980) (Cải Táng), [ContractModule.tsx#L5984-L6900](../web/src/components/contracts/ContractModule.tsx#L5984-L6900) (Chuyển Nhượng), [ContractModule.tsx#L6904-L7600](../web/src/components/contracts/ContractModule.tsx#L6904-L7600) (Hỏa Táng), [contracts/router.py#L61-L130](../backend/app/modules/contracts/router.py#L61-L130), [contracts/service.py#L245-L657](../backend/app/modules/contracts/service.py#L245-L657).
 
 ### UI-05.4 — Chi tiết hợp đồng: in, chờ ký, kích hoạt, hủy
 
@@ -235,12 +251,17 @@ App
 
 **File/hàm:** [ContractModule.tsx#L521](../web/src/components/contracts/ContractModule.tsx#L521), [ContractModule.tsx#L549](../web/src/components/contracts/ContractModule.tsx#L549), [ContractModule.tsx#L570](../web/src/components/contracts/ContractModule.tsx#L570), [ContractModule.tsx#L624](../web/src/components/contracts/ContractModule.tsx#L624), [contracts/router.py#L206](../backend/app/modules/contracts/router.py#L206), [contracts/router.py#L223](../backend/app/modules/contracts/router.py#L223), [contracts/router.py#L247](../backend/app/modules/contracts/router.py#L247), [contracts/service.py#L1714](../backend/app/modules/contracts/service.py#L1714) nộp ký và [contracts/service.py#L1767](../backend/app/modules/contracts/service.py#L1767) kích hoạt.
 
-### UI-05.5 — “+ Phụ Lục An Táng / Chăm Sóc / Thi Công”
+### UI-05.5 — “+ Phụ Lục An Táng / Chăm Sóc / Thi Công” & Tự Động Nối Tiếp Chu Kỳ
 
-**Luồng code:** các nút nằm trong hợp đồng chi tiết, khởi tạo form theo loại annex. An táng chọn người mất, ô/slot và loại an táng; chăm sóc lấy gói đang active; thi công cho phép nhập checklist, thứ tự, điều kiện. Ba submit gọi ba endpoint `/annexes/{burial|care|construction}` khác nhau. Sau đó annex vẫn qua bước chuyển chờ ký, tải scan và kích hoạt riêng. Không đồng nhất “đã tạo draft annex” với “đã nhận việc ở hiện trường”.
+**Luồng code:** các nút nằm trong hợp đồng chi tiết, khởi tạo form theo loại annex.
+- **Phụ lục Chăm sóc & Xử lý xung đột chu kỳ:** Khi người dùng mở modal phụ lục chăm sóc, hệ thống tự động kiểm tra xem hợp đồng đã có gói chăm sóc nào đang `ACTIVE` và còn hạn hay không. Nếu có, giao diện hiển thị thẻ thông báo màu vàng cam `Hợp đồng hiện đang có gói chăm sóc còn hiệu lực` và cung cấp lựa chọn:
+  1. *Nối tiếp chu kỳ (Khuyến nghị):* Backend `create_care_annex` tự động gán `valid_from = active_annex.valid_to + 1 ngày`, tính toán ngày kết thúc theo chu kỳ gói và ghi chú `[Gia hạn nối tiếp chu kỳ từ {annex_code}]`.
+  2. *Tùy chỉnh ngày:* Cho phép nhập ngày bắt đầu độc lập nếu có yêu cầu đặc thù.
+- **Phụ lục An táng:** Chọn người mất đã có Giấy Báo Tử hợp lệ, chọn slot ô mộ và hình thức an táng.
+- **Phụ lục Thi công:** Nhập mô tả, giá trị và các yêu cầu kỹ thuật quy chuẩn.
+- Các phụ lục được chuyển chờ ký, tải scan và kích hoạt độc lập.
 
-**Chuỗi UI:** + Phụ Lục An Táng; + Phụ Lục Chăm Sóc; + Phụ Lục Thi Công; Thêm hạng mục; Tạo Dự Thảo Phụ Lục; Xác Nhận Kích Hoạt Phụ Lục.  
-**File/hàm:** [ContractModule.tsx#L668](../web/src/components/contracts/ContractModule.tsx#L668), [ContractModule.tsx#L708](../web/src/components/contracts/ContractModule.tsx#L708), [ContractModule.tsx#L794](../web/src/components/contracts/ContractModule.tsx#L794), [ContractModule.tsx#L819](../web/src/components/contracts/ContractModule.tsx#L819), [ContractModule.tsx#L856](../web/src/components/contracts/ContractModule.tsx#L856), [ContractModule.tsx#L889](../web/src/components/contracts/ContractModule.tsx#L889), [contracts/router.py#L291](../backend/app/modules/contracts/router.py#L291), [contracts/router.py#L314](../backend/app/modules/contracts/router.py#L314), [contracts/router.py#L333](../backend/app/modules/contracts/router.py#L333).
+**File/hàm:** [ContractModule.tsx#L4552-L4780](../web/src/components/contracts/ContractModule.tsx#L4552-L4780) (Phụ lục Chăm sóc & Xử lý xung đột), [ContractModule.tsx#L3400-L4550](../web/src/components/contracts/ContractModule.tsx#L3400-L4550) (An táng & Thi công), [contracts/router.py#L291-L335](../backend/app/modules/contracts/router.py#L291-L335), [contracts/service.py#L831-L955](../backend/app/modules/contracts/service.py#L831-L955) `create_care_annex`.
 
 ### UI-05.6 — “+ Thêm Khách Hàng Nhanh”
 
@@ -250,13 +271,15 @@ App
 
 ## UI-06 — “Thi Công Thực Địa” / ConstructionModule
 
-### UI-06.1 — Danh sách lệnh và “Lập Lệnh Thi Công”
+### UI-06.1 — Danh sách lệnh, “Lập Lệnh Thi Công” & Quy Chuẩn Bổ Sung Hạng Mục
 
-**Từ khóa:** lệnh thi công; tìm mã ô/giám sát/số lệnh; Lọc trạng thái; hạn hoàn thành; Lập Lệnh Thi Công; work-bases; phụ lục.
+**Từ khóa:** lệnh thi công; tìm mã ô/giám sát/số lệnh; Lọc trạng thái; hạn hoàn thành; Lập Lệnh Thi Công; work-bases; phụ lục; Danh mục quy chuẩn kỹ thuật.
 
-**Luồng code:** component tải GET `/construction/orders`, danh sách nhân viên `/auth/staff` và danh sách căn cứ `GET /contracts/work-bases?status=ACTIVE`. Chọn căn cứ đưa dữ liệu phụ lục cần thi công vào form. `handleCreateOrder()` gửi POST `/construction/orders`; router yêu cầu `construction:write`; service xác minh annex đang active và loại phù hợp, dựng ConstructionOrder cùng checklist tasks từ căn cứ/mẫu nhập. Bộ lọc/sort ảnh hưởng danh sách hiển thị, không sửa tình trạng hợp đồng.
+**Luồng code:** component tải `GET /construction/orders`, danh sách nhân viên `/auth/staff`, danh sách căn cứ `GET /contracts/work-bases?status=ACTIVE` và danh mục quy chuẩn kỹ thuật `GET /construction/checklist-catalog` (`STANDARD_CONSTRUCTION_SPECIFICATIONS`).
+- Khi lập lệnh từ phụ lục, hệ thống tự động sinh các công đoạn cơ sở từ Phụ lục (`checklist_specifications`), gán nhãn `[Theo phụ lục]` và KHÓA CỨNG (nghiêm cấm đổi tên, xóa hoặc bỏ cờ `is_required`).
+- Quản trang có thể bổ sung các hạng mục thực địa ngay khi lập lệnh hoặc sau khi lệnh đã tạo qua nút `+ Bổ Sung Hạng Mục Thi Công` (Modal 5). Mọi hạng mục bổ sung bắt buộc phải chọn từ 12 quy cách kỹ thuật tiêu chuẩn (Đào móng, đổ bê tông lót, đúc kim tĩnh, chống thấm, ốp đá hoa cương, chạm khắc bia mộ...), mang nhãn `[Bổ sung thực địa]` và có thể xóa khi chưa thi công.
 
-**File/hàm:** [ConstructionModule.tsx#L114](../web/src/components/construction/ConstructionModule.tsx#L114), [ConstructionModule.tsx#L157](../web/src/components/construction/ConstructionModule.tsx#L157), [ConstructionModule.tsx#L198](../web/src/components/construction/ConstructionModule.tsx#L198), [ConstructionModule.tsx#L206](../web/src/components/construction/ConstructionModule.tsx#L206), [ConstructionModule.tsx#L804](../web/src/components/construction/ConstructionModule.tsx#L804), [construction/router.py#L105](../backend/app/modules/construction/router.py#L105), [construction/router.py#L140](../backend/app/modules/construction/router.py#L140), [construction/service.py#L320](../backend/app/modules/construction/service.py#L320) `create_order`.
+**File/hàm:** [ConstructionModule.tsx#L95](../web/src/components/construction/ConstructionModule.tsx#L95), [ConstructionModule.tsx#L2650-L2750](../web/src/components/construction/ConstructionModule.tsx#L2650-L2750), [ConstructionModule.tsx#L3130-L3300](../web/src/components/construction/ConstructionModule.tsx#L3130-L3300), [construction/constants.py#L9-L35](../backend/app/modules/construction/constants.py#L9-L35), [construction/router.py#L105-L115](../backend/app/modules/construction/router.py#L105-L115), [construction/service.py#L340-L420](../backend/app/modules/construction/service.py#L340-L420), [construction/service.py#L705-L880](../backend/app/modules/construction/service.py#L705-L880).
 
 ### UI-06.2 — Chi tiết lệnh, phân công và “Đăng Ký Lịch Bận”
 
@@ -264,11 +287,15 @@ App
 
 **File/hàm:** [ConstructionModule.tsx#L135](../web/src/components/construction/ConstructionModule.tsx#L135), [ConstructionModule.tsx#L170](../web/src/components/construction/ConstructionModule.tsx#L170), [ConstructionModule.tsx#L484](../web/src/components/construction/ConstructionModule.tsx#L484), [ConstructionModule.tsx#L513](../web/src/components/construction/ConstructionModule.tsx#L513), [construction/router.py#L36](../backend/app/modules/construction/router.py#L36), [construction/router.py#L49](../backend/app/modules/construction/router.py#L49), [construction/service.py#L223](../backend/app/modules/construction/service.py#L223) `check_staff_conflict`.
 
-### UI-06.3 — Checklist: “Đính kèm ảnh”, “Hoàn Tất”, “Nghiệm Thu Toàn Bộ Công Trình”
+### UI-06.3 — Checklist: “Đính kèm ảnh” (Giới hạn tối đa 5 ảnh), “Hoàn Tất”, “Nghiệm Thu Toàn Bộ Công Trình”
 
-**Luồng code:** thao tác hoàn tất một task gọi POST `/construction/tasks/{id}/complete`; upload ảnh trước tiên POST `/documents/upload`, sau đó POST `/construction/tasks/{id}/evidences` gắn file; xóa ảnh có endpoint delete riêng; đổi thứ tự checklist POST `/orders/{id}/reorder-tasks`. Nghiệm thu order gọi POST `/orders/{id}/complete`. Backend kiểm task bắt buộc và evidence đã READY trước khi cho đóng; tính tiến độ ở service. Không dùng nút hoàn tất task như lệnh đóng toàn lệnh.
+**Luồng code:**
+- **Thực hiện task & đính kèm ảnh:** Tải tệp ảnh lên Documents (`POST /documents/upload`), sau đó gọi `POST /construction/tasks/{id}/evidences` để liên kết với task.
+- **Cưỡng chế giới hạn tối đa 5 ảnh:** Tại `ConstructionService.add_task_evidence()`, hệ thống cưỡng chế mỗi công việc chỉ được tải tối đa 5 ảnh minh chứng, trả lỗi `HTTP 400 Bad Request` nếu vượt quá. Phía giao diện `MediaEvidenceGallery.tsx` và `ConstructionModule.tsx` tự động hiển thị thanh cảnh báo `Đã đạt giới hạn tối đa 5/5 ảnh minh chứng` và khóa nút tải lên.
+- **Hoàn tất task:** Gọi `POST /construction/tasks/{id}/complete`. Backend bắt buộc task có cờ `is_required = true` phải có ít nhất 1 ảnh `READY` mới được đóng và chuyển sang `DONE`.
+- **Nghiệm thu toàn bộ công trình:** Gọi `POST /orders/{id}/complete` khi 100% các hạng mục bắt buộc đã hoàn tất.
 
-**File/hàm:** [ConstructionModule.tsx#L281](../web/src/components/construction/ConstructionModule.tsx#L281), [ConstructionModule.tsx#L357](../web/src/components/construction/ConstructionModule.tsx#L357), [ConstructionModule.tsx#L417](../web/src/components/construction/ConstructionModule.tsx#L417), [ConstructionModule.tsx#L452](../web/src/components/construction/ConstructionModule.tsx#L452), [construction/router.py#L239](../backend/app/modules/construction/router.py#L239), [construction/router.py#L261](../backend/app/modules/construction/router.py#L261), [construction/router.py#L282](../backend/app/modules/construction/router.py#L282), [construction/service.py#L758](../backend/app/modules/construction/service.py#L758) `complete_task`.
+**File/hàm:** [MediaEvidenceGallery.tsx#L55-L95](../web/src/components/common/MediaEvidenceGallery.tsx#L55-L95), [ConstructionModule.tsx#L380-L460](../web/src/components/construction/ConstructionModule.tsx#L380-L460), [ConstructionModule.tsx#L2020-L2200](../web/src/components/construction/ConstructionModule.tsx#L2020-L2200), [construction/router.py#L293-L305](../backend/app/modules/construction/router.py#L293-L305), [construction/service.py#L948-L1010](../backend/app/modules/construction/service.py#L948-L1010) `add_task_evidence`.
 
 ## UI-07 — “Chăm Sóc Mộ Phần” / CareModule
 

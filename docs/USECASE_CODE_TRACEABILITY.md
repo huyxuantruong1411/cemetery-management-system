@@ -230,13 +230,28 @@ Khách hàng/Thân nhân là actor công khai, không phải role nội bộ. So
 <a id="uc-31--lập-hợp-đồng"></a>
 ### UC-3.1 — Lập hợp đồng
 
-**Actor thiết kế:** Nhân viên Marketing. **Đánh giá:** Có đường code chính cho bốn loại giao dịch; quyền hiển thị nút cần rà riêng.
+**Actor thiết kế:** Nhân viên Marketing. **Đánh giá:** Có đường code chính cho bốn loại giao dịch, đã nâng cấp toàn bộ 4 giao dịch thành Wizard 4 bước chuyên nghiệp; quyền hiển thị nút đồng bộ với backend.
 
-**Luồng code:** ContractModule chọn khách và loại hợp đồng, tải các ô phù hợp, gửi request đến /api/v1/contracts/land-purchase, /exhumation, /transfer hoặc /cremation. contracts/router.py yêu cầu contracts:write; ContractService kiểm tra liên kết hồ sơ, trạng thái ô/slot, giữ chỗ và điều kiện loại giao dịch. Mua đất khóa dòng ô bằng with_for_update(), tạo hợp đồng nháp và reservation; kích hoạt hợp đồng tạo lịch sử sở hữu và khoản phải thu theo nhánh nghiệp vụ.
+**Luồng code:** ContractModule hỗ trợ 4 wizard độc lập tương ứng với 4 loại giao dịch cốt lõi:
+- **Mua Đất (`LAND_PURCHASE`):** Wizard 4 bước (1. Khách hàng & Thêm nhanh -> 2. Chọn ô mộ trống kèm bản đồ trực quan -> 3. Biểu giá niêm yết, chu kỳ thanh toán & điều khoản -> 4. Xác nhận & tạo hợp đồng dự thảo). Khóa bi quan `with_for_update()` chống tranh chấp đặt chỗ đồng thời.
+- **Cải Táng (`EXHUMATION`):** Wizard 4 bước (1. Thân nhân đại diện -> 2. Chọn ô mộ đã an táng -> 3. Phương án xử lý tro cốt/hỏa táng & vận chuyển -> 4. Xem trước dự thảo). **Quy tắc Kim Tĩnh Bất Biến:** Các ô Kim Tĩnh (`is_kim_tinh = true`) được kiểm tra tự động và khóa cứng với nhãn `🔒 KIM TĨNH BẤT BIẾN - CẤM CẢI TÁNG`, vô hiệu hóa tuyệt đối hành vi chọn cải táng.
+- **Chuyển Nhượng (`TRANSFER`):** Wizard 4 bước (1. Bên chuyển nhượng Bên A -> 2. Trình quản lý ô mộ chính chủ & lọc chọn ô đất trống chưa an táng -> 3. Bên nhận chuyển nhượng Bên B & Thỏa thuận giá/phí -> 4. Xem trước dự thảo). Các ô đã an táng hoặc ô Kim Tĩnh bị khóa cứng, cấm chuyển nhượng.
+- **Hỏa Táng (`CREMATION`):** Wizard 4 bước (1. Khách hàng đăng ký -> 2. Hồ sơ người quá cố & Xác minh Giấy Báo Tử theo Nghị định 23/2016/NĐ-CP -> 3. Gói dịch vụ hỏa táng Tiêu chuẩn / VIP / Cao cấp kèm lịch hẹn & lưu tro cốt -> 4. Xem trước dự thảo).
 
-**Đối chiếu:** source hỗ trợ 4 loại, trong đó TRANSFER không có trong danh sách ba loại ban đầu ở Lab1; bản hợp nhất chọn bốn loại. Quy trình ký là in ngoài hệ thống → scan bản đã ký → kích hoạt, không phải màn hình Sếp duyệt/khách ký số trực tuyến. ContractModule ẩn một số thao tác ghi bằng role hard-code ADMIN/MARKETING (canManage), trong khi backend cho phép dựa trên permission contracts:write/activate. Nếu permission được tùy chỉnh khác seed, giao diện và server có thể không khớp. Tài khoản CARETAKER theo seed không có contracts:read; công việc hiện trường đi qua WorkBasis riêng.
+**Đối chiếu:** Toàn bộ 4 loại hợp đồng đều có wizard 4 bước responsive với Stepper progress bar, kiểm tra tính toàn vẹn dữ liệu ở từng bước, tích hợp form tạo nhanh khách hàng (`+ Thêm Khách Hàng Nhanh`) và tạo nhanh hồ sơ người quá cố (`+ Thêm Hồ Sơ Người Quá Cố Nhanh`) mà không làm gián đoạn luồng nhập liệu. Quy trình ký kết vật lý: xuất PDF dự thảo -> ký giấy thực tế -> tải scan có chữ ký -> quản trị viên kích hoạt.
 
-**Điểm mở source:** web/src/components/contracts/ContractModule.tsx:359-495, 1018-1237; backend/app/modules/contracts/router.py:39-130; backend/app/modules/contracts/service.py:101-657, 1714-2166, 2312-2553; backend/app/modules/contracts/models.py.
+**Điểm mở source:**
+- Giao diện Wizard 4 bước Mua Đất: [web/src/components/contracts/ContractModule.tsx#L2445-L3400](../web/src/components/contracts/ContractModule.tsx#L2445-L3400)
+- Giao diện Wizard 4 bước Cải Táng: [web/src/components/contracts/ContractModule.tsx#L5176-L5980](../web/src/components/contracts/ContractModule.tsx#L5176-L5980)
+- Giao diện Wizard 4 bước Chuyển Nhượng: [web/src/components/contracts/ContractModule.tsx#L5984-L6900](../web/src/components/contracts/ContractModule.tsx#L5984-L6900)
+- Giao diện Wizard 4 bước Hỏa Táng: [web/src/components/contracts/ContractModule.tsx#L6904-L7600](../web/src/components/contracts/ContractModule.tsx#L6904-L7600)
+- Tạo nhanh khách hàng & người quá cố inline: [web/src/components/contracts/ContractModule.tsx#L2120-L2315](../web/src/components/contracts/ContractModule.tsx#L2120-L2315)
+- Router Backend: [backend/app/modules/contracts/router.py#L39-L130](../backend/app/modules/contracts/router.py#L39-L130)
+- Service Mua Đất: [backend/app/modules/contracts/service.py#L134-L240](../backend/app/modules/contracts/service.py#L134-L240) `create_land_purchase_contract`
+- Service Cải Táng: [backend/app/modules/contracts/service.py#L245-L365](../backend/app/modules/contracts/service.py#L245-L365) `create_exhumation_contract`
+- Service Chuyển Nhượng: [backend/app/modules/contracts/service.py#L365-L515](../backend/app/modules/contracts/service.py#L365-L515) `create_transfer_contract`
+- Service Hỏa Táng: [backend/app/modules/contracts/service.py#L520-L657](../backend/app/modules/contracts/service.py#L520-L657) `create_cremation_contract`
+- Model dữ liệu đa hình: [backend/app/modules/contracts/models.py#L35-L160](../backend/app/modules/contracts/models.py#L35-L160)
 
 <a id="uc-32--in-hợp-đồngphụ-lục"></a>
 ### UC-3.2 — In hợp đồng/phụ lục
@@ -263,13 +278,21 @@ Khách hàng/Thân nhân là actor công khai, không phải role nội bộ. So
 <a id="uc-34--lập-phụ-lục-hợp-đồng"></a>
 ### UC-3.4 — Lập phụ lục hợp đồng
 
-**Actor thiết kế:** Nhân viên Marketing. **Đánh giá:** Có đường code chính cho các loại phụ lục được mô hình hóa; không thấy gia hạn tổng quát riêng.
+**Actor thiết kế:** Nhân viên Marketing. **Đánh giá:** Có đường code chính cho các loại phụ lục; hỗ trợ cơ chế phát hiện xung đột và tự động gia hạn nối tiếp chu kỳ chăm sóc.
 
-**Luồng code:** từ chi tiết hợp đồng, Marketing tạo phụ lục an táng, chăm sóc hoặc thi công bằng các endpoint /annexes/burial, /annexes/care, /annexes/construction. Service kiểm tra hợp đồng gốc, loại hợp đồng, trạng thái ACTIVE, ô/huyệt, người mất, package và thời hạn rồi lưu các bảng detail tương ứng. Sau đó người dùng submit ký và kích hoạt qua command riêng.
+**Luồng code:** từ chi tiết hợp đồng, Marketing tạo phụ lục an táng, chăm sóc hoặc thi công bằng các endpoint `/annexes/burial`, `/annexes/care`, `/annexes/construction`. Service kiểm tra hợp đồng gốc, loại hợp đồng, trạng thái ACTIVE, ô/huyệt, người mất, package và thời hạn rồi lưu các bảng detail tương ứng.
+- **Xử lý xung đột chu kỳ & Tự động nối tiếp:** Khi lập phụ lục chăm sóc, `ContractService.create_care_annex()` tự động truy vấn các phụ lục chăm sóc đang `ACTIVE` và còn hiệu lực. Nếu phát hiện gói cũ chưa hết hạn, hệ thống tự động gán ngày bắt đầu `valid_from = active_annex.valid_to + 1 ngày`, tính toán `valid_to` tương ứng với chu kỳ của gói và gắn ghi chú `[Gia hạn nối tiếp chu kỳ từ {annex_code}]`. Phía web hiển thị thẻ cảnh báo xung đột màu vàng cam kèm 2 chế độ: Nối tiếp chu kỳ hoặc Tự chọn ngày.
+- Sau khi tạo dự thảo, người dùng thực hiện nộp ký và kích hoạt phụ lục kèm file scan chữ ký qua command riêng.
 
-**Đối chiếu:** các phụ lục nghiệp vụ chính có đường tạo. “Gia hạn” không thấy thành một loại/command riêng thống nhất; một số trường hợp có thể nhập thời hạn mới trên phụ lục dịch vụ. Nút tạo/submit ký phụ lục được ẩn bằng role ADMIN/MARKETING trong ContractModule, còn API dùng contracts:write; cần giữ hai cấu hình đồng bộ. Cần đối chiếu điều khoản cần gia hạn với đúng loại phụ lục, không gọi mọi loại là renewal.
+**Đối chiếu:** các phụ lục nghiệp vụ chính có đường tạo và quản lý vòng đời chặt chẽ. Cơ chế gia hạn nối tiếp chu kỳ được xử lý tự động ở server và hiển thị rõ ràng trên giao diện người dùng. Nút tạo/submit ký phụ lục được hiển thị theo role ADMIN/MARKETING và quyền `contracts:write`.
 
-**Điểm mở source:** web/src/components/contracts/ContractModule.tsx:654-931; backend/app/modules/contracts/router.py:291-405; backend/app/modules/contracts/service.py:658-1014.
+**Điểm mở source:**
+- Giao diện Phụ lục Chăm sóc & Xử lý xung đột nối tiếp: [web/src/components/contracts/ContractModule.tsx#L4552-L4780](../web/src/components/contracts/ContractModule.tsx#L4552-L4780)
+- Giao diện Phụ lục An táng & Thi công: [web/src/components/contracts/ContractModule.tsx#L3400-L4550](../web/src/components/contracts/ContractModule.tsx#L3400-L4550)
+- Router Backend: [backend/app/modules/contracts/router.py#L291-L405](../backend/app/modules/contracts/router.py#L291-L405)
+- Service Phụ lục Chăm sóc & Nối tiếp: [backend/app/modules/contracts/service.py#L831-L955](../backend/app/modules/contracts/service.py#L831-L955) `create_care_annex`
+- Service Phụ lục An táng: [backend/app/modules/contracts/service.py#L658-L830](../backend/app/modules/contracts/service.py#L658-L830) `create_burial_annex`
+- Service Phụ lục Thi công: [backend/app/modules/contracts/service.py#L956-L1040](../backend/app/modules/contracts/service.py#L956-L1040) `create_construction_annex`
 
 <a id="uc-35--theo-dõi-trạng-thái-thời-hạn-phụ-lục"></a>
 ### UC-3.5 — Theo dõi trạng thái, thời hạn phụ lục
@@ -288,15 +311,25 @@ Khách hàng/Thân nhân là actor công khai, không phải role nội bộ. So
 ## UC-4 — Quản lý thi công
 
 <a id="uc-41--lập-checklist-thi-công"></a>
-### UC-4.1 — Lập checklist thi công
+### UC-4.1 — Lập checklist thi công & Bổ sung danh mục chuẩn
 
-**Actor thiết kế:** Quản trang. **Đánh giá:** Có đường code chính.
+**Actor thiết kế:** Quản trang. **Đánh giá:** Có đường code chính, cưỡng chế tính bất biến của checklist phụ lục và quy chuẩn bổ sung danh mục kỹ thuật.
 
-**Luồng code:** ConstructionModule tải WorkBasis/hợp đồng, tạo ConstructionOrder từ phụ lục ACTIVE loại CONSTRUCTION hoặc BURIAL. Service đọc checklist cấu hình trong phụ lục; nếu không có thì dùng checklist mặc định, hoặc nhận custom task. Task được lưu trong ConstructionTask; có API thêm/sửa/xóa/sắp xếp.
+**Luồng code:**
+- **Khởi tạo lệnh thi công:** ConstructionModule tải căn cứ `WorkBasis` từ phụ lục thi công/an táng đang `ACTIVE`, tạo `ConstructionOrder`. Backend tự động sinh các công đoạn cơ sở từ Phụ lục (`checklist_specifications`), gán nhãn `[Theo phụ lục]` và thiết lập cờ bất biến.
+- **Quy tắc Checklist Phụ lục Bất biến:** Các hạng mục cơ sở từ phụ lục tuyệt đối không thể đổi tên, không thể bỏ tính bắt buộc `is_required` (`update_task` trả về lỗi), và không thể xóa (`delete_task` từ chối với HTTP 400).
+- **Quản trang bổ sung công việc thực địa:** Quản trang có thể bổ sung hạng mục phát sinh tại hiện trường qua form tạo lệnh hoặc modal bổ sung trong chi tiết lệnh. Tất cả hạng mục bổ sung bắt buộc phải tra cứu và chọn từ Danh mục 12 quy cách kỹ thuật tiêu chuẩn (`STANDARD_CONSTRUCTION_SPECIFICATIONS` tại `constants.py:9-35`, qua API `GET /construction/checklist-catalog`). Các hạng mục này được gắn nhãn `[Bổ sung thực địa]` và chỉ được phép xóa khi chưa thực hiện.
 
-**Đối chiếu:** checklist có thể tùy chỉnh và sắp xếp. Cần phân biệt mẫu trên phụ lục với checklist đã phát sinh trên lệnh, vì checklist thuộc lệnh thi công thực tế.
+**Đối chiếu:** Phân định rõ ràng giữa cam kết kỹ thuật pháp lý trong phụ lục (bất biến) và quyền điều hành thực địa của Quản trang (chọn từ danh mục quy chuẩn).
 
-**Điểm mở source:** web/src/components/construction/ConstructionModule.tsx:206-280, 2030-2110; backend/app/modules/construction/router.py:140-232; backend/app/modules/construction/service.py:320-494, 664-715; backend/app/modules/construction/models.py.
+**Điểm mở source:**
+- Giao diện Lập lệnh & Bổ sung checklist: [web/src/components/construction/ConstructionModule.tsx#L2650-L2750](../web/src/components/construction/ConstructionModule.tsx#L2650-L2750)
+- Giao diện Modal Bổ sung hạng mục kỹ thuật chuẩn: [web/src/components/construction/ConstructionModule.tsx#L3130-L3300](../web/src/components/construction/ConstructionModule.tsx#L3130-L3300)
+- Danh mục 12 quy chuẩn kỹ thuật: [backend/app/modules/construction/constants.py#L9-L35](../backend/app/modules/construction/constants.py#L9-L35) `STANDARD_CONSTRUCTION_SPECIFICATIONS`
+- Router Backend: [backend/app/modules/construction/router.py#L105-L115](../backend/app/modules/construction/router.py#L105-L115) (Catalog), [backend/app/modules/construction/router.py#L140-L232](../backend/app/modules/construction/router.py#L140-L232) (Order & Tasks), [backend/app/modules/construction/router.py#L260-L270](../backend/app/modules/construction/router.py#L260-L270) (Delete Task)
+- Service Tạo lệnh & Khóa checklist phụ lục: [backend/app/modules/construction/service.py#L340-L420](../backend/app/modules/construction/service.py#L340-L420) `create_order`
+- Service Bổ sung task theo danh mục chuẩn: [backend/app/modules/construction/service.py#L705-L775](../backend/app/modules/construction/service.py#L705-L775) `create_task`
+- Service Chặn sửa & chặn xóa task phụ lục: [backend/app/modules/construction/service.py#L776-L880](../backend/app/modules/construction/service.py#L776-L880) `update_task` & `delete_task`
 
 <a id="uc-42--phân-công"></a>
 ### UC-4.2 — Phân công
@@ -310,15 +343,23 @@ Khách hàng/Thân nhân là actor công khai, không phải role nội bộ. So
 **Điểm mở source:** web/src/components/construction/ConstructionModule.tsx:114-205, 484-545, 2614-2675; backend/app/modules/construction/router.py:36-102, 140-216; backend/app/modules/construction/service.py:158-319, 320-494; backend/app/modules/construction/models.py.
 
 <a id="uc-43--cập-nhật-checklist"></a>
-### UC-4.3 — Cập nhật checklist
+### UC-4.3 — Cập nhật checklist & Giới hạn minh chứng tối đa 5 ảnh
 
-**Actor thiết kế:** Quản trang. **Đánh giá:** Có đường code chính, media hiện tập trung vào ảnh.
+**Actor thiết kế:** Quản trang. **Đánh giá:** Có đường code chính, cưỡng chế giới hạn tối đa 5 ảnh minh chứng mỗi công đoạn.
 
-**Luồng code:** người thực hiện tải tệp lên Documents, gắn file vào task qua /tasks/{id}/evidences, cập nhật ghi chú rồi gọi /tasks/{id}/complete. Service bắt buộc task bắt buộc có file READY hợp lệ trước khi hoàn thành; sau đó đổi status sang DONE và tính lại tiến độ.
+**Luồng code:** người thực hiện tải tệp lên Documents, gắn file vào task qua `/tasks/{id}/evidences`, cập nhật ghi chú rồi gọi `/tasks/{id}/complete`.
+- **Cưỡng chế giới hạn 5 ảnh:** Tại `ConstructionService.add_task_evidence()`, hệ thống đếm số ảnh hiện có của task trong `file_objects`. Nếu đã đạt 5 ảnh, backend lập tức từ chối và ném lỗi `HTTP 400 Bad Request` (`Mỗi công việc thi công chỉ được đính kèm tối đa 5 ảnh minh chứng. Vui lòng xóa bớt ảnh cũ nếu cần thay thế.`).
+- **Phía Web UI:** Component `MediaEvidenceGallery.tsx` và `ConstructionModule.tsx` kiểm tra `evidences.length >= 5`: hiển thị thanh cảnh báo màu vàng cam `Đã đạt giới hạn tối đa 5/5 ảnh minh chứng` và vô hiệu hóa nút tải ảnh lên.
+- **Hoàn thành công đoạn:** Service bắt buộc các task có `is_required = true` phải có ít nhất 1 file ảnh `READY` mới được phép hoàn thành, chuyển trạng thái sang `DONE` và cập nhật tiến độ tổng thể.
 
-**Đối chiếu:** tick, ghi chú và ảnh nghiệm thu có đường đầy đủ. Source validation evidence hiện yêu cầu image/*; UC nói ảnh/video, nên video chưa được xác nhận hỗ trợ. Tệp tải lên nhưng chưa READY chưa đủ điều kiện hoàn thành.
+**Đối chiếu:** Tick hoàn thành, ghi chú và giới hạn tải ảnh minh chứng được thực thi đồng bộ cả 2 tầng Backend và Web Frontend.
 
-**Điểm mở source:** web/src/components/construction/ConstructionModule.tsx:281-416, 1734-1898; backend/app/modules/construction/router.py:223-280; backend/app/modules/construction/service.py:716-821, 822-919.
+**Điểm mở source:**
+- Giao diện Thư viện ảnh & Cảnh báo giới hạn 5 ảnh: [web/src/components/common/MediaEvidenceGallery.tsx#L55-L95](../web/src/components/common/MediaEvidenceGallery.tsx#L55-L95)
+- Giao diện Cập nhật task trong ConstructionModule: [web/src/components/construction/ConstructionModule.tsx#L380-L460](../web/src/components/construction/ConstructionModule.tsx#L380-L460), [web/src/components/construction/ConstructionModule.tsx#L2020-L2200](../web/src/components/construction/ConstructionModule.tsx#L2020-L2200)
+- Router Backend Minh Chứng: [backend/app/modules/construction/router.py#L293-L305](../backend/app/modules/construction/router.py#L293-L305) `add_task_evidence`, [backend/app/modules/construction/router.py#L313-L325](../backend/app/modules/construction/router.py#L313-L325) `delete_task_evidence`
+- Service Giới hạn 5 ảnh: [backend/app/modules/construction/service.py#L948-L1010](../backend/app/modules/construction/service.py#L948-L1010) `add_task_evidence`
+- Service Hoàn tất task: [backend/app/modules/construction/service.py#L882-L945](../backend/app/modules/construction/service.py#L882-L945) `complete_task`
 
 <a id="uc-44--cập-nhật-tiến-độ"></a>
 ### UC-4.4 — Cập nhật tiến độ
@@ -346,15 +387,21 @@ Khách hàng/Thân nhân là actor công khai, không phải role nội bộ. So
 ## UC-5 — Quản lý chăm sóc
 
 <a id="uc-51--đăng-ký-gói-chăm-sóc"></a>
-### UC-5.1 — Đăng ký gói chăm sóc
+### UC-5.1 — Đăng ký gói chăm sóc & Tự động nối tiếp chu kỳ
 
-**Actor thiết kế:** Nhân viên Marketing. **Đánh giá:** Có đường code chính.
+**Actor thiết kế:** Nhân viên Marketing. **Đánh giá:** Có đường code chính, hoàn chỉnh giải quyết xung đột chu kỳ và tự động gia hạn nối tiếp.
 
-**Luồng code:** từ chi tiết hợp đồng, ContractModule lấy gói đang hoạt động ở /api/v1/catalog/care-packages?active_only=true, rồi tạo phụ lục chăm sóc. ContractService.create_care_annex() kiểm tra hợp đồng ACTIVE, loại hợp đồng và gói; lưu package, chu kỳ, đơn giá và thời hạn. Mẫu gói do CatalogService quản lý.
+**Luồng code:** từ chi tiết hợp đồng, ContractModule lấy gói đang hoạt động ở `/api/v1/catalog/care-packages?active_only=true`, rồi tạo phụ lục chăm sóc. `ContractService.create_care_annex()` kiểm tra hợp đồng ACTIVE, loại hợp đồng và gói; lưu package, chu kỳ, đơn giá và thời hạn.
+- **Phát hiện xung đột & Tự động nối tiếp chu kỳ:** Service truy vấn xem hợp đồng/ô mộ có phụ lục chăm sóc đang `ACTIVE` với `valid_to >= current_date`. Nếu có, backend tự động tính toán `valid_from = active_annex.valid_to + 1 ngày`, tính toán `valid_to` nối tiếp theo chu kỳ tháng của gói và gắn ghi chú `[Gia hạn nối tiếp chu kỳ từ {annex_code}]`.
+- **Giao diện người dùng:** Khi mở modal phụ lục chăm sóc, ContractModule tự động phát hiện gói đang chạy, hiển thị thẻ thông báo màu vàng cam về việc gói cũ còn hạn và mặc định chọn chế độ `Nối tiếp chu kỳ (Khuyến nghị)` hoặc cho phép gia đình chọn thời gian bắt đầu khác.
 
-**Đối chiếu:** gói được gắn vào phụ lục hợp đồng và tạo căn cứ cho Quản trang. Thông báo tự động đến quản trang chưa thấy tích hợp notification service.
+**Đối chiếu:** gói được gắn vào phụ lục hợp đồng, chu kỳ kế tiếp được đảm bảo liên tục không gián đoạn và tạo căn cứ cho Quản trang sinh lịch chăm sóc định kỳ.
 
-**Điểm mở source:** web/src/components/contracts/ContractModule.tsx:794-855, 819-855; backend/app/modules/contracts/service.py:831-919; backend/app/modules/catalog/router.py:205-279; backend/app/modules/catalog/service.py:439-552, 754-830.
+**Điểm mở source:**
+- Giao diện Phụ lục Chăm sóc: [web/src/components/contracts/ContractModule.tsx#L4552-L4780](../web/src/components/contracts/ContractModule.tsx#L4552-L4780)
+- Router Backend: [backend/app/modules/contracts/router.py#L314-L332](../backend/app/modules/contracts/router.py#L314-L332)
+- Service Đăng ký & Xử lý xung đột nối tiếp: [backend/app/modules/contracts/service.py#L831-L955](../backend/app/modules/contracts/service.py#L831-L955) `create_care_annex`
+- Gói dịch vụ chăm sóc: [backend/app/modules/catalog/router.py#L205-L279](../backend/app/modules/catalog/router.py#L205-L279); [backend/app/modules/catalog/service.py#L439-L552](../backend/app/modules/catalog/service.py#L439-L552)
 
 <a id="uc-52--lập-lịch-chăm-sóc"></a>
 ### UC-5.2 — Lập lịch chăm sóc
