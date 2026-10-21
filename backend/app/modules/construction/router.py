@@ -203,11 +203,22 @@ def reorder_construction_tasks(
 # ---------------------------------------------------------------------------
 
 
+@router.get(
+    "/checklist-catalog",
+    response_model=List[dict],
+    summary="Danh mục quy chuẩn kỹ thuật thi công dùng chung",
+)
+def get_construction_checklist_catalog(
+    current_user: User = Depends(require_permission("construction", "read")),
+):
+    return ConstructionService.get_checklist_catalog()
+
+
 @router.post(
     "/orders/{order_id}/tasks",
     response_model=ConstructionTaskBrief,
     status_code=status.HTTP_201_CREATED,
-    summary="Thêm công việc mới vào lệnh thi công",
+    summary="Thêm công việc mới vào lệnh thi công (Quản trang bổ sung thực địa)",
 )
 def create_construction_task(
     order_id: int,
@@ -233,6 +244,21 @@ def update_construction_task(
 ):
     return ConstructionService.update_task(
         db=db, task_id=task_id, data=data, actor_user_id=current_user.user_id
+    )
+
+
+@router.delete(
+    "/orders/{order_id}/tasks/{task_id}",
+    summary="Xóa hạng mục thi công bổ sung thực địa (Chặn xóa hạng mục gốc từ phụ lục)",
+)
+def delete_construction_task(
+    order_id: int,
+    task_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_permission("construction", "write")),
+):
+    return ConstructionService.delete_task(
+        db=db, order_id=order_id, task_id=task_id, actor_user_id=current_user.user_id
     )
 
 

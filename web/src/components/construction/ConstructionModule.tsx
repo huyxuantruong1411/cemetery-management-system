@@ -20,6 +20,8 @@ import {
   X,
   Trash2,
   Lock,
+  PlusCircle,
+  Wrench,
 } from 'lucide-react'
 import { useAuth } from '../../context/useAuth'
 import { useNotificationModal } from '../../context/NotificationModalContext'
@@ -30,6 +32,15 @@ import type {
 } from '../../types/construction'
 import { Pagination, usePagination } from '../common/Pagination'
 import { MediaEvidenceGallery } from '../common/MediaEvidenceGallery'
+
+export interface ChecklistCatalogItem {
+  code: string
+  task_name: string
+  specs: string
+  category: string
+  is_required: boolean
+  is_default: boolean
+}
 
 export const ConstructionModule: React.FC = () => {
   const { accessToken: token, user, hasPermission } = useAuth()
@@ -79,6 +90,31 @@ export const ConstructionModule: React.FC = () => {
     notes: '',
   })
   const [conflictWarning, setConflictWarning] = useState<string | null>(null)
+
+  // Checklist catalog & supplementary tasks state
+  const [checklistCatalog, setChecklistCatalog] = useState<ChecklistCatalogItem[]>([])
+  const [createSupplementaryTasks, setCreateSupplementaryTasks] = useState<
+    Array<{
+      code: string
+      task_name: string
+      specs: string
+      category: string
+      is_required: boolean
+      field_notes?: string
+    }>
+  >([])
+  const [selectedCatalogCodeToSupplement, setSelectedCatalogCodeToSupplement] = useState<string>('')
+
+  // Modal Bổ sung task cho lệnh thi công đang mở (Order Detail)
+  const [isSupplementModalOpen, setIsSupplementModalOpen] = useState<boolean>(false)
+  const [supplementTaskCode, setSupplementTaskCode] = useState<string>('')
+  const [supplementIsRequired, setSupplementIsRequired] = useState<boolean>(false)
+  const [supplementAssigneeId, setSupplementAssigneeId] = useState<string>('')
+  const [supplementStartDate, setSupplementStartDate] = useState<string>('')
+  const [supplementDueDate, setSupplementDueDate] = useState<string>('')
+  const [supplementNotes, setSupplementNotes] = useState<string>('')
+  const [supplementLoading, setSupplementLoading] = useState<boolean>(false)
+  const [supplementError, setSupplementError] = useState<string | null>(null)
 
   // Form states - Evidence upload
   const [evidenceCaption, setEvidenceCaption] = useState<string>('')
@@ -162,6 +198,16 @@ export const ConstructionModule: React.FC = () => {
       .catch(() => {})
   }, [token])
 
+  useEffect(() => {
+    if (!token) return
+    apiFetch('/api/v1/construction/checklist-catalog', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => setChecklistCatalog(data))
+      .catch(() => {})
+  }, [token])
+
   // Check conflict when creating order
   useEffect(() => {
     if (!token || !createForm.supervisor_id || !createForm.start_date || !createForm.expected_end_date) return
@@ -215,39 +261,16 @@ export const ConstructionModule: React.FC = () => {
       return
     }
     try {
-      const selectedBasis = workBases.find((item) => item.annex_id === Number(createForm.annex_id))
       let customTasksPayload = undefined
-      if (selectedBasis?.checklist_specifications) {
-        try {
-          const raw = JSON.parse(selectedBasis.checklist_specifications)
-          if (Array.isArray(raw) && raw.length > 0) {
-            customTasksPayload = raw
-              .filter((it: any) => (typeof it === 'object' ? it.task_name?.trim() : String(it).trim()))
-              .map((it: any, idx: number) => {
-                const name = (typeof it === 'object' ? it.task_name || '' : String(it)).trim()
-                const specs = (typeof it === 'object' ? it.specs || '' : '').trim()
-                const fullName = specs ? `${name} (${specs})` : name
-                return {
-                  task_name: fullName.slice(0, 150),
-                  is_required: typeof it === 'object' ? it.is_required ?? true : true,
-                  sort_order: idx + 1,
-                  start_date: createForm.start_date,
-                  due_date: createForm.expected_end_date,
-                }
-              })
-          }
-        } catch {
-          const lines = selectedBasis.checklist_specifications.replace(/;/g, '\n').split('\n').filter(Boolean)
-          if (lines.length > 0) {
-            customTasksPayload = lines.map((line: string, idx: number) => ({
-              task_name: line.trim().slice(0, 150),
-              is_required: true,
-              sort_order: idx + 1,
-              start_date: createForm.start_date,
-              due_date: createForm.expected_end_date,
-            }))
-          }
-        }
+      if (createSupplementaryTasks.length > 0) {
+        customTasksPayload = createSupplementaryTasks.map((t, idx) => ({
+          task_name: `${t.task_name} (${t.specs})`.slice(0, 150),
+          is_required: t.is_required,
+          sort_order: (parsedChecklist.length || 5) + idx + 1,
+          start_date: createForm.start_date,
+          due_date: createForm.expected_end_date,
+          field_notes: t.field_notes || '',
+        }))
       }
 
       const res = await apiFetch('/api/v1/construction/orders', {
@@ -271,10 +294,127 @@ export const ConstructionModule: React.FC = () => {
         throw new Error(errJson.detail || 'Tạo lệnh thi công thất bại')
       }
       setIsCreateModalOpen(false)
+      setCreateSupplementaryTasks([])
       showNotification('Đã tạo thành công lệnh thi công mới!')
       fetchOrders()
     } catch (err: unknown) {
       showNotification(err instanceof Error ? err.message : 'Có lỗi xảy ra', true)
+    }
+  }
+
+  const handleAddSupplementaryTaskToCreateForm = () => {
+    if (!selectedCatalogCodeToSupplement) return
+    const cat = checklistCatalog.find((c) => c.code === selectedCatalogCodeToSupplement)
+    if (!cat) return
+    if (createSupplementaryTasks.some((t) => t.code === cat.code)) {
+      showNotification('Hạng mục này đã được thêm vào danh sách bổ sung', true)
+      return
+    }
+    setCreateSupplementaryTasks((prev) => [
+      ...prev,
+      {
+        code: cat.code,
+        task_name: cat.task_name,
+        specs: cat.specs,
+        category: cat.category,
+        is_required: cat.is_required,
+        field_notes: 'Bổ sung theo khảo sát thực địa',
+      },
+    ])
+    setSelectedCatalogCodeToSupplement('')
+  }
+
+  const handleOpenSupplementModal = () => {
+    if (!selectedOrder) return
+    setSupplementTaskCode(checklistCatalog[0]?.code || '')
+    setSupplementIsRequired(false)
+    setSupplementAssigneeId(selectedOrder.supervisor_id?.toString() || '')
+    setSupplementStartDate(new Date().toISOString().split('T')[0])
+    setSupplementDueDate(selectedOrder.expected_end_date || '')
+    setSupplementNotes('')
+    setSupplementError(null)
+    setIsSupplementModalOpen(true)
+  }
+
+  const handleCreateSupplementaryTask = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!token || !selectedOrder || !supplementTaskCode) return
+    const catItem = checklistCatalog.find((c) => c.code === supplementTaskCode)
+    if (!catItem) return
+
+    setSupplementLoading(true)
+    setSupplementError(null)
+    try {
+      const payload = {
+        task_name: `${catItem.task_name} (${catItem.specs})`.slice(0, 150),
+        is_required: supplementIsRequired,
+        assignee_user_id: supplementAssigneeId ? Number(supplementAssigneeId) : undefined,
+        start_date: supplementStartDate || undefined,
+        due_date: supplementDueDate || undefined,
+        field_notes: supplementNotes.trim() || undefined,
+      }
+      const res = await apiFetch(`/api/v1/construction/orders/${selectedOrder.order_id}/tasks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      })
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}))
+        throw new Error(errJson.detail || 'Không thể bổ sung hạng mục thi công')
+      }
+      showNotification('Đã bổ sung hạng mục thi công thành công!')
+      setIsSupplementModalOpen(false)
+
+      // Refresh selected order
+      const updatedOrderRes = await apiFetch(`/api/v1/construction/orders/${selectedOrder.order_id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (updatedOrderRes.ok) {
+        const updated = await updatedOrderRes.json()
+        setSelectedOrder(updated)
+      }
+      fetchOrders()
+    } catch (err: unknown) {
+      setSupplementError(err instanceof Error ? err.message : 'Lỗi khi bổ sung hạng mục')
+    } finally {
+      setSupplementLoading(false)
+    }
+  }
+
+  const handleDeleteSupplementaryTask = async (taskId: number) => {
+    if (!token || !selectedOrder) return
+    const confirmed = await confirm({
+      title: 'Xóa hạng mục thi công bổ sung',
+      message: 'Bạn có chắc chắn muốn xóa hạng mục thi công bổ sung thực địa này?',
+      confirmText: 'Xóa hạng mục',
+      cancelText: 'Hủy',
+      type: 'warning',
+    })
+    if (!confirmed) return
+
+    try {
+      const res = await apiFetch(`/api/v1/construction/orders/${selectedOrder.order_id}/tasks/${taskId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}))
+        throw new Error(errJson.detail || 'Không thể xóa hạng mục thi công')
+      }
+      showNotification('Đã xóa hạng mục bổ sung thành công!')
+      const updatedOrderRes = await apiFetch(`/api/v1/construction/orders/${selectedOrder.order_id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (updatedOrderRes.ok) {
+        const updated = await updatedOrderRes.json()
+        setSelectedOrder(updated)
+      }
+      fetchOrders()
+    } catch (err: unknown) {
+      showNotification(err instanceof Error ? err.message : 'Lỗi khi xóa hạng mục', true)
     }
   }
 
@@ -1708,10 +1848,34 @@ export const ConstructionModule: React.FC = () => {
 
               {/* Checklist Tasks List */}
               <div style={{ marginBottom: '24px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <h4 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--brand-secondary)' }}>
-                    Danh Mục Công Việc Thi Công (Checklist)
-                  </h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <h4 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--brand-secondary)' }}>
+                      Danh Mục Công Việc Thi Công (Checklist)
+                    </h4>
+                    {hasPermission('construction:write') && selectedOrder.status !== 'COMPLETED' && selectedOrder.status !== 'CANCELLED' && (
+                      <button
+                        type="button"
+                        onClick={handleOpenSupplementModal}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          padding: '5px 12px',
+                          borderRadius: '6px',
+                          backgroundColor: '#F0FDF4',
+                          border: '1px solid #16A34A',
+                          color: '#15803D',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <PlusCircle size={14} />
+                        <span>+ Bổ Sung Hạng Mục Thi Công</span>
+                      </button>
+                    )}
+                  </div>
                   <span style={{ fontSize: '12px', color: '#64748B' }}>
                     Sử dụng các nút mũi tên để sắp xếp lại thứ tự công việc
                   </span>
@@ -1819,6 +1983,40 @@ export const ConstructionModule: React.FC = () => {
                                     Chưa Xong
                                   </span>
                                 )}
+                                {task.field_notes?.includes('[Theo phụ lục]') && (
+                                  <span
+                                    style={{
+                                      fontSize: '10px',
+                                      fontWeight: 600,
+                                      padding: '2px 6px',
+                                      borderRadius: '4px',
+                                      backgroundColor: '#EFF6FF',
+                                      color: '#1D4ED8',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '3px',
+                                    }}
+                                  >
+                                    <Lock size={10} /> Theo Phụ Lục (Cố định)
+                                  </span>
+                                )}
+                                {task.field_notes?.includes('[Bổ sung thực địa]') && (
+                                  <span
+                                    style={{
+                                      fontSize: '10px',
+                                      fontWeight: 600,
+                                      padding: '2px 6px',
+                                      borderRadius: '4px',
+                                      backgroundColor: '#FEF3C7',
+                                      color: '#B45309',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '3px',
+                                    }}
+                                  >
+                                    <Wrench size={10} /> Bổ Sung Thực Địa
+                                  </span>
+                                )}
                               </div>
 
                               {task.field_notes && (
@@ -1890,6 +2088,35 @@ export const ConstructionModule: React.FC = () => {
                                   <span>Hoàn Tất</span>
                                 </button>
                               )}
+
+                              {hasPermission('construction:write') &&
+                                task.field_notes?.includes('[Bổ sung thực địa]') &&
+                                task.status !== 'DONE' &&
+                                selectedOrder.status !== 'COMPLETED' &&
+                                selectedOrder.status !== 'CANCELLED' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteSupplementaryTask(task.task_id)}
+                                    style={{
+                                      padding: '6px 12px',
+                                      backgroundColor: '#FEF2F2',
+                                      border: '1px solid #FECACA',
+                                      borderRadius: '6px',
+                                      color: '#DC2626',
+                                      fontSize: '12px',
+                                      fontWeight: 600,
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      whiteSpace: 'nowrap',
+                                    }}
+                                    title="Xóa hạng mục bổ sung thực địa này"
+                                  >
+                                    <Trash2 size={13} />
+                                    <span>Xóa Hạng Mục</span>
+                                  </button>
+                                )}
                             </div>
                           )}
                         </div>
@@ -2413,6 +2640,119 @@ export const ConstructionModule: React.FC = () => {
                 </div>
               </div>
 
+              {/* 3b. Quản Trang Lập Checklist Bổ Sung Thực Địa */}
+              <div
+                style={{
+                  marginBottom: '18px',
+                  padding: '12px 14px',
+                  backgroundColor: '#FEFCE8',
+                  border: '1px dashed #FDE047',
+                  borderRadius: '8px',
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px', flexWrap: 'wrap', gap: '6px' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 700, color: '#854D0E', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Wrench size={15} />
+                    <span>3b. Quản Trang Lập Checklist Bổ Sung Thực Địa (Tùy chọn)</span>
+                  </div>
+                  <span style={{ fontSize: '11px', color: '#A16207' }}>
+                    Căn cứ danh mục quy chuẩn kỹ thuật ({checklistCatalog.length} hạng mục)
+                  </span>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                  <select
+                    value={selectedCatalogCodeToSupplement}
+                    onChange={(e) => setSelectedCatalogCodeToSupplement(e.target.value)}
+                    style={{ flex: 1, minWidth: '240px', padding: '7px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '12px', backgroundColor: '#FFFFFF' }}
+                  >
+                    <option value="">-- Chọn hạng mục bổ sung từ quy chuẩn kỹ thuật --</option>
+                    {checklistCatalog.map((cat) => (
+                      <option key={cat.code} value={cat.code}>
+                        [{cat.code}] {cat.task_name} - {cat.specs} ({cat.category})
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={handleAddSupplementaryTaskToCreateForm}
+                    disabled={!selectedCatalogCodeToSupplement}
+                    style={{
+                      padding: '7px 14px',
+                      borderRadius: '6px',
+                      border: '1px solid #CA8A04',
+                      backgroundColor: selectedCatalogCodeToSupplement ? '#EAB308' : '#F1F5F9',
+                      color: selectedCatalogCodeToSupplement ? '#FFFFFF' : '#94A3B8',
+                      fontSize: '12px',
+                      fontWeight: 600,
+                      cursor: selectedCatalogCodeToSupplement ? 'pointer' : 'not-allowed',
+                      whiteSpace: 'nowrap',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <Plus size={14} />
+                    <span>Thêm Hạng Mục</span>
+                  </button>
+                </div>
+
+                {createSupplementaryTasks.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', maxHeight: '140px', overflowY: 'auto' }}>
+                    {createSupplementaryTasks.map((st, sidx) => (
+                      <div
+                        key={sidx}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '6px 10px',
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: '6px',
+                          border: '1px solid #FEF08A',
+                          fontSize: '12px',
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: 1, minWidth: 0 }}>
+                          <span style={{ color: '#CA8A04', fontWeight: 700, fontSize: '11px' }}>+ Bổ sung #{sidx + 1}</span>
+                          <span style={{ fontWeight: 600, color: '#1E293B', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {st.task_name}
+                          </span>
+                          <span style={{ fontSize: '11px', color: '#64748B', fontStyle: 'italic' }}>({st.specs})</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: '#334155', cursor: 'pointer' }}>
+                            <input
+                              type="checkbox"
+                              checked={st.is_required}
+                              onChange={(e) => {
+                                const checked = e.target.checked
+                                setCreateSupplementaryTasks((prev) =>
+                                  prev.map((it, i) => (i === sidx ? { ...it, is_required: checked } : it))
+                                )
+                              }}
+                            />
+                            <span>Bắt buộc</span>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setCreateSupplementaryTasks((prev) => prev.filter((_, i) => i !== sidx))}
+                            style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#DC2626', padding: '2px' }}
+                            title="Xóa khỏi danh sách bổ sung"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '11px', color: '#854D0E', fontStyle: 'italic' }}>
+                    Chưa có hạng mục bổ sung nào. Quản trang có thể chọn thêm từ danh mục kỹ thuật nếu hiện trường yêu cầu.
+                  </div>
+                )}
+              </div>
+
               {/* 4. Notes */}
               <div style={{ marginBottom: '16px' }}>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
@@ -2748,6 +3088,222 @@ export const ConstructionModule: React.FC = () => {
                   style={{ padding: '8px 18px', backgroundColor: 'var(--brand-primary)', border: 'none', borderRadius: '6px', color: '#FFFFFF', fontSize: '13px', fontWeight: 600, cursor: 'pointer' }}
                 >
                   Lưu Lịch Bận
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ------------------------------------------------------------------- */}
+      {/* MODAL 5: QUẢN TRANG BỔ SUNG HẠNG MỤC THI CÔNG (THỰC ĐỊA) */}
+      {/* ------------------------------------------------------------------- */}
+      {isSupplementModalOpen && selectedOrder && (
+        <div
+          className="responsive-modal-overlay"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1100,
+            padding: '20px',
+          }}
+        >
+          <div
+            className="responsive-modal-card"
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '12px',
+              maxWidth: '560px',
+              width: '100%',
+              overflow: 'hidden',
+              boxShadow: '0 20px 25px -5px rgba(0,0,0,0.2)',
+            }}
+          >
+            <div
+              style={{
+                padding: '16px 20px',
+                borderBottom: '1px solid #E2E8F0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                backgroundColor: '#F8FAFC',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Wrench size={18} color="var(--brand-primary)" />
+                <h3 style={{ fontSize: '15px', fontWeight: 700, margin: 0, color: 'var(--brand-secondary)' }}>
+                  Bổ Sung Hạng Mục Thi Công Thực Địa #TC-{selectedOrder.order_id.toString().padStart(4, '0')}
+                </h3>
+              </div>
+              <button
+                onClick={() => setIsSupplementModalOpen(false)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateSupplementaryTask} style={{ padding: '20px' }}>
+              {supplementError && (
+                <div
+                  style={{
+                    padding: '10px 14px',
+                    backgroundColor: '#FEF2F2',
+                    border: '1px solid #FECACA',
+                    borderRadius: '6px',
+                    color: '#B91C1C',
+                    fontSize: '12px',
+                    marginBottom: '14px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  <AlertTriangle size={15} />
+                  <span>{supplementError}</span>
+                </div>
+              )}
+
+              {/* Hạng mục kỹ thuật chuẩn hóa */}
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                  1. Hạng Mục Quy Chuẩn Kỹ Thuật Bổ Sung (*)
+                </label>
+                <select
+                  required
+                  value={supplementTaskCode}
+                  onChange={(e) => {
+                    const code = e.target.value
+                    setSupplementTaskCode(code)
+                    const item = checklistCatalog.find((c) => c.code === code)
+                    if (item) {
+                      setSupplementIsRequired(item.is_required)
+                    }
+                  }}
+                  style={{ width: '100%', padding: '8px 10px', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#FFFFFF' }}
+                >
+                  <option value="">-- Chọn hạng mục từ danh mục quy chuẩn --</option>
+                  {checklistCatalog.map((cat) => (
+                    <option key={cat.code} value={cat.code}>
+                      [{cat.code}] {cat.task_name} ({cat.category})
+                    </option>
+                  ))}
+                </select>
+                {(() => {
+                  const selItem = checklistCatalog.find((c) => c.code === supplementTaskCode)
+                  if (!selItem) return null
+                  return (
+                    <div style={{ marginTop: '6px', padding: '8px 10px', backgroundColor: '#F8FAFC', borderRadius: '6px', border: '1px solid #E2E8F0', fontSize: '12px', color: '#475569' }}>
+                      <div><strong>Quy cách kỹ thuật:</strong> {selItem.specs}</div>
+                      <div style={{ marginTop: '2px', fontSize: '11px', color: '#64748B' }}>Phân nhóm: {selItem.category}</div>
+                    </div>
+                  )
+                })()}
+              </div>
+
+              {/* Phân công nhân sự */}
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                  2. Nhân Sự / Đội Phụ Trách
+                </label>
+                <select
+                  value={supplementAssigneeId}
+                  onChange={(e) => setSupplementAssigneeId(e.target.value)}
+                  style={{ width: '100%', padding: '8px 10px', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px', backgroundColor: '#FFFFFF' }}
+                >
+                  <option value="">-- Theo giám sát viên lệnh thi công ({selectedOrder.supervisor_name || 'Giám sát'}) --</option>
+                  {staffList.map((s) => (
+                    <option key={s.user_id} value={s.user_id}>
+                      {s.full_name} ({s.username})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Thời hạn */}
+              <div className="responsive-form-row" style={{ marginBottom: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                    Ngày Bắt Đầu
+                  </label>
+                  <input
+                    type="date"
+                    value={supplementStartDate}
+                    onChange={(e) => setSupplementStartDate(e.target.value)}
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                    Hạn Chót Hoàn Thành
+                  </label>
+                  <input
+                    type="date"
+                    value={supplementDueDate}
+                    onChange={(e) => setSupplementDueDate(e.target.value)}
+                    style={{ width: '100%', padding: '8px 10px', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px' }}
+                  />
+                </div>
+              </div>
+
+              {/* Checkbox bắt buộc */}
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', fontWeight: 600, color: '#1E293B' }}>
+                  <input
+                    type="checkbox"
+                    checked={supplementIsRequired}
+                    onChange={(e) => setSupplementIsRequired(e.target.checked)}
+                    style={{ width: '16px', height: '16px' }}
+                  />
+                  <span>Đánh dấu là hạng mục BẮT BUỘC (Phải xong mới được nghiệm thu đóng lệnh)</span>
+                </label>
+              </div>
+
+              {/* Ghi chú thực địa */}
+              <div style={{ marginBottom: '16px' }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                  Ghi Chú Lý Do Bổ Sung Thực Địa
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Ví dụ: Bổ sung chống thấm do nền đất trũng, khách hàng yêu cầu ốp gạch men..."
+                  value={supplementNotes}
+                  onChange={(e) => setSupplementNotes(e.target.value)}
+                  style={{ width: '100%', padding: '8px 10px', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px', resize: 'none' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsSupplementModalOpen(false)}
+                  style={{ padding: '8px 14px', backgroundColor: '#FFFFFF', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '13px', cursor: 'pointer' }}
+                >
+                  Hủy Bỏ
+                </button>
+                <button
+                  type="submit"
+                  disabled={supplementLoading || !supplementTaskCode}
+                  style={{
+                    padding: '8px 18px',
+                    backgroundColor: supplementLoading || !supplementTaskCode ? '#94A3B8' : 'var(--brand-primary)',
+                    border: 'none',
+                    borderRadius: '6px',
+                    color: '#FFFFFF',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: supplementLoading || !supplementTaskCode ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <Wrench size={14} />
+                  <span>{supplementLoading ? 'Đang lưu...' : 'Lưu Bổ Sung Hạng Mục'}</span>
                 </button>
               </div>
             </form>

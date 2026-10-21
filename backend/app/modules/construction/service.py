@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.modules.audit.models import AuditLog
 from app.modules.auth.models import User
+from app.modules.construction.constants import STANDARD_CONSTRUCTION_SPECIFICATIONS
 from app.modules.construction.models import (
     ConstructionOrder,
     ConstructionTask,
@@ -403,67 +404,106 @@ class ConstructionService:
         if plot.status == "OWNED_EMPTY":
             plot.status = "UNDER_CONSTRUCTION"
 
-        # 6. Generate Tasks (Default or Custom)
-        if data.custom_tasks and len(data.custom_tasks) > 0:
-            for ct in data.custom_tasks:
-                task = ConstructionTask(
-                    order_id=order.order_id,
-                    task_name=ct.task_name,
-                    assigned_team_or_contractor=ct.assigned_team_or_contractor,
-                    assignee_user_id=ct.assignee_user_id,
-                    is_required=ct.is_required,
-                    sort_order=ct.sort_order,
-                    start_date=ct.start_date,
-                    due_date=ct.due_date,
-                    status="TODO",
-                    field_notes=ct.field_notes,
-                )
-                db.add(task)
-        else:
-            # Check if annex has checklist_specifications configured
-            parsed_tasks = []
-            if annex.construction and annex.construction.checklist_specifications:
-                spec_str = annex.construction.checklist_specifications.strip()
-                if spec_str:
-                    try:
-                        items = json.loads(spec_str)
-                        if isinstance(items, list):
-                            for idx, it in enumerate(items, 1):
-                                if isinstance(it, dict):
-                                    t_name = (it.get("task_name") or "").strip()
-                                    specs = (it.get("specs") or "").strip()
-                                    full_name = f"{t_name} ({specs})" if specs else t_name
-                                    is_req = it.get("is_required", True)
-                                else:
-                                    full_name = str(it).strip()
-                                    is_req = True
-                                if full_name:
-                                    parsed_tasks.append((full_name[:150], is_req, idx))
-                    except Exception:
-                        lines = [line_item.strip() for line_item in spec_str.replace(";", "\n").split("\n") if line_item.strip()]
-                        for idx, line in enumerate(lines, 1):
-                            parsed_tasks.append((line[:150], True, idx))
+        # 6. Tự động sinh Checklist chuẩn từ phụ lục hợp đồng (Cố định, không bị thay đổi)
+        parsed_tasks = []
+        if annex.construction and annex.construction.checklist_specifications:
+            spec_str = annex.construction.checklist_specifications.strip()
+            if spec_str:
+                try:
+                    items = json.loads(spec_str)
+                    if isinstance(items, list):
+                        for idx, it in enumerate(items, 1):
+                            if isinstance(it, dict):
+                                t_name = (it.get("task_name") or "").strip()
+                                specs = (it.get("specs") or "").strip()
+                                full_name = f"{t_name} ({specs})" if specs else t_name
+                                is_req = it.get("is_required", True)
+                            else:
+                                full_name = str(it).strip()
+                                is_req = True
+                            if full_name:
+                                parsed_tasks.append((full_name[:150], is_req, idx))
+                except Exception:
+                    lines = [line_item.strip() for line_item in spec_str.replace(";", "\n").split("\n") if line_item.strip()]
+                    for idx, line in enumerate(lines, 1):
+                        parsed_tasks.append((line[:150], True, idx))
 
-            task_list = parsed_tasks if parsed_tasks else [
-                ("Khảo sát & định vị khuôn viên ô mộ", True, 1),
-                ("Đào móng & đổ bê tông lót nền", True, 2),
-                ("Xây tường gạch & hố kim tĩnh (nếu có)", True, 3),
-                ("Ốp đá hoa cương & lắp đặt bia mộ", True, 4),
-                ("Dọn dẹp vệ sinh & nghiệm thu bàn giao", True, 5),
-            ]
-            for t_name, req, s_order in task_list:
+        current_sort = 1
+        if parsed_tasks:
+            # Có checklist từ phụ lục: Tự động đổ vào và khóa cố định
+            for t_name, req, _ in parsed_tasks:
                 task = ConstructionTask(
                     order_id=order.order_id,
                     task_name=t_name,
                     assigned_team_or_contractor=None,
                     assignee_user_id=data.supervisor_id,
                     is_required=req,
-                    sort_order=s_order,
+                    sort_order=current_sort,
                     start_date=start_d,
                     due_date=strict_end_date,
                     status="TODO",
+                    field_notes="[Theo phụ lục]",
                 )
                 db.add(task)
+                current_sort += 1
+
+            # Bổ sung thêm các hạng mục thực địa do Quản trang lập (nếu có)
+            if data.custom_tasks and len(data.custom_tasks) > 0:
+                for ct in data.custom_tasks:
+                    supp_notes = f"[Bổ sung thực địa] {ct.field_notes or ''}".strip()
+                    task = ConstructionTask(
+                        order_id=order.order_id,
+                        task_name=ct.task_name[:150],
+                        assigned_team_or_contractor=ct.assigned_team_or_contractor,
+                        assignee_user_id=ct.assignee_user_id or data.supervisor_id,
+                        is_required=ct.is_required,
+                        sort_order=current_sort,
+                        start_date=ct.start_date or start_d,
+                        due_date=ct.due_date or strict_end_date,
+                        status="TODO",
+                        field_notes=supp_notes,
+                    )
+                    db.add(task)
+                    current_sort += 1
+        elif data.custom_tasks and len(data.custom_tasks) > 0:
+            for ct in data.custom_tasks:
+                task = ConstructionTask(
+                    order_id=order.order_id,
+                    task_name=ct.task_name[:150],
+                    assigned_team_or_contractor=ct.assigned_team_or_contractor,
+                    assignee_user_id=ct.assignee_user_id or data.supervisor_id,
+                    is_required=ct.is_required,
+                    sort_order=ct.sort_order or current_sort,
+                    start_date=ct.start_date or start_d,
+                    due_date=ct.due_date or strict_end_date,
+                    status="TODO",
+                    field_notes=ct.field_notes,
+                )
+                db.add(task)
+                current_sort += 1
+        else:
+            default_tasks = [
+                ("Khảo sát hiện trường & định vị tim mốc khuôn viên ô mộ", True, 1),
+                ("Đào móng & đổ bê tông lót nền móng", True, 2),
+                ("Xây tường gạch & đúc hố kim tĩnh (nếu có)", True, 3),
+                ("Ốp đá hoa cương granite & hoàn thiện chi tiết", True, 4),
+                ("Lắp bia mộ men sứ, dọn dẹp & nghiệm thu bàn giao", True, 5),
+            ]
+            for t_name, req, _ in default_tasks:
+                task = ConstructionTask(
+                    order_id=order.order_id,
+                    task_name=t_name,
+                    assigned_team_or_contractor=None,
+                    assignee_user_id=data.supervisor_id,
+                    is_required=req,
+                    sort_order=current_sort,
+                    start_date=start_d,
+                    due_date=strict_end_date,
+                    status="TODO",
+                    field_notes="[Theo phụ lục]",
+                )
+                db.add(task)
+                current_sort += 1
 
         # Audit log
         audit = AuditLog(
@@ -661,14 +701,20 @@ class ConstructionService:
     # =======================================================================
 
     @staticmethod
+    def get_checklist_catalog() -> list[dict]:
+        """Trả về danh mục quy chuẩn kỹ thuật thi công dùng chung toàn hệ thống."""
+        return STANDARD_CONSTRUCTION_SPECIFICATIONS
+
+    @staticmethod
     def create_task(
         db: Session, order_id: int, data: ConstructionTaskCreate, actor_user_id: int
     ) -> ConstructionTaskBrief:
         """
-        Thêm một hạng mục công việc vào lệnh thi công.
+        Thêm một hạng mục công việc vào lệnh thi công (Quản trang lập checklist bổ sung thực địa).
         
         Kiểm tra nghiệp vụ:
         - Lệnh thi công đã nghiệm thu COMPLETED thì không được phép thêm công việc mới.
+        - Hạng mục bổ sung bắt buộc phải căn cứ vào danh mục quy chuẩn kỹ thuật thi công (STANDARD_CONSTRUCTION_SPECIFICATIONS).
         - Kiểm tra xung đột lịch công tác (Staff Conflict) nếu chỉ định nhân sự thực hiện.
         - Tự động kích hoạt tính toán lại tiến độ tổng thể của lệnh thi công.
         """
@@ -683,6 +729,19 @@ class ConstructionService:
                 detail="Lệnh thi công đã nghiệm thu hoàn thành, không được phép thêm công việc mới.",
             )
 
+        # Kiểm tra căn cứ danh mục kỹ thuật chuẩn hóa
+        valid_prefixes = [item["task_name"] for item in STANDARD_CONSTRUCTION_SPECIFICATIONS]
+        input_name = data.task_name.strip()
+        is_valid_spec = any(
+            input_name.lower().startswith(p.lower()) or p.lower() in input_name.lower()
+            for p in valid_prefixes
+        )
+        if not is_valid_spec:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Hạng mục bổ sung phải căn cứ vào danh mục quy chuẩn kỹ thuật thi công được định nghĩa trong hệ thống.",
+            )
+
         # Kiểm tra tính hợp lệ và xung đột lịch làm việc của nhân viên được phân công (G13)
         if data.assignee_user_id is not None:
             ConstructionService._field_staff(db, data.assignee_user_id)
@@ -691,17 +750,28 @@ class ConstructionService:
                 db, data.assignee_user_id, data.start_date, data.due_date
             )
 
+        target_sort = data.sort_order
+        if target_sort is None:
+            max_sort = (
+                db.query(ConstructionTask.sort_order)
+                .filter(ConstructionTask.order_id == order_id)
+                .order_by(ConstructionTask.sort_order.desc())
+                .first()
+            )
+            target_sort = (max_sort[0] + 1) if max_sort and max_sort[0] else 1
+
+        supp_notes = f"[Bổ sung thực địa] {data.field_notes or ''}".strip()
         task = ConstructionTask(
             order_id=order_id,
-            task_name=data.task_name,
+            task_name=data.task_name[:150],
             assigned_team_or_contractor=data.assigned_team_or_contractor,
-            assignee_user_id=data.assignee_user_id,
+            assignee_user_id=data.assignee_user_id or order.supervisor_id,
             is_required=data.is_required,
-            sort_order=data.sort_order,
-            start_date=data.start_date,
-            due_date=data.due_date,
+            sort_order=target_sort,
+            start_date=data.start_date or order.start_date,
+            due_date=data.due_date or order.expected_end_date,
             status="TODO",
-            field_notes=data.field_notes,
+            field_notes=supp_notes,
         )
         db.add(task)
         db.flush()
@@ -719,6 +789,7 @@ class ConstructionService:
         """
         Cập nhật thông tin công việc thi công (người làm, hạn chót, ghi chú).
         Không cho phép chỉnh sửa nếu lệnh thi công cha đã COMPLETED hoặc CANCELLED.
+        Hạng mục gốc theo phụ lục là cố định, Quản trang không được phép đổi tên hoặc sửa tính chất bắt buộc.
         """
         task = db.query(ConstructionTask).filter(ConstructionTask.task_id == task_id).first()
         if not task:
@@ -730,6 +801,19 @@ class ConstructionService:
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Lệnh thi công đã kết thúc ({task.order.status}), không được phép chỉnh sửa công việc.",
             )
+
+        # Bảo vệ hạng mục gốc theo phụ lục (Bất biến)
+        if task.field_notes and "[Theo phụ lục]" in task.field_notes:
+            if data.task_name is not None and data.task_name.strip() != task.task_name.strip():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Hạng mục gốc được kết chuyển tự động từ phụ lục hợp đồng là cố định, Quản trang không được phép đổi tên.",
+                )
+            if data.is_required is not None and data.is_required != task.is_required:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Hạng mục gốc từ phụ lục hợp đồng không được phép thay đổi tính chất bắt buộc.",
+                )
 
         if data.task_name is not None:
             task.task_name = data.task_name
@@ -753,6 +837,48 @@ class ConstructionService:
         db.commit()
         db.refresh(task)
         return ConstructionService._to_task_brief(task)
+
+    @staticmethod
+    def delete_task(db: Session, order_id: int, task_id: int, actor_user_id: int):
+        """
+        Xóa hạng mục thi công bổ sung.
+        Bảo vệ bất biến: Tuyệt đối cấm xóa các hạng mục gốc được kết chuyển từ phụ lục.
+        """
+        task = (
+            db.query(ConstructionTask)
+            .filter(
+                ConstructionTask.task_id == task_id,
+                ConstructionTask.order_id == order_id,
+            )
+            .first()
+        )
+        if not task:
+            raise HTTPException(status_code=404, detail="Không tìm thấy hạng mục thi công")
+
+        if task.order and task.order.status in ("COMPLETED", "CANCELLED"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Lệnh thi công đã kết thúc ({task.order.status}), không thể xóa công việc.",
+            )
+
+        # BẢO VỆ CHECKLIST GỐC TỪ PHỤ LỤC (BẤT BIẾN)
+        if task.field_notes and "[Theo phụ lục]" in task.field_notes:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Hạng mục gốc được kết chuyển tự động từ phụ lục hợp đồng là cố định, Quản trang không được phép xóa.",
+            )
+
+        if task.status == "DONE":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Hạng mục thi công đã được nghiệm thu hoàn thành, không thể xóa.",
+            )
+
+        db.delete(task)
+        db.flush()
+        ConstructionService._recalculate_progress(db, task.order)
+        db.commit()
+        return {"message": "Đã xóa hạng mục bổ sung thành công", "task_id": task_id}
 
     @staticmethod
     def complete_task(
