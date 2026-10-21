@@ -50,22 +50,41 @@ class BurialSlotBrief(BaseModel):
 # ==============================================================================
 class CustomerBase(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=100)
-    citizen_id: str = Field(..., min_length=9, max_length=20, description="Số CCCD / CMND")
+    citizen_id: str = Field(..., min_length=1, max_length=20, description="Số CCCD / CMND")
     phone_number: str = Field(..., min_length=8, max_length=20)
     email: EmailStr | None = None
     address: str = Field(..., min_length=2, max_length=255)
     date_of_birth: date | None = None
 
-    @field_validator("date_of_birth")
-    @classmethod
-    def validate_dob(cls, v: date | None) -> date | None:
-        if v and v > date.today():
-            raise ValueError("Ngày sinh không thể lớn hơn ngày hiện tại")
-        return v
-
 
 class CustomerCreate(CustomerBase):
     customer_code: str | None = None
+
+    @field_validator("citizen_id")
+    @classmethod
+    def validate_citizen_id(cls, v: str) -> str:
+        s = v.strip()
+        if not s.isdigit():
+            raise ValueError("Số CCCD/CMND chỉ được chứa các ký số (0-9)")
+        if len(s) not in (9, 12):
+            raise ValueError("Số CCCD/CMND phải gồm đúng 9 chữ số (CMND) hoặc 12 chữ số (CCCD/Căn cước)")
+        if s == "0" * len(s):
+            raise ValueError("Số CCCD/CMND không hợp lệ (không thể toàn số 0)")
+        return s
+
+    @field_validator("date_of_birth")
+    @classmethod
+    def validate_dob(cls, v: date | None) -> date | None:
+        if v:
+            today = date.today()
+            if v > today:
+                raise ValueError("Ngày sinh không thể lớn hơn ngày hiện tại")
+            age = today.year - v.year - ((today.month, today.day) < (v.month, v.day))
+            if age < 16:
+                raise ValueError(
+                    f"Khách hàng phải từ đủ 16 tuổi trở lên mới đủ điều kiện ký hợp đồng (Hiện tại: {age} tuổi)"
+                )
+        return v
 
 
 class CustomerUpdate(BaseModel):
@@ -74,6 +93,20 @@ class CustomerUpdate(BaseModel):
     email: EmailStr | None = None
     address: str | None = Field(None, min_length=2, max_length=255)
     date_of_birth: date | None = None
+
+    @field_validator("date_of_birth")
+    @classmethod
+    def validate_dob(cls, v: date | None) -> date | None:
+        if v:
+            today = date.today()
+            if v > today:
+                raise ValueError("Ngày sinh không thể lớn hơn ngày hiện tại")
+            age = today.year - v.year - ((today.month, today.day) < (v.month, v.day))
+            if age < 16:
+                raise ValueError(
+                    f"Khách hàng phải từ đủ 16 tuổi trở lên mới đủ điều kiện ký hợp đồng (Hiện tại: {age} tuổi)"
+                )
+        return v
 
 
 class CustomerResponse(CustomerBase):

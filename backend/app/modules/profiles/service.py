@@ -1,6 +1,6 @@
 import json
 import unicodedata
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy import or_, select
@@ -78,15 +78,56 @@ class ProfileService:
         - Tự động sinh mã khách hàng chuẩn định dạng: KH-YYYY-XXXX (năm hiện tại kèm số thứ tự).
         - Đảm bảo mã sinh ra không bị xung đột trùng lặp trong CSDL.
         """
+        # Kiểm tra tính hợp lệ của số CCCD/CMND
+        citizen_id = data.citizen_id.strip() if data.citizen_id else ""
+        if not citizen_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Số CCCD/CMND không được để trống",
+            )
+
+        if not citizen_id.isdigit():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Số CCCD '{citizen_id}' không hợp lệ: chỉ được chứa các chữ số (0-9)",
+            )
+
+        if len(citizen_id) not in (9, 12):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Số CCCD '{citizen_id}' không hợp lệ: độ dài phải chính xác 9 chữ số (CMND) hoặc 12 chữ số (CCCD/Căn cước)",
+            )
+
+        if citizen_id == "0" * len(citizen_id):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Số CCCD không hợp lệ: không thể toàn chữ số 0",
+            )
+
         # Kiểm tra trùng lặp số CCCD
         existing_citizen = db.execute(
-            select(Customer).where(Customer.citizen_id == data.citizen_id.strip())
+            select(Customer).where(Customer.citizen_id == citizen_id)
         ).scalar_one_or_none()
+
         if existing_citizen:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=f"Số CCCD '{data.citizen_id}' đã tồn tại trong hệ thống (Khách hàng: {existing_citizen.full_name})",
+                detail=f"Số CCCD '{citizen_id}' đã tồn tại trong hệ thống (Khách hàng: {existing_citizen.full_name})",
             )
+
+        # Ràng buộc công dân từ đủ 16 tuổi mới đủ điều kiện đứng ra ký hợp đồng
+        if data.date_of_birth:
+            today = date.today()
+            age = (
+                today.year
+                - data.date_of_birth.year
+                - ((today.month, today.day) < (data.date_of_birth.month, data.date_of_birth.day))
+            )
+            if age < 16:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Khách hàng chưa đủ 16 tuổi (sinh ngày {data.date_of_birth.strftime('%d/%m/%Y')}, hiện tại {age} tuổi). Theo quy định, công dân từ đủ 16 tuổi mới đủ điều kiện đăng ký hồ sơ và đứng tên ký hợp đồng.",
+                )
 
         # Tự động sinh mã khách hàng theo mẫu: KH-YYYY-XXXX
         code = data.customer_code
@@ -152,6 +193,17 @@ class ProfileService:
         if data.address is not None:
             customer.address = data.address.strip()
         if data.date_of_birth is not None:
+            today = date.today()
+            age = (
+                today.year
+                - data.date_of_birth.year
+                - ((today.month, today.day) < (data.date_of_birth.month, data.date_of_birth.day))
+            )
+            if age < 16:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Khách hàng chưa đủ 16 tuổi (sinh ngày {data.date_of_birth.strftime('%d/%m/%Y')}, hiện tại {age} tuổi). Theo quy định, công dân từ đủ 16 tuổi mới đủ điều kiện đăng ký hồ sơ và đứng tên ký hợp đồng.",
+                )
             customer.date_of_birth = data.date_of_birth
 
         customer.updated_at = datetime.now(timezone.utc)

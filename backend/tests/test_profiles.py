@@ -1,3 +1,4 @@
+import random
 import uuid
 from datetime import date
 
@@ -24,7 +25,7 @@ def test_create_customer_success():
     """Verify customer creation with date_of_birth (G07) and auto-generated customer_code."""
     token = get_admin_token()
     unique_suffix = str(uuid.uuid4())[:8]
-    cccd = f"079099{unique_suffix[:6]}"
+    cccd = f"079{random.randint(100000000, 999999999)}"
 
     payload = {
         "full_name": f"Nguyễn Thị Test {unique_suffix}",
@@ -52,8 +53,7 @@ def test_create_customer_success():
 def test_create_customer_duplicate_cccd_rejected():
     """Verify duplicate citizen_id (CCCD) is rejected with 409 Conflict."""
     token = get_admin_token()
-    unique_suffix = str(uuid.uuid4())[:8]
-    cccd = f"079088{unique_suffix[:6]}"
+    cccd = f"079{random.randint(100000000, 999999999)}"
 
     payload = {
         "full_name": "Khách hàng Một",
@@ -291,7 +291,7 @@ def test_customer_deceased_relation_link():
         "/api/v1/profiles/customers",
         json={
             "full_name": f"Bác Ba Test {unique_suffix}",
-            "citizen_id": f"079077{unique_suffix[:6]}",
+            "citizen_id": f"079{random.randint(100000000, 999999999)}",
             "phone_number": "0933333333",
             "address": "Vũng Tàu",
         },
@@ -338,3 +338,73 @@ def test_customer_deceased_relation_link():
     detail_data = detail_resp.json()
     assert len(detail_data["relations"]) == 1
     assert detail_data["relations"][0]["deceased_id"] == deceased_id
+
+
+def test_create_customer_invalid_cccd_formats():
+    """Verify invalid CCCD formats (letters, wrong lengths, all zeros) are rejected."""
+    token = get_admin_token()
+
+    # Case 1: Contains letters
+    resp = client.post(
+        "/api/v1/profiles/customers",
+        json={
+            "full_name": "Test CCCD Chữ",
+            "citizen_id": "079099ABCD12",
+            "phone_number": "0912345678",
+            "address": "TP.HCM",
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code in (400, 422), resp.text
+
+    # Case 2: Wrong length (10 digits)
+    resp = client.post(
+        "/api/v1/profiles/customers",
+        json={
+            "full_name": "Test CCCD 10 số",
+            "citizen_id": "0790991234",
+            "phone_number": "0912345678",
+            "address": "TP.HCM",
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code in (400, 422), resp.text
+
+    # Case 3: All zeros
+    resp = client.post(
+        "/api/v1/profiles/customers",
+        json={
+            "full_name": "Test CCCD Toàn 0",
+            "citizen_id": "000000000000",
+            "phone_number": "0912345678",
+            "address": "TP.HCM",
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code in (400, 422), resp.text
+
+
+def test_create_customer_under_16_rejected():
+    """Verify that a customer under 16 years old cannot be registered for signing contracts."""
+    token = get_admin_token()
+    unique_suffix = str(uuid.uuid4())[:8]
+
+    # Calculate DOB for a 12-year-old
+    today = date.today()
+    under_age_dob = f"{today.year - 12}-01-01"
+
+    resp = client.post(
+        "/api/v1/profiles/customers",
+        json={
+            "full_name": f"Khách Hàng Nhí {unique_suffix}",
+            "citizen_id": f"079{random.randint(100000000, 999999999)}",
+            "phone_number": "0912345678",
+            "address": "TP.HCM",
+            "date_of_birth": under_age_dob,
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert resp.status_code in (400, 422), resp.text
+    detail = resp.text
+    assert "16 tuổi" in detail
+

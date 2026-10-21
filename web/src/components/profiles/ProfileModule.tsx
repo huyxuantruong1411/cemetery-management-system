@@ -159,6 +159,15 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
     is_primary_contact: true,
   });
   const [relationSubmitting, setRelationSubmitting] = useState(false);
+  const [relationCustomerSearch, setRelationCustomerSearch] = useState('');
+  const [relationDeceasedSearch, setRelationDeceasedSearch] = useState('');
+
+  // 16 years old constraint for customers signing contracts
+  const maxCustomerDob = (() => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 16);
+    return d.toISOString().split('T')[0];
+  })();
 
   // Common states
   const [loading, setLoading] = useState(false);
@@ -249,6 +258,8 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
       relationship_type: 'Con',
       is_primary_contact: true,
     });
+    setRelationCustomerSearch('');
+    setRelationDeceasedSearch('');
     setIsRelationModalOpen(true);
   };
 
@@ -354,9 +365,43 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
     e.preventDefault();
     if (!token) return;
     setErrorMsg(null);
+
+    const cleanCccd = customerForm.citizen_id.trim();
+    if (!cleanCccd) {
+      setErrorMsg('Vui lòng nhập số CCCD/CMND');
+      return;
+    }
+    if (!/^\d+$/.test(cleanCccd)) {
+      setErrorMsg('Số CCCD/CMND không hợp lệ: chỉ được chứa các ký số (0-9)');
+      return;
+    }
+    if (cleanCccd.length !== 9 && cleanCccd.length !== 12) {
+      setErrorMsg(`Số CCCD/CMND không hợp lệ: độ dài phải là 9 chữ số (CMND) hoặc 12 chữ số (CCCD/Căn cước). Hiện có: ${cleanCccd.length} số.`);
+      return;
+    }
+    if (/^0+$/.test(cleanCccd)) {
+      setErrorMsg('Số CCCD không hợp lệ: không thể toàn chữ số 0');
+      return;
+    }
+
+    if (customerForm.date_of_birth) {
+      const dob = new Date(customerForm.date_of_birth);
+      const today = new Date();
+      let age = today.getFullYear() - dob.getFullYear();
+      const m = today.getMonth() - dob.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) {
+        age--;
+      }
+      if (age < 16) {
+        setErrorMsg(`Khách hàng chưa đủ 16 tuổi (Hiện tại: ${age} tuổi). Theo quy định, công dân từ đủ 16 tuổi mới đủ điều kiện đăng ký hồ sơ và đứng ra ký hợp đồng.`);
+        return;
+      }
+    }
+
     try {
       const payload = {
         ...customerForm,
+        citizen_id: cleanCccd,
         date_of_birth: customerForm.date_of_birth || null,
         email: customerForm.email || null,
       };
@@ -3480,17 +3525,57 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
 
               <div className="responsive-form-row">
                 <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>
-                    Số CCCD *
-                  </label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>
+                      Số CCCD / CMND <span style={{ color: '#DC2626' }}>*</span>
+                    </label>
+                    {customerForm.citizen_id && (
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          color:
+                            customerForm.citizen_id.length === 9 || customerForm.citizen_id.length === 12
+                              ? '#16A34A'
+                              : '#D97706',
+                        }}
+                      >
+                        {customerForm.citizen_id.length === 9 || customerForm.citizen_id.length === 12
+                          ? `✓ Đủ ${customerForm.citizen_id.length} số`
+                          : `Đã nhập ${customerForm.citizen_id.length}/12 số`}
+                      </span>
+                    )}
+                  </div>
                   <input
                     type="text"
                     required
+                    maxLength={12}
                     value={customerForm.citizen_id}
-                    onChange={(e) => setCustomerForm({ ...customerForm, citizen_id: e.target.value })}
-                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #D1D5DB' }}
-                    placeholder="12 chữ số CCCD"
+                    onChange={(e) =>
+                      setCustomerForm({
+                        ...customerForm,
+                        citizen_id: e.target.value.replace(/\D/g, '').slice(0, 12),
+                      })
+                    }
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border:
+                        customerForm.citizen_id &&
+                        customerForm.citizen_id.length !== 9 &&
+                        customerForm.citizen_id.length !== 12
+                          ? '1px solid #F59E0B'
+                          : '1px solid #D1D5DB',
+                      fontFamily: 'monospace',
+                      fontSize: '13px',
+                      outline: 'none',
+                    }}
+                    placeholder="9 chữ số (CMND) hoặc 12 số (CCCD)"
                   />
+                  <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '3px' }}>
+                    Chỉ nhập ký số (0-9). Định dạng chuẩn 9 số (CMND cũ) hoặc 12 số (Căn cước mới).
+                  </div>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>
@@ -3509,15 +3594,39 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
 
               <div className="responsive-form-row">
                 <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>
-                    Ngày Sinh
-                  </label>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 600, color: '#374151' }}>
+                      Ngày Sinh
+                    </label>
+                    {customerForm.date_of_birth && (() => {
+                      const dob = new Date(customerForm.date_of_birth);
+                      const today = new Date();
+                      let age = today.getFullYear() - dob.getFullYear();
+                      const m = today.getMonth() - dob.getMonth();
+                      if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+                      return (
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 600,
+                            color: age >= 16 ? '#16A34A' : '#DC2626',
+                          }}
+                        >
+                          {age >= 16 ? `✓ ${age} tuổi (Đủ điều kiện ký HĐ)` : `⚠️ ${age} tuổi (Chưa đủ 16 tuổi)`}
+                        </span>
+                      );
+                    })()}
+                  </div>
                   <input
                     type="date"
+                    max={maxCustomerDob}
                     value={customerForm.date_of_birth || ''}
                     onChange={(e) => setCustomerForm({ ...customerForm, date_of_birth: e.target.value })}
                     style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #D1D5DB' }}
                   />
+                  <div style={{ fontSize: '11px', color: '#6B7280', marginTop: '3px' }}>
+                    Công dân phải từ đủ 16 tuổi trở lên mới đủ điều kiện đứng tên ký hợp đồng.
+                  </div>
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, marginBottom: '4px' }}>
@@ -4710,279 +4819,585 @@ export const ProfileModule: React.FC<ProfileModuleProps> = ({ token, currentUser
       {/* ========================================================================= */}
       {/* MODAL: ESTABLISH PROFILE RELATION (LIÊN KẾT HỒ SƠ) */}
       {/* ========================================================================= */}
-      {isRelationModalOpen && (
-        <div
-          className="responsive-modal-overlay"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1100,
-            padding: '16px',
-          }}
-        >
+      {isRelationModalOpen && (() => {
+        const selectedRelCust = customers.find((c) => c.customer_id === Number(relationForm.customer_id));
+        const selectedRelDec = deceasedList.find((d) => d.deceased_id === Number(relationForm.deceased_id));
+
+        const filteredModalCustomers = customers.filter((c) => {
+          if (!relationCustomerSearch.trim()) return true;
+          const q = relationCustomerSearch.trim().toLowerCase();
+          return (
+            c.full_name.toLowerCase().includes(q) ||
+            c.customer_code.toLowerCase().includes(q) ||
+            c.citizen_id.includes(q) ||
+            c.phone_number.includes(q)
+          );
+        });
+
+        const filteredModalDeceased = deceasedList.filter((d) => {
+          if (!relationDeceasedSearch.trim()) return true;
+          const q = relationDeceasedSearch.trim().toLowerCase();
+          return (
+            d.full_name.toLowerCase().includes(q) ||
+            d.deceased_code.toLowerCase().includes(q) ||
+            (d.burial_slot?.plot_code && d.burial_slot.plot_code.toLowerCase().includes(q))
+          );
+        });
+
+        let relCustAge: number | null = null;
+        if (selectedRelCust?.date_of_birth) {
+          const dob = new Date(selectedRelCust.date_of_birth);
+          const today = new Date();
+          let a = today.getFullYear() - dob.getFullYear();
+          const m = today.getMonth() - dob.getMonth();
+          if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) a--;
+          relCustAge = a;
+        }
+
+        return (
           <div
-            className="responsive-modal-card"
+            className="responsive-modal-overlay"
             style={{
-              backgroundColor: 'white',
-              borderRadius: '16px',
-              width: '560px',
-              maxWidth: '100%',
-              maxHeight: 'min(90vh, 640px)',
-              boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+              position: 'fixed',
+              inset: 0,
+              backgroundColor: 'rgba(15, 23, 42, 0.65)',
               display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-              padding: 0,
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1100,
+              padding: '16px',
             }}
           >
-            {/* Header */}
             <div
+              className="responsive-modal-card"
               style={{
-                flexShrink: 0,
-                padding: '20px 24px',
-                borderBottom: '1px solid #E5E7EB',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-              }}
-            >
-              <div>
-                <h3
-                  style={{
-                    margin: 0,
-                    color: '#24594D',
-                    fontSize: '18px',
-                    fontWeight: 'bold',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                  }}
-                >
-                  <Link2 size={20} color="#24594D" />
-                  Thiết Lập Liên Kết Hồ Sơ
-                </h3>
-                <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: '#6B7280' }}>
-                  Gắn kết quan hệ giữa Khách hàng (Thân nhân) và Người quá cố (Huyệt mộ)
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsRelationModalOpen(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '20px',
-                  color: '#9CA3AF',
-                  cursor: 'pointer',
-                  padding: '4px',
-                  lineHeight: 1,
-                }}
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Form Body */}
-            <form
-              id="relation-form"
-              onSubmit={handleSaveRelation}
-              style={{
-                flex: 1,
-                minHeight: 0,
-                overflowY: 'auto',
-                padding: '20px 24px',
+                backgroundColor: 'white',
+                borderRadius: '16px',
+                width: '640px',
+                maxWidth: '100%',
+                maxHeight: 'min(92vh, 760px)',
+                boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '16px',
+                overflow: 'hidden',
+                padding: 0,
               }}
             >
-              {/* Customer Select */}
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
-                  Khách Hàng (Thân nhân) <span style={{ color: '#DC2626' }}>*</span>
-                </label>
-                <select
-                  required
-                  value={relationForm.customer_id}
-                  onChange={(e) => setRelationForm({ ...relationForm, customer_id: Number(e.target.value) })}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #D1D5DB',
-                    fontSize: '14px',
-                    backgroundColor: 'white',
-                    color: '#111827',
-                    outline: 'none',
-                  }}
-                >
-                  <option value="">-- Chọn khách hàng / thân nhân --</option>
-                  {customers.map((c) => (
-                    <option key={c.customer_id} value={c.customer_id}>
-                      [{c.customer_code}] {c.full_name} · SĐT: {c.phone_number} (CCCD: {c.citizen_id})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Deceased Select */}
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
-                  Người Quá Cố (Hồ sơ an táng) <span style={{ color: '#DC2626' }}>*</span>
-                </label>
-                <select
-                  required
-                  value={relationForm.deceased_id}
-                  onChange={(e) => setRelationForm({ ...relationForm, deceased_id: Number(e.target.value) })}
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #D1D5DB',
-                    fontSize: '14px',
-                    backgroundColor: 'white',
-                    color: '#111827',
-                    outline: 'none',
-                  }}
-                >
-                  <option value="">-- Chọn hồ sơ người mất --</option>
-                  {deceasedList.map((d) => (
-                    <option key={d.deceased_id} value={d.deceased_id}>
-                      [{d.deceased_code}] {d.full_name} (Mất: {new Date(d.date_of_death).getFullYear()}) {d.burial_slot?.plot_code ? `· Mộ: ${d.burial_slot.plot_code}` : '· Chưa xếp mộ'}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Relationship Type with Quick Chips */}
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#374151', marginBottom: '6px' }}>
-                  Mối Quan Hệ Thân Nhân <span style={{ color: '#DC2626' }}>*</span>
-                </label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
-                  {['Con', 'Vợ', 'Chồng', 'Bố', 'Mẹ', 'Anh', 'Chị', 'Em', 'Cháu', 'Người thừa kế', 'Người giám hộ'].map((rel) => (
-                    <button
-                      type="button"
-                      key={rel}
-                      onClick={() => setRelationForm({ ...relationForm, relationship_type: rel })}
-                      style={{
-                        padding: '4px 10px',
-                        fontSize: '12px',
-                        borderRadius: '16px',
-                        border: relationForm.relationship_type === rel ? '1px solid #24594D' : '1px solid #E5E7EB',
-                        backgroundColor: relationForm.relationship_type === rel ? '#ECFDF5' : '#F9FAFB',
-                        color: relationForm.relationship_type === rel ? '#065F46' : '#4B5563',
-                        fontWeight: relationForm.relationship_type === rel ? 'bold' : 'normal',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {rel}
-                    </button>
-                  ))}
-                </div>
-                <input
-                  type="text"
-                  required
-                  value={relationForm.relationship_type}
-                  onChange={(e) => setRelationForm({ ...relationForm, relationship_type: e.target.value })}
-                  placeholder="Nhập hoặc bấm chọn quan hệ ở trên (ví dụ: Con trai cả, Em gái,...)"
-                  style={{
-                    width: '100%',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #D1D5DB',
-                    fontSize: '14px',
-                    outline: 'none',
-                  }}
-                />
-              </div>
-
-              {/* Is Primary Contact Checkbox */}
+              {/* Modal Header */}
               <div
                 style={{
-                  backgroundColor: '#F8FAFC',
-                  border: '1px solid #E2E8F0',
-                  borderRadius: '8px',
-                  padding: '12px 14px',
+                  flexShrink: 0,
+                  padding: '20px 24px',
+                  background: 'linear-gradient(135deg, #24594D 0%, #153E35 100%)',
+                  color: '#FFFFFF',
                   display: 'flex',
-                  alignItems: 'flex-start',
-                  gap: '12px',
-                }}
-              >
-                <input
-                  type="checkbox"
-                  id="relation-primary-contact"
-                  checked={relationForm.is_primary_contact}
-                  onChange={(e) => setRelationForm({ ...relationForm, is_primary_contact: e.target.checked })}
-                  style={{ marginTop: '3px', width: '16px', height: '16px', cursor: 'pointer' }}
-                />
-                <label htmlFor="relation-primary-contact" style={{ fontSize: '13px', color: '#1F2937', cursor: 'pointer' }}>
-                  <strong style={{ display: 'block', color: '#0F172A', marginBottom: '2px' }}>
-                    Đại diện liên hệ chính (★)
-                  </strong>
-                  Khách hàng này sẽ là người tiếp nhận các thông báo hạn chăm sóc mộ phần, lễ giỗ thường niên, thủ tục gia hạn và dịch vụ liên quan.
-                </label>
-              </div>
-            </form>
-
-            {/* Footer */}
-            <div
-              style={{
-                flexShrink: 0,
-                padding: '16px 24px',
-                backgroundColor: '#F8FAFC',
-                borderTop: '1px solid #E5E7EB',
-                display: 'flex',
-                justifyContent: 'flex-end',
-                gap: '10px',
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setIsRelationModalOpen(false)}
-                style={{
-                  padding: '9px 18px',
-                  borderRadius: '8px',
-                  border: '1px solid #D1D5DB',
-                  backgroundColor: 'white',
-                  color: '#374151',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                }}
-              >
-                Hủy bỏ
-              </button>
-              <button
-                type="submit"
-                form="relation-form"
-                disabled={relationSubmitting}
-                style={{
-                  padding: '9px 20px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  backgroundColor: '#24594D',
-                  color: 'white',
-                  fontSize: '13px',
-                  fontWeight: 600,
-                  cursor: relationSubmitting ? 'not-allowed' : 'pointer',
-                  opacity: relationSubmitting ? 0.7 : 1,
-                  display: 'inline-flex',
+                  justifyContent: 'space-between',
                   alignItems: 'center',
-                  gap: '6px',
                 }}
               >
-                <Link2 size={16} />
-                {relationSubmitting ? 'Đang lưu...' : 'Xác Nhận Liên Kết'}
-              </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div
+                    style={{
+                      width: '42px',
+                      height: '42px',
+                      borderRadius: '10px',
+                      backgroundColor: 'rgba(255, 255, 255, 0.15)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Link2 size={22} color="#FFFFFF" />
+                  </div>
+                  <div>
+                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#FFFFFF', letterSpacing: '0.3px' }}>
+                      Thiết Lập Liên Kết Hồ Sơ Thân Nhân
+                    </h3>
+                    <p style={{ margin: '3px 0 0 0', fontSize: '12.5px', color: '#D1FAE5', lineHeight: '1.4' }}>
+                      Xác lập tư cách đại diện pháp lý &amp; trách nhiệm giữa Khách hàng và Người quá cố
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsRelationModalOpen(false)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '22px',
+                    color: '#FFFFFF',
+                    cursor: 'pointer',
+                    padding: '4px',
+                    lineHeight: 1,
+                    opacity: 0.85,
+                  }}
+                  title="Đóng cửa sổ"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Form Body (Scrollable) */}
+              <form
+                id="relation-form"
+                onSubmit={handleSaveRelation}
+                style={{
+                  flex: 1,
+                  minHeight: 0,
+                  overflowY: 'auto',
+                  padding: '20px 24px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '18px',
+                  backgroundColor: '#FFFFFF',
+                }}
+              >
+                {/* Empathetic Guidelines Banner */}
+                <div
+                  style={{
+                    backgroundColor: '#F0FDF4',
+                    border: '1px solid #BBF7D0',
+                    borderRadius: '10px',
+                    padding: '12px 14px',
+                    fontSize: '12.5px',
+                    color: '#166534',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '10px',
+                  }}
+                >
+                  <span style={{ fontSize: '16px', lineHeight: 1 }}>ℹ️</span>
+                  <div style={{ lineHeight: '1.5' }}>
+                    Một hồ sơ người quá cố có thể liên kết nhiều thân nhân. Thân nhân được chọn làm <strong>Đại diện chính (★)</strong> sẽ tiếp nhận các thông báo về hạn chăm sóc, lễ giỗ thường niên và ký xác nhận thủ tục an táng / cải táng.
+                  </div>
+                </div>
+
+                {/* Section 1: Customer Selection */}
+                <div
+                  style={{
+                    backgroundColor: '#FAFAFA',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '12px',
+                    padding: '16px',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>1. Khách Hàng (Thân Nhân Ký HĐ / Đại Diện)</span>
+                      <span style={{ color: '#DC2626' }}>*</span>
+                    </label>
+                    <span style={{ fontSize: '11px', color: '#64748B' }}>
+                      Tổng: {customers.length} khách hàng
+                    </span>
+                  </div>
+
+                  {/* Quick search input */}
+                  <div style={{ position: 'relative', marginBottom: '8px' }}>
+                    <Search size={14} color="#94A3B8" style={{ position: 'absolute', left: '10px', top: '10px' }} />
+                    <input
+                      type="text"
+                      placeholder="Tìm nhanh theo tên, mã KH, CCCD, SĐT..."
+                      value={relationCustomerSearch}
+                      onChange={(e) => setRelationCustomerSearch(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '7px 10px 7px 32px',
+                        fontSize: '12.5px',
+                        borderRadius: '6px',
+                        border: '1px solid #CBD5E1',
+                        backgroundColor: '#FFFFFF',
+                        outline: 'none',
+                      }}
+                    />
+                  </div>
+
+                  {/* Customer Dropdown */}
+                  <select
+                    required
+                    value={relationForm.customer_id}
+                    onChange={(e) => setRelationForm({ ...relationForm, customer_id: Number(e.target.value) })}
+                    style={{
+                      width: '100%',
+                      padding: '9px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #CBD5E1',
+                      fontSize: '13.5px',
+                      backgroundColor: '#FFFFFF',
+                      color: '#0F172A',
+                      outline: 'none',
+                    }}
+                  >
+                    <option value="">-- Chọn khách hàng / thân nhân --</option>
+                    {filteredModalCustomers.length === 0 ? (
+                      <option disabled value="">Không tìm thấy khách hàng phù hợp</option>
+                    ) : (
+                      filteredModalCustomers.map((c) => (
+                        <option key={c.customer_id} value={c.customer_id}>
+                          [{c.customer_code}] {c.full_name} · SĐT: {c.phone_number} (CCCD: {c.citizen_id})
+                        </option>
+                      ))
+                    )}
+                  </select>
+
+                  {/* Selected Customer Details Card */}
+                  {selectedRelCust && (
+                    <div
+                      style={{
+                        marginTop: '10px',
+                        padding: '12px 14px',
+                        backgroundColor: '#FFFFFF',
+                        border: '1px solid #E2E8F0',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px',
+                        fontSize: '12.5px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                        <div style={{ fontWeight: 700, color: '#0F172A', fontSize: '13.5px' }}>
+                          {selectedRelCust.full_name}
+                        </div>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            backgroundColor: '#ECFDF5',
+                            color: '#065F46',
+                            border: '1px solid #A7F3D0',
+                          }}
+                        >
+                          {selectedRelCust.customer_code}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', color: '#475569' }}>
+                        <span>CCCD: <code style={{ backgroundColor: '#F1F5F9', padding: '1px 6px', borderRadius: '4px', fontWeight: 600, color: '#0F172A' }}>{selectedRelCust.citizen_id}</code></span>
+                        <span>SĐT: <strong style={{ color: '#0F172A' }}>{selectedRelCust.phone_number}</strong></span>
+                        {selectedRelCust.address && <span>Đ/c: {selectedRelCust.address}</span>}
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                        {relCustAge !== null ? (
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              backgroundColor: relCustAge >= 16 ? '#DCFCE7' : '#FEF2F2',
+                              color: relCustAge >= 16 ? '#166534' : '#991B1B',
+                              border: relCustAge >= 16 ? '1px solid #86EFAC' : '1px solid #FECACA',
+                            }}
+                          >
+                            {relCustAge >= 16
+                              ? `✓ ${relCustAge} tuổi (Đủ điều kiện đại diện ký hợp đồng)`
+                              : `⚠️ ${relCustAge} tuổi (Chưa đủ 16 tuổi)`}
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '11px', color: '#64748B' }}>Chưa cập nhật ngày sinh</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Section 2: Deceased Profile Selection */}
+                <div
+                  style={{
+                    backgroundColor: '#FAFAFA',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '12px',
+                    padding: '16px',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <label style={{ fontSize: '13px', fontWeight: 700, color: '#1E293B', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span>2. Người Quá Cố (Hồ Sơ An Táng / Huyệt Mộ)</span>
+                      <span style={{ color: '#DC2626' }}>*</span>
+                    </label>
+                    <span style={{ fontSize: '11px', color: '#64748B' }}>
+                      Tổng: {deceasedList.length} hồ sơ
+                    </span>
+                  </div>
+
+                  {/* Quick search input */}
+                  <div style={{ position: 'relative', marginBottom: '8px' }}>
+                    <Search size={14} color="#94A3B8" style={{ position: 'absolute', left: '10px', top: '10px' }} />
+                    <input
+                      type="text"
+                      placeholder="Tìm nhanh theo tên, mã NM, ô mộ..."
+                      value={relationDeceasedSearch}
+                      onChange={(e) => setRelationDeceasedSearch(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '7px 10px 7px 32px',
+                        fontSize: '12.5px',
+                        borderRadius: '6px',
+                        border: '1px solid #CBD5E1',
+                        backgroundColor: '#FFFFFF',
+                        outline: 'none',
+                      }}
+                    />
+                  </div>
+
+                  {/* Deceased Dropdown */}
+                  <select
+                    required
+                    value={relationForm.deceased_id}
+                    onChange={(e) => setRelationForm({ ...relationForm, deceased_id: Number(e.target.value) })}
+                    style={{
+                      width: '100%',
+                      padding: '9px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #CBD5E1',
+                      fontSize: '13.5px',
+                      backgroundColor: '#FFFFFF',
+                      color: '#0F172A',
+                      outline: 'none',
+                    }}
+                  >
+                    <option value="">-- Chọn hồ sơ người mất --</option>
+                    {filteredModalDeceased.length === 0 ? (
+                      <option disabled value="">Không tìm thấy hồ sơ người mất phù hợp</option>
+                    ) : (
+                      filteredModalDeceased.map((d) => (
+                        <option key={d.deceased_id} value={d.deceased_id}>
+                          [{d.deceased_code}] {d.full_name} · Mất: {new Date(d.date_of_death).toLocaleDateString('vi-VN')} {d.burial_slot?.plot_code ? `· Ô ${d.burial_slot.plot_code} (Huyệt ${d.burial_slot.slot_number})` : '· Chưa xếp mộ'}
+                        </option>
+                      ))
+                    )}
+                  </select>
+
+                  {/* Selected Deceased Details Card */}
+                  {selectedRelDec && (
+                    <div
+                      style={{
+                        marginTop: '10px',
+                        padding: '12px 14px',
+                        backgroundColor: '#FFFFFF',
+                        border: '1px solid #E2E8F0',
+                        borderRadius: '8px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px',
+                        fontSize: '12.5px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+                        <div style={{ fontWeight: 700, color: '#0F172A', fontSize: '13.5px' }}>
+                          {selectedRelDec.full_name}
+                        </div>
+                        <span
+                          style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            backgroundColor: '#EEF2FF',
+                            color: '#3730A3',
+                            border: '1px solid #C7D2FE',
+                          }}
+                        >
+                          {selectedRelDec.deceased_code}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '14px', color: '#475569' }}>
+                        <span>
+                          Ngày mất:{' '}
+                          <strong style={{ color: '#DC2626' }}>
+                            {new Date(selectedRelDec.date_of_death).toLocaleDateString('vi-VN')}
+                          </strong>
+                        </span>
+                        {selectedRelDec.hometown && <span>Quê quán: {selectedRelDec.hometown}</span>}
+                        <span>
+                          Vị trí mộ:{' '}
+                          {selectedRelDec.burial_slot ? (
+                            <strong style={{ color: '#24594D' }}>
+                              {selectedRelDec.burial_slot.plot_code} · Huyệt {selectedRelDec.burial_slot.slot_number}
+                            </strong>
+                          ) : (
+                            <em style={{ color: '#94A3B8' }}>Chưa an táng</em>
+                          )}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
+                        {selectedRelDec.death_certificate ? (
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              backgroundColor: '#DCFCE7',
+                              color: '#15803D',
+                              border: '1px solid #86EFAC',
+                            }}
+                          >
+                            ✓ Đã xác thực Giấy báo tử ({selectedRelDec.death_certificate.certificate_number})
+                          </span>
+                        ) : (
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                              backgroundColor: '#FEF3C7',
+                              color: '#92400E',
+                              border: '1px solid #FDE68A',
+                            }}
+                          >
+                            Chưa có Giấy báo tử
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Section 3: Relationship Type with Quick Chips */}
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 700, color: '#1E293B', marginBottom: '8px' }}>
+                    3. Mối Quan Hệ Thân Nhân <span style={{ color: '#DC2626' }}>*</span>
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '7px', marginBottom: '10px' }}>
+                    {['Con', 'Vợ', 'Chồng', 'Bố', 'Mẹ', 'Anh', 'Chị', 'Em', 'Cháu', 'Người thừa kế', 'Người giám hộ'].map((rel) => {
+                      const isSelected = relationForm.relationship_type === rel;
+                      return (
+                        <button
+                          type="button"
+                          key={rel}
+                          onClick={() => setRelationForm({ ...relationForm, relationship_type: rel })}
+                          style={{
+                            padding: '5px 12px',
+                            fontSize: '12px',
+                            borderRadius: '16px',
+                            border: isSelected ? '1px solid #059669' : '1px solid #E2E8F0',
+                            backgroundColor: isSelected ? '#ECFDF5' : '#F8FAFC',
+                            color: isSelected ? '#065F46' : '#475569',
+                            fontWeight: isSelected ? 700 : 500,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                          }}
+                        >
+                          {rel}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    value={relationForm.relationship_type}
+                    onChange={(e) => setRelationForm({ ...relationForm, relationship_type: e.target.value })}
+                    placeholder="Nhập hoặc bấm chọn quan hệ ở trên (ví dụ: Con trai cả, Cháu đích tôn, Em ruột...)"
+                    style={{
+                      width: '100%',
+                      padding: '9px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #CBD5E1',
+                      fontSize: '13.5px',
+                      outline: 'none',
+                    }}
+                  />
+                </div>
+
+                {/* Section 4: Primary Contact Highlighted Card */}
+                <div
+                  style={{
+                    backgroundColor: relationForm.is_primary_contact ? '#FFFBEB' : '#F8FAFC',
+                    border: relationForm.is_primary_contact ? '1px solid #FCD34D' : '1px solid #E2E8F0',
+                    borderRadius: '10px',
+                    padding: '14px 16px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '12px',
+                    transition: 'all 0.15s ease',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    id="relation-primary-contact"
+                    checked={relationForm.is_primary_contact}
+                    onChange={(e) => setRelationForm({ ...relationForm, is_primary_contact: e.target.checked })}
+                    style={{ marginTop: '3px', width: '18px', height: '18px', cursor: 'pointer', accentColor: '#24594D' }}
+                  />
+                  <label htmlFor="relation-primary-contact" style={{ fontSize: '13px', color: '#1F2937', cursor: 'pointer', flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '3px' }}>
+                      <strong style={{ color: relationForm.is_primary_contact ? '#92400E' : '#0F172A', fontSize: '13.5px' }}>
+                        ★ Người đại diện liên hệ chính
+                      </strong>
+                      {relationForm.is_primary_contact && (
+                        <span style={{ fontSize: '11px', padding: '1px 6px', borderRadius: '4px', backgroundColor: '#FEF3C7', color: '#92400E', fontWeight: 700 }}>
+                          Ưu tiên số 1
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#64748B', lineHeight: '1.5' }}>
+                      Khách hàng này sẽ là đầu mối tiếp nhận toàn bộ thông báo hạn chăm sóc mộ phần, lễ giỗ thường niên, thủ tục gia hạn và dịch vụ an táng / cải táng liên quan.
+                    </div>
+                  </label>
+                </div>
+              </form>
+
+              {/* Modal Footer */}
+              <div
+                style={{
+                  flexShrink: 0,
+                  padding: '16px 24px',
+                  backgroundColor: '#F8FAFC',
+                  borderTop: '1px solid #E5E7EB',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  gap: '10px',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setIsRelationModalOpen(false)}
+                  style={{
+                    padding: '9px 18px',
+                    borderRadius: '8px',
+                    border: '1px solid #CBD5E1',
+                    backgroundColor: '#FFFFFF',
+                    color: '#475569',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Hủy bỏ
+                </button>
+                <button
+                  type="submit"
+                  form="relation-form"
+                  disabled={relationSubmitting}
+                  style={{
+                    padding: '9px 22px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    backgroundColor: '#24594D',
+                    color: '#FFFFFF',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    cursor: relationSubmitting ? 'not-allowed' : 'pointer',
+                    opacity: relationSubmitting ? 0.7 : 1,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '7px',
+                    boxShadow: '0 2px 4px rgba(36, 89, 77, 0.2)',
+                  }}
+                >
+                  <Link2 size={16} />
+                  <span>{relationSubmitting ? 'Đang lưu...' : 'Xác Nhận Thiết Lập Liên Kết'}</span>
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 };

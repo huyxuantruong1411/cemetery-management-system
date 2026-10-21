@@ -127,6 +127,22 @@ class ContractService:
         year = date.today().year
         return f"{prefix}-{year}-{val:06d}"
 
+    @staticmethod
+    def check_customer_age_eligibility(customer: Customer, role_label: str = "Khách hàng") -> None:
+        """
+        Ràng buộc pháp lý dân sự:
+        Công dân từ đủ 16 tuổi mới đủ điều kiện đứng ra ký hợp đồng.
+        """
+        if customer and customer.date_of_birth:
+            today = date.today()
+            dob = customer.date_of_birth
+            age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+            if age < 16:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"{role_label} {customer.full_name} ({customer.customer_code}) chưa đủ 16 tuổi (sinh ngày {dob.strftime('%d/%m/%Y')}, hiện tại {age} tuổi). Theo quy định, công dân từ đủ 16 tuổi mới đủ điều kiện đứng ra ký hợp đồng.",
+                )
+
     # ==============================================================================
     # 1. HỢP ĐỒNG MUA BÁN ĐẤT (LAND PURCHASE)
     # ==============================================================================
@@ -154,6 +170,8 @@ class ContractService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Không tìm thấy khách hàng với ID {data.customer_id}",
             )
+
+        cls.check_customer_age_eligibility(customer, "Khách hàng mua đất")
 
         plot = db.query(Plot).filter(Plot.plot_id == data.plot_id).with_for_update().first()
         if not plot:
@@ -358,6 +376,8 @@ class ContractService:
                 detail=f"Không tìm thấy khách hàng với ID {data.customer_id}",
             )
 
+        cls.check_customer_age_eligibility(customer, "Khách hàng đăng ký cải táng")
+
         plot = db.query(Plot).filter(Plot.plot_id == data.plot_id).with_for_update().first()
         if not plot:
             raise HTTPException(
@@ -479,6 +499,9 @@ class ContractService:
                 detail="Không tìm thấy thông tin khách hàng bên bán hoặc bên mua.",
             )
 
+        cls.check_customer_age_eligibility(seller, "Bên chuyển nhượng")
+        cls.check_customer_age_eligibility(buyer, "Bên nhận chuyển nhượng")
+
         plot = db.query(Plot).filter(Plot.plot_id == data.plot_id).with_for_update().first()
         if not plot:
             raise HTTPException(
@@ -583,6 +606,8 @@ class ContractService:
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Không tìm thấy khách hàng với ID {data.customer_id}",
             )
+
+        cls.check_customer_age_eligibility(customer, "Khách hàng đăng ký hỏa táng")
 
         deceased = (
             db.query(DeceasedProfile)
