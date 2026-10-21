@@ -301,42 +301,78 @@ export const ContractModule: React.FC<ContractModuleProps> = ({ token, currentUs
   const [annexActivateSubmitting, setAnnexActivateSubmitting] = useState<boolean>(false);
   const [annexActivateError, setAnnexActivateError] = useState<string | null>(null);
 
-  // M08: Exhumation Contract Modal State
+  // Quick Customer target state
+  const [quickCustTarget, setQuickCustTarget] = useState<'LAND' | 'EXHUMATION' | 'TRANSFER_SELLER' | 'TRANSFER_BUYER' | 'CREMATION'>('LAND');
+
+  // M08: Exhumation Contract 4-Step Wizard State
   const [isExhumationModalOpen, setIsExhumationModalOpen] = useState<boolean>(false);
+  const [exhumationStep, setExhumationStep] = useState<number>(1);
   const [exhumationCustomer, setExhumationCustomer] = useState<Customer | null>(null);
   const [exhumationPlots, setExhumationPlots] = useState<Plot[]>([]);
   const [selectedExhumationPlot, setSelectedExhumationPlot] = useState<Plot | null>(null);
   const [exhumationSlotId, setExhumationSlotId] = useState<number | ''>('');
+  const [exhumationSlotNumber, setExhumationSlotNumber] = useState<number | null>(null);
   const [exhumationDeceasedId, setExhumationDeceasedId] = useState<number | ''>('');
+  const [exhumationDeceasedName, setExhumationDeceasedName] = useState<string>('');
   const [exhumationDate, setExhumationDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
   const [exhumationFee, setExhumationFee] = useState<string>('15000000');
+  const [exhumationDestination, setExhumationDestination] = useState<string>('Nghĩa trang quê nhà / Nhà lưu tro');
+  const [exhumationTransport, setExhumationTransport] = useState<string>('Xe chuyên dụng Ban Quản Trang');
   const [exhumationReason, setExhumationReason] = useState<string>('');
+  const [exhumationPlotFilterZone, setExhumationPlotFilterZone] = useState<string>('');
+  const [exhumationPlotSearchCode, setExhumationPlotSearchCode] = useState<string>('');
+  const [exhumationPlotViewMode, setExhumationPlotViewMode] = useState<'cards' | 'matrix'>('cards');
   const [exhumationSubmitting, setExhumationSubmitting] = useState<boolean>(false);
   const [exhumationError, setExhumationError] = useState<string | null>(null);
 
-  // M08: Transfer Contract Modal State
+  // M08: Transfer Contract 4-Step Wizard State
   const [isTransferModalOpen, setIsTransferModalOpen] = useState<boolean>(false);
+  const [transferStep, setTransferStep] = useState<number>(1);
   const [transferSeller, setTransferSeller] = useState<Customer | null>(null);
   const [transferBuyer, setTransferBuyer] = useState<Customer | null>(null);
   const [transferPlots, setTransferPlots] = useState<Plot[]>([]);
   const [selectedTransferPlot, setSelectedTransferPlot] = useState<Plot | null>(null);
   const [transferCommission, setTransferCommission] = useState<string>('5000000');
+  const [transferPrice, setTransferPrice] = useState<string>('0');
   const [transferReason, setTransferReason] = useState<string>('');
+  const [transferPlotFilterZone, setTransferPlotFilterZone] = useState<string>('');
+  const [transferPlotSearchCode, setTransferPlotSearchCode] = useState<string>('');
+  const [transferPlotViewMode, setTransferPlotViewMode] = useState<'cards' | 'matrix'>('cards');
   const [transferSubmitting, setTransferSubmitting] = useState<boolean>(false);
   const [transferError, setTransferError] = useState<string | null>(null);
 
-  // M08: Cremation Contract Modal State
+  // M08: Cremation Contract 4-Step Wizard State
   const [isCremationModalOpen, setIsCremationModalOpen] = useState<boolean>(false);
+  const [cremationStep, setCremationStep] = useState<number>(1);
   const [cremationCustomer, setCremationCustomer] = useState<Customer | null>(null);
   const [cremationDeceasedList, setCremationDeceasedList] = useState<DeceasedProfile[]>([]);
   const [selectedCremationDeceased, setSelectedCremationDeceased] = useState<DeceasedProfile | null>(null);
   const [cremationDate, setCremationDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [cremationTime, setCremationTime] = useState<string>('08:30');
   const [cremationPackage, setCremationPackage] = useState<string>('HOA_TANG_TIEU_CHUAN');
   const [cremationUrnOption, setCremationUrnOption] = useState<string>('Lưu tháp cốt Địa Tạng');
   const [cremationFee, setCremationFee] = useState<string>('8500000');
   const [cremationNotes, setCremationNotes] = useState<string>('');
+  const [cremationSearchCust, setCremationSearchCust] = useState<string>('');
+  const [cremationSearchDeceasedVal, setCremationSearchDeceasedVal] = useState<string>('');
   const [cremationSubmitting, setCremationSubmitting] = useState<boolean>(false);
   const [cremationError, setCremationError] = useState<string | null>(null);
+
+  // Quick Deceased Inline State
+  const [isQuickDeceasedModalOpen, setIsQuickDeceasedModalOpen] = useState<boolean>(false);
+  const [quickDeceasedFullName, setQuickDeceasedFullName] = useState<string>('');
+  const [quickDeceasedGender, setQuickDeceasedGender] = useState<'MALE' | 'FEMALE'>('MALE');
+  const [quickDeceasedDod, setQuickDeceasedDod] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [quickDeceasedDob, setQuickDeceasedDob] = useState<string>('');
+  const [quickDeceasedCertNo, setQuickDeceasedCertNo] = useState<string>('');
+  const [quickDeceasedCertIssuer, setQuickDeceasedCertIssuer] = useState<string>('UBND Phường/Xã');
+  const [quickDeceasedCertDate, setQuickDeceasedCertDate] = useState<string>(() => new Date().toISOString().split('T')[0]);
+  const [quickDeceasedSubmitting, setQuickDeceasedSubmitting] = useState<boolean>(false);
+  const [quickDeceasedError, setQuickDeceasedError] = useState<string | null>(null);
+
+  // Care Annex Conflict & Continuation State
+  const [careActiveExistingAnnex, setCareActiveExistingAnnex] = useState<ContractAnnexResponse | null>(null);
+  const [careExtensionMode, setCareExtensionMode] = useState<'CONTINUE' | 'IMMEDIATE'>('CONTINUE');
 
   const canManage = currentUserRoles.some((r) => ['ADMIN', 'MARKETING'].includes(r));
 
@@ -771,7 +807,17 @@ function parseApiError(errJson: unknown, fallback: string): string {
         throw new Error(errJson.detail || 'Thêm khách hàng thất bại');
       }
       const newCust: Customer = await res.json();
-      setWizardCustomer(newCust);
+      if (quickCustTarget === 'EXHUMATION') {
+        handleSelectExhumationCustomer(newCust);
+      } else if (quickCustTarget === 'TRANSFER_SELLER') {
+        handleSelectTransferSeller(newCust);
+      } else if (quickCustTarget === 'TRANSFER_BUYER') {
+        setTransferBuyer(newCust);
+      } else if (quickCustTarget === 'CREMATION') {
+        setCremationCustomer(newCust);
+      } else {
+        setWizardCustomer(newCust);
+      }
       setCustResults((prev) => [newCust, ...prev]);
       setIsQuickCustModalOpen(false);
       setQuickCustFullName('');
@@ -791,6 +837,59 @@ function parseApiError(errJson: unknown, fallback: string): string {
     }
   };
 
+  const handleQuickCreateDeceased = async () => {
+    if (!quickDeceasedFullName.trim() || !quickDeceasedDod || !quickDeceasedCertNo.trim()) {
+      setQuickDeceasedError('Vui lòng nhập họ tên, ngày mất và số giấy báo tử');
+      return;
+    }
+    setQuickDeceasedSubmitting(true);
+    setQuickDeceasedError(null);
+    try {
+      const res = await apiFetch('/api/v1/profiles/deceased', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          full_name: quickDeceasedFullName.trim(),
+          gender: quickDeceasedGender,
+          date_of_death: quickDeceasedDod,
+          date_of_birth: quickDeceasedDob || undefined,
+          birth_date_precision: quickDeceasedDob ? 'EXACT' : 'UNKNOWN',
+          customer_id: cremationCustomer?.customer_id || undefined,
+          relationship_type: 'THÂN NHÂN',
+          death_certificate: {
+            certificate_number: quickDeceasedCertNo.trim(),
+            issue_date: quickDeceasedCertDate || quickDeceasedDod,
+            issuing_authority: quickDeceasedCertIssuer.trim() || 'UBND Phường/Xã',
+          },
+        }),
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.detail || 'Thêm hồ sơ người mất thất bại');
+      }
+      const newDeceased: DeceasedProfile = await res.json();
+      setSelectedCremationDeceased(newDeceased);
+      setCremationDeceasedList((prev) => [newDeceased, ...prev]);
+      setIsQuickDeceasedModalOpen(false);
+      setQuickDeceasedFullName('');
+      setQuickDeceasedDod(new Date().toISOString().split('T')[0]);
+      setQuickDeceasedDob('');
+      setQuickDeceasedCertNo('');
+      setQuickDeceasedCertIssuer('UBND Phường/Xã');
+      await modalAlert({
+        message: `Đã tạo hồ sơ người quá cố "${newDeceased.full_name}" (${newDeceased.deceased_code}) thành công!`,
+        type: 'success',
+      });
+    } catch (err: unknown) {
+      setQuickDeceasedError(err instanceof Error ? err.message : 'Lỗi khi tạo hồ sơ người mất');
+    } finally {
+      setQuickDeceasedSubmitting(false);
+    }
+  };
+
   const handleOpenCareAnnex = async () => {
     if (!contractDetail) return;
     setCareError(null);
@@ -798,6 +897,14 @@ function parseApiError(errJson: unknown, fallback: string): string {
     setCareCycleMonths(12);
     setCareRecurringPrice('0');
     setSelectedCarePackageId('');
+
+    // Detect existing active care annex
+    const existingActive = (contractDetail.annexes || []).find(
+      (a) => (a.annex_type === 'CARE' || a.care) && a.status === 'ACTIVE' && (!a.valid_to || new Date(a.valid_to) >= new Date(new Date().toDateString()))
+    );
+    setCareActiveExistingAnnex(existingActive || null);
+    setCareExtensionMode('CONTINUE');
+
     try {
       const res = await apiFetch('/api/v1/catalog/care-packages?active_only=true', {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -824,11 +931,16 @@ function parseApiError(errJson: unknown, fallback: string): string {
     setCareSubmitting(true);
     setCareError(null);
     try {
+      let notesPayload = careNotes.trim();
+      if (careActiveExistingAnnex && careExtensionMode === 'CONTINUE') {
+        const prefix = `[Gia hạn nối tiếp chu kỳ từ ${careActiveExistingAnnex.annex_code}]`;
+        notesPayload = notesPayload ? `${prefix} ${notesPayload}` : prefix;
+      }
       const payload: CareAnnexCreate = {
         package_id: Number(selectedCarePackageId),
         cycle_months: careCycleMonths,
         recurring_price: Number(careRecurringPrice) || 0,
-        notes: careNotes.trim() || undefined,
+        notes: notesPayload || undefined,
       };
       const res = await apiFetch(`/api/v1/contracts/${contractDetail.contract_id}/annexes/care`, {
         method: 'POST',
@@ -1016,14 +1128,22 @@ function parseApiError(errJson: unknown, fallback: string): string {
   // M08: Exhumation Contract Actions
   // ==========================================
   const handleOpenExhumationModal = () => {
+    setExhumationStep(1);
     setExhumationCustomer(null);
     setExhumationPlots([]);
     setSelectedExhumationPlot(null);
     setExhumationSlotId('');
+    setExhumationSlotNumber(null);
     setExhumationDeceasedId('');
+    setExhumationDeceasedName('');
     setExhumationDate(new Date().toISOString().split('T')[0]);
     setExhumationFee('15000000');
+    setExhumationDestination('Nghĩa trang quê nhà / Nhà lưu tro');
+    setExhumationTransport('Xe chuyên dụng Ban Quản Trang');
     setExhumationReason('');
+    setExhumationPlotFilterZone('');
+    setExhumationPlotSearchCode('');
+    setExhumationPlotViewMode('cards');
     setExhumationError(null);
     setIsExhumationModalOpen(true);
     searchCustomers('');
@@ -1033,14 +1153,17 @@ function parseApiError(errJson: unknown, fallback: string): string {
     setExhumationCustomer(cust);
     setSelectedExhumationPlot(null);
     setExhumationSlotId('');
+    setExhumationSlotNumber(null);
     setExhumationDeceasedId('');
+    setExhumationDeceasedName('');
     try {
-      const res = await apiFetch(`/api/v1/plots?limit=100`, {
+      const res = await apiFetch(`/api/v1/plots?limit=200`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
         const plotsData: Plot[] = await res.json();
-        const owned = plotsData.filter((p) => p.owner_id === cust.customer_id && !p.is_kim_tinh);
+        // Load all plots owned by customer (both Kim Tinh and non-Kim Tinh to show immutability badge)
+        const owned = plotsData.filter((p) => p.owner_id === cust.customer_id);
         setExhumationPlots(owned);
       }
     } catch {
@@ -1049,9 +1172,16 @@ function parseApiError(errJson: unknown, fallback: string): string {
   };
 
   const handleSelectExhumationPlot = async (plot: Plot) => {
+    if (plot.is_kim_tinh) {
+      setExhumationError('Quy tắc bất biến: Ô mộ Kim Tĩnh bị khóa vĩnh viễn mức CSDL và nghiệp vụ, tuyệt đối cấm cải táng!');
+      return;
+    }
     setSelectedExhumationPlot(plot);
     setExhumationSlotId('');
+    setExhumationSlotNumber(null);
     setExhumationDeceasedId('');
+    setExhumationDeceasedName('');
+    setExhumationError(null);
     try {
       const res = await apiFetch(`/api/v1/plots/${plot.plot_id}`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
@@ -1061,6 +1191,8 @@ function parseApiError(errJson: unknown, fallback: string): string {
         const occupiedSlot = (fullPlot.slots || []).find((s: PlotSlot) => s.status === 'OCCUPIED');
         if (occupiedSlot) {
           setExhumationSlotId(occupiedSlot.slot_id);
+          setExhumationSlotNumber(occupiedSlot.slot_number || 1);
+          setExhumationDeceasedName(occupiedSlot.deceased_name || 'Hài cốt trong huyệt');
           if (occupiedSlot.current_deceased_id) {
             setExhumationDeceasedId(occupiedSlot.current_deceased_id);
           }
@@ -1073,12 +1205,18 @@ function parseApiError(errJson: unknown, fallback: string): string {
 
   const handleCreateExhumationContract = async () => {
     if (!exhumationCustomer || !selectedExhumationPlot || !exhumationSlotId || !exhumationDeceasedId) {
-      setExhumationError('Vui lòng chọn khách hàng chủ mộ, ô mộ và huyệt có hài cốt');
+      setExhumationError('Vui lòng chọn khách hàng chủ mộ, ô mộ và huyệt có hài cốt để cải táng');
       return;
     }
     setExhumationSubmitting(true);
     setExhumationError(null);
     try {
+      const reasonCombined = [
+        exhumationReason.trim(),
+        exhumationDestination ? `Nơi di dời: ${exhumationDestination.trim()}` : '',
+        exhumationTransport ? `Phương tiện: ${exhumationTransport.trim()}` : '',
+      ].filter(Boolean).join(' | ');
+
       const res = await apiFetch('/api/v1/contracts/exhumation', {
         method: 'POST',
         headers: {
@@ -1092,7 +1230,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
           current_deceased_id: Number(exhumationDeceasedId),
           exhumation_date: exhumationDate,
           exhumation_fee: Number(exhumationFee) || 0,
-          reason: exhumationReason.trim() || undefined,
+          reason: reasonCombined || undefined,
         }),
       });
       if (!res.ok) {
@@ -1101,6 +1239,10 @@ function parseApiError(errJson: unknown, fallback: string): string {
       }
       const data = await res.json();
       setIsExhumationModalOpen(false);
+      await modalAlert({
+        message: `Đã tạo dự thảo hợp đồng cải táng thành công cho ô ${selectedExhumationPlot.plot_code}!`,
+        type: 'success',
+      });
       await fetchContracts();
       fetchContractDetail(data.contract_id);
     } catch (err: unknown) {
@@ -1114,12 +1256,17 @@ function parseApiError(errJson: unknown, fallback: string): string {
   // M08: Transfer Contract Actions
   // ==========================================
   const handleOpenTransferModal = () => {
+    setTransferStep(1);
     setTransferSeller(null);
     setTransferBuyer(null);
     setTransferPlots([]);
     setSelectedTransferPlot(null);
     setTransferCommission('5000000');
+    setTransferPrice('0');
     setTransferReason('');
+    setTransferPlotFilterZone('');
+    setTransferPlotSearchCode('');
+    setTransferPlotViewMode('cards');
     setTransferError(null);
     setIsTransferModalOpen(true);
     searchCustomers('');
@@ -1129,12 +1276,13 @@ function parseApiError(errJson: unknown, fallback: string): string {
     setTransferSeller(seller);
     setSelectedTransferPlot(null);
     try {
-      const res = await apiFetch(`/api/v1/plots?limit=100`, {
+      const res = await apiFetch(`/api/v1/plots?limit=200`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
         const plotsData: Plot[] = await res.json();
-        const owned = plotsData.filter((p) => p.owner_id === seller.customer_id && p.status === 'OWNED_EMPTY' && !p.is_kim_tinh);
+        // Load all plots owned by seller to visualize eligible vs locked plots
+        const owned = plotsData.filter((p) => p.owner_id === seller.customer_id);
         setTransferPlots(owned);
       }
     } catch {
@@ -1154,6 +1302,11 @@ function parseApiError(errJson: unknown, fallback: string): string {
     setTransferSubmitting(true);
     setTransferError(null);
     try {
+      const reasonCombined = [
+        transferReason.trim(),
+        Number(transferPrice) > 0 ? `Giá thỏa thuận: ${formatCurrency(Number(transferPrice))}` : '',
+      ].filter(Boolean).join(' | ');
+
       const res = await apiFetch('/api/v1/contracts/transfer', {
         method: 'POST',
         headers: {
@@ -1165,7 +1318,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
           buyer_id: transferBuyer.customer_id,
           plot_id: selectedTransferPlot.plot_id,
           commission_fee: Number(transferCommission) || 0,
-          transfer_reason: transferReason.trim() || undefined,
+          transfer_reason: reasonCombined || undefined,
         }),
       });
       if (!res.ok) {
@@ -1174,6 +1327,10 @@ function parseApiError(errJson: unknown, fallback: string): string {
       }
       const data = await res.json();
       setIsTransferModalOpen(false);
+      await modalAlert({
+        message: `Đã tạo dự thảo hợp đồng chuyển nhượng quyền sử dụng ô ${selectedTransferPlot.plot_code} thành công!`,
+        type: 'success',
+      });
       await fetchContracts();
       fetchContractDetail(data.contract_id);
     } catch (err: unknown) {
@@ -1188,7 +1345,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
   // ==========================================
   const searchCremationDeceased = async (keyword: string) => {
     try {
-      const res = await apiFetch(`/api/v1/profiles/deceased?search=${encodeURIComponent(keyword)}&limit=15`, {
+      const res = await apiFetch(`/api/v1/profiles/deceased?search=${encodeURIComponent(keyword)}&limit=25`, {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
       if (res.ok) {
@@ -1201,13 +1358,17 @@ function parseApiError(errJson: unknown, fallback: string): string {
   };
 
   const handleOpenCremationModal = () => {
+    setCremationStep(1);
     setCremationCustomer(null);
     setSelectedCremationDeceased(null);
     setCremationDate(new Date().toISOString().split('T')[0]);
+    setCremationTime('08:30');
     setCremationPackage('HOA_TANG_TIEU_CHUAN');
     setCremationUrnOption('Lưu tháp cốt Địa Tạng');
     setCremationFee('8500000');
     setCremationNotes('');
+    setCremationSearchCust('');
+    setCremationSearchDeceasedVal('');
     setCremationError(null);
     setIsCremationModalOpen(true);
     searchCustomers('');
@@ -1222,6 +1383,11 @@ function parseApiError(errJson: unknown, fallback: string): string {
     setCremationSubmitting(true);
     setCremationError(null);
     try {
+      const notesCombined = [
+        cremationNotes.trim(),
+        cremationTime ? `Giờ hỏa táng dự kiến: ${cremationTime}` : '',
+      ].filter(Boolean).join(' | ');
+
       const res = await apiFetch('/api/v1/contracts/cremation', {
         method: 'POST',
         headers: {
@@ -1235,7 +1401,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
           package_service_code: cremationPackage,
           urn_storage_option: cremationUrnOption.trim() || undefined,
           service_fee: Number(cremationFee) || 0,
-          notes: cremationNotes.trim() || undefined,
+          notes: notesCombined || undefined,
         }),
       });
       if (!res.ok) {
@@ -1244,6 +1410,10 @@ function parseApiError(errJson: unknown, fallback: string): string {
       }
       const data = await res.json();
       setIsCremationModalOpen(false);
+      await modalAlert({
+        message: `Đã tạo dự thảo hợp đồng hỏa táng trọn gói thành công cho người quá cố ${selectedCremationDeceased.full_name}!`,
+        type: 'success',
+      });
       await fetchContracts();
       fetchContractDetail(data.contract_id);
     } catch (err: unknown) {
@@ -1258,6 +1428,15 @@ function parseApiError(errJson: unknown, fallback: string): string {
     if (val === null || val === undefined) return '0 ₫';
     const n = typeof val === 'string' ? parseFloat(val) : val;
     return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(n);
+  };
+
+  const formatDate = (val?: string | null) => {
+    if (!val) return '--/--/----';
+    try {
+      return new Date(val).toLocaleDateString('vi-VN');
+    } catch {
+      return val;
+    }
   };
 
   const getStatusBadge = (status: ContractStatus) => {
@@ -1327,6 +1506,294 @@ function parseApiError(errJson: unknown, fallback: string): string {
     startIndex: contractStartIndex,
     endIndex: contractEndIndex,
   } = usePagination(sortedContracts, 10);
+
+  // Inline Quick Add Customer Form Helper
+  const renderQuickCustomerSection = (target: 'LAND' | 'EXHUMATION' | 'TRANSFER_SELLER' | 'TRANSFER_BUYER' | 'CREMATION') => {
+    if (!isQuickCustModalOpen || quickCustTarget !== target) return null;
+    return (
+      <div
+        style={{
+          padding: '16px',
+          borderRadius: '8px',
+          backgroundColor: '#F8FAFC',
+          border: '1.5px dashed var(--brand-primary)',
+          marginBottom: '16px',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--brand-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <UserPlus size={16} />
+            <span>Hồ Sơ Khách Hàng Mới Nhanh</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsQuickCustModalOpen(false)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {quickCustError && (
+          <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: '#FEF2F2', color: '#B91C1C', fontSize: '12px', marginBottom: '10px' }}>
+            {quickCustError}
+          </div>
+        )}
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '12px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+              Họ và Tên (*)
+            </label>
+            <input
+              type="text"
+              placeholder="Ví dụ: Nguyễn Văn An"
+              value={quickCustFullName}
+              onChange={(e) => setQuickCustFullName(e.target.value)}
+              style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+              Số CCCD / CMND (*)
+            </label>
+            <input
+              type="text"
+              placeholder="12 chữ số CCCD"
+              value={quickCustCitizenId}
+              onChange={(e) => setQuickCustCitizenId(e.target.value)}
+              style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+              Số Điện Thoại (*)
+            </label>
+            <input
+              type="text"
+              placeholder="0912xxxxxx"
+              value={quickCustPhone}
+              onChange={(e) => setQuickCustPhone(e.target.value)}
+              style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+              Ngày Sinh (tuỳ chọn)
+            </label>
+            <input
+              type="date"
+              value={quickCustDob}
+              onChange={(e) => setQuickCustDob(e.target.value)}
+              style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+              Địa Chỉ Thường Trú (*)
+            </label>
+            <input
+              type="text"
+              placeholder="Số nhà, đường, quận/huyện, tỉnh/thành"
+              value={quickCustAddress}
+              onChange={(e) => setQuickCustAddress(e.target.value)}
+              style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+              Email (tuỳ chọn)
+            </label>
+            <input
+              type="email"
+              placeholder="khachhang@email.com"
+              value={quickCustEmail}
+              onChange={(e) => setQuickCustEmail(e.target.value)}
+              style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+            />
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+          <button
+            type="button"
+            onClick={() => setIsQuickCustModalOpen(false)}
+            style={{ padding: '6px 14px', borderRadius: '5px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontSize: '12px', cursor: 'pointer' }}
+          >
+            Hủy Bỏ
+          </button>
+          <button
+            type="button"
+            onClick={handleQuickCreateCustomer}
+            disabled={quickCustSubmitting}
+            style={{
+              padding: '6px 16px',
+              borderRadius: '5px',
+              border: 'none',
+              backgroundColor: 'var(--brand-primary)',
+              color: '#FFFFFF',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            {quickCustSubmitting ? 'Đang Tạo...' : 'Tạo & Chọn Khách Hàng Ngay'}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Inline Quick Add Deceased Form Helper
+  const renderQuickDeceasedSection = () => {
+    if (!isQuickDeceasedModalOpen) return null;
+    return (
+      <div
+        style={{
+          padding: '16px',
+          borderRadius: '8px',
+          backgroundColor: '#FFF7ED',
+          border: '1.5px dashed #C2410C',
+          marginBottom: '16px',
+          boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+        }}
+      >
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <div style={{ fontSize: '13px', fontWeight: 700, color: '#C2410C', display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Flame size={16} />
+            <span>Hồ Sơ Người Quá Cố & Giấy Báo Tử Mới Nhanh</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsQuickDeceasedModalOpen(false)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {quickDeceasedError && (
+          <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: '#FEF2F2', color: '#B91C1C', fontSize: '12px', marginBottom: '10px' }}>
+            {quickDeceasedError}
+          </div>
+        )}
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '12px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+              Họ và Tên Người Quá Cố (*)
+            </label>
+            <input
+              type="text"
+              placeholder="Ví dụ: Trần Văn Phúc"
+              value={quickDeceasedFullName}
+              onChange={(e) => setQuickDeceasedFullName(e.target.value)}
+              style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+              Giới Tính (*)
+            </label>
+            <div style={{ display: 'flex', gap: '16px', marginTop: '6px' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="quickDeceasedGender"
+                  checked={quickDeceasedGender === 'MALE'}
+                  onChange={() => setQuickDeceasedGender('MALE')}
+                />
+                <span>Nam</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', cursor: 'pointer' }}>
+                <input
+                  type="radio"
+                  name="quickDeceasedGender"
+                  checked={quickDeceasedGender === 'FEMALE'}
+                  onChange={() => setQuickDeceasedGender('FEMALE')}
+                />
+                <span>Nữ</span>
+              </label>
+            </div>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+              Ngày Mất (*)
+            </label>
+            <input
+              type="date"
+              value={quickDeceasedDod}
+              onChange={(e) => setQuickDeceasedDod(e.target.value)}
+              style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+              Ngày Sinh (tuỳ chọn)
+            </label>
+            <input
+              type="date"
+              value={quickDeceasedDob}
+              onChange={(e) => setQuickDeceasedDob(e.target.value)}
+              style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+              Số Giấy Báo Tử / Trích Lục (*)
+            </label>
+            <input
+              type="text"
+              placeholder="Ví dụ: GBT-2026/0129"
+              value={quickDeceasedCertNo}
+              onChange={(e) => setQuickDeceasedCertNo(e.target.value)}
+              style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+              Cơ Quan Cấp Giấy Báo Tử
+            </label>
+            <input
+              type="text"
+              placeholder="UBND Phường/Xã..."
+              value={quickDeceasedCertIssuer}
+              onChange={(e) => setQuickDeceasedCertIssuer(e.target.value)}
+              style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+            />
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+          <button
+            type="button"
+            onClick={() => setIsQuickDeceasedModalOpen(false)}
+            style={{ padding: '6px 14px', borderRadius: '5px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontSize: '12px', cursor: 'pointer' }}
+          >
+            Hủy Bỏ
+          </button>
+          <button
+            type="button"
+            onClick={handleQuickCreateDeceased}
+            disabled={quickDeceasedSubmitting}
+            style={{
+              padding: '6px 16px',
+              borderRadius: '5px',
+              border: 'none',
+              backgroundColor: '#C2410C',
+              color: '#FFFFFF',
+              fontSize: '12px',
+              fontWeight: 600,
+              cursor: 'pointer',
+            }}
+          >
+            {quickDeceasedSubmitting ? 'Đang Tạo...' : 'Tạo & Chọn Người Quá Cố Ngay'}
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -2123,6 +2590,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
                       type="button"
                       onClick={() => {
                         setQuickCustError(null);
+                        setQuickCustTarget('LAND');
                         setIsQuickCustModalOpen(true);
                       }}
                       style={{
@@ -2144,140 +2612,8 @@ function parseApiError(errJson: unknown, fallback: string): string {
                     </button>
                   </div>
 
-                  {/* Inline Quick Add Customer Modal / Card */}
-                  {isQuickCustModalOpen && (
-                    <div
-                      style={{
-                        padding: '16px',
-                        borderRadius: '8px',
-                        backgroundColor: '#F8FAFC',
-                        border: '1.5px dashed var(--brand-primary)',
-                        marginBottom: '16px',
-                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                        <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--brand-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <UserPlus size={16} />
-                          <span>Hồ Sơ Khách Hàng Mới Nhanh</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setIsQuickCustModalOpen(false)}
-                          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748B' }}
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-
-                      {quickCustError && (
-                        <div style={{ padding: '8px 12px', borderRadius: '6px', backgroundColor: '#FEF2F2', color: '#B91C1C', fontSize: '12px', marginBottom: '10px' }}>
-                          {quickCustError}
-                        </div>
-                      )}
-
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '12px' }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                            Họ và Tên (*)
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="Ví dụ: Nguyễn Văn An"
-                            value={quickCustFullName}
-                            onChange={(e) => setQuickCustFullName(e.target.value)}
-                            style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
-                          />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                            Số CCCD / CMND (*)
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="12 chữ số CCCD"
-                            value={quickCustCitizenId}
-                            onChange={(e) => setQuickCustCitizenId(e.target.value)}
-                            style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
-                          />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                            Số Điện Thoại (*)
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="0912xxxxxx"
-                            value={quickCustPhone}
-                            onChange={(e) => setQuickCustPhone(e.target.value)}
-                            style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
-                          />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                            Ngày Sinh (tuỳ chọn)
-                          </label>
-                          <input
-                            type="date"
-                            value={quickCustDob}
-                            onChange={(e) => setQuickCustDob(e.target.value)}
-                            style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
-                          />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                            Địa Chỉ Thường Trú (*)
-                          </label>
-                          <input
-                            type="text"
-                            placeholder="Số nhà, đường, quận/huyện, tỉnh/thành"
-                            value={quickCustAddress}
-                            onChange={(e) => setQuickCustAddress(e.target.value)}
-                            style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
-                          />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                            Email (tuỳ chọn)
-                          </label>
-                          <input
-                            type="email"
-                            placeholder="khachhang@email.com"
-                            value={quickCustEmail}
-                            onChange={(e) => setQuickCustEmail(e.target.value)}
-                            style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '13px' }}
-                          />
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                        <button
-                          type="button"
-                          onClick={() => setIsQuickCustModalOpen(false)}
-                          style={{ padding: '6px 14px', borderRadius: '5px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontSize: '12px', cursor: 'pointer' }}
-                        >
-                          Hủy Bỏ
-                        </button>
-                        <button
-                          type="button"
-                          onClick={handleQuickCreateCustomer}
-                          disabled={quickCustSubmitting}
-                          style={{
-                            padding: '6px 16px',
-                            borderRadius: '5px',
-                            border: 'none',
-                            backgroundColor: 'var(--brand-primary)',
-                            color: '#FFFFFF',
-                            fontSize: '12px',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {quickCustSubmitting ? 'Đang Tạo...' : 'Tạo & Chọn Khách Hàng Ngay'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                  {/* Inline Quick Add Customer Form */}
+                  {renderQuickCustomerSection('LAND')}
 
                   <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
                     <div style={{ position: 'relative', flex: 1 }}>
@@ -4262,6 +4598,64 @@ function parseApiError(errJson: unknown, fallback: string): string {
               </div>
             )}
 
+            {/* Active Care Package Notice & Conflict Resolution */}
+            {careActiveExistingAnnex && (
+              <div
+                style={{
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  backgroundColor: '#EFF6FF',
+                  border: '1.5px solid #60A5FA',
+                  marginBottom: '16px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1D4ED8', fontWeight: 700, fontSize: '13px' }}>
+                  <Sparkles size={16} />
+                  <span>Ô Mộ Đang Có Gói Chăm Sóc Còn Hiệu Lực!</span>
+                </div>
+                <div style={{ fontSize: '12px', color: '#1E40AF', marginTop: '4px' }}>
+                  Phụ lục hiện tại: <strong>{careActiveExistingAnnex.annex_code}</strong> | Thời hạn: <strong>{formatDate(careActiveExistingAnnex.valid_from)}</strong> đến <strong>{formatDate(careActiveExistingAnnex.valid_to)}</strong>
+                  {careActiveExistingAnnex.valid_to && (
+                    <span style={{ marginLeft: '6px', fontWeight: 600, color: '#1E3A8A' }}>
+                      (Còn {Math.max(0, Math.ceil((new Date(careActiveExistingAnnex.valid_to).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))} ngày hiệu lực)
+                    </span>
+                  )}
+                </div>
+                <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '8px', backgroundColor: '#FFFFFF', padding: '10px 12px', borderRadius: '6px', border: '1px solid #BFDBFE' }}>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 600, color: '#0369A1' }}>
+                    <input
+                      type="radio"
+                      name="careExtMode"
+                      checked={careExtensionMode === 'CONTINUE'}
+                      onChange={() => setCareExtensionMode('CONTINUE')}
+                      style={{ marginTop: '2px' }}
+                    />
+                    <div>
+                      <span>Gia hạn nối tiếp chu kỳ (Khuyến nghị)</span>
+                      <div style={{ fontWeight: 400, color: '#475569', fontSize: '11px', marginTop: '2px' }}>
+                        Tự động bắt đầu tiếp nối từ ngày {careActiveExistingAnnex.valid_to ? formatDate(new Date(new Date(careActiveExistingAnnex.valid_to).getTime() + 86400000).toISOString()) : 'kết thúc'}, không bị chồng lấn chu kỳ.
+                      </div>
+                    </div>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', fontSize: '12px', color: '#64748B' }}>
+                    <input
+                      type="radio"
+                      name="careExtMode"
+                      checked={careExtensionMode === 'IMMEDIATE'}
+                      onChange={() => setCareExtensionMode('IMMEDIATE')}
+                      style={{ marginTop: '2px' }}
+                    />
+                    <div>
+                      <span>Bắt đầu chu kỳ mới ngay hôm nay</span>
+                      <div style={{ fontSize: '11px', color: '#94A3B8', marginTop: '2px' }}>
+                        Áp dụng ngay cho đợt chăm sóc phát sinh hoặc nâng cấp gói dịch vụ.
+                      </div>
+                    </div>
+                  </label>
+                </div>
+              </div>
+            )}
+
             {/* Package Selection */}
             <div style={{ marginBottom: '14px' }}>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
@@ -4777,7 +5171,7 @@ function parseApiError(errJson: unknown, fallback: string): string {
       )}
 
       {/* ========================================================================= */}
-      {/* M08: Exhumation Contract Modal */}
+      {/* M08: Exhumation Contract 4-Step Wizard Modal */}
       {/* ========================================================================= */}
       {isExhumationModalOpen && (
         <div
@@ -4802,163 +5196,790 @@ function parseApiError(errJson: unknown, fallback: string): string {
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',
               width: '100%',
-              maxWidth: '560px',
+              maxWidth: '900px',
               maxHeight: '90vh',
-              overflowY: 'auto',
-              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
               boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)',
+              overflow: 'hidden',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <ArrowRightLeft size={20} color="#B45309" />
-                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0F172A' }}>
-                  Lập Hợp Đồng Cải Táng / Cất Bốc Hài Cốt
-                </h3>
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: '16px 24px',
+                borderBottom: '1px solid #E2E8F0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                backgroundColor: '#B45309',
+                color: '#FFFFFF',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <ArrowRightLeft size={22} color="#FFFFFF" />
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700 }}>
+                    Quy Trình Lập Hợp Đồng Cải Táng / Cất Bốc Hài Cốt
+                  </h3>
+                  <div style={{ fontSize: '12px', opacity: 0.9, marginTop: '2px' }}>
+                    Bước {exhumationStep}/4: {exhumationStep === 1 && 'Khách Hàng (Chủ Mộ)'}
+                    {exhumationStep === 2 && 'Trình Quản Lý & Chọn Ô Mộ An Táng'}
+                    {exhumationStep === 3 && 'Lộ Trình Di Dời & Chi Phí'}
+                    {exhumationStep === 4 && 'Xác Nhận & Xem Trước Dự Thảo'}
+                  </div>
+                </div>
               </div>
               <button
                 onClick={() => setIsExhumationModalOpen(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+                style={{ background: 'none', border: 'none', color: '#FFFFFF', cursor: 'pointer', padding: '4px' }}
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
-            {exhumationError && (
-              <div style={{ padding: '8px 12px', backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '6px', color: '#991B1B', fontSize: '13px', marginBottom: '14px' }}>
-                {exhumationError}
-              </div>
-            )}
-
-            {/* Select Customer */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                1. Khách Hàng (Chủ sở hữu ô mộ) (*)
-              </label>
-              <input
-                type="text"
-                placeholder="Tìm khách hàng..."
-                onChange={(e) => searchCustomers(e.target.value)}
-                style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px', marginBottom: '6px' }}
-              />
-              <div style={{ maxHeight: '100px', overflowY: 'auto', border: '1px solid #E2E8F0', borderRadius: '6px' }}>
-                {custResults.map((c) => (
+            {/* Step Progress Bar */}
+            <div
+              style={{
+                display: 'flex',
+                backgroundColor: '#F8FAFC',
+                borderBottom: '1px solid #E2E8F0',
+                padding: '12px 24px',
+                gap: '8px',
+              }}
+            >
+              {[
+                { step: 1, label: 'Khách hàng' },
+                { step: 2, label: 'Vị trí ô mộ & Hài cốt' },
+                { step: 3, label: 'Lộ trình & Chi phí' },
+                { step: 4, label: 'Xác nhận dự thảo' },
+              ].map((s) => (
+                <div
+                  key={s.step}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    color: exhumationStep >= s.step ? '#B45309' : '#94A3B8',
+                    fontWeight: exhumationStep === s.step ? 700 : 500,
+                    fontSize: '13px',
+                  }}
+                >
                   <div
-                    key={c.customer_id}
-                    onClick={() => handleSelectExhumationCustomer(c)}
                     style={{
-                      padding: '6px 10px',
-                      borderBottom: '1px solid #E2E8F0',
-                      cursor: 'pointer',
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      backgroundColor: exhumationStep >= s.step ? '#B45309' : '#E2E8F0',
+                      color: exhumationStep >= s.step ? '#FFFFFF' : '#64748B',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                       fontSize: '12px',
-                      backgroundColor: exhumationCustomer?.customer_id === c.customer_id ? '#FEF3C7' : 'transparent',
                     }}
                   >
-                    <strong>{c.full_name}</strong> - {c.phone_number} ({c.customer_code})
+                    {s.step}
                   </div>
-                ))}
-              </div>
+                  <span>{s.label}</span>
+                </div>
+              ))}
             </div>
 
-            {/* Select Owned Plot */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                2. Ô Mộ Đang An Táng (Chỉ ô không phải Kim Tĩnh) (*)
-              </label>
-              <select
-                value={selectedExhumationPlot?.plot_id || ''}
-                onChange={(e) => {
-                  const p = exhumationPlots.find((pl) => pl.plot_id === Number(e.target.value));
-                  if (p) handleSelectExhumationPlot(p);
-                }}
-                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px', backgroundColor: '#FFFFFF' }}
-              >
-                <option value="">-- Chọn ô mộ đã an táng --</option>
-                {exhumationPlots.map((pl) => (
-                  <option key={pl.plot_id} value={pl.plot_id}>
-                    {pl.plot_code} - Khu {pl.zone_code} ({pl.status})
-                  </option>
-                ))}
-              </select>
-              {exhumationCustomer && exhumationPlots.length === 0 && (
-                <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>
-                  Khách hàng này hiện không sở hữu ô mộ nào có thể cải táng (ô Kim Tĩnh bị khóa vĩnh viễn).
+            {/* Wizard Body */}
+            <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
+              {exhumationError && (
+                <div
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '6px',
+                    backgroundColor: '#FEF2F2',
+                    border: '1px solid #FECACA',
+                    color: '#B91C1C',
+                    fontSize: '13px',
+                    marginBottom: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  <AlertCircle size={16} />
+                  <span>{exhumationError}</span>
+                </div>
+              )}
+
+              {/* STEP 1: SELECT EXHUMATION CUSTOMER */}
+              {exhumationStep === 1 && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B' }}>
+                      1. Tra cứu hoặc chọn khách hàng đứng tên hợp đồng cải táng:
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuickCustError(null);
+                        setQuickCustTarget('EXHUMATION');
+                        setIsQuickCustModalOpen(true);
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #B45309',
+                        backgroundColor: '#FFFBEB',
+                        color: '#B45309',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <UserPlus size={14} />
+                      <span>+ Thêm Khách Hàng Nhanh</span>
+                    </button>
+                  </div>
+
+                  {/* Inline Quick Add Customer Form */}
+                  {renderQuickCustomerSection('EXHUMATION')}
+
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <Search size={16} color="#94A3B8" style={{ position: 'absolute', left: '10px', top: '10px' }} />
+                      <input
+                        type="text"
+                        placeholder="Tìm theo họ tên, CCCD hoặc số điện thoại..."
+                        value={custSearch}
+                        onChange={(e) => {
+                          setCustSearch(e.target.value);
+                          searchCustomers(e.target.value);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px 8px 34px',
+                          borderRadius: '6px',
+                          border: '1px solid #CBD5E1',
+                          fontSize: '13px',
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {exhumationCustomer && (
+                    <div
+                      style={{
+                        padding: '14px 18px',
+                        borderRadius: '8px',
+                        backgroundColor: '#FFFBEB',
+                        border: '1px solid #FDE68A',
+                        marginBottom: '16px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <span style={{ fontSize: '11px', fontWeight: 700, color: '#92400E', textTransform: 'uppercase' }}>
+                            Đã Chọn Chủ Sở Hữu Mộ
+                          </span>
+                          <div style={{ fontSize: '15px', fontWeight: 700, color: '#92400E', marginTop: '2px' }}>
+                            {exhumationCustomer.full_name} ({exhumationCustomer.customer_code})
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#B45309', marginTop: '2px' }}>
+                            CCCD: {exhumationCustomer.citizen_id} | SĐT: {exhumationCustomer.phone_number} | Địa chỉ: {exhumationCustomer.address}
+                          </div>
+                        </div>
+                        <CheckCircle size={24} color="#D97706" />
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ maxHeight: '220px', overflowY: 'auto', border: '1px solid #E2E8F0', borderRadius: '6px' }}>
+                    {custLoading ? (
+                      <div style={{ padding: '20px', textAlign: 'center', color: '#64748B', fontSize: '13px' }}>
+                        Đang tìm kiếm khách hàng...
+                      </div>
+                    ) : custResults.length === 0 ? (
+                      <div style={{ padding: '24px 20px', textAlign: 'center' }}>
+                        <div style={{ color: '#94A3B8', fontSize: '13px', marginBottom: '8px' }}>
+                          Không tìm thấy khách hàng phù hợp.
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuickCustError(null);
+                            setQuickCustTarget('EXHUMATION');
+                            setIsQuickCustModalOpen(true);
+                          }}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            border: '1px solid #B45309',
+                            backgroundColor: '#FFFBEB',
+                            color: '#B45309',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          + Thêm Khách Hàng Mới Ngay
+                        </button>
+                      </div>
+                    ) : (
+                      custResults.map((c) => (
+                        <div
+                          key={c.customer_id}
+                          onClick={() => handleSelectExhumationCustomer(c)}
+                          style={{
+                            padding: '10px 14px',
+                            borderBottom: '1px solid #F1F5F9',
+                            cursor: 'pointer',
+                            backgroundColor: exhumationCustomer?.customer_id === c.customer_id ? '#FEF3C7' : '#FFFFFF',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: '13px', color: '#1E293B' }}>{c.full_name}</div>
+                            <div style={{ fontSize: '12px', color: '#64748B' }}>
+                              CCCD: {c.citizen_id} • SĐT: {c.phone_number} • {c.address}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            style={{
+                              padding: '4px 10px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              border: '1px solid #CBD5E1',
+                              backgroundColor: exhumationCustomer?.customer_id === c.customer_id ? '#B45309' : '#FFFFFF',
+                              color: exhumationCustomer?.customer_id === c.customer_id ? '#FFFFFF' : '#334155',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {exhumationCustomer?.customer_id === c.customer_id ? 'Đang chọn' : 'Chọn'}
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 2: ADVANCED EXHUMATION PLOT MANAGER & IMMUTABILITY CHECK */}
+              {exhumationStep === 2 && (() => {
+                const filteredPlots = exhumationPlots.filter((p) => {
+                  if (exhumationPlotFilterZone && p.zone_code !== exhumationPlotFilterZone) return false;
+                  if (exhumationPlotSearchCode && !p.plot_code.toLowerCase().includes(exhumationPlotSearchCode.toLowerCase())) return false;
+                  return true;
+                });
+                const uniqueZones = Array.from(new Set(exhumationPlots.map((p) => p.zone_code).filter((z): z is string => Boolean(z)))).sort();
+
+                return (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B' }}>
+                        2. Trình Quản Lý &amp; Chọn Ô Mộ Đang An Táng (Chống Cải Táng Kim Tĩnh Bất Biến):
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setExhumationPlotViewMode('cards')}
+                          style={{
+                            padding: '5px 10px',
+                            borderRadius: '5px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            border: '1px solid #CBD5E1',
+                            backgroundColor: exhumationPlotViewMode === 'cards' ? '#B45309' : '#FFFFFF',
+                            color: exhumationPlotViewMode === 'cards' ? '#FFFFFF' : '#475569',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          <ListFilter size={14} />
+                          <span>Thẻ Chi Tiết</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setExhumationPlotViewMode('matrix')}
+                          style={{
+                            padding: '5px 10px',
+                            borderRadius: '5px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            border: '1px solid #CBD5E1',
+                            backgroundColor: exhumationPlotViewMode === 'matrix' ? '#B45309' : '#FFFFFF',
+                            color: exhumationPlotViewMode === 'matrix' ? '#FFFFFF' : '#475569',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          <Grid size={14} />
+                          <span>Sơ Đồ Lưới</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Selected Plot Banner */}
+                    {selectedExhumationPlot && (
+                      <div
+                        style={{
+                          padding: '12px 16px',
+                          borderRadius: '8px',
+                          backgroundColor: '#FFFBEB',
+                          border: '1.5px solid #D97706',
+                          marginBottom: '14px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          flexWrap: 'wrap',
+                          gap: '10px',
+                        }}
+                      >
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 700, color: '#92400E', textTransform: 'uppercase', backgroundColor: '#FDE68A', padding: '2px 8px', borderRadius: '4px' }}>
+                              Ô ĐÃ CHỌN CẢI TÁNG: {selectedExhumationPlot.plot_code}
+                            </span>
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#B45309' }}>
+                              {selectedExhumationPlot.type_name}
+                            </span>
+                            <span style={{ fontSize: '11px', fontWeight: 700, color: '#166534', backgroundColor: '#DCFCE7', padding: '2px 8px', borderRadius: '4px' }}>
+                              ✓ Đủ Điều Kiện Cải Táng (Hài cốt: {exhumationDeceasedName || 'Huyệt 1'})
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#B45309', marginTop: '4px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                            <span><strong>Khu:</strong> {selectedExhumationPlot.zone_name}</span>
+                            <span><strong>Hàng:</strong> {selectedExhumationPlot.row_code}</span>
+                            <span><strong>Huyệt đang an táng:</strong> Số {exhumationSlotNumber || 1}</span>
+                          </div>
+                        </div>
+                        <CheckCircle size={24} color="#D97706" />
+                      </div>
+                    )}
+
+                    {/* Filter bar */}
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                      <select
+                        value={exhumationPlotFilterZone}
+                        onChange={(e) => setExhumationPlotFilterZone(e.target.value)}
+                        style={{ padding: '6px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '12px', backgroundColor: '#FFFFFF' }}
+                      >
+                        <option value="">-- Tất cả khu mộ --</option>
+                        {uniqueZones.map((z) => (
+                          <option key={z} value={z}>Khu {z}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        placeholder="Lọc mã ô (VD: M-01)..."
+                        value={exhumationPlotSearchCode}
+                        onChange={(e) => setExhumationPlotSearchCode(e.target.value)}
+                        style={{ padding: '6px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '12px', minWidth: '140px' }}
+                      />
+                    </div>
+
+                    {/* Plots container */}
+                    {exhumationPlots.length === 0 ? (
+                      <div style={{ padding: '30px', textAlign: 'center', backgroundColor: '#F8FAFC', borderRadius: '8px', border: '1px dashed #CBD5E1' }}>
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#64748B' }}>
+                          Khách hàng này hiện chưa đứng tên sở hữu ô mộ nào trong hệ thống.
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '4px' }}>
+                          Vui lòng kiểm tra lại thông tin chủ hộ hoặc chọn khách hàng khác ở Bước 1.
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
+                          {filteredPlots.map((p) => {
+                            const isKimTinh = Boolean(p.is_kim_tinh);
+                            const isOccupied = p.status === 'OCCUPIED';
+                            const isSelected = selectedExhumationPlot?.plot_id === p.plot_id;
+
+                            // Rule #2: Kim Tinh plots are strictly immutable and locked
+                            if (isKimTinh) {
+                              return (
+                                <div
+                                  key={p.plot_id}
+                                  style={{
+                                    padding: '12px',
+                                    borderRadius: '8px',
+                                    border: '1.5px solid #FECACA',
+                                    backgroundColor: '#FEF2F2',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'space-between',
+                                  }}
+                                >
+                                  <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <span style={{ fontWeight: 700, fontSize: '13px', color: '#991B1B' }}>
+                                        {p.plot_code} - Khu {p.zone_name}
+                                      </span>
+                                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#991B1B', backgroundColor: '#FEE2E2', padding: '2px 6px', borderRadius: '4px' }}>
+                                        🔒 KIM TĨNH BẤT BIẾN
+                                      </span>
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#B91C1C', marginTop: '6px', lineHeight: '1.4' }}>
+                                      Quy tắc bất biến: Ô mộ xây theo chuẩn Kim Tĩnh bị khóa vĩnh viễn mức CSDL, tuyệt đối không được phép cải táng hay di dời.
+                                    </div>
+                                  </div>
+                                  <div style={{ marginTop: '8px', fontSize: '11px', color: '#991B1B', fontWeight: 600 }}>
+                                    [Khóa Nghiệp Vụ - Cấm Cải Táng]
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            // Empty plots cannot be exhumed
+                            if (!isOccupied) {
+                              return (
+                                <div
+                                  key={p.plot_id}
+                                  style={{
+                                    padding: '12px',
+                                    borderRadius: '8px',
+                                    border: '1px solid #E2E8F0',
+                                    backgroundColor: '#F8FAFC',
+                                    opacity: 0.75,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'space-between',
+                                  }}
+                                >
+                                  <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <span style={{ fontWeight: 700, fontSize: '13px', color: '#475569' }}>
+                                        {p.plot_code} - Khu {p.zone_name}
+                                      </span>
+                                      <span style={{ fontSize: '10px', fontWeight: 600, color: '#64748B', backgroundColor: '#E2E8F0', padding: '2px 6px', borderRadius: '4px' }}>
+                                        ĐẤT TRỐNG
+                                      </span>
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#64748B', marginTop: '4px' }}>
+                                      Ô mộ chưa an táng hài cốt nào, không áp dụng thủ tục cải táng.
+                                    </div>
+                                  </div>
+                                  <div style={{ marginTop: '8px', fontSize: '11px', color: '#94A3B8' }}>
+                                    Hàng {p.row_code} • {p.type_name}
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            // Eligible Occupied Plot
+                            return (
+                              <div
+                                key={p.plot_id}
+                                onClick={() => handleSelectExhumationPlot(p)}
+                                style={{
+                                  padding: '12px',
+                                  borderRadius: '8px',
+                                  border: isSelected ? '2px solid #D97706' : '1px solid #FDE68A',
+                                  backgroundColor: isSelected ? '#FFFBEB' : '#FFFFFF',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  justifyContent: 'space-between',
+                                  boxShadow: isSelected ? '0 4px 6px -1px rgba(217, 119, 6, 0.15)' : 'none',
+                                }}
+                              >
+                                <div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontWeight: 700, fontSize: '13px', color: '#1E293B' }}>
+                                      {p.plot_code} - Khu {p.zone_name}
+                                    </span>
+                                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#92400E', backgroundColor: '#FEF3C7', padding: '2px 6px', borderRadius: '4px' }}>
+                                      KHẢ DỤNG CẢI TÁNG
+                                    </span>
+                                  </div>
+                                  <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>
+                                    Hàng: {p.row_code} • {p.type_name}
+                                  </div>
+                                  <div style={{ fontSize: '11px', color: '#059669', fontWeight: 600, marginTop: '2px' }}>
+                                    Trạng thái: Đang an táng ({p.default_slots} huyệt)
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  style={{
+                                    marginTop: '10px',
+                                    padding: '5px 10px',
+                                    borderRadius: '5px',
+                                    border: 'none',
+                                    backgroundColor: isSelected ? '#B45309' : '#F1F5F9',
+                                    color: isSelected ? '#FFFFFF' : '#334155',
+                                    fontSize: '12px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  {isSelected ? 'Đang chọn ô này' : 'Chọn ô cải táng'}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* STEP 3: EXHUMATION PLAN, DESTINATION & FEE */}
+              {exhumationStep === 3 && (
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B', marginBottom: '14px' }}>
+                    3. Kế hoạch di dời, phương tiện &amp; đơn giá dịch vụ cải táng:
+                  </div>
+
+                  <div className="responsive-form-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px', marginBottom: '14px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                        Ngày Cải Táng Dự Kiến (*)
+                      </label>
+                      <input
+                        type="date"
+                        value={exhumationDate}
+                        onChange={(e) => setExhumationDate(e.target.value)}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                        Phí Dịch Vụ Cải Táng Trọn Gói (VNĐ) (*)
+                      </label>
+                      <input
+                        type="number"
+                        value={exhumationFee}
+                        onChange={(e) => setExhumationFee(e.target.value)}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="responsive-form-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px', marginBottom: '14px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                        Địa Điểm Di Dời Hài Cốt / Nơi An Táng Mới (*)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ví dụ: Nghĩa trang quê nhà, Nhà lưu tro cốt..."
+                        value={exhumationDestination}
+                        onChange={(e) => setExhumationDestination(e.target.value)}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                        Phương Tiện &amp; Đơn Vị Hỗ Trợ Vận Chuyển
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ví dụ: Xe chuyên dụng Ban Quản Trang"
+                        value={exhumationTransport}
+                        onChange={(e) => setExhumationTransport(e.target.value)}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: '14px' }}>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                      Lý Do Cải Táng &amp; Nguyện Vọng Gia Quyến
+                    </label>
+                    <textarea
+                      rows={3}
+                      placeholder="Di dời về nghĩa trang gia đình, cải táng theo nguyện vọng phụ mẫu..."
+                      value={exhumationReason}
+                      onChange={(e) => setExhumationReason(e.target.value)}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 4: REVIEW & CONFIRM EXHUMATION DRAFT */}
+              {exhumationStep === 4 && (
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B', marginBottom: '14px' }}>
+                    4. Xem trước &amp; Xác nhận dự thảo hợp đồng cải táng:
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px', marginBottom: '16px' }}>
+                    {/* Card 1: Customer */}
+                    <div style={{ padding: '14px', borderRadius: '8px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        Bên Đứng Tên Hợp Đồng
+                      </div>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A' }}>
+                        {exhumationCustomer?.full_name} ({exhumationCustomer?.customer_code})
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>
+                        CCCD: {exhumationCustomer?.citizen_id}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#475569' }}>
+                        SĐT: {exhumationCustomer?.phone_number}
+                      </div>
+                    </div>
+
+                    {/* Card 2: Plot & Slot */}
+                    <div style={{ padding: '14px', borderRadius: '8px', backgroundColor: '#FFFBEB', border: '1px solid #FDE68A' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#92400E', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        Ô Mộ &amp; Hài Cốt Cải Táng
+                      </div>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#92400E' }}>
+                        Ô {selectedExhumationPlot?.plot_code} - Khu {selectedExhumationPlot?.zone_name}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#B45309', marginTop: '4px' }}>
+                        Huyệt số: {exhumationSlotNumber || 1} • {exhumationDeceasedName}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#166534', fontWeight: 600, marginTop: '2px' }}>
+                        Quy cách thông thường (Không phải Kim Tĩnh)
+                      </div>
+                    </div>
+
+                    {/* Card 3: Plan & Fee */}
+                    <div style={{ padding: '14px', borderRadius: '8px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        Kế Hoạch &amp; Chi Phí
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#334155' }}>
+                        <strong>Ngày cải táng:</strong> {formatDate(exhumationDate)}
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#334155', marginTop: '2px' }}>
+                        <strong>Nơi di dời:</strong> {exhumationDestination}
+                      </div>
+                      <div style={{ fontSize: '15px', fontWeight: 700, color: '#B45309', marginTop: '6px' }}>
+                        Tổng phí: {formatCurrency(exhumationFee)}
+                      </div>
+                    </div>
+
+                    {/* Card 4: Legal & Invariant Notice */}
+                    <div style={{ padding: '14px', borderRadius: '8px', backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#1E40AF', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        Cam Kết Quy Chuẩn Vệ Sinh
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#1E40AF', lineHeight: '1.4' }}>
+                        Tuân thủ nghiêm ngặt quy định y tế môi trường. Sau khi hoàn tất cất bốc hài cốt, mặt bằng ô mộ sẽ được giải phóng hoàn nguyên về trạng thái đất trống.
+                      </div>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Exhumation Date & Fee */}
-            <div className="responsive-form-row">
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                  Ngày Cải Táng Dự Kiến
-                </label>
-                <input
-                  type="date"
-                  value={exhumationDate}
-                  onChange={(e) => setExhumationDate(e.target.value)}
-                  style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                  Phí Cải Táng (VNĐ)
-                </label>
-                <input
-                  type="number"
-                  value={exhumationFee}
-                  onChange={(e) => setExhumationFee(e.target.value)}
-                  style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
-                />
-              </div>
-            </div>
-
-            {/* Reason */}
-            <div style={{ marginBottom: '14px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                Lý Do Cải Táng
-              </label>
-              <textarea
-                rows={2}
-                placeholder="Di dời về quê hương, cải táng theo nguyện vọng gia đình..."
-                value={exhumationReason}
-                onChange={(e) => setExhumationReason(e.target.value)}
-                style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
+            {/* Wizard Navigation Footer */}
+            <div
+              style={{
+                padding: '16px 24px',
+                borderTop: '1px solid #E2E8F0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                backgroundColor: '#F8FAFC',
+              }}
+            >
               <button
                 type="button"
                 onClick={() => setIsExhumationModalOpen(false)}
-                style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontSize: '13px', cursor: 'pointer' }}
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={handleCreateExhumationContract}
-                disabled={exhumationSubmitting || !exhumationCustomer || !selectedExhumationPlot}
                 style={{
                   padding: '8px 16px',
                   borderRadius: '6px',
-                  border: 'none',
-                  backgroundColor: '#B45309',
-                  color: '#FFFFFF',
+                  border: '1px solid #CBD5E1',
+                  backgroundColor: '#FFFFFF',
                   fontSize: '13px',
-                  fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >
-                {exhumationSubmitting ? 'Đang tạo...' : 'Tạo Dự Thảo Cải Táng'}
+                Hủy Bỏ
               </button>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {exhumationStep > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setExhumationStep((s) => s - 1)}
+                    style={{
+                      padding: '8px 18px',
+                      borderRadius: '6px',
+                      border: '1px solid #CBD5E1',
+                      backgroundColor: '#FFFFFF',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Quay Lại
+                  </button>
+                )}
+
+                {exhumationStep < 4 ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (exhumationStep === 1 && !exhumationCustomer) {
+                        setExhumationError('Vui lòng chọn khách hàng đứng tên hợp đồng cải táng');
+                        return;
+                      }
+                      if (exhumationStep === 2 && (!selectedExhumationPlot || !exhumationSlotId)) {
+                        setExhumationError('Vui lòng chọn ô mộ và huyệt có hài cốt để cải táng');
+                        return;
+                      }
+                      setExhumationError(null);
+                      setExhumationStep((s) => s + 1);
+                    }}
+                    style={{
+                      padding: '8px 20px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      backgroundColor: '#B45309',
+                      color: '#FFFFFF',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Tiếp Theo &rarr;
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleCreateExhumationContract}
+                    disabled={exhumationSubmitting}
+                    style={{
+                      padding: '8px 22px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      backgroundColor: '#B45309',
+                      color: '#FFFFFF',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    {exhumationSubmitting ? <RefreshCw size={14} className="animate-spin" /> : <FilePlus size={15} />}
+                    <span>Tạo Dự Thảo Cải Táng</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* M08: Transfer Contract Modal */}
+      {/* M08: Transfer Contract 4-Step Wizard Modal */}
       {/* ========================================================================= */}
       {isTransferModalOpen && (
         <div
@@ -4983,170 +6004,902 @@ function parseApiError(errJson: unknown, fallback: string): string {
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',
               width: '100%',
-              maxWidth: '560px',
+              maxWidth: '900px',
               maxHeight: '90vh',
-              overflowY: 'auto',
-              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
               boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)',
+              overflow: 'hidden',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <ArrowRightLeft size={20} color="#4338CA" />
-                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0F172A' }}>
-                  Lập Hợp Đồng Chuyển Nhượng Quyền Sử Dụng Đất
-                </h3>
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: '16px 24px',
+                borderBottom: '1px solid #E2E8F0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                backgroundColor: '#4338CA',
+                color: '#FFFFFF',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <ArrowRightLeft size={22} color="#FFFFFF" />
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700 }}>
+                    Quy Trình Lập Hợp Đồng Chuyển Nhượng Quyền Sử Dụng Đất
+                  </h3>
+                  <div style={{ fontSize: '12px', opacity: 0.9, marginTop: '2px' }}>
+                    Bước {transferStep}/4: {transferStep === 1 && 'Bên Chuyển Nhượng (Bên A)'}
+                    {transferStep === 2 && 'Trình Quản Lý & Chọn Ô Mộ Chuyển Nhượng'}
+                    {transferStep === 3 && 'Bên Nhận Chuyển Nhượng (Bên B) & Thỏa Thuận'}
+                    {transferStep === 4 && 'Xác Nhận & Xem Trước Dự Thảo'}
+                  </div>
+                </div>
               </div>
               <button
                 onClick={() => setIsTransferModalOpen(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+                style={{ background: 'none', border: 'none', color: '#FFFFFF', cursor: 'pointer', padding: '4px' }}
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
-            {transferError && (
-              <div style={{ padding: '8px 12px', backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '6px', color: '#991B1B', fontSize: '13px', marginBottom: '14px' }}>
-                {transferError}
-              </div>
-            )}
-
-            {/* Seller */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                1. Bên Chuyển Nhượng (Chủ sở hữu hiện tại) (*)
-              </label>
-              <input
-                type="text"
-                placeholder="Tìm khách hàng chuyển nhượng..."
-                onChange={(e) => searchCustomers(e.target.value)}
-                style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px', marginBottom: '6px' }}
-              />
-              <div style={{ maxHeight: '90px', overflowY: 'auto', border: '1px solid #E2E8F0', borderRadius: '6px' }}>
-                {custResults.map((c) => (
+            {/* Step Progress Bar */}
+            <div
+              style={{
+                display: 'flex',
+                backgroundColor: '#F8FAFC',
+                borderBottom: '1px solid #E2E8F0',
+                padding: '12px 24px',
+                gap: '8px',
+              }}
+            >
+              {[
+                { step: 1, label: 'Bên chuyển nhượng' },
+                { step: 2, label: 'Ô mộ chuyển nhượng' },
+                { step: 3, label: 'Bên nhận & Phí' },
+                { step: 4, label: 'Xác nhận dự thảo' },
+              ].map((s) => (
+                <div
+                  key={s.step}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    color: transferStep >= s.step ? '#4338CA' : '#94A3B8',
+                    fontWeight: transferStep === s.step ? 700 : 500,
+                    fontSize: '13px',
+                  }}
+                >
                   <div
-                    key={c.customer_id}
-                    onClick={() => handleSelectTransferSeller(c)}
                     style={{
-                      padding: '5px 10px',
-                      borderBottom: '1px solid #E2E8F0',
-                      cursor: 'pointer',
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      backgroundColor: transferStep >= s.step ? '#4338CA' : '#E2E8F0',
+                      color: transferStep >= s.step ? '#FFFFFF' : '#64748B',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
                       fontSize: '12px',
-                      backgroundColor: transferSeller?.customer_id === c.customer_id ? '#EEF2FF' : 'transparent',
                     }}
                   >
-                    <strong>{c.full_name}</strong> ({c.customer_code})
+                    {s.step}
                   </div>
-                ))}
-              </div>
+                  <span>{s.label}</span>
+                </div>
+              ))}
             </div>
 
-            {/* Select Plot owned by seller */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                2. Ô Mộ Chuyển Nhượng (không có hài cốt) (*)
-              </label>
-              <select
-                value={selectedTransferPlot?.plot_id || ''}
-                onChange={(e) => {
-                  const p = transferPlots.find((pl) => pl.plot_id === Number(e.target.value));
-                  if (p) setSelectedTransferPlot(p);
-                }}
-                style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px', backgroundColor: '#FFFFFF' }}
-              >
-                <option value="">-- Chọn ô mộ để chuyển nhượng --</option>
-                {transferPlots.map((pl) => (
-                  <option key={pl.plot_id} value={pl.plot_id}>
-                    {pl.plot_code} - Khu {pl.zone_code}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Wizard Body */}
+            <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
+              {transferError && (
+                <div
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '6px',
+                    backgroundColor: '#FEF2F2',
+                    border: '1px solid #FECACA',
+                    color: '#B91C1C',
+                    fontSize: '13px',
+                    marginBottom: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  <AlertCircle size={16} />
+                  <span>{transferError}</span>
+                </div>
+              )}
 
-            {/* Buyer */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                3. Bên Nhận Chuyển Nhượng (Chủ mới) (*)
-              </label>
-              <div style={{ maxHeight: '90px', overflowY: 'auto', border: '1px solid #E2E8F0', borderRadius: '6px' }}>
-                {custResults
-                  .filter((c) => c.customer_id !== transferSeller?.customer_id)
-                  .map((c) => (
-                    <div
-                      key={c.customer_id}
-                      onClick={() => setTransferBuyer(c)}
+              {/* STEP 1: SELECT SELLER */}
+              {transferStep === 1 && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B' }}>
+                      1. Tra cứu Bên Chuyển Nhượng (Chủ sở hữu hiện tại đứng tên):
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuickCustError(null);
+                        setQuickCustTarget('TRANSFER_SELLER');
+                        setIsQuickCustModalOpen(true);
+                      }}
                       style={{
-                        padding: '5px 10px',
-                        borderBottom: '1px solid #E2E8F0',
-                        cursor: 'pointer',
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #4338CA',
+                        backgroundColor: '#EEF2FF',
+                        color: '#4338CA',
                         fontSize: '12px',
-                        backgroundColor: transferBuyer?.customer_id === c.customer_id ? '#DCFCE7' : 'transparent',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
                       }}
                     >
-                      <strong>{c.full_name}</strong> - {c.phone_number} ({c.customer_code})
+                      <UserPlus size={14} />
+                      <span>+ Thêm Khách Hàng Nhanh</span>
+                    </button>
+                  </div>
+
+                  {/* Inline Quick Add Customer Form */}
+                  {renderQuickCustomerSection('TRANSFER_SELLER')}
+
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <Search size={16} color="#94A3B8" style={{ position: 'absolute', left: '10px', top: '10px' }} />
+                      <input
+                        type="text"
+                        placeholder="Tìm theo họ tên, CCCD hoặc số điện thoại bên chuyển nhượng..."
+                        value={custSearch}
+                        onChange={(e) => {
+                          setCustSearch(e.target.value);
+                          searchCustomers(e.target.value);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px 8px 34px',
+                          borderRadius: '6px',
+                          border: '1px solid #CBD5E1',
+                          fontSize: '13px',
+                        }}
+                      />
                     </div>
-                  ))}
-              </div>
+                  </div>
+
+                  {transferSeller && (
+                    <div
+                      style={{
+                        padding: '14px 18px',
+                        borderRadius: '8px',
+                        backgroundColor: '#EEF2FF',
+                        border: '1px solid #C7D2FE',
+                        marginBottom: '16px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <span style={{ fontSize: '11px', fontWeight: 700, color: '#4338CA', textTransform: 'uppercase' }}>
+                            Đã Chọn Bên Chuyển Nhượng (Chủ Mộ Hiện Tại)
+                          </span>
+                          <div style={{ fontSize: '15px', fontWeight: 700, color: '#3730A3', marginTop: '2px' }}>
+                            {transferSeller.full_name} ({transferSeller.customer_code})
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#4338CA', marginTop: '2px' }}>
+                            CCCD: {transferSeller.citizen_id} | SĐT: {transferSeller.phone_number} | Địa chỉ: {transferSeller.address}
+                          </div>
+                        </div>
+                        <CheckCircle size={24} color="#4338CA" />
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ maxHeight: '220px', overflowY: 'auto', border: '1px solid #E2E8F0', borderRadius: '6px' }}>
+                    {custLoading ? (
+                      <div style={{ padding: '20px', textAlign: 'center', color: '#64748B', fontSize: '13px' }}>
+                        Đang tìm kiếm khách hàng...
+                      </div>
+                    ) : custResults.length === 0 ? (
+                      <div style={{ padding: '24px 20px', textAlign: 'center' }}>
+                        <div style={{ color: '#94A3B8', fontSize: '13px', marginBottom: '8px' }}>
+                          Không tìm thấy khách hàng phù hợp.
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuickCustError(null);
+                            setQuickCustTarget('TRANSFER_SELLER');
+                            setIsQuickCustModalOpen(true);
+                          }}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            border: '1px solid #4338CA',
+                            backgroundColor: '#EEF2FF',
+                            color: '#4338CA',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          + Thêm Khách Hàng Mới Ngay
+                        </button>
+                      </div>
+                    ) : (
+                      custResults.map((c) => (
+                        <div
+                          key={c.customer_id}
+                          onClick={() => handleSelectTransferSeller(c)}
+                          style={{
+                            padding: '10px 14px',
+                            borderBottom: '1px solid #F1F5F9',
+                            cursor: 'pointer',
+                            backgroundColor: transferSeller?.customer_id === c.customer_id ? '#EEF2FF' : '#FFFFFF',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: '13px', color: '#1E293B' }}>{c.full_name}</div>
+                            <div style={{ fontSize: '12px', color: '#64748B' }}>
+                              CCCD: {c.citizen_id} • SĐT: {c.phone_number} • {c.address}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            style={{
+                              padding: '4px 10px',
+                              borderRadius: '4px',
+                              fontSize: '12px',
+                              border: '1px solid #CBD5E1',
+                              backgroundColor: transferSeller?.customer_id === c.customer_id ? '#4338CA' : '#FFFFFF',
+                              color: transferSeller?.customer_id === c.customer_id ? '#FFFFFF' : '#334155',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {transferSeller?.customer_id === c.customer_id ? 'Đang chọn' : 'Chọn Bên A'}
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 2: ADVANCED TRANSFER PLOT MANAGER (ELIGIBLE EMPTY PLOTS ONLY) */}
+              {transferStep === 2 && (() => {
+                const filteredPlots = transferPlots.filter((p) => {
+                  if (transferPlotFilterZone && p.zone_code !== transferPlotFilterZone) return false;
+                  if (transferPlotSearchCode && !p.plot_code.toLowerCase().includes(transferPlotSearchCode.toLowerCase())) return false;
+                  return true;
+                });
+                const uniqueZones = Array.from(new Set(transferPlots.map((p) => p.zone_code).filter((z): z is string => Boolean(z)))).sort();
+
+                return (
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B' }}>
+                        2. Trình Quản Lý &amp; Chọn Ô Mộ Chuyển Nhượng (Chỉ Đất Trống Chưa An Táng):
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setTransferPlotViewMode('cards')}
+                          style={{
+                            padding: '5px 10px',
+                            borderRadius: '5px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            border: '1px solid #CBD5E1',
+                            backgroundColor: transferPlotViewMode === 'cards' ? '#4338CA' : '#FFFFFF',
+                            color: transferPlotViewMode === 'cards' ? '#FFFFFF' : '#475569',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          <ListFilter size={14} />
+                          <span>Thẻ Chi Tiết</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setTransferPlotViewMode('matrix')}
+                          style={{
+                            padding: '5px 10px',
+                            borderRadius: '5px',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            border: '1px solid #CBD5E1',
+                            backgroundColor: transferPlotViewMode === 'matrix' ? '#4338CA' : '#FFFFFF',
+                            color: transferPlotViewMode === 'matrix' ? '#FFFFFF' : '#475569',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                          }}
+                        >
+                          <Grid size={14} />
+                          <span>Sơ Đồ Lưới</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Selected Plot Banner */}
+                    {selectedTransferPlot && (
+                      <div
+                        style={{
+                          padding: '12px 16px',
+                          borderRadius: '8px',
+                          backgroundColor: '#EEF2FF',
+                          border: '1.5px solid #4338CA',
+                          marginBottom: '14px',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          flexWrap: 'wrap',
+                          gap: '10px',
+                        }}
+                      >
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '11px', fontWeight: 700, color: '#3730A3', textTransform: 'uppercase', backgroundColor: '#C7D2FE', padding: '2px 8px', borderRadius: '4px' }}>
+                              Ô ĐÃ CHỌN CHUYỂN NHƯỢNG: {selectedTransferPlot.plot_code}
+                            </span>
+                            <span style={{ fontSize: '12px', fontWeight: 600, color: '#4338CA' }}>
+                              {selectedTransferPlot.type_name}
+                            </span>
+                            <span style={{ fontSize: '11px', fontWeight: 700, color: '#166534', backgroundColor: '#DCFCE7', padding: '2px 8px', borderRadius: '4px' }}>
+                              ✓ Đủ Điều Kiện: Đất Trống Chính Chủ
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#4338CA', marginTop: '4px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                            <span><strong>Khu:</strong> {selectedTransferPlot.zone_name}</span>
+                            <span><strong>Hàng:</strong> {selectedTransferPlot.row_code}</span>
+                            <span><strong>Quy cách:</strong> {selectedTransferPlot.plot_length || 2.5}m × {selectedTransferPlot.plot_width || 1.2}m</span>
+                          </div>
+                        </div>
+                        <CheckCircle size={24} color="#4338CA" />
+                      </div>
+                    )}
+
+                    {/* Filter bar */}
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                      <select
+                        value={transferPlotFilterZone}
+                        onChange={(e) => setTransferPlotFilterZone(e.target.value)}
+                        style={{ padding: '6px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '12px', backgroundColor: '#FFFFFF' }}
+                      >
+                        <option value="">-- Tất cả khu mộ --</option>
+                        {uniqueZones.map((z) => (
+                          <option key={z} value={z}>Khu {z}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        placeholder="Lọc mã ô (VD: M-01)..."
+                        value={transferPlotSearchCode}
+                        onChange={(e) => setTransferPlotSearchCode(e.target.value)}
+                        style={{ padding: '6px 10px', borderRadius: '5px', border: '1px solid #CBD5E1', fontSize: '12px', minWidth: '140px' }}
+                      />
+                    </div>
+
+                    {/* Plots container */}
+                    {transferPlots.length === 0 ? (
+                      <div style={{ padding: '30px', textAlign: 'center', backgroundColor: '#F8FAFC', borderRadius: '8px', border: '1px dashed #CBD5E1' }}>
+                        <div style={{ fontSize: '14px', fontWeight: 600, color: '#64748B' }}>
+                          Bên chuyển nhượng hiện chưa đứng tên sở hữu ô mộ nào.
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '4px' }}>
+                          Vui lòng kiểm tra lại bên chuyển nhượng ở Bước 1.
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
+                          {filteredPlots.map((p) => {
+                            const isKimTinh = Boolean(p.is_kim_tinh);
+                            const isOccupied = p.status === 'OCCUPIED';
+                            const isEligible = p.status === 'OWNED_EMPTY' && !isKimTinh;
+                            const isSelected = selectedTransferPlot?.plot_id === p.plot_id;
+
+                            // Rule #2: Kim Tinh cannot be transferred
+                            if (isKimTinh) {
+                              return (
+                                <div
+                                  key={p.plot_id}
+                                  style={{
+                                    padding: '12px',
+                                    borderRadius: '8px',
+                                    border: '1.5px solid #FECACA',
+                                    backgroundColor: '#FEF2F2',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'space-between',
+                                  }}
+                                >
+                                  <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <span style={{ fontWeight: 700, fontSize: '13px', color: '#991B1B' }}>
+                                        {p.plot_code} - Khu {p.zone_name}
+                                      </span>
+                                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#991B1B', backgroundColor: '#FEE2E2', padding: '2px 6px', borderRadius: '4px' }}>
+                                        🔒 KIM TĨNH
+                                      </span>
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#B91C1C', marginTop: '6px', lineHeight: '1.4' }}>
+                                      Ô mộ Kim Tĩnh bị khóa vĩnh viễn theo quy định, không được phép chuyển nhượng.
+                                    </div>
+                                  </div>
+                                  <div style={{ marginTop: '8px', fontSize: '11px', color: '#991B1B', fontWeight: 600 }}>
+                                    [Khóa Nghiệp Vụ - Cấm Chuyển Nhượng]
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            // Occupied plots cannot be transferred
+                            if (isOccupied) {
+                              return (
+                                <div
+                                  key={p.plot_id}
+                                  style={{
+                                    padding: '12px',
+                                    borderRadius: '8px',
+                                    border: '1.5px solid #FECACA',
+                                    backgroundColor: '#FEF2F2',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    justifyContent: 'space-between',
+                                  }}
+                                >
+                                  <div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                      <span style={{ fontWeight: 700, fontSize: '13px', color: '#991B1B' }}>
+                                        {p.plot_code} - Khu {p.zone_name}
+                                      </span>
+                                      <span style={{ fontSize: '10px', fontWeight: 700, color: '#991B1B', backgroundColor: '#FEE2E2', padding: '2px 6px', borderRadius: '4px' }}>
+                                        🔒 ĐÃ AN TÁNG
+                                      </span>
+                                    </div>
+                                    <div style={{ fontSize: '11px', color: '#B91C1C', marginTop: '6px', lineHeight: '1.4' }}>
+                                      Ô mộ đã an táng hài cốt, tuyệt đối không được phép chuyển nhượng quyền sử dụng đất.
+                                    </div>
+                                  </div>
+                                  <div style={{ marginTop: '8px', fontSize: '11px', color: '#991B1B', fontWeight: 600 }}>
+                                    [Không Đạt Điều Kiện Đất Trống]
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            // Eligible Empty Plot
+                            return (
+                              <div
+                                key={p.plot_id}
+                                onClick={() => isEligible && setSelectedTransferPlot(p)}
+                                style={{
+                                  padding: '12px',
+                                  borderRadius: '8px',
+                                  border: isSelected ? '2px solid #4338CA' : '1px solid #C7D2FE',
+                                  backgroundColor: isSelected ? '#EEF2FF' : '#FFFFFF',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  justifyContent: 'space-between',
+                                  boxShadow: isSelected ? '0 4px 6px -1px rgba(67, 56, 202, 0.15)' : 'none',
+                                }}
+                              >
+                                <div>
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <span style={{ fontWeight: 700, fontSize: '13px', color: '#1E293B' }}>
+                                      {p.plot_code} - Khu {p.zone_name}
+                                    </span>
+                                    <span style={{ fontSize: '10px', fontWeight: 700, color: '#3730A3', backgroundColor: '#E0E7FF', padding: '2px 6px', borderRadius: '4px' }}>
+                                      ĐẤT TRỐNG CHÍNH CHỦ
+                                    </span>
+                                  </div>
+                                  <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>
+                                    Hàng: {p.row_code} • {p.type_name}
+                                  </div>
+                                  <div style={{ fontSize: '11px', color: '#059669', fontWeight: 600, marginTop: '2px' }}>
+                                    Trạng thái: Đất trống chưa an táng (Sẵn sàng sang tên)
+                                  </div>
+                                </div>
+                                <button
+                                  type="button"
+                                  style={{
+                                    marginTop: '10px',
+                                    padding: '5px 10px',
+                                    borderRadius: '5px',
+                                    border: 'none',
+                                    backgroundColor: isSelected ? '#4338CA' : '#F1F5F9',
+                                    color: isSelected ? '#FFFFFF' : '#334155',
+                                    fontSize: '12px',
+                                    fontWeight: 600,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  {isSelected ? 'Đang chọn ô này' : 'Chọn ô chuyển nhượng'}
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* STEP 3: SELECT BUYER & FINANCIAL TERMS */}
+              {transferStep === 3 && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B' }}>
+                      3. Tra cứu Bên Nhận Chuyển Nhượng (Chủ sở hữu mới):
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuickCustError(null);
+                        setQuickCustTarget('TRANSFER_BUYER');
+                        setIsQuickCustModalOpen(true);
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #16A34A',
+                        backgroundColor: '#F0FDF4',
+                        color: '#16A34A',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <UserPlus size={14} />
+                      <span>+ Thêm Bên Nhận Nhanh</span>
+                    </button>
+                  </div>
+
+                  {/* Inline Quick Add Customer Form */}
+                  {renderQuickCustomerSection('TRANSFER_BUYER')}
+
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <Search size={16} color="#94A3B8" style={{ position: 'absolute', left: '10px', top: '10px' }} />
+                      <input
+                        type="text"
+                        placeholder="Tìm theo họ tên, CCCD hoặc số điện thoại bên nhận..."
+                        value={custSearch}
+                        onChange={(e) => {
+                          setCustSearch(e.target.value);
+                          searchCustomers(e.target.value);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px 8px 34px',
+                          borderRadius: '6px',
+                          border: '1px solid #CBD5E1',
+                          fontSize: '13px',
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {transferBuyer && (
+                    <div
+                      style={{
+                        padding: '14px 18px',
+                        borderRadius: '8px',
+                        backgroundColor: transferBuyer.customer_id === transferSeller?.customer_id ? '#FEF2F2' : '#ECFDF5',
+                        border: transferBuyer.customer_id === transferSeller?.customer_id ? '1px solid #FECACA' : '1px solid #A7F3D0',
+                        marginBottom: '16px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <span style={{ fontSize: '11px', fontWeight: 700, color: transferBuyer.customer_id === transferSeller?.customer_id ? '#991B1B' : '#065F46', textTransform: 'uppercase' }}>
+                            {transferBuyer.customer_id === transferSeller?.customer_id ? '⚠ LỖI: TRÙNG BÊN CHUYỂN NHƯỢNG' : 'Đã Chọn Bên Nhận Chuyển Nhượng (Bên B)'}
+                          </span>
+                          <div style={{ fontSize: '15px', fontWeight: 700, color: transferBuyer.customer_id === transferSeller?.customer_id ? '#991B1B' : '#065F46', marginTop: '2px' }}>
+                            {transferBuyer.full_name} ({transferBuyer.customer_code})
+                          </div>
+                          <div style={{ fontSize: '12px', color: transferBuyer.customer_id === transferSeller?.customer_id ? '#B91C1C' : '#047857', marginTop: '2px' }}>
+                            CCCD: {transferBuyer.citizen_id} | SĐT: {transferBuyer.phone_number} | Địa chỉ: {transferBuyer.address}
+                          </div>
+                        </div>
+                        {transferBuyer.customer_id === transferSeller?.customer_id ? (
+                          <ShieldAlert size={24} color="#DC2626" />
+                        ) : (
+                          <CheckCircle size={24} color="#059669" />
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ maxHeight: '160px', overflowY: 'auto', border: '1px solid #E2E8F0', borderRadius: '6px', marginBottom: '16px' }}>
+                    {custResults
+                      .filter((c) => c.customer_id !== transferSeller?.customer_id)
+                      .map((c) => (
+                        <div
+                          key={c.customer_id}
+                          onClick={() => setTransferBuyer(c)}
+                          style={{
+                            padding: '8px 12px',
+                            borderBottom: '1px solid #F1F5F9',
+                            cursor: 'pointer',
+                            backgroundColor: transferBuyer?.customer_id === c.customer_id ? '#DCFCE7' : '#FFFFFF',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <div>
+                            <span style={{ fontWeight: 600, fontSize: '13px', color: '#1E293B' }}>{c.full_name}</span>{' '}
+                            <span style={{ fontSize: '12px', color: '#64748B' }}>({c.customer_code} • {c.phone_number})</span>
+                          </div>
+                          <button
+                            type="button"
+                            style={{
+                              padding: '3px 8px',
+                              borderRadius: '4px',
+                              fontSize: '11px',
+                              border: '1px solid #CBD5E1',
+                              backgroundColor: transferBuyer?.customer_id === c.customer_id ? '#16A34A' : '#FFFFFF',
+                              color: transferBuyer?.customer_id === c.customer_id ? '#FFFFFF' : '#334155',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {transferBuyer?.customer_id === c.customer_id ? 'Đang chọn' : 'Chọn Bên B'}
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+
+                  {/* Fee & Agreement */}
+                  <div className="responsive-form-row" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px', marginBottom: '14px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                        Phí Thủ Tục Chuyển Nhượng Quản Trang (VNĐ) (*)
+                      </label>
+                      <input
+                        type="number"
+                        value={transferCommission}
+                        onChange={(e) => setTransferCommission(e.target.value)}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                        Giá Trị Chuyển Nhượng Thỏa Thuận Giữa Hai Bên (VNĐ)
+                      </label>
+                      <input
+                        type="number"
+                        value={transferPrice}
+                        onChange={(e) => setTransferPrice(e.target.value)}
+                        placeholder="0"
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: '14px' }}>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '6px' }}>
+                      Lý Do Chuyển Nhượng &amp; Cam Kết Giữa Hai Bên
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="Chuyển nhượng quyền sử dụng theo biên bản tự nguyện giữa hai bên gia đình..."
+                      value={transferReason}
+                      onChange={(e) => setTransferReason(e.target.value)}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 4: REVIEW & CONFIRM TRANSFER DRAFT */}
+              {transferStep === 4 && (
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B', marginBottom: '14px' }}>
+                    4. Xem trước &amp; Xác nhận dự thảo hợp đồng chuyển nhượng:
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px', marginBottom: '16px' }}>
+                    {/* Card 1: Seller */}
+                    <div style={{ padding: '14px', borderRadius: '8px', backgroundColor: '#EEF2FF', border: '1px solid #C7D2FE' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#4338CA', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        Bên Chuyển Nhượng (Bên A - Chủ Cũ)
+                      </div>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#3730A3' }}>
+                        {transferSeller?.full_name} ({transferSeller?.customer_code})
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#4338CA', marginTop: '4px' }}>
+                        CCCD: {transferSeller?.citizen_id}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#4338CA' }}>
+                        SĐT: {transferSeller?.phone_number}
+                      </div>
+                    </div>
+
+                    {/* Card 2: Buyer */}
+                    <div style={{ padding: '14px', borderRadius: '8px', backgroundColor: '#ECFDF5', border: '1px solid #A7F3D0' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#065F46', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        Bên Nhận Chuyển Nhượng (Bên B - Chủ Mới)
+                      </div>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#065F46' }}>
+                        {transferBuyer?.full_name} ({transferBuyer?.customer_code})
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#047857', marginTop: '4px' }}>
+                        CCCD: {transferBuyer?.citizen_id}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#047857' }}>
+                        SĐT: {transferBuyer?.phone_number}
+                      </div>
+                    </div>
+
+                    {/* Card 3: Plot */}
+                    <div style={{ padding: '14px', borderRadius: '8px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        Ô Mộ Chuyển Giao Quyền Sử Dụng
+                      </div>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A' }}>
+                        Ô {selectedTransferPlot?.plot_code} - Khu {selectedTransferPlot?.zone_name}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>
+                        Hàng: {selectedTransferPlot?.row_code} • {selectedTransferPlot?.type_name}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#059669', fontWeight: 600, marginTop: '2px' }}>
+                        Đất trống chính chủ, không có hài cốt
+                      </div>
+                    </div>
+
+                    {/* Card 4: Fee & Agreement */}
+                    <div style={{ padding: '14px', borderRadius: '8px', backgroundColor: '#FFFBEB', border: '1px solid #FDE68A' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#92400E', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        Biểu Phí &amp; Giá Thỏa Thuận
+                      </div>
+                      <div style={{ fontSize: '13px', color: '#92400E' }}>
+                        <strong>Phí hành chính Ban Quản Trang:</strong> {formatCurrency(transferCommission)}
+                      </div>
+                      {Number(transferPrice) > 0 && (
+                        <div style={{ fontSize: '13px', color: '#92400E', marginTop: '2px' }}>
+                          <strong>Giá thỏa thuận 2 bên:</strong> {formatCurrency(transferPrice)}
+                        </div>
+                      )}
+                      <div style={{ fontSize: '11px', color: '#B45309', marginTop: '4px', lineHeight: '1.4' }}>
+                        Quyền sử dụng ô mộ sẽ được tự động cập nhật sổ bộ sang Bên B ngay khi hợp đồng được ký kết và kích hoạt.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Fee & Reason */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                Phí Thủ Tục Chuyển Nhượng (VNĐ)
-              </label>
-              <input
-                type="number"
-                value={transferCommission}
-                onChange={(e) => setTransferCommission(e.target.value)}
-                style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
-              />
-            </div>
-
-            <div style={{ marginBottom: '14px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                Lý Do Chuyển Nhượng
-              </label>
-              <textarea
-                rows={2}
-                placeholder="Chuyển nhượng quyền sử dụng theo thỏa thuận hai bên..."
-                value={transferReason}
-                onChange={(e) => setTransferReason(e.target.value)}
-                style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
+            {/* Wizard Navigation Footer */}
+            <div
+              style={{
+                padding: '16px 24px',
+                borderTop: '1px solid #E2E8F0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                backgroundColor: '#F8FAFC',
+              }}
+            >
               <button
                 type="button"
                 onClick={() => setIsTransferModalOpen(false)}
-                style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontSize: '13px', cursor: 'pointer' }}
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={handleCreateTransferContract}
-                disabled={transferSubmitting || !transferSeller || !transferBuyer || !selectedTransferPlot}
                 style={{
                   padding: '8px 16px',
                   borderRadius: '6px',
-                  border: 'none',
-                  backgroundColor: '#4338CA',
-                  color: '#FFFFFF',
+                  border: '1px solid #CBD5E1',
+                  backgroundColor: '#FFFFFF',
                   fontSize: '13px',
-                  fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >
-                {transferSubmitting ? 'Đang tạo...' : 'Tạo Dự Thảo Chuyển Nhượng'}
+                Hủy Bỏ
               </button>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {transferStep > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setTransferStep((s) => s - 1)}
+                    style={{
+                      padding: '8px 18px',
+                      borderRadius: '6px',
+                      border: '1px solid #CBD5E1',
+                      backgroundColor: '#FFFFFF',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Quay Lại
+                  </button>
+                )}
+
+                {transferStep < 4 ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (transferStep === 1 && !transferSeller) {
+                        setTransferError('Vui lòng chọn bên chuyển nhượng (Bên A)');
+                        return;
+                      }
+                      if (transferStep === 2 && !selectedTransferPlot) {
+                        setTransferError('Vui lòng chọn ô mộ đất trống đủ điều kiện để chuyển nhượng');
+                        return;
+                      }
+                      if (transferStep === 3 && !transferBuyer) {
+                        setTransferError('Vui lòng chọn bên nhận chuyển nhượng (Bên B)');
+                        return;
+                      }
+                      if (transferStep === 3 && transferBuyer && transferSeller && transferBuyer.customer_id === transferSeller.customer_id) {
+                        setTransferError('Bên nhận chuyển nhượng phải khác bên chuyển nhượng!');
+                        return;
+                      }
+                      setTransferError(null);
+                      setTransferStep((s) => s + 1);
+                    }}
+                    style={{
+                      padding: '8px 20px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      backgroundColor: '#4338CA',
+                      color: '#FFFFFF',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Tiếp Theo &rarr;
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleCreateTransferContract}
+                    disabled={transferSubmitting}
+                    style={{
+                      padding: '8px 22px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      backgroundColor: '#4338CA',
+                      color: '#FFFFFF',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    {transferSubmitting ? <RefreshCw size={14} className="animate-spin" /> : <FilePlus size={15} />}
+                    <span>Tạo Dự Thảo Chuyển Nhượng</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* M08: Cremation Contract Modal */}
+      {/* M08: Cremation Contract 4-Step Wizard Modal */}
       {/* ========================================================================= */}
       {isCremationModalOpen && (
         <div
@@ -5171,191 +6924,876 @@ function parseApiError(errJson: unknown, fallback: string): string {
               backgroundColor: '#FFFFFF',
               borderRadius: '12px',
               width: '100%',
-              maxWidth: '560px',
+              maxWidth: '900px',
               maxHeight: '90vh',
-              overflowY: 'auto',
-              padding: '24px',
+              display: 'flex',
+              flexDirection: 'column',
               boxShadow: '0 20px 25px -5px rgba(0,0,0,0.3)',
+              overflow: 'hidden',
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Flame size={20} color="#C2410C" />
-                <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700, color: '#0F172A' }}>
-                  Lập Hợp Đồng Hỏa Táng Trọn Gói
-                </h3>
+            {/* Modal Header */}
+            <div
+              style={{
+                padding: '16px 24px',
+                borderBottom: '1px solid #E2E8F0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                backgroundColor: '#C2410C',
+                color: '#FFFFFF',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <Flame size={22} color="#FFFFFF" />
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '17px', fontWeight: 700 }}>
+                    Quy Trình Lập Hợp Đồng Dịch Vụ Hỏa Táng Trọn Gói
+                  </h3>
+                  <div style={{ fontSize: '12px', opacity: 0.9, marginTop: '2px' }}>
+                    Bước {cremationStep}/4: {cremationStep === 1 && 'Khách Hàng Đăng Ký (Thân Nhân/Đại Diện)'}
+                    {cremationStep === 2 && 'Hồ Sơ Người Quá Cố & Giấy Báo Tử'}
+                    {cremationStep === 3 && 'Gói Dịch Vụ, Lịch Hỏa Táng & Lưu Trữ Tro Cốt'}
+                    {cremationStep === 4 && 'Xác Nhận & Xem Trước Dự Thảo Hợp Đồng'}
+                  </div>
+                </div>
               </div>
               <button
                 onClick={() => setIsCremationModalOpen(false)}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}
+                style={{ background: 'none', border: 'none', color: '#FFFFFF', cursor: 'pointer', padding: '4px' }}
               >
-                <X size={18} />
+                <X size={20} />
               </button>
             </div>
 
-            {cremationError && (
-              <div style={{ padding: '8px 12px', backgroundColor: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '6px', color: '#991B1B', fontSize: '13px', marginBottom: '14px' }}>
-                {cremationError}
-              </div>
-            )}
-
-            {/* Customer */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                1. Khách Hàng Đại Diện Đăng Ký (*)
-              </label>
-              <input
-                type="text"
-                placeholder="Tìm khách hàng..."
-                onChange={(e) => searchCustomers(e.target.value)}
-                style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px', marginBottom: '6px' }}
-              />
-              <div style={{ maxHeight: '90px', overflowY: 'auto', border: '1px solid #E2E8F0', borderRadius: '6px' }}>
-                {custResults.map((c) => (
-                  <div
-                    key={c.customer_id}
-                    onClick={() => setCremationCustomer(c)}
-                    style={{
-                      padding: '5px 10px',
-                      borderBottom: '1px solid #E2E8F0',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                      backgroundColor: cremationCustomer?.customer_id === c.customer_id ? '#FFEDD5' : 'transparent',
-                    }}
-                  >
-                    <strong>{c.full_name}</strong> - {c.phone_number} ({c.customer_code})
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Deceased */}
-            <div style={{ marginBottom: '12px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                2. Người Quá Cố Hỏa Táng (*)
-              </label>
-              <input
-                type="text"
-                placeholder="Tìm người quá cố..."
-                onChange={(e) => searchCremationDeceased(e.target.value)}
-                style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px', marginBottom: '6px' }}
-              />
-              <div style={{ maxHeight: '90px', overflowY: 'auto', border: '1px solid #E2E8F0', borderRadius: '6px' }}>
-                {cremationDeceasedList.map((d) => (
-                  <div
-                    key={d.deceased_id}
-                    onClick={() => setSelectedCremationDeceased(d)}
-                    style={{
-                      padding: '5px 10px',
-                      borderBottom: '1px solid #E2E8F0',
-                      cursor: 'pointer',
-                      fontSize: '12px',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      backgroundColor: selectedCremationDeceased?.deceased_id === d.deceased_id ? '#FFEDD5' : 'transparent',
-                    }}
-                  >
-                    <span><strong>{d.full_name}</strong> ({d.deceased_code})</span>
-                    <span style={{ fontSize: '11px', color: d.has_death_certificate ? '#166534' : '#991B1B' }}>
-                      {d.has_death_certificate ? '✓ Có GBT' : '✗ Chưa có GBT'}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Date, Package & Fee */}
-            <div className="responsive-form-row">
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                  Ngày Hỏa Táng
-                </label>
-                <input
-                  type="date"
-                  value={cremationDate}
-                  onChange={(e) => setCremationDate(e.target.value)}
-                  style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                  Gói Dịch Vụ
-                </label>
-                <select
-                  value={cremationPackage}
-                  onChange={(e) => setCremationPackage(e.target.value)}
-                  style={{ width: '100%', padding: '8px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px', backgroundColor: '#FFFFFF' }}
+            {/* Step Progress Bar */}
+            <div
+              style={{
+                display: 'flex',
+                backgroundColor: '#F8FAFC',
+                borderBottom: '1px solid #E2E8F0',
+                padding: '12px 24px',
+                gap: '8px',
+              }}
+            >
+              {[
+                { step: 1, label: 'Khách hàng đăng ký' },
+                { step: 2, label: 'Hồ sơ người quá cố' },
+                { step: 3, label: 'Gói dịch vụ & Lịch lễ' },
+                { step: 4, label: 'Xác nhận dự thảo' },
+              ].map((s) => (
+                <div
+                  key={s.step}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    color: cremationStep >= s.step ? '#C2410C' : '#94A3B8',
+                    fontWeight: cremationStep === s.step ? 700 : 500,
+                    fontSize: '13px',
+                  }}
                 >
-                  <option value="HOA_TANG_TIEU_CHUAN">Tiêu Chuẩn (8.500.000đ)</option>
-                  <option value="HOA_TANG_VIP">VIP Nghi Lễ (15.000.000đ)</option>
-                  <option value="HOA_TANG_CAO_CAP">Cao Cấp Trọn Gói (25.000.000đ)</option>
-                </select>
-              </div>
+                  <div
+                    style={{
+                      width: '24px',
+                      height: '24px',
+                      borderRadius: '50%',
+                      backgroundColor: cremationStep >= s.step ? '#C2410C' : '#E2E8F0',
+                      color: cremationStep >= s.step ? '#FFFFFF' : '#64748B',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '12px',
+                    }}
+                  >
+                    {s.step}
+                  </div>
+                  <span>{s.label}</span>
+                </div>
+              ))}
             </div>
 
-            <div className="responsive-form-row">
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                  Tùy Chọn Lưu Tro Cốt
-                </label>
-                <input
-                  type="text"
-                  value={cremationUrnOption}
-                  onChange={(e) => setCremationUrnOption(e.target.value)}
-                  style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                  Phí Dịch Vụ (VNĐ)
-                </label>
-                <input
-                  type="number"
-                  value={cremationFee}
-                  onChange={(e) => setCremationFee(e.target.value)}
-                  style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
-                />
-              </div>
+            {/* Wizard Body */}
+            <div style={{ padding: '24px', overflowY: 'auto', flex: 1 }}>
+              {cremationError && (
+                <div
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '6px',
+                    backgroundColor: '#FEF2F2',
+                    border: '1px solid #FECACA',
+                    color: '#B91C1C',
+                    fontSize: '13px',
+                    marginBottom: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                  }}
+                >
+                  <AlertCircle size={16} />
+                  <span>{cremationError}</span>
+                </div>
+              )}
+
+              {/* STEP 1: SELECT CUSTOMER */}
+              {cremationStep === 1 && (
+                <div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B' }}>
+                      1. Tra cứu Khách hàng đại diện đăng ký dịch vụ hỏa táng (Bên A):
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuickCustError(null);
+                        setQuickCustTarget('CREMATION');
+                        setIsQuickCustModalOpen(true);
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #C2410C',
+                        backgroundColor: '#FFF7ED',
+                        color: '#C2410C',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <UserPlus size={14} />
+                      <span>+ Thêm Khách Hàng Nhanh</span>
+                    </button>
+                  </div>
+
+                  {/* Inline Quick Add Customer Form */}
+                  {renderQuickCustomerSection('CREMATION')}
+
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <Search size={16} color="#94A3B8" style={{ position: 'absolute', left: '10px', top: '10px' }} />
+                      <input
+                        type="text"
+                        placeholder="Tìm theo họ tên, CCCD hoặc số điện thoại..."
+                        value={custSearch}
+                        onChange={(e) => {
+                          setCustSearch(e.target.value);
+                          searchCustomers(e.target.value);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px 8px 34px',
+                          borderRadius: '6px',
+                          border: '1px solid #CBD5E1',
+                          fontSize: '13px',
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Selected Customer Banner */}
+                  {cremationCustomer && (
+                    <div
+                      style={{
+                        padding: '14px 18px',
+                        borderRadius: '8px',
+                        backgroundColor: '#FFF7ED',
+                        border: '1px solid #FDBA74',
+                        marginBottom: '16px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <span style={{ fontSize: '11px', fontWeight: 700, color: '#C2410C', textTransform: 'uppercase' }}>
+                            Đã Chọn Khách Hàng Đại Diện Đăng Ký
+                          </span>
+                          <div style={{ fontSize: '15px', fontWeight: 700, color: '#9A3412', marginTop: '2px' }}>
+                            {cremationCustomer.full_name} ({cremationCustomer.customer_code})
+                          </div>
+                          <div style={{ fontSize: '12px', color: '#C2410C', marginTop: '2px' }}>
+                            CCCD: {cremationCustomer.citizen_id} | SĐT: {cremationCustomer.phone_number} | Địa chỉ: {cremationCustomer.address}
+                          </div>
+                        </div>
+                        <CheckCircle size={24} color="#C2410C" />
+                      </div>
+                    </div>
+                  )}
+
+                  <div style={{ maxHeight: '220px', overflowY: 'auto', border: '1px solid #E2E8F0', borderRadius: '6px' }}>
+                    {custLoading ? (
+                      <div style={{ padding: '20px', textAlign: 'center', color: '#64748B', fontSize: '13px' }}>
+                        Đang tìm kiếm khách hàng...
+                      </div>
+                    ) : custResults.length === 0 ? (
+                      <div style={{ padding: '24px 20px', textAlign: 'center' }}>
+                        <div style={{ color: '#94A3B8', fontSize: '13px', marginBottom: '8px' }}>
+                          Không tìm thấy khách hàng phù hợp.
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuickCustError(null);
+                            setQuickCustTarget('CREMATION');
+                            setIsQuickCustModalOpen(true);
+                          }}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            border: '1px solid #C2410C',
+                            backgroundColor: '#FFF7ED',
+                            color: '#C2410C',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          + Thêm Khách Hàng Mới Ngay
+                        </button>
+                      </div>
+                    ) : (
+                      custResults.map((c) => (
+                        <div
+                          key={c.customer_id}
+                          onClick={() => setCremationCustomer(c)}
+                          style={{
+                            padding: '10px 14px',
+                            borderBottom: '1px solid #F1F5F9',
+                            cursor: 'pointer',
+                            backgroundColor: cremationCustomer?.customer_id === c.customer_id ? '#FFF7ED' : '#FFFFFF',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: '13px', color: '#1E293B' }}>{c.full_name}</div>
+                            <div style={{ fontSize: '12px', color: '#64748B' }}>
+                              CCCD: {c.citizen_id} • SĐT: {c.phone_number} • {c.address}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            style={{
+                              padding: '4px 10px',
+                              borderRadius: '4px',
+                              border: 'none',
+                              backgroundColor: cremationCustomer?.customer_id === c.customer_id ? '#C2410C' : '#F1F5F9',
+                              color: cremationCustomer?.customer_id === c.customer_id ? '#FFFFFF' : '#334155',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                            }}
+                          >
+                            {cremationCustomer?.customer_id === c.customer_id ? 'Đang chọn' : 'Chọn'}
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 2: SELECT DECEASED & VERIFY DEATH CERTIFICATE */}
+              {cremationStep === 2 && (
+                <div>
+                  <div
+                    style={{
+                      padding: '10px 14px',
+                      borderRadius: '8px',
+                      backgroundColor: '#EFF6FF',
+                      border: '1px solid #BFDBFE',
+                      marginBottom: '14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '10px',
+                    }}
+                  >
+                    <FileCheck size={18} color="#1D4ED8" />
+                    <div style={{ fontSize: '12px', color: '#1E40AF', lineHeight: '1.4' }}>
+                      <strong>Quy định pháp lý bắt buộc:</strong> Căn cứ Nghị định 23/2016/NĐ-CP, dịch vụ hỏa táng bắt buộc phải có Giấy Báo Tử do cơ quan thẩm quyền cấp trước khi thực hiện lễ hỏa táng.
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                    <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B' }}>
+                      2. Tra cứu Hồ sơ Người Quá Cố &amp; Xác minh Giấy Báo Tử:
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setQuickDeceasedError(null);
+                        setIsQuickDeceasedModalOpen(true);
+                      }}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid #C2410C',
+                        backgroundColor: '#FFF7ED',
+                        color: '#C2410C',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <UserPlus size={14} />
+                      <span>+ Thêm Hồ Sơ Người Quá Cố Nhanh</span>
+                    </button>
+                  </div>
+
+                  {/* Inline Quick Add Deceased Form */}
+                  {renderQuickDeceasedSection()}
+
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <Search size={16} color="#94A3B8" style={{ position: 'absolute', left: '10px', top: '10px' }} />
+                      <input
+                        type="text"
+                        placeholder="Tìm theo tên người quá cố hoặc mã hồ sơ..."
+                        value={cremationSearchDeceasedVal}
+                        onChange={(e) => {
+                          setCremationSearchDeceasedVal(e.target.value);
+                          searchCremationDeceased(e.target.value);
+                        }}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px 8px 34px',
+                          borderRadius: '6px',
+                          border: '1px solid #CBD5E1',
+                          fontSize: '13px',
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Selected Deceased Banner */}
+                  {selectedCremationDeceased && (
+                    <div
+                      style={{
+                        padding: '14px 18px',
+                        borderRadius: '8px',
+                        backgroundColor: '#FFF7ED',
+                        border: '1.5px solid #FDBA74',
+                        marginBottom: '16px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        gap: '10px',
+                      }}
+                    >
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 700, color: '#C2410C', textTransform: 'uppercase' }}>
+                            ĐÃ CHỌN NGƯỜI QUÁ CỐ: {selectedCremationDeceased.full_name} ({selectedCremationDeceased.deceased_code})
+                          </span>
+                          <span
+                            style={{
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              color: selectedCremationDeceased.has_death_certificate ? '#166534' : '#B45309',
+                              backgroundColor: selectedCremationDeceased.has_death_certificate ? '#DCFCE7' : '#FEF3C7',
+                              padding: '2px 8px',
+                              borderRadius: '4px',
+                            }}
+                          >
+                            {selectedCremationDeceased.has_death_certificate
+                              ? '✓ ĐÃ XÁC MINH GIẤY BÁO TỬ'
+                              : '⚠️ CHƯA CÓ GIẤY BÁO TỬ (Cần bổ sung trước ngày thiêu)'}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#9A3412', marginTop: '4px', display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+                          <span><strong>Ngày mất:</strong> {formatDate(selectedCremationDeceased.date_of_death)}</span>
+                          {selectedCremationDeceased.date_of_birth && (
+                            <span><strong>Ngày sinh:</strong> {formatDate(selectedCremationDeceased.date_of_birth)}</span>
+                          )}
+                          <span><strong>Giới tính:</strong> {selectedCremationDeceased.gender === 'MALE' ? 'Nam' : 'Nữ'}</span>
+                          {selectedCremationDeceased.death_certificate_number && (
+                            <span><strong>Số GBT:</strong> {selectedCremationDeceased.death_certificate_number}</span>
+                          )}
+                        </div>
+                      </div>
+                      <CheckCircle size={24} color="#C2410C" />
+                    </div>
+                  )}
+
+                  {/* Deceased List */}
+                  <div style={{ maxHeight: '220px', overflowY: 'auto', border: '1px solid #E2E8F0', borderRadius: '6px' }}>
+                    {cremationDeceasedList.length === 0 ? (
+                      <div style={{ padding: '24px 20px', textAlign: 'center' }}>
+                        <div style={{ color: '#94A3B8', fontSize: '13px', marginBottom: '8px' }}>
+                          Không tìm thấy hồ sơ người quá cố phù hợp.
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setQuickDeceasedError(null);
+                            setIsQuickDeceasedModalOpen(true);
+                          }}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            border: '1px solid #C2410C',
+                            backgroundColor: '#FFF7ED',
+                            color: '#C2410C',
+                            fontSize: '12px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          + Thêm Hồ Sơ Người Quá Cố Mới
+                        </button>
+                      </div>
+                    ) : (
+                      cremationDeceasedList.map((d) => (
+                        <div
+                          key={d.deceased_id}
+                          onClick={() => setSelectedCremationDeceased(d)}
+                          style={{
+                            padding: '10px 14px',
+                            borderBottom: '1px solid #F1F5F9',
+                            cursor: 'pointer',
+                            backgroundColor: selectedCremationDeceased?.deceased_id === d.deceased_id ? '#FFF7ED' : '#FFFFFF',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}
+                        >
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <span style={{ fontWeight: 600, fontSize: '13px', color: '#1E293B' }}>{d.full_name}</span>
+                              <span style={{ fontSize: '11px', color: '#64748B' }}>({d.deceased_code})</span>
+                              <span
+                                style={{
+                                  fontSize: '10px',
+                                  fontWeight: 700,
+                                  color: d.has_death_certificate ? '#166534' : '#B45309',
+                                  backgroundColor: d.has_death_certificate ? '#DCFCE7' : '#FEF3C7',
+                                  padding: '1px 6px',
+                                  borderRadius: '4px',
+                                }}
+                              >
+                                {d.has_death_certificate ? '✓ Đủ Giấy Báo Tử' : 'Thiếu Giấy Báo Tử'}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '12px', color: '#64748B', marginTop: '2px' }}>
+                              Ngày mất: {formatDate(d.date_of_death)} • Giới tính: {d.gender === 'MALE' ? 'Nam' : 'Nữ'}
+                              {d.death_certificate_number && ` • Số GBT: ${d.death_certificate_number}`}
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            style={{
+                              padding: '4px 10px',
+                              borderRadius: '4px',
+                              border: 'none',
+                              backgroundColor: selectedCremationDeceased?.deceased_id === d.deceased_id ? '#C2410C' : '#F1F5F9',
+                              color: selectedCremationDeceased?.deceased_id === d.deceased_id ? '#FFFFFF' : '#334155',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                            }}
+                          >
+                            {selectedCremationDeceased?.deceased_id === d.deceased_id ? 'Đang chọn' : 'Chọn hồ sơ'}
+                          </button>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 3: CREMATION PACKAGE & LOGISTICS */}
+              {cremationStep === 3 && (
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B', marginBottom: '10px' }}>
+                    3. Chọn Gói Dịch Vụ Hỏa Táng Trọn Gói:
+                  </div>
+
+                  {/* 3 Package Cards */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '12px', marginBottom: '18px' }}>
+                    {[
+                      {
+                        code: 'HOA_TANG_TIEU_CHUAN',
+                        title: 'Tiêu Chuẩn',
+                        price: 8500000,
+                        tag: 'Phổ biến',
+                        features: [
+                          'Lò hỏa táng điện hiện đại không khói',
+                          'Nghi lễ cử hành tiễn biệt 30 phút',
+                          'Hũ đựng tro cốt gốm sứ hoa văn',
+                          'Thời gian hoàn tất và nhận tro cốt: 2-3 giờ',
+                        ],
+                      },
+                      {
+                        code: 'HOA_TANG_VIP',
+                        title: 'VIP Nghi Lễ',
+                        price: 15000000,
+                        tag: 'Trang trọng',
+                        features: [
+                          'Phòng hành lễ riêng biệt có máy lạnh & hoa tươi',
+                          'Đội ngũ điều phối nghi thức tôn giáo trang nghiêm',
+                          'Thời gian cử hành nghi lễ tiễn biệt 60 phút',
+                          'Hũ tro cốt sứ cao cấp men lam truyền thống',
+                        ],
+                      },
+                      {
+                        code: 'HOA_TANG_CAO_CAP',
+                        title: 'Cao Cấp Trọn Gói',
+                        price: 25000000,
+                        tag: 'Đặc biệt',
+                        features: [
+                          'Xe chuyên dụng đón rước linh cữu chuẩn mực',
+                          'Lễ đường VIP độc lập toàn diện dành cho gia quyến',
+                          'Hũ ngọc bích cao cấp dát viền chỉ vàng sang trọng',
+                          'Tặng 1 năm lưu giữ miễn phí tại Tháp Cốt Địa Tạng',
+                        ],
+                      },
+                    ].map((pkg) => {
+                      const isSelected = cremationPackage === pkg.code;
+                      return (
+                        <div
+                          key={pkg.code}
+                          onClick={() => {
+                            setCremationPackage(pkg.code);
+                            setCremationFee(String(pkg.price));
+                          }}
+                          style={{
+                            padding: '14px',
+                            borderRadius: '8px',
+                            border: isSelected ? '2px solid #C2410C' : '1px solid #E2E8F0',
+                            backgroundColor: isSelected ? '#FFF7ED' : '#FFFFFF',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            boxShadow: isSelected ? '0 4px 6px -1px rgba(194, 65, 12, 0.15)' : 'none',
+                          }}
+                        >
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 700, color: isSelected ? '#C2410C' : '#1E293B' }}>
+                                {pkg.title}
+                              </h4>
+                              <span
+                                style={{
+                                  fontSize: '10px',
+                                  fontWeight: 700,
+                                  backgroundColor: isSelected ? '#FFEDD5' : '#F1F5F9',
+                                  color: isSelected ? '#9A3412' : '#64748B',
+                                  padding: '2px 6px',
+                                  borderRadius: '4px',
+                                }}
+                              >
+                                {pkg.tag}
+                              </span>
+                            </div>
+                            <div style={{ fontSize: '17px', fontWeight: 800, color: '#C2410C', marginTop: '6px' }}>
+                              {formatCurrency(pkg.price)}
+                            </div>
+                            <ul style={{ margin: '10px 0 0 0', paddingLeft: '16px', fontSize: '12px', color: '#475569', lineHeight: '1.5' }}>
+                              {pkg.features.map((f, idx) => (
+                                <li key={idx} style={{ marginBottom: '3px' }}>{f}</li>
+                              ))}
+                            </ul>
+                          </div>
+                          <button
+                            type="button"
+                            style={{
+                              marginTop: '12px',
+                              padding: '6px 12px',
+                              borderRadius: '6px',
+                              border: 'none',
+                              backgroundColor: isSelected ? '#C2410C' : '#F1F5F9',
+                              color: isSelected ? '#FFFFFF' : '#475569',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {isSelected ? '✓ Đang chọn gói này' : 'Chọn gói này'}
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Ceremony Date & Time */}
+                  <div className="responsive-form-row" style={{ marginBottom: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                        Ngày Tổ Chức Hỏa Táng (*)
+                      </label>
+                      <input
+                        type="date"
+                        value={cremationDate}
+                        onChange={(e) => setCremationDate(e.target.value)}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                        Khung Giờ Hỏa Táng Dự Kiến
+                      </label>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        {['07:30', '08:30', '10:00', '13:30', '15:00'].map((t) => (
+                          <button
+                            key={t}
+                            type="button"
+                            onClick={() => setCremationTime(t)}
+                            style={{
+                              padding: '6px 10px',
+                              borderRadius: '6px',
+                              border: cremationTime === t ? '1.5px solid #C2410C' : '1px solid #CBD5E1',
+                              backgroundColor: cremationTime === t ? '#FFF7ED' : '#FFFFFF',
+                              color: cremationTime === t ? '#C2410C' : '#475569',
+                              fontSize: '12px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {t}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Urn Storage Option & Service Fee */}
+                  <div className="responsive-form-row" style={{ marginBottom: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                        Tùy Chọn Lưu Trữ / An Vị Tro Cốt (*)
+                      </label>
+                      <select
+                        value={cremationUrnOption}
+                        onChange={(e) => setCremationUrnOption(e.target.value)}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px', backgroundColor: '#FFFFFF' }}
+                      >
+                        <option value="Lưu tháp cốt Địa Tạng">Lưu tháp cốt Địa Tạng (Khuôn viên trung tâm)</option>
+                        <option value="Lưu bảo tháp Phước Duyên">Lưu bảo tháp Phước Duyên (Khuôn viên phía Đông)</option>
+                        <option value="Gia đình tiếp nhận và mang về an vị">Gia đình tiếp nhận và mang về an vị tại gia</option>
+                        <option value="An táng vào ô mộ gia tộc">An táng vào khuôn viên ô mộ gia tộc tại nghĩa trang</option>
+                        <option value="Thủy táng / Rải tro cốt tại khuôn viên tưởng niệm">Thủy táng / Rải tro cốt tại khuôn viên tưởng niệm</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                        Phí Dịch Vụ Hỏa Táng (VNĐ) (*)
+                      </label>
+                      <input
+                        type="number"
+                        value={cremationFee}
+                        onChange={(e) => setCremationFee(e.target.value)}
+                        style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                      />
+                      <div style={{ fontSize: '11px', color: '#64748B', marginTop: '2px' }}>
+                        {formatCurrency(cremationFee)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Notes */}
+                  <div style={{ marginBottom: '10px' }}>
+                    <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
+                      Ghi Chú Yêu Cầu Nghi Thức &amp; Tâm Nguyện Gia Đình
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="Ghi chú về nghi thức tôn giáo (Phật giáo, Công giáo...), danh sách thân nhân tham dự, điều phối xe đón..."
+                      value={cremationNotes}
+                      onChange={(e) => setCremationNotes(e.target.value)}
+                      style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 4: REVIEW & CONFIRM */}
+              {cremationStep === 4 && (
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: '#1E293B', marginBottom: '14px' }}>
+                    4. Xác nhận thông tin và kiểm tra dự thảo hợp đồng hỏa táng:
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px', marginBottom: '16px' }}>
+                    {/* Card 1: Customer */}
+                    <div style={{ padding: '14px', borderRadius: '8px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        Khách Hàng Đăng Ký (Bên A)
+                      </div>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A' }}>
+                        {cremationCustomer?.full_name} ({cremationCustomer?.customer_code})
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>
+                        CCCD: {cremationCustomer?.citizen_id} • SĐT: {cremationCustomer?.phone_number}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>
+                        Địa chỉ: {cremationCustomer?.address}
+                      </div>
+                    </div>
+
+                    {/* Card 2: Deceased */}
+                    <div style={{ padding: '14px', borderRadius: '8px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        Người Quá Cố Hỏa Táng
+                      </div>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A' }}>
+                        {selectedCremationDeceased?.full_name} ({selectedCremationDeceased?.deceased_code})
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>
+                        Giới tính: {selectedCremationDeceased?.gender === 'MALE' ? 'Nam' : 'Nữ'} • Mất ngày: {formatDate(selectedCremationDeceased?.date_of_death)}
+                      </div>
+                      <div style={{ fontSize: '11px', marginTop: '4px' }}>
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            color: selectedCremationDeceased?.has_death_certificate ? '#166534' : '#B45309',
+                            backgroundColor: selectedCremationDeceased?.has_death_certificate ? '#DCFCE7' : '#FEF3C7',
+                            padding: '2px 6px',
+                            borderRadius: '4px',
+                          }}
+                        >
+                          {selectedCremationDeceased?.has_death_certificate
+                            ? `✓ Giấy báo tử: ${selectedCremationDeceased.death_certificate_number || 'Đã kiểm tra'}`
+                            : '⚠️ Giấy báo tử chưa cập nhật (Cần bổ sung)'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Card 3: Ceremony & Urn */}
+                    <div style={{ padding: '14px', borderRadius: '8px', backgroundColor: '#FFF7ED', border: '1px solid #FDBA74' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#C2410C', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        Gói Dịch Vụ &amp; Lịch Hỏa Táng
+                      </div>
+                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#9A3412' }}>
+                        {getCremationPackageName(cremationPackage)}
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#C2410C', marginTop: '4px' }}>
+                        <strong>Ngày thực hiện:</strong> {formatDate(cremationDate)} ({cremationTime})
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#C2410C', marginTop: '2px' }}>
+                        <strong>Lưu tro cốt:</strong> {cremationUrnOption}
+                      </div>
+                    </div>
+
+                    {/* Card 4: Fee & Confirmation */}
+                    <div style={{ padding: '14px', borderRadius: '8px', backgroundColor: '#F0FDF4', border: '1px solid #BBF7D0' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#166534', textTransform: 'uppercase', marginBottom: '6px' }}>
+                        Chi Phí &amp; Trạng Thái Dự Thảo
+                      </div>
+                      <div style={{ fontSize: '18px', fontWeight: 800, color: '#166534' }}>
+                        {formatCurrency(cremationFee)}
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#15803D', marginTop: '4px', lineHeight: '1.4' }}>
+                        Hợp đồng được tạo ở trạng thái Chờ Ký (DRAFT). Ban quản trang sẽ bố trí lò hỏa táng và điều phối nhân sự theo lịch hẹn đã đăng ký.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div style={{ marginBottom: '14px' }}>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#334155', marginBottom: '4px' }}>
-                Ghi Chú
-              </label>
-              <textarea
-                rows={2}
-                placeholder="Ghi chú về tổ chức nghi lễ, giờ hỏa táng..."
-                value={cremationNotes}
-                onChange={(e) => setCremationNotes(e.target.value)}
-                style={{ width: '100%', padding: '6px 10px', borderRadius: '6px', border: '1px solid #CBD5E1', fontSize: '13px' }}
-              />
-            </div>
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '16px' }}>
+            {/* Wizard Navigation Footer */}
+            <div
+              style={{
+                padding: '16px 24px',
+                borderTop: '1px solid #E2E8F0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                backgroundColor: '#F8FAFC',
+              }}
+            >
               <button
                 type="button"
                 onClick={() => setIsCremationModalOpen(false)}
-                style={{ padding: '8px 14px', borderRadius: '6px', border: '1px solid #CBD5E1', backgroundColor: '#FFFFFF', fontSize: '13px', cursor: 'pointer' }}
-              >
-                Hủy
-              </button>
-              <button
-                type="button"
-                onClick={handleCreateCremationContract}
-                disabled={cremationSubmitting || !cremationCustomer || !selectedCremationDeceased}
                 style={{
                   padding: '8px 16px',
                   borderRadius: '6px',
-                  border: 'none',
-                  backgroundColor: '#C2410C',
-                  color: '#FFFFFF',
+                  border: '1px solid #CBD5E1',
+                  backgroundColor: '#FFFFFF',
                   fontSize: '13px',
-                  fontWeight: 600,
                   cursor: 'pointer',
                 }}
               >
-                {cremationSubmitting ? 'Đang tạo...' : 'Tạo Dự Thảo Hỏa Táng'}
+                Hủy Bỏ
               </button>
+
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {cremationStep > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setCremationStep((s) => s - 1)}
+                    style={{
+                      padding: '8px 18px',
+                      borderRadius: '6px',
+                      border: '1px solid #CBD5E1',
+                      backgroundColor: '#FFFFFF',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Quay Lại
+                  </button>
+                )}
+
+                {cremationStep < 4 ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (cremationStep === 1 && !cremationCustomer) {
+                        setCremationError('Vui lòng chọn khách hàng đại diện đăng ký');
+                        return;
+                      }
+                      if (cremationStep === 2 && !selectedCremationDeceased) {
+                        setCremationError('Vui lòng chọn hồ sơ người quá cố');
+                        return;
+                      }
+                      setCremationError(null);
+                      setCremationStep((s) => s + 1);
+                    }}
+                    style={{
+                      padding: '8px 20px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      backgroundColor: '#C2410C',
+                      color: '#FFFFFF',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Tiếp Theo &rarr;
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleCreateCremationContract}
+                    disabled={cremationSubmitting || !cremationCustomer || !selectedCremationDeceased}
+                    style={{
+                      padding: '8px 22px',
+                      borderRadius: '6px',
+                      border: 'none',
+                      backgroundColor: '#C2410C',
+                      color: '#FFFFFF',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                    }}
+                  >
+                    {cremationSubmitting ? <RefreshCw size={14} className="animate-spin" /> : <FilePlus size={15} />}
+                    <span>Tạo Dự Thảo Hỏa Táng</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

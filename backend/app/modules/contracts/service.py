@@ -865,8 +865,42 @@ class ContractService:
         annex_code = cls.generate_annex_code(db, "PL-CS")
         rec_price = data.recurring_price if data.recurring_price is not None else package.unit_price
         add_amount = data.additional_amount or Decimal("0.00")
-        v_from = data.valid_from or date.today()
+
+        # KIỂM TRA XUNG ĐỘT GÓI CHĂM SÓC ĐANG CÒN HẠN & GIẢI QUYẾT GIA HẠN NỐI TIẾP
+        today = date.today()
+        existing_care_annexes = (
+            db.query(ContractAnnex)
+            .filter(
+                ContractAnnex.contract_id == contract.contract_id,
+                ContractAnnex.annex_type == "CARE",
+                ContractAnnex.status.in_(["ACTIVE", "DRAFT"]),
+            )
+            .order_by(ContractAnnex.valid_to.desc())
+            .all()
+        )
+
+        active_unexpired_annex = next(
+            (
+                a
+                for a in existing_care_annexes
+                if a.status == "ACTIVE" and a.valid_to and a.valid_to >= today
+            ),
+            None,
+        )
+
+        extension_notes = ""
+        if active_unexpired_annex:
+            # Gói cũ còn hạn -> Tự động gia hạn nối tiếp chu kỳ nếu valid_from bị trùng hoặc không chỉ định
+            if not data.valid_from or data.valid_from <= active_unexpired_annex.valid_to:
+                v_from = active_unexpired_annex.valid_to + timedelta(days=1)
+                extension_notes = f"[Gia hạn nối tiếp chu kỳ từ {active_unexpired_annex.annex_code}] "
+            else:
+                v_from = data.valid_from
+        else:
+            v_from = data.valid_from or today
+
         v_to = data.valid_to or (v_from + timedelta(days=data.cycle_months * 30))
+        final_notes = f"{extension_notes}{data.notes or ''}".strip() or None
 
         annex = ContractAnnex(
             annex_code=annex_code,
@@ -876,7 +910,7 @@ class ContractService:
             additional_amount=add_amount,
             valid_from=v_from,
             valid_to=v_to,
-            notes=data.notes,
+            notes=final_notes,
             created_at=now,
             updated_at=now,
         )
